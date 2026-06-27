@@ -17,8 +17,8 @@
     </div>
 
     <!-- Abas / Tabs de Navegação -->
-    <div class="border-b border-slate-200">
-        <nav class="flex space-x-6">
+    <div class="border-b border-slate-200 overflow-x-auto whitespace-nowrap scrollbar-none pb-1">
+        <nav class="flex space-x-6 min-w-max">
             <button type="button" @click="activeTab = 'geral'" 
                     class="pb-4 text-sm font-bold border-b-2 transition-all"
                     :class="activeTab === 'geral' ? 'border-primary-600 text-primary-650' : 'border-transparent text-slate-400 hover:text-slate-600'">
@@ -42,8 +42,25 @@
         </nav>
     </div>
 
+    <!-- Erros de Validação -->
+    @if ($errors->any())
+        <div class="bg-red-50 border border-red-200 text-red-800 p-4 rounded-[5px] text-sm space-y-1.5 shadow-sm">
+            <div class="flex items-center gap-2 font-bold">
+                <svg class="w-4 h-4 text-red-650" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path>
+                </svg>
+                Por favor, verifique os campos obrigatórios:
+            </div>
+            <ul class="list-disc list-inside text-xs font-normal space-y-0.5 text-red-700">
+                @foreach ($errors->all() as $error)
+                    <li>{{ $error }}</li>
+                @endforeach
+            </ul>
+        </div>
+    @endif
+
     <!-- Formulário Principal -->
-    <form action="{{ route('portfolio.update', $portfolio->id) }}" method="POST" enctype="multipart/form-data" class="space-y-6">
+    <form action="{{ route('portfolio.update', $portfolio->id) }}" method="POST" enctype="multipart/form-data" class="space-y-6" @submit="syncGalleryInput($event)">
         @csrf
         @method('PUT')
 
@@ -194,9 +211,14 @@
                 <div class="space-y-4">
                     <h5 class="text-xs font-bold text-slate-800 uppercase tracking-wider border-b border-slate-100 pb-2">Imagem de Capa (Thumbnail)</h5>
                     
-                    <div class="space-y-3">
-                        <div class="flex items-center justify-center w-full">
-                            <label class="flex flex-col items-center justify-center w-full aspect-video border-2 border-dashed border-slate-200 hover:border-primary-500 rounded-[5px] cursor-pointer bg-slate-50 hover:bg-slate-100/50 transition-colors relative overflow-hidden">
+                                            <!-- Capa / Thumbnail com Drag & Drop -->
+                        <div class="flex items-center justify-center w-full"
+                             x-data="{ dragOver: false }"
+                             @dragover.prevent="dragOver = true"
+                             @dragleave.prevent="dragOver = false"
+                             @drop.prevent="handleThumbDrop($event); dragOver = false">
+                            <label :class="dragOver ? 'border-primary-500 bg-primary-50/20' : 'border-slate-200 bg-slate-50'"
+                                   class="flex flex-col items-center justify-center w-full aspect-video border-2 border-dashed hover:border-primary-500 rounded-[5px] cursor-pointer hover:bg-slate-100/50 transition-colors relative overflow-hidden">
                                 @if($portfolio->thumb_path)
                                     <img :src="thumbPreview || '{{ asset('storage/' . $portfolio->thumb_path) }}'" class="absolute inset-0 w-full h-full object-cover">
                                 @else
@@ -204,13 +226,13 @@
                                         <svg class="w-8 h-8 text-slate-400 mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
                                         </svg>
-                                        <p class="text-xs font-bold text-slate-700">Alterar Capa</p>
+                                        <p class="text-xs font-bold text-slate-700">Selecione ou Arraste a Capa Aqui</p>
                                     </div>
                                     <template x-if="thumbPreview">
                                         <img :src="thumbPreview" class="absolute inset-0 w-full h-full object-cover">
                                     </template>
                                 @endif
-                                <input type="file" name="thumb" class="hidden" @change="handleThumbUpload($event)">
+                                <input type="file" id="thumb-input" name="thumb" class="hidden" @change="handleThumbUpload($event)">
                             </label>
                         </div>
                         <p class="text-[11px] text-slate-400">
@@ -266,13 +288,19 @@
                         <h6 class="text-xs font-bold text-slate-700 uppercase tracking-wider border-b border-slate-100 pb-1.5">Adicionar Novas Fotos</h6>
                         
                         <div class="space-y-3">
-                            <div class="flex items-center justify-center w-full">
-                                <label class="flex items-center justify-center gap-2 w-full py-3 border border-dashed border-slate-200 rounded-[5px] cursor-pointer bg-slate-50 hover:bg-slate-100/50 hover:border-primary-500 transition-colors text-xs font-bold text-slate-650">
+                            <!-- Botão upload galeria / Dragzone -->
+                            <div class="flex items-center justify-center w-full"
+                                 x-data="{ dragOver: false }"
+                                 @dragover.prevent="dragOver = true"
+                                 @dragleave.prevent="dragOver = false"
+                                 @drop.prevent="handleGalleryDrop($event); dragOver = false">
+                                <label :class="dragOver ? 'border-primary-500 bg-primary-50/20' : 'border-slate-200 bg-slate-50'"
+                                       class="flex items-center justify-center gap-2 w-full py-4 border border-dashed hover:border-primary-500 rounded-[5px] cursor-pointer hover:bg-slate-100/50 transition-colors text-xs font-bold text-slate-650">
                                     <svg class="w-4 h-4 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path>
                                     </svg>
-                                    Adicionar Fotos à Galeria
-                                    <input type="file" name="gallery[]" multiple class="hidden" @change="handleGalleryUpload($event)">
+                                    Adicionar ou Arrastar Fotos da Galeria Aqui
+                                    <input type="file" id="gallery-input" name="gallery[]" multiple class="hidden" @change="handleGalleryUpload($event)">
                                 </label>
                             </div>
 
@@ -549,6 +577,43 @@
                 if (file) {
                     this.thumbPreview = URL.createObjectURL(file);
                 }
+            },
+
+            handleThumbDrop(event) {
+                const file = event.dataTransfer.files[0];
+                if (file && file.type.startsWith('image/')) {
+                    const input = document.getElementById('thumb-input');
+                    const dataTransfer = new DataTransfer();
+                    dataTransfer.items.add(file);
+                    input.files = dataTransfer.files;
+                    this.thumbPreview = URL.createObjectURL(file);
+                }
+            },
+
+            handleGalleryDrop(event) {
+                const files = event.dataTransfer.files;
+                for (let i = 0; i < files.length; i++) {
+                    const file = files[i];
+                    if (file.type.startsWith('image/')) {
+                        this.galleryFiles.push({
+                            file: file,
+                            name: file.name,
+                            url: URL.createObjectURL(file),
+                            order: this.galleryFiles.length + 1
+                        });
+                    }
+                }
+            },
+
+            syncGalleryInput(event) {
+                const input = document.getElementById('gallery-input');
+                const dataTransfer = new DataTransfer();
+                this.galleryFiles.forEach(item => {
+                    if (item.file) {
+                        dataTransfer.items.add(item.file);
+                    }
+                });
+                input.files = dataTransfer.files;
             },
 
             handleGalleryUpload(event) {

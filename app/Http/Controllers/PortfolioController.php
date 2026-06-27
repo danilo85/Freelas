@@ -64,11 +64,13 @@ class PortfolioController extends Controller
     public function pipeline()
     {
         // Projetos finalizados
-        $projects = auth()->user()->projects()
-            ->with(['client', 'authors'])
-            ->where('status', 'finalizado')
-            ->orderBy('updated_at', 'desc')
-            ->get();
+        $projects = Project::whereHas('client', function ($q) {
+            $q->where('user_id', auth()->id());
+        })
+        ->with(['client', 'authors'])
+        ->where('status', 'finalizado')
+        ->orderBy('updated_at', 'desc')
+        ->get();
 
         // Mapear IDs de projetos que já foram importados para o portfólio
         $importedProjectIds = auth()->user()->portfolioItems()
@@ -91,7 +93,9 @@ class PortfolioController extends Controller
         // Dados padrão para preenchimento se originado do pipeline
         $projectData = null;
         if ($request->filled('project_id')) {
-            $project = auth()->user()->projects()->with(['authors'])->findOrFail($request->input('project_id'));
+            $project = Project::whereHas('client', function ($q) {
+                $q->where('user_id', auth()->id());
+            })->with(['authors'])->findOrFail($request->input('project_id'));
             $projectData = [
                 'id' => $project->id,
                 'title' => $project->title,
