@@ -46,4 +46,20 @@ class User extends Authenticatable
     {
         return $this->hasMany(Author::class);
     }
+
+    /**
+     * Relacionamento com Categorias de Portfólio de tenancy.
+     */
+    public function portfolioCategories(): HasMany
+    {
+        return $this->hasMany(PortfolioCategory::class);
+    }
+
+    /**
+     * Relacionamento com Itens de Portfólio de tenancy.
+     */
+    public function portfolioItems(): HasMany
+    {
+        return $this->hasMany(PortfolioItem::class);
+    }
 }

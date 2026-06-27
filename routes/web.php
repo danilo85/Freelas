@@ -11,6 +11,8 @@ use App\Http\Controllers\ClientController;
 use App\Http\Controllers\AuthorController;
 use App\Http\Controllers\ProjectAttachmentController;
 use App\Http\Controllers\PaymentController;
+use App\Http\Controllers\PortfolioController;
+use App\Http\Controllers\PortfolioCategoryController;
 use Illuminate\Support\Facades\Route;
 
 // Rotas de Visitantes (Guest)
@@ -97,6 +99,11 @@ Route::middleware('auth')->group(function () {
     Route::put('/authors/{author}', [AuthorController::class, 'update'])->name('authors.update');
     Route::delete('/authors/{author}', [AuthorController::class, 'destroy'])->name('authors.destroy');
         
+    // Portfólio do usuário logado (Tenancy)
+    Route::get('/portfolio/pipeline', [PortfolioController::class, 'pipeline'])->name('portfolio.pipeline');
+    Route::resource('/portfolio', PortfolioController::class);
+    Route::resource('/portfolio-categories', PortfolioCategoryController::class)->except(['show', 'create', 'edit']);
+
     // Perfil do Usuário
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
     Route::put('/profile', [ProfileController::class, 'update'])->name('profile.update');

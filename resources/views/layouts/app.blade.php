@@ -245,6 +245,32 @@
                 Autores
             </a>
 
+            <!-- Dropdown: Portfólio -->
+            <div x-data="{ open: {{ (request()->routeIs('portfolio.*') || request()->routeIs('portfolio-categories.*')) ? 'true' : 'false' }} }" class="space-y-1">
+                <button @click="open = !open" class="flex items-center justify-between w-full px-4 py-2.5 rounded-[5px] text-sm font-medium transition-colors text-slate-400 hover:text-white hover:bg-slate-800 focus:outline-none" :class="open ? 'text-white bg-slate-800/50' : ''">
+                    <div class="flex items-center gap-3">
+                        <svg class="w-5 h-5 {{ (request()->routeIs('portfolio.*') || request()->routeIs('portfolio-categories.*')) ? 'text-primary-500' : 'text-slate-400' }}" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
+                        </svg>
+                        Portfólio
+                    </div>
+                    <svg class="w-3 h-3 text-slate-400 transition-transform duration-200" :class="open ? 'rotate-180' : ''" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
+                    </svg>
+                </button>
+                <div x-show="open" class="pl-9 space-y-1" style="display: none;" :style="open ? 'display: block;' : 'display: none;'">
+                    <a href="{{ route('portfolio.index') }}" class="block py-2 px-3 text-xs font-semibold rounded-[5px] transition-colors {{ request()->routeIs('portfolio.index') || request()->routeIs('portfolio.show') || request()->routeIs('portfolio.edit') || request()->routeIs('portfolio.create') ? 'text-white bg-slate-850' : 'text-slate-400 hover:text-white' }}">
+                        Trabalhos
+                    </a>
+                    <a href="{{ route('portfolio-categories.index') }}" class="block py-2 px-3 text-xs font-semibold rounded-[5px] transition-colors {{ request()->routeIs('portfolio-categories.*') ? 'text-white bg-slate-850' : 'text-slate-400 hover:text-white' }}">
+                        Categorias
+                    </a>
+                    <a href="{{ route('portfolio.pipeline') }}" class="block py-2 px-3 text-xs font-semibold rounded-[5px] transition-colors {{ request()->routeIs('portfolio.pipeline') ? 'text-white bg-slate-850' : 'text-slate-400 hover:text-white' }}">
+                        Pipeline
+                    </a>
+                </div>
+            </div>
+
             <!-- Link: Configurações -->
             <a href="{{ route('profile.edit') }}" class="flex items-center gap-3 px-4 py-2.5 rounded-[5px] text-sm font-medium transition-colors 
                 {{ request()->routeIs('profile.*') ? 'bg-slate-800 text-white' : 'text-slate-400 hover:text-white hover:bg-slate-800' }}">
