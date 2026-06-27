@@ -107,24 +107,118 @@
                 </div>
 
                 <!-- Descrição -->
+                <!-- Descrição com Editor WYSIWYG -->
                 <div class="space-y-1 sm:col-span-2">
-                    <label for="description" class="text-xs font-semibold text-slate-500 uppercase tracking-wider">Descrição do Trabalho <span class="text-red-500">*</span></label>
-                    <textarea id="description" 
-                              name="description" 
-                              rows="6"
-                              x-model="description"
-                              class="w-full px-3.5 py-2.5 rounded-[5px] border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500 transition-all"></textarea>
+                    <label class="text-xs font-semibold text-slate-500 uppercase tracking-wider">Descrição do Trabalho <span class="text-red-500">*</span></label>
+                    
+                    <style>
+                        .wysiwyg-editor ul, .wysiwyg-content ul {
+                            list-style-type: disc !important;
+                            padding-left: 1.5rem !important;
+                            margin-top: 0.5rem !important;
+                            margin-bottom: 0.5rem !important;
+                        }
+                        .wysiwyg-editor ol, .wysiwyg-content ol {
+                            list-style-type: decimal !important;
+                            padding-left: 1.5rem !important;
+                            margin-top: 0.5rem !important;
+                            margin-bottom: 0.5rem !important;
+                        }
+                        .wysiwyg-editor a, .wysiwyg-content a {
+                            color: #2563eb !important;
+                            text-decoration: underline !important;
+                        }
+                        .wysiwyg-editor u, .wysiwyg-content u {
+                            text-decoration: underline !important;
+                        }
+                    </style>
+
+                    <div class="border border-slate-200 rounded-[5px] overflow-hidden focus-within:ring-2 focus-within:ring-primary-500/20 focus-within:border-primary-500 transition-all bg-white mt-1">
+                        <!-- Toolbar -->
+                        <div class="bg-slate-50 border-b border-slate-200 p-2 flex flex-wrap gap-1 items-center select-none">
+                            <button type="button" @click="format('bold')" class="p-1.5 hover:bg-slate-200 text-slate-700 rounded transition-colors border-0" title="Negrito">
+                                <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 24 24"><path d="M15.6 10.79c.97-.67 1.65-1.77 1.65-2.79 0-2.26-1.75-4-4-4H7v14h7.04c2.09 0 3.71-1.7 3.71-3.79 0-1.52-.86-2.82-2.15-3.42zM10 6.5h3c.83 0 1.5.67 1.5 1.5s-.67 1.5-1.5 1.5h-3v-3zm3.5 9H10v-3h3.5c.83 0 1.5.67 1.5 1.5s-.67 1.5-1.5 1.5z"/></svg>
+                            </button>
+                            <button type="button" @click="format('italic')" class="p-1.5 hover:bg-slate-200 text-slate-700 rounded transition-colors border-0" title="Itálico">
+                                <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 24 24"><path d="M10 4v3h2.21l-3.42 8H6v3h8v-3h-2.21l3.42-8H18V4z"/></svg>
+                            </button>
+                            <button type="button" @click="format('underline')" class="p-1.5 hover:bg-slate-200 text-slate-700 rounded transition-colors border-0" title="Sublinhado">
+                                <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 24 24"><path d="M12 17c3.31 0 6-2.69 6-6V3h-2.5v8c0 1.93-1.57 3.5-3.5 3.5S8.5 12.93 8.5 11V3H6v8c0 3.31 2.69 6 6 6zm-7 2v2h14v-2H5z"/></svg>
+                            </button>
+                            <button type="button" @click="format('insertUnorderedList')" class="p-1.5 hover:bg-slate-200 text-slate-700 rounded transition-colors border-0" title="Lista">
+                                <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 24 24"><path d="M4 10.5c-.83 0-1.5.67-1.5 1.5s.67 1.5 1.5 1.5 1.5-.67 1.5-1.5-.67-1.5-1.5-1.5zm0-6c-.83 0-1.5.67-1.5 1.5S3.17 7.5 4 7.5 5.5 6.83 5.5 6 4.83 4.5 4 4.5zm0 12c-.83 0-1.5.68-1.5 1.5s.68 1.5 1.5 1.5 1.5-.68 1.5-1.5-.67-1.5-1.5-1.5zM7 19h14v-2H7v2zm0-6h14v-2H7v2zm0-7v2h14V6H7z"/></svg>
+                            </button>
+                            <button type="button" @click="insertLink()" class="p-1.5 hover:bg-slate-200 text-slate-700 rounded transition-colors border-0" title="Inserir Link">
+                                <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 24 24"><path d="M3.9 12c0-1.71 1.39-3.1 3.1-3.1h4V6.4H7c-3.09 0-5.6 2.51-5.6 5.6s2.51 5.6 5.6 5.6h4v-2.5H7c-1.71 0-3.1-1.39-3.1-3.1zM8 13h8v-2H8v2zm9-6.6h-4v2.5h4c1.71 0 3.1 1.39 3.1 3.1s-1.39 3.1-3.1 3.1h-4v2.5h4c3.09 0 5.6-2.51 5.6-5.6s-2.51-5.6-5.6-5.6z"/></svg>
+                            </button>
+                            <button type="button" @click="format('undo')" class="p-1.5 hover:bg-slate-200 text-slate-700 rounded transition-colors border-0" title="Desfazer">
+                                <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 24 24"><path d="M12.5 8c-2.65 0-5.05.99-6.9 2.6L2 7v9h9l-3.62-3.62c1.39-1.16 3.16-1.88 5.12-1.88 3.54 0 6.55 2.31 7.6 5.5l2.37-.78C21.08 11.03 17.15 8 12.5 8z"/></svg>
+                            </button>
+                            <button type="button" @click="format('insertLineBreak')" class="p-1.5 hover:bg-slate-200 text-slate-700 rounded transition-colors border-0" title="Quebra de Linha">
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h10a8 8 0 018 8v2M3 10l6 6m-6-6l6-6"></path>
+                                </svg>
+                            </button>
+                        </div>
+
+                        <!-- Área Editável com Auto-resize -->
+                        <div x-ref="editor" 
+                             contenteditable="true" 
+                             x-init="$refs.editor.innerHTML = description || '';"
+                             @input="description = $el.innerHTML; $el.style.height = 'auto'; $el.style.height = $el.scrollHeight + 'px'" 
+                             @blur="description = $el.innerHTML" 
+                             class="w-full px-4 py-3 min-h-[150px] text-sm outline-none bg-white wysiwyg-editor prose max-w-none focus:outline-none overflow-hidden resize-none"
+                             style="min-height: 150px;"></div>
+                    </div>
+                    <!-- Input oculto para submissão do formulário -->
+                    <input type="hidden" name="description" :value="description">
                 </div>
 
-                <!-- Tecnologias utilizadas -->
+                <!-- Tecnologias utilizadas (Tags Input com Autocomplete) -->
                 <div class="space-y-1">
-                    <label for="technologies" class="text-xs font-semibold text-slate-500 uppercase tracking-wider">Tecnologias Utilizadas (Opcional)</label>
-                    <input type="text" 
-                           id="technologies" 
-                           name="technologies" 
-                           x-model="technologies"
-                           placeholder="Ex: Illustrator, Photoshop, Laravel, Vue (separados por vírgula)" 
-                           class="w-full px-3.5 py-2.5 rounded-[5px] border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500 transition-all">
+                    <label class="text-xs font-semibold text-slate-500 uppercase tracking-wider">Tecnologias Utilizadas (Opcional)</label>
+                    <div x-data="tagsInput({
+                        initialTags: technologies,
+                        suggestions: {{ json_encode($existingTechnologies) }}
+                    })" class="relative">
+                        <!-- Campo oculto para submissão do formulário -->
+                        <input type="hidden" name="technologies" :value="tags.join(', ')">
+                        
+                        <!-- Conteiner dos Tags -->
+                        <div class="flex flex-wrap gap-1.5 p-2.5 border border-slate-200 rounded-[5px] bg-slate-50 min-h-[42px] focus-within:ring-2 focus-within:ring-primary-500/20 focus-within:border-primary-500 transition-all">
+                            <template x-for="(tag, idx) in tags" :key="idx">
+                                <span class="inline-flex items-center gap-1.5 bg-primary-50 text-primary-750 text-xs font-bold px-2 py-0.5 rounded-[4px] border border-primary-200 shadow-sm">
+                                    <span x-text="tag"></span>
+                                    <button type="button" @click="removeTag(idx)" class="text-primary-450 hover:text-primary-750 font-extrabold focus:outline-none border-0 bg-transparent p-0 leading-none">×</button>
+                                </span>
+                            </template>
+                            
+                            <input type="text"
+                                   x-model="inputValue"
+                                   @keydown.enter.prevent="addTag()"
+                                   @keydown.comma.prevent="addTag()"
+                                   @keydown.tab.prevent="addTag()"
+                                   @keydown.escape="showSuggestions = false"
+                                   @input="filterSuggestions()"
+                                   @focus="showSuggestions = true"
+                                   @click.away="showSuggestions = false"
+                                   placeholder="Digite e pressione Enter ou vírgula"
+                                   class="flex-1 min-w-[120px] bg-transparent border-none p-0 text-sm focus:ring-0 focus:outline-none text-slate-700 placeholder-slate-400">
+                        </div>
+
+                        <!-- Dropdown de Sugestões / Autocomplete -->
+                        <div x-show="showSuggestions && filteredSuggestions.length > 0"
+                             class="absolute left-0 right-0 mt-1 max-h-40 overflow-y-auto bg-white border border-slate-200 rounded-[5px] shadow-lg z-50 divide-y divide-slate-100"
+                             x-cloak>
+                            <template x-for="suggestion in filteredSuggestions" :key="suggestion">
+                                <button type="button"
+                                        @click="selectSuggestion(suggestion)"
+                                        class="w-full text-left px-3.5 py-2 text-xs font-bold text-slate-700 hover:bg-primary-50 hover:text-primary-750 transition-colors border-0">
+                                    <span x-text="suggestion"></span>
+                                </button>
+                            </template>
+                        </div>
+                    </div>
                 </div>
 
                 <!-- URL de direcionamento -->
@@ -572,12 +666,12 @@
     function portfolioForm() {
         return {
             activeTab: 'geral',
-            title: '{{ addslashes($portfolio->title) }}',
+            title: {!! json_encode($portfolio->title) !!},
             categoryId: '{{ $portfolio->portfolio_category_id }}',
             clientId: '{{ $portfolio->client_id ?? "" }}',
-            description: `{!! addslashes($portfolio->description) !!}`,
-            technologies: '{{ addslashes($portfolio->technologies) }}',
-            redirectUrl: '{{ addslashes($portfolio->redirect_url) }}',
+            description: {!! json_encode($portfolio->description) !!},
+            technologies: {!! json_encode($portfolio->technologies ?? "") !!},
+            redirectUrl: {!! json_encode($portfolio->redirect_url ?? "") !!},
             status: '{{ $portfolio->status }}',
             isFeatured: {{ $portfolio->is_featured ? 'true' : 'false' }},
             selectedAuthors: {!! json_encode($portfolio->authors->pluck('id')->toArray()) !!},
@@ -587,12 +681,32 @@
             galleryFiles: [],
             
             // SEO
-            metaTitle: '{{ addslashes($portfolio->meta_title) }}',
-            metaDescription: '{{ addslashes($portfolio->meta_description) }}',
-            metaKeywords: '{{ addslashes($portfolio->meta_keywords) }}',
+            metaTitle: {!! json_encode($portfolio->meta_title ?? "") !!},
+            metaDescription: {!! json_encode($portfolio->meta_description ?? "") !!},
+            metaKeywords: {!! json_encode($portfolio->meta_keywords ?? "") !!},
             
             // AI simulated loading
             aiLoading: false,
+
+            // Formatador do Editor WYSIWYG
+            format(command, value = null) {
+                if (command === 'insertLineBreak') {
+                    document.execCommand('insertHTML', false, '<br>');
+                } else {
+                    document.execCommand(command, false, value);
+                }
+                this.description = this.$refs.editor.innerHTML;
+            },
+
+            insertLink() {
+                let url = prompt('Digite a URL do link:');
+                if (url) {
+                    if (!/^https?:\/\//i.test(url)) {
+                        url = 'http://' + url;
+                    }
+                    this.format('createLink', url);
+                }
+            },
 
             handleThumbUpload(event) {
                 const file = event.target.files[0];
@@ -720,6 +834,61 @@
                     return select.options[select.selectedIndex].text;
                 }
                 return 'Nenhum';
+            }
+        }
+    }
+
+    // Componente Alpine.js para o campo de Tags (Tecnologias) com Autocomplete
+    function tagsInput(config) {
+        return {
+            tags: [],
+            inputValue: '',
+            allSuggestions: config.suggestions || [],
+            filteredSuggestions: [],
+            showSuggestions: false,
+            
+            init() {
+                if (config.initialTags) {
+                    this.tags = config.initialTags.split(',')
+                        .map(t => t.trim())
+                        .filter(t => t.length > 0);
+                }
+                this.filteredSuggestions = this.allSuggestions.filter(s => !this.tags.includes(s));
+            },
+
+            addTag() {
+                const clean = this.inputValue.trim().replace(/,/g, '');
+                if (clean && !this.tags.includes(clean)) {
+                    this.tags.push(clean);
+                    // Atualiza a propriedade technologies no escopo pai (portfolioForm)
+                    this.$parent.technologies = this.tags.join(', ');
+                }
+                this.inputValue = '';
+                this.showSuggestions = false;
+                this.filterSuggestions();
+            },
+
+            removeTag(index) {
+                this.tags.splice(index, 1);
+                this.$parent.technologies = this.tags.join(', ');
+                this.filterSuggestions();
+            },
+
+            filterSuggestions() {
+                const search = this.inputValue.toLowerCase().trim();
+                this.filteredSuggestions = this.allSuggestions.filter(s => {
+                    return s.toLowerCase().includes(search) && !this.tags.includes(s);
+                });
+            },
+
+            selectSuggestion(val) {
+                if (!this.tags.includes(val)) {
+                    this.tags.push(val);
+                    this.$parent.technologies = this.tags.join(', ');
+                }
+                this.inputValue = '';
+                this.showSuggestions = false;
+                this.filterSuggestions();
             }
         }
     }

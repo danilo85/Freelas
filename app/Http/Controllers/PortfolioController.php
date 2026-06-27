@@ -90,6 +90,18 @@ class PortfolioController extends Controller
         $clients = auth()->user()->clients()->orderBy('name')->get();
         $authors = auth()->user()->authors()->orderBy('name')->get();
 
+        // Tecnologias já utilizadas em outros trabalhos para sugestão/autocomplete
+        $existingTechnologies = auth()->user()->portfolioItems()
+            ->whereNotNull('technologies')
+            ->pluck('technologies')
+            ->flatMap(function ($techs) {
+                return array_map('trim', explode(',', $techs));
+            })
+            ->filter()
+            ->unique()
+            ->values()
+            ->toArray();
+
         // Dados padrão para preenchimento se originado do pipeline
         $projectData = null;
         if ($request->filled('project_id')) {
@@ -105,7 +117,7 @@ class PortfolioController extends Controller
             ];
         }
 
-        return view('portfolio.create', compact('categories', 'clients', 'authors', 'projectData'));
+        return view('portfolio.create', compact('categories', 'clients', 'authors', 'projectData', 'existingTechnologies'));
     }
 
     /**
@@ -206,7 +218,19 @@ class PortfolioController extends Controller
         $clients = auth()->user()->clients()->orderBy('name')->get();
         $authors = auth()->user()->authors()->orderBy('name')->get();
 
-        return view('portfolio.edit', compact('portfolio', 'categories', 'clients', 'authors'));
+        // Tecnologias já utilizadas em outros trabalhos para sugestão/autocomplete
+        $existingTechnologies = auth()->user()->portfolioItems()
+            ->whereNotNull('technologies')
+            ->pluck('technologies')
+            ->flatMap(function ($techs) {
+                return array_map('trim', explode(',', $techs));
+            })
+            ->filter()
+            ->unique()
+            ->values()
+            ->toArray();
+
+        return view('portfolio.edit', compact('portfolio', 'categories', 'clients', 'authors', 'existingTechnologies'));
     }
 
     /**
