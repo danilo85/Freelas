@@ -85,6 +85,22 @@
         <!-- Conteúdo Detalhado (Direita - 2 Colunas) -->
         <div class="lg:col-span-2 space-y-6">
             
+            <!-- Grid de Métricas de Desempenho -->
+            <div class="grid grid-cols-3 gap-4">
+                <div class="bg-white border border-slate-200 rounded-[5px] p-4 shadow-sm">
+                    <span class="text-[10px] text-slate-400 font-bold uppercase block tracking-wider">Valor Gerado</span>
+                    <h5 class="text-base sm:text-lg font-black text-slate-800 mt-1">R$ {{ number_format($totalValue, 2, ',', '.') }}</h5>
+                </div>
+                <div class="bg-white border border-slate-200 rounded-[5px] p-4 shadow-sm">
+                    <span class="text-[10px] text-slate-400 font-bold uppercase block tracking-wider">Aceitos</span>
+                    <h5 class="text-base sm:text-lg font-black text-emerald-600 mt-1">{{ $approvedCount }}</h5>
+                </div>
+                <div class="bg-white border border-slate-200 rounded-[5px] p-4 shadow-sm">
+                    <span class="text-[10px] text-slate-400 font-bold uppercase block tracking-wider">Rejeitados</span>
+                    <h5 class="text-base sm:text-lg font-black text-red-600 mt-1">{{ $rejectedCount }}</h5>
+                </div>
+            </div>
+
             <!-- Cartão 1: Informações Cadastrais -->
             <div class="bg-white border border-slate-200 rounded-[5px] p-6 shadow-sm space-y-4">
                 <h4 class="text-sm font-bold text-slate-800 border-b border-slate-100 pb-3 uppercase tracking-wider">Informações Cadastrais</h4>
@@ -127,6 +143,78 @@
                         <span class="text-slate-400 italic">Nenhuma biografia registrada para este autor.</span>
                     @endif
                 </div>
+            </div>
+
+            <!-- Cartão 3: Principais Parcerias (Outros autores com quem colaborou) -->
+            <div class="bg-white border border-slate-200 rounded-[5px] p-6 shadow-sm space-y-4">
+                <h4 class="text-sm font-bold text-slate-800 border-b border-slate-100 pb-3 uppercase tracking-wider">Principais Parcerias</h4>
+                @if(count($partners) > 0)
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        @foreach($partners as $partnerId => $p)
+                            <div class="flex items-center gap-3 p-3 bg-slate-50 border border-slate-100 rounded-[5px]">
+                                <div class="w-10 h-10 rounded-full bg-slate-100 border border-slate-200 overflow-hidden flex items-center justify-center shrink-0 shadow-inner">
+                                    @if($p['avatar'])
+                                        <img src="{{ asset('storage/' . $p['avatar']) }}" class="w-full h-full object-cover">
+                                    @else
+                                        <svg class="w-full h-full text-slate-350 bg-slate-100" fill="currentColor" viewBox="0 0 24 24">
+                                            <path d="M24 20.993V24H0v-2.996A14.977 14.977 0 0112.004 15c4.904 0 9.26 2.354 11.996 5.993zM16.002 8.999a4 4 0 11-8 0 4 4 0 018 0z" />
+                                        </svg>
+                                    @endif
+                                </div>
+                                <div class="min-w-0 flex-1">
+                                    <h5 class="font-bold text-slate-800 text-sm truncate">{{ $p['name'] }}</h5>
+                                    <p class="text-xs text-slate-400 mt-0.5">Colaborou em <strong class="text-slate-700 font-semibold">{{ $p['count'] }}</strong> {{ $p['count'] == 1 ? 'projeto' : 'projetos' }}</p>
+                                </div>
+                            </div>
+                        @endforeach
+                    </div>
+                @else
+                    <span class="text-slate-400 text-sm italic">Este autor ainda não colaborou com outros membros em projetos.</span>
+                @endif
+            </div>
+
+            <!-- Cartão 4: Projetos / Orçamentos Vinculados -->
+            <div class="bg-white border border-slate-200 rounded-[5px] p-6 shadow-sm space-y-4">
+                <h4 class="text-sm font-bold text-slate-800 border-b border-slate-100 pb-3 uppercase tracking-wider">Projetos / Orçamentos Vinculados</h4>
+                @if($projects->count() > 0)
+                    <div class="space-y-3">
+                        @foreach($projects as $proj)
+                            <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-4 border border-slate-150 rounded-[5px] hover:border-slate-300 transition-colors">
+                                <div class="min-w-0">
+                                    <h5 class="font-extrabold text-slate-800 text-sm truncate">{{ $proj->title }}</h5>
+                                    <p class="text-xs text-slate-400 mt-1 flex flex-wrap items-center gap-1.5">
+                                        <span>Cliente: <strong>{{ $proj->client->name }}</strong></span>
+                                        <span>•</span>
+                                        <span>Valor: <strong class="text-slate-650">R$ {{ number_format($proj->total_value, 2, ',', '.') }}</strong></span>
+                                    </p>
+                                </div>
+                                <div class="flex items-center gap-2 shrink-0">
+                                    @php
+                                        $statusStyles = [
+                                            'rascunho' => 'bg-slate-100 text-slate-700 border-slate-200',
+                                            'analisando' => 'bg-amber-100 text-amber-800 border-amber-200',
+                                            'aprovado' => 'bg-emerald-100 text-emerald-850 border-emerald-200',
+                                            'rejeitado' => 'bg-red-100 text-red-800 border-red-200',
+                                            'quitado' => 'bg-purple-100 text-purple-800 border-purple-200',
+                                            'finalizado' => 'bg-blue-100 text-blue-800 border-blue-200',
+                                        ];
+                                        $badgeStyle = $statusStyles[$proj->status] ?? 'bg-slate-100 text-slate-700 border-slate-200';
+                                    @endphp
+                                    <span class="text-[9px] font-black uppercase tracking-wider px-2 py-0.5 rounded-[4px] border {{ $badgeStyle }}">
+                                        {{ $proj->status }}
+                                    </span>
+                                    <a href="{{ route('projects.show', $proj->id) }}" class="p-1 text-slate-450 hover:text-slate-600 transition-colors" title="Ver Detalhes do Projeto">
+                                        <svg class="w-4.5 h-4.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>
+                                        </svg>
+                                    </a>
+                                </div>
+                            </div>
+                        @endforeach
+                    </div>
+                @else
+                    <span class="text-slate-400 text-sm italic">Nenhum projeto ou orçamento vinculado a este autor.</span>
+                @endif
             </div>
 
         </div>

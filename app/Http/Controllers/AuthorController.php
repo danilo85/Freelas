@@ -15,8 +15,29 @@ class AuthorController extends Controller
     {
         $userId = auth()->id();
         
-        // Carrega os autores do usuário logado
-        $authors = auth()->user()->authors()->orderBy('name')->get();
+        // Carrega os autores do usuário logado com seus projetos para calcular estatísticas
+        $authors = auth()->user()->authors()->with('projects.authors')->orderBy('name')->get()->map(function ($author) {
+            $projects = $author->projects;
+            $author->projects_count = $projects->count();
+            $author->total_value = $projects->sum('total_value');
+            $author->approved_count = $projects->where('status', 'aprovado')->count();
+            $author->rejected_count = $projects->where('status', 'rejeitado')->count();
+
+            // Encontra principais parceiros (outros autores nos mesmos projetos)
+            $partnerNames = [];
+            foreach ($projects as $project) {
+                foreach ($project->authors as $other) {
+                    if ($other->id !== $author->id) {
+                        $partnerNames[] = $other->name;
+                    }
+                }
+            }
+            $partnerCounts = array_count_values($partnerNames);
+            arsort($partnerCounts);
+            $author->top_partners = array_slice(array_keys($partnerCounts), 0, 2); // Principais 2 parceiros
+
+            return $author;
+        });
 
         // 1. Total de Autores
         $totalAuthorsCount = $authors->count();
@@ -31,12 +52,26 @@ class AuthorController extends Controller
         $newAuthorsCount = auth()->user()->authors()
             ->where('created_at', '>=', now()->subDays(30))
             ->count();
+
+        // Eleger principais autores (os 3 que mais têm projetos aprovados ou projetos totais)
+        $sortedAuthors = $authors->sortByDesc('projects_count');
+        $topAuthorIds = $sortedAuthors->where('projects_count', '>', 0)->take(3)->pluck('id')->toArray();
+
+        // Ordenar colocando os principais autores no topo do grid
+        $authors = $authors->sort(function ($a, $b) use ($topAuthorIds) {
+            $aTop = in_array($a->id, $topAuthorIds);
+            $bTop = in_array($b->id, $topAuthorIds);
+            if ($aTop && !$bTop) return -1;
+            if (!$aTop && $bTop) return 1;
+            return strcmp($a->name, $b->name);
+        })->values();
         
         return view('authors.index', compact(
             'authors',
             'totalAuthorsCount',
             'authorsWithBioCount',
-            'newAuthorsCount'
+            'newAuthorsCount',
+            'topAuthorIds'
         ));
     }
 
@@ -89,7 +124,44 @@ class AuthorController extends Controller
         // Verificação de Segurança (tenancy check)
         abort_if($author->user_id !== auth()->id(), 403, 'Ação não autorizada.');
 
-        return view('authors.show', compact('author'));
+        // Carrega projetos do autor com clientes e coautores
+        $projects = $author->projects()->with(['client', 'authors'])->orderBy('created_at', 'desc')->get();
+
+        // Estatísticas
+        $projectsCount = $projects->count();
+        $totalValue = $projects->sum('total_value');
+        $approvedCount = $projects->where('status', 'aprovado')->count();
+        $rejectedCount = $projects->where('status', 'rejeitado')->count();
+
+        // Calcular parceiros recorrentes
+        $partnerMap = [];
+        foreach ($projects as $project) {
+            foreach ($project->authors as $other) {
+                if ($other->id !== $author->id) {
+                    if (!isset($partnerMap[$other->id])) {
+                        $partnerMap[$other->id] = [
+                            'name' => $other->name,
+                            'avatar' => $other->avatar,
+                            'count' => 0
+                        ];
+                    }
+                    $partnerMap[$other->id]['count']++;
+                }
+            }
+        }
+        // Ordena por quantidade de parcerias
+        uasort($partnerMap, fn($a, $b) => $b['count'] <=> $a['count']);
+        $partners = array_slice($partnerMap, 0, 5); // top 5 parceiros
+
+        return view('authors.show', compact(
+            'author',
+            'projects',
+            'projectsCount',
+            'totalValue',
+            'approvedCount',
+            'rejectedCount',
+            'partners'
+        ));
     }
 
     /**

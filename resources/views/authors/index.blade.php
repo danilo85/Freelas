@@ -96,16 +96,22 @@
 
     <!-- Grid de Autores -->
     <div class="space-y-4">
-        
-        <!-- Grid de Cards -->
+           <!-- Grid de Cards -->
         <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 w-full">
             @forelse($authors as $author)
                 <div x-show="matchesSearch('{{ addslashes($author->name) }} {{ addslashes($author->email) }} {{ addslashes($author->phone) }} {{ addslashes($author->document) }} {{ addslashes($author->bio) }}')" 
                      x-transition
                      class="w-full flex"
                 >
-                    <div class="{{ !$author->registration_completed ? 'bg-amber-50/25 border-amber-200' : 'bg-white border-slate-200' }} border p-5 rounded-[5px] shadow-sm flex flex-col justify-between space-y-4 hover:shadow-md transition-shadow w-full">
+                    <div class="{{ in_array($author->id, $topAuthorIds) ? 'bg-gradient-to-br from-amber-50/40 to-yellow-50/10 border-amber-350 ring-1 ring-amber-300/30 shadow-md' : (!$author->registration_completed ? 'bg-amber-50/25 border-amber-200' : 'bg-white border-slate-200') }} border p-5 rounded-[5px] shadow-sm flex flex-col justify-between space-y-4 hover:shadow-md transition-all duration-200 w-full relative overflow-hidden">
                     
+                    @if(in_array($author->id, $topAuthorIds))
+                        <!-- Destaque Ouro -->
+                        <div class="absolute top-0 right-0 bg-amber-500 text-amber-950 text-[9px] font-black uppercase tracking-wider px-2.5 py-0.5 rounded-bl-[5px] flex items-center gap-1 shadow-sm">
+                            <span>★</span> <span>Principal</span>
+                        </div>
+                    @endif
+
                     <!-- Topo do Card (Foto + Identificação) -->
                     <div class="flex items-start gap-3">
                         <!-- Fallback com silhueta de perfil se estiver vazio -->
@@ -139,11 +145,38 @@
                             <span class="text-slate-400 font-medium">CPF / CNPJ:</span>
                             <span class="text-slate-850 font-mono font-semibold truncate max-w-[150px]">{{ $author->document ?? 'Não informado' }}</span>
                         </div>
+
+                        <!-- Bloco de Estatísticas de Orçamentos -->
+                        <div class="grid grid-cols-2 gap-2 bg-slate-50 border border-slate-100 p-2.5 rounded-[5px] text-xs my-2">
+                            <div>
+                                <span class="text-[9px] text-slate-400 font-bold uppercase tracking-wider block">Valor Gerado</span>
+                                <span class="text-slate-800 font-extrabold text-xs block mt-0.5">R$ {{ number_format($author->total_value, 2, ',', '.') }}</span>
+                            </div>
+                            <div>
+                                <span class="text-[9px] text-slate-400 font-bold uppercase tracking-wider block">Orçamentos</span>
+                                <span class="text-slate-800 font-bold block mt-0.5">
+                                    {{ $author->projects_count }} total
+                                    <span class="text-[10px] text-slate-400 block font-normal mt-0.5">
+                                        Aceitos: <strong class="text-emerald-600">{{ $author->approved_count }}</strong> | Rej: <strong class="text-red-500">{{ $author->rejected_count }}</strong>
+                                    </span>
+                                </span>
+                            </div>
+                        </div>
+
+                        <!-- Principais Parcerias -->
+                        @if(!empty($author->top_partners))
+                            <div class="pt-1 flex flex-wrap gap-1 items-center">
+                                <span class="text-[10px] text-slate-400 font-semibold mr-1">Parcerias:</span>
+                                @foreach($author->top_partners as $partner)
+                                    <span class="bg-slate-100 text-slate-650 text-[9px] font-bold px-1.5 py-0.5 rounded-[4px] border border-slate-150">{{ $partner }}</span>
+                                @endforeach
+                            </div>
+                        @endif
                         
                         <!-- Biografia -->
                         <div class="pt-2">
                             <span class="text-slate-400 font-medium block mb-1">Biografia:</span>
-                            <p class="text-slate-700 bg-slate-50 p-2.5 rounded-[5px] border border-slate-100 font-normal leading-relaxed line-clamp-3 text-justify min-h-[64px]" title="{{ $author->bio }}">
+                            <p class="text-slate-700 bg-slate-50/50 p-2 rounded-[5px] border border-slate-100 font-normal leading-relaxed line-clamp-2 text-justify min-h-[48px]" title="{{ $author->bio }}">
                                 {{ $author->bio ?? 'Nenhuma biografia informada.' }}
                             </p>
                         </div>

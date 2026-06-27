@@ -104,8 +104,15 @@
                      x-transition
                      class="w-full flex"
                 >
-                    <div class="{{ !$client->registration_completed ? 'bg-amber-50/25 border-amber-200' : 'bg-white border-slate-200' }} border p-5 rounded-[5px] shadow-sm flex flex-col justify-between space-y-4 hover:shadow-md transition-shadow w-full">
+                    <div class="{{ in_array($client->id, $topClientIds) ? 'bg-gradient-to-br from-amber-50/40 to-yellow-50/10 border-amber-350 ring-1 ring-amber-300/30 shadow-md' : (!$client->registration_completed ? 'bg-amber-50/25 border-amber-200' : 'bg-white border-slate-200') }} border p-5 rounded-[5px] shadow-sm flex flex-col justify-between space-y-4 hover:shadow-md transition-all duration-200 w-full relative overflow-hidden">
                     
+                    @if(in_array($client->id, $topClientIds))
+                        <!-- Destaque Ouro -->
+                        <div class="absolute top-0 right-0 bg-amber-500 text-amber-950 text-[9px] font-black uppercase tracking-wider px-2.5 py-0.5 rounded-bl-[5px] flex items-center gap-1 shadow-sm">
+                            <span>★</span> <span>Principal</span>
+                        </div>
+                    @endif
+
                     <!-- Topo do Card (Foto + Identificação) -->
                     <div class="flex items-center gap-3">
                         <div class="w-12 h-12 rounded-full bg-slate-50 border border-slate-200 overflow-hidden flex items-center justify-center shrink-0 shadow-inner">
@@ -137,6 +144,23 @@
                         <div class="flex justify-between">
                             <span class="text-slate-400 font-medium">CPF / CNPJ:</span>
                             <span class="text-slate-850 font-mono font-semibold truncate max-w-[150px]">{{ $client->document ?? 'Não informado' }}</span>
+                        </div>
+
+                        <!-- Bloco de Estatísticas de Projetos -->
+                        <div class="grid grid-cols-2 gap-2 bg-slate-50 border border-slate-100 p-2.5 rounded-[5px] text-xs my-2">
+                            <div>
+                                <span class="text-[9px] text-slate-400 font-bold uppercase tracking-wider block">Total Orçamentos</span>
+                                <span class="text-slate-800 font-extrabold text-xs block mt-0.5">R$ {{ number_format($client->total_value, 2, ',', '.') }}</span>
+                            </div>
+                            <div>
+                                <span class="text-[9px] text-slate-400 font-bold uppercase tracking-wider block">Status Trabalhos</span>
+                                <span class="text-slate-800 font-bold block mt-0.5">
+                                    {{ $client->projects_count }} projetos
+                                    <span class="text-[10px] text-slate-400 block font-normal mt-0.5">
+                                        Aceitos: <strong class="text-emerald-600">{{ $client->approved_count }}</strong> | Rej: <strong class="text-red-500">{{ $client->rejected_count }}</strong>
+                                    </span>
+                                </span>
+                            </div>
                         </div>
                     </div>
 

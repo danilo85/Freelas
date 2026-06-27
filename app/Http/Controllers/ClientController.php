@@ -15,8 +15,15 @@ class ClientController extends Controller
     {
         $userId = auth()->id();
         
-        // Carrega os clientes do usuário logado
-        $clients = auth()->user()->clients()->orderBy('name')->get();
+        // Carrega os clientes do usuário logado com seus projetos para calcular estatísticas
+        $clients = auth()->user()->clients()->with('projects')->orderBy('name')->get()->map(function ($client) {
+            $projects = $client->projects;
+            $client->projects_count = $projects->count();
+            $client->total_value = $projects->sum('total_value');
+            $client->approved_count = $projects->where('status', 'aprovado')->count();
+            $client->rejected_count = $projects->where('status', 'rejeitado')->count();
+            return $client;
+        });
 
         // 1. Total de Clientes
         $totalClientsCount = $clients->count();
@@ -31,12 +38,26 @@ class ClientController extends Controller
         $newClientsCount = auth()->user()->clients()
             ->where('created_at', '>=', now()->subDays(30))
             ->count();
+
+        // Eleger principais clientes (os 3 que mais têm projetos aprovados ou projetos totais)
+        $sortedClients = $clients->sortByDesc('projects_count');
+        $topClientIds = $sortedClients->where('projects_count', '>', 0)->take(3)->pluck('id')->toArray();
+
+        // Ordenar colocando os principais clientes no topo do grid
+        $clients = $clients->sort(function ($a, $b) use ($topClientIds) {
+            $aTop = in_array($a->id, $topClientIds);
+            $bTop = in_array($b->id, $topClientIds);
+            if ($aTop && !$bTop) return -1;
+            if (!$aTop && $bTop) return 1;
+            return strcmp($a->name, $b->name);
+        })->values();
         
         return view('clients.index', compact(
             'clients',
             'totalClientsCount',
             'clientsWithActiveProjectsCount',
-            'newClientsCount'
+            'newClientsCount',
+            'topClientIds'
         ));
     }
 
