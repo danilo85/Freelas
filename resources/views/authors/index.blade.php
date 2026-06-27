@@ -149,15 +149,15 @@
                         <!-- Bloco de Estatísticas de Orçamentos -->
                         <div class="grid grid-cols-2 gap-2 bg-slate-50 border border-slate-100 p-2.5 rounded-[5px] text-xs my-2">
                             <div>
-                                <span class="text-[9px] text-slate-400 font-bold uppercase tracking-wider block">Valor Gerado</span>
-                                <span class="text-slate-800 font-extrabold text-xs block mt-0.5">R$ {{ number_format($author->total_value, 2, ',', '.') }}</span>
+                                <span class="text-[10px] text-slate-400 font-bold uppercase tracking-wider block">Valor Gerado</span>
+                                <span class="text-slate-800 font-black text-sm block mt-0.5">R$ {{ number_format($author->total_value, 2, ',', '.') }}</span>
                             </div>
                             <div>
-                                <span class="text-[9px] text-slate-400 font-bold uppercase tracking-wider block">Orçamentos</span>
-                                <span class="text-slate-800 font-bold block mt-0.5">
-                                    {{ $author->projects_count }} total
-                                    <span class="text-[10px] text-slate-400 block font-normal mt-0.5">
-                                        Aceitos: <strong class="text-emerald-600">{{ $author->approved_count }}</strong> | Rej: <strong class="text-red-500">{{ $author->rejected_count }}</strong>
+                                <span class="text-[10px] text-slate-400 font-bold uppercase tracking-wider block">Orçamentos</span>
+                                <span class="text-slate-700 font-medium block mt-0.5">
+                                    <strong class="text-slate-850 font-black text-sm">{{ $author->projects_count }}</strong> total
+                                    <span class="text-[11px] text-slate-400 block font-normal mt-0.5">
+                                        Aceitos: <strong class="text-emerald-600 font-bold">{{ $author->approved_count }}</strong> | Rej: <strong class="text-red-500 font-bold">{{ $author->rejected_count }}</strong>
                                     </span>
                                 </span>
                             </div>
@@ -166,9 +166,9 @@
                         <!-- Principais Parcerias -->
                         @if(!empty($author->top_partners))
                             <div class="pt-1 flex flex-wrap gap-1 items-center">
-                                <span class="text-[10px] text-slate-400 font-semibold mr-1">Parcerias:</span>
+                                <span class="text-[11px] text-slate-400 font-semibold mr-1">Parcerias:</span>
                                 @foreach($author->top_partners as $partner)
-                                    <span class="bg-slate-100 text-slate-650 text-[9px] font-bold px-1.5 py-0.5 rounded-[4px] border border-slate-150">{{ $partner }}</span>
+                                    <span class="bg-slate-100 text-slate-650 text-[10px] font-bold px-1.5 py-0.5 rounded-[4px] border border-slate-150">{{ $partner }}</span>
                                 @endforeach
                             </div>
                         @endif

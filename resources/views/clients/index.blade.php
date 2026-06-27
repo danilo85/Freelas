@@ -149,15 +149,15 @@
                         <!-- Bloco de Estatísticas de Projetos -->
                         <div class="grid grid-cols-2 gap-2 bg-slate-50 border border-slate-100 p-2.5 rounded-[5px] text-xs my-2">
                             <div>
-                                <span class="text-[9px] text-slate-400 font-bold uppercase tracking-wider block">Total Orçamentos</span>
-                                <span class="text-slate-800 font-extrabold text-xs block mt-0.5">R$ {{ number_format($client->total_value, 2, ',', '.') }}</span>
+                                <span class="text-[10px] text-slate-400 font-bold uppercase tracking-wider block">Total Orçamentos</span>
+                                <span class="text-slate-800 font-black text-sm block mt-0.5">R$ {{ number_format($client->total_value, 2, ',', '.') }}</span>
                             </div>
                             <div>
-                                <span class="text-[9px] text-slate-400 font-bold uppercase tracking-wider block">Status Trabalhos</span>
-                                <span class="text-slate-800 font-bold block mt-0.5">
-                                    {{ $client->projects_count }} projetos
-                                    <span class="text-[10px] text-slate-400 block font-normal mt-0.5">
-                                        Aceitos: <strong class="text-emerald-600">{{ $client->approved_count }}</strong> | Rej: <strong class="text-red-500">{{ $client->rejected_count }}</strong>
+                                <span class="text-[10px] text-slate-400 font-bold uppercase tracking-wider block">Status Trabalhos</span>
+                                <span class="text-slate-700 font-medium block mt-0.5">
+                                    <strong class="text-slate-850 font-black text-sm">{{ $client->projects_count }}</strong> projetos
+                                    <span class="text-[11px] text-slate-400 block font-normal mt-0.5">
+                                        Aceitos: <strong class="text-emerald-600 font-bold">{{ $client->approved_count }}</strong> | Rej: <strong class="text-red-500 font-bold">{{ $client->rejected_count }}</strong>
                                     </span>
                                 </span>
                             </div>
