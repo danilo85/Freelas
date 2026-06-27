@@ -78,13 +78,33 @@
             <input type="hidden" name="status" value="{{ $status }}" />
             <input type="hidden" name="category_id" value="{{ $categoryId }}" />
             
-            <input 
-                type="text" 
-                name="search" 
-                value="{{ $search }}"
-                placeholder="Buscar descrição..." 
-                class="bg-white border border-slate-200 text-slate-700 text-xs font-semibold rounded-[5px] px-3 py-2 focus:outline-none focus:border-slate-350 w-full sm:max-w-[150px] col-span-2 sm:col-span-1"
-            />
+            <!-- Busca + Privacidade -->
+            <div class="flex items-center gap-2 col-span-2 sm:col-span-1 w-full sm:w-auto">
+                <input 
+                    type="text" 
+                    name="search" 
+                    value="{{ $search }}"
+                    placeholder="Buscar descrição..." 
+                    class="bg-white border border-slate-200 text-slate-700 text-xs font-semibold rounded-[5px] px-3 py-2 focus:outline-none focus:border-slate-350 w-full sm:max-w-[150px] flex-1 sm:flex-initial"
+                />
+                
+                <!-- Botão Modo Privacidade -->
+                <button 
+                    type="button"
+                    @click="togglePrivacyMode()"
+                    class="flex items-center justify-center p-2.5 rounded-[5px] border transition-all duration-200 focus:outline-none shrink-0"
+                    :class="privacyMode ? 'bg-violet-50 border-violet-200 text-violet-750 shadow-sm' : 'bg-white border-slate-200 text-slate-500 hover:text-slate-700 hover:bg-slate-50'"
+                    :title="privacyMode ? 'Desativar Modo Privacidade' : 'Ativar Modo Privacidade'"
+                >
+                    <svg x-show="privacyMode" class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 01-1.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l3.59 3.59m0 0A9.953 9.953 0 0112 5c4.478 0 8.268 2.943 9.543 7a10.025 10.025 0 01-4.132 5.411m0 0L21 21"></path>
+                    </svg>
+                    <svg x-show="!privacyMode" class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" x-cloak>
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path>
+                    </svg>
+                </button>
+            </div>
 
             <!-- Filtro Customizado: Classificação -->
             <div x-data="{ open: false }" class="relative w-full sm:w-auto sm:inline-block text-left col-span-1">
@@ -149,10 +169,10 @@
             <div>
                 <p class="text-[10px] font-semibold text-emerald-100 uppercase tracking-wider">Receitas do Mês</p>
                 <h3 class="text-xl font-extrabold text-white mt-2">
-                    R$ {{ number_format($previstoIncomes, 2, ',', '.') }}
+                    <span x-text="privacyMode ? 'R$ ••••' : 'R$ ' + formatMoney({{ (float) $previstoIncomes }})">R$ {{ number_format($previstoIncomes, 2, ',', '.') }}</span>
                 </h3>
                 <span class="text-[10px] text-emerald-100 font-medium block mt-1">
-                    Pago: R$ {{ number_format($realizadoIncomes, 2, ',', '.') }}
+                    Pago: <span x-text="privacyMode ? 'R$ ••••' : 'R$ ' + formatMoney({{ (float) $realizadoIncomes }})">R$ {{ number_format($realizadoIncomes, 2, ',', '.') }}</span>
                 </span>
             </div>
             <div class="w-10 h-10 rounded-[5px] bg-white/20 text-white flex items-center justify-center font-bold text-lg shadow-sm">
@@ -165,10 +185,10 @@
             <div>
                 <p class="text-[10px] font-semibold text-rose-100 uppercase tracking-wider">Despesas do Mês</p>
                 <h3 class="text-xl font-extrabold text-white mt-2">
-                    R$ {{ number_format($previstoExpenses, 2, ',', '.') }}
+                    <span x-text="privacyMode ? 'R$ ••••' : 'R$ ' + formatMoney({{ (float) $previstoExpenses }})">R$ {{ number_format($previstoExpenses, 2, ',', '.') }}</span>
                 </h3>
                 <span class="text-[10px] text-rose-100 font-medium block mt-1">
-                    Pago: R$ {{ number_format($realizadoExpenses, 2, ',', '.') }}
+                    Pago: <span x-text="privacyMode ? 'R$ ••••' : 'R$ ' + formatMoney({{ (float) $realizadoExpenses }})">R$ {{ number_format($realizadoExpenses, 2, ',', '.') }}</span>
                 </span>
             </div>
             <div class="w-10 h-10 rounded-[5px] bg-white/20 text-white flex items-center justify-center font-bold text-lg shadow-sm">
@@ -181,7 +201,7 @@
             <div>
                 <p class="text-[10px] font-semibold text-white/80 uppercase tracking-wider">Saldo Realizado (Caixa)</p>
                 <h3 class="text-xl font-extrabold text-white mt-2">
-                    R$ {{ number_format($realizadoBalance, 2, ',', '.') }}
+                    <span x-text="privacyMode ? 'R$ ••••' : 'R$ ' + formatMoney({{ (float) $realizadoBalance }})">R$ {{ number_format($realizadoBalance, 2, ',', '.') }}</span>
                 </h3>
                 <span class="text-[10px] text-white/80 font-medium block mt-1">
                     Apenas lançamentos pagos
@@ -197,7 +217,7 @@
             <div>
                 <p class="text-[10px] font-semibold text-white/80 uppercase tracking-wider">Saldo Projetado</p>
                 <h3 class="text-xl font-extrabold text-white mt-2">
-                    R$ {{ number_format($previstoBalance, 2, ',', '.') }}
+                    <span x-text="privacyMode ? 'R$ ••••' : 'R$ ' + formatMoney({{ (float) $previstoBalance }})">R$ {{ number_format($previstoBalance, 2, ',', '.') }}</span>
                 </h3>
                 <span class="text-[10px] text-white/80 font-medium block mt-1">
                     Considerando pendências
@@ -238,7 +258,7 @@
                                 <div>
                                     <p class="text-[8px] uppercase tracking-wider opacity-75 font-bold">Fatura Atual (Gasto)</p>
                                     <p class="text-lg font-black mt-0.5 tracking-tight text-white">
-                                        R$ {{ number_format($group['total_amount'], 2, ',', '.') }}
+                                        <span x-text="privacyMode ? 'R$ ••••' : 'R$ ' + formatMoney({{ (float) $group['total_amount'] }})">R$ {{ number_format($group['total_amount'], 2, ',', '.') }}</span>
                                     </p>
                                 </div>
                                 <span class="text-xs font-mono tracking-widest font-black opacity-80">•••• {{ $card->last_four_digits ?? '••••' }}</span>
@@ -334,7 +354,7 @@
                                                         <p class="text-[10px] text-slate-400 font-bold mt-0.5">Vencimento: {{ $t->due_date->format('d/m/Y') }}</p>
                                                     </div>
                                                     <div class="text-right shrink-0">
-                                                        <span class="font-black text-rose-600 block">R$ {{ number_format($t->amount, 2, ',', '.') }}</span>
+                                                        <span class="font-black text-rose-600 block" x-text="privacyMode ? 'R$ ••••' : 'R$ ' + formatMoney({{ (float) $t->amount }})">R$ {{ number_format($t->amount, 2, ',', '.') }}</span>
                                                     </div>
                                                 </div>
 
@@ -383,7 +403,7 @@
                                     <div class="border-t border-slate-100 pt-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 shrink-0">
                                         <div class="text-[11px] font-bold text-slate-500 uppercase tracking-wider flex items-center gap-1">
                                             <span>Valor Total:</span>
-                                            <span class="text-rose-600 font-black text-sm">R$ {{ number_format($group['total_amount'], 2, ',', '.') }}</span>
+                                            <span class="text-rose-600 font-black text-sm" x-text="privacyMode ? 'R$ ••••' : 'R$ ' + formatMoney({{ (float) $group['total_amount'] }})">R$ {{ number_format($group['total_amount'], 2, ',', '.') }}</span>
                                         </div>
                                         <div class="flex items-center gap-2">
                                             @if($hasUnpaid)
@@ -485,7 +505,7 @@
 
                             <!-- Valor -->
                             <div class="text-right shrink-0 flex flex-col items-end z-20">
-                                <span class="text-base font-black {{ $isIncome ? 'text-emerald-600' : 'text-rose-600' }}">
+                                <span class="text-base font-black {{ $isIncome ? 'text-emerald-600' : 'text-rose-600' }}" x-text="privacyMode ? '{{ $isIncome ? '＋' : '－' }} R$ ••••' : '{{ $isIncome ? '＋' : '－' }} R$ ' + formatMoney({{ (float) $t->amount }})">
                                     {{ $isIncome ? '＋' : '－' }} R$ {{ number_format($t->amount, 2, ',', '.') }}
                                 </span>
                             </div>
@@ -571,7 +591,7 @@
     >
         <div class="flex flex-col">
             <span class="text-[9px] uppercase tracking-wider text-slate-400 font-bold">Selecionados (<span x-text="selectedItems.length"></span>)</span>
-            <span class="text-base font-black text-emerald-400" x-text="'R$ ' + parseFloat(selectedSum).toFixed(2).replace('.', ',').replace(/\B(?=(\d{3})+(?!\d))/g, '.')"></span>
+            <span class="text-base font-black text-emerald-400" x-text="privacyMode ? 'R$ ••••' : 'R$ ' + formatMoney(selectedSum)"></span>
         </div>
         <button 
             type="button" 
@@ -629,6 +649,16 @@
         return {
             selectedItems: [],
             selectedSum: 0.00,
+            privacyMode: localStorage.getItem('privacyMode') === 'true',
+            
+            togglePrivacyMode() {
+                this.privacyMode = !this.privacyMode;
+                localStorage.setItem('privacyMode', this.privacyMode ? 'true' : 'false');
+            },
+            
+            formatMoney(value) {
+                return parseFloat(value).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+            },
             
             // Delete modal for linked items
             showDeleteModal: false,
