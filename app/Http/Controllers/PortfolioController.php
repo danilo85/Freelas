@@ -343,7 +343,8 @@ class PortfolioController extends Controller
         } elseif ($mime === 'image/png') {
             $image = imagecreatefrompng($file->getRealPath());
             imagepalettetotruecolor($image);
-            imagealphachannel($image, true);
+            imagealphablending($image, false);
+            imagesavealpha($image, true);
         } elseif ($mime === 'image/webp') {
             $image = imagecreatefromwebp($file->getRealPath());
         } else {
