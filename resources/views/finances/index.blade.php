@@ -12,11 +12,11 @@
             <h1 class="text-2xl font-black text-slate-800">Controle Financeiro</h1>
             <p class="text-sm text-slate-500 font-medium mt-1">Gerencie suas receitas e despesas pessoais e de sua empresa de forma unificada.</p>
         </div>
-        <div class="flex flex-wrap gap-2 no-print">
-            <a href="{{ route('finances.categories.index') }}" class="inline-flex items-center gap-1.5 px-3.5 py-2 border border-slate-200 text-slate-650 hover:bg-slate-50 text-sm font-semibold rounded-[5px] transition-colors shadow-sm bg-white">
+        <div class="grid grid-cols-2 sm:flex gap-2 w-full sm:w-auto no-print">
+            <a href="{{ route('finances.categories.index') }}" class="inline-flex items-center justify-center gap-1.5 px-3.5 py-2 border border-slate-200 text-slate-650 hover:bg-slate-50 text-sm font-semibold rounded-[5px] transition-colors shadow-sm bg-white w-full sm:w-auto">
                 📂 Categorias
             </a>
-            <a href="{{ route('finances.mei') }}" class="inline-flex items-center gap-1.5 px-3.5 py-2 bg-emerald-600 hover:bg-emerald-700 text-white text-sm font-semibold rounded-[5px] transition-colors shadow-sm">
+            <a href="{{ route('finances.mei') }}" class="inline-flex items-center justify-center gap-1.5 px-3.5 py-2 bg-emerald-600 hover:bg-emerald-700 text-white text-sm font-semibold rounded-[5px] transition-colors shadow-sm w-full sm:w-auto">
                 🏢 Painel MEI / Faturamento
             </a>
         </div>
@@ -52,18 +52,18 @@
     <div class="bg-white border border-slate-200 rounded-[5px] p-4 shadow-sm flex flex-col md:flex-row items-center justify-between gap-4">
         
         <!-- Botões de Navegação Rápida -->
-        <div class="flex items-center gap-2 w-full md:w-auto justify-between md:justify-start">
-            <a href="{{ route('finances.index', ['month' => $prevMonth->month, 'year' => $prevMonth->year, 'classification' => $classification, 'status' => $status, 'category_id' => $categoryId]) }}" class="inline-flex items-center gap-1.5 px-3.5 py-2 border border-slate-200 text-slate-650 hover:bg-slate-50 text-sm font-semibold rounded-[5px] transition-colors shadow-sm">
+        <div class="flex items-center justify-between md:justify-start gap-3 w-full md:w-auto">
+            <a href="{{ route('finances.index', ['month' => $prevMonth->month, 'year' => $prevMonth->year, 'classification' => $classification, 'status' => $status, 'category_id' => $categoryId]) }}" class="inline-flex items-center justify-center gap-1.5 px-2.5 py-2 sm:px-3.5 sm:py-2 border border-slate-200 text-slate-650 hover:bg-slate-50 text-xs sm:text-sm font-semibold rounded-[5px] transition-colors shadow-sm shrink-0">
                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M15 19l-7-7 7-7"></path>
                 </svg>
-                Anterior
+                <span class="hidden sm:inline">Anterior</span>
             </a>
-            <div class="text-lg font-black text-slate-800 tracking-tight">
+            <div class="text-base sm:text-lg font-black text-slate-800 tracking-tight text-center flex-1 md:flex-none">
                 {{ $months[$month] }} {{ $year }}
             </div>
-            <a href="{{ route('finances.index', ['month' => $nextMonth->month, 'year' => $nextMonth->year, 'classification' => $classification, 'status' => $status, 'category_id' => $categoryId]) }}" class="inline-flex items-center gap-1.5 px-3.5 py-2 border border-slate-200 text-slate-650 hover:bg-slate-50 text-sm font-semibold rounded-[5px] transition-colors shadow-sm">
-                Próximo
+            <a href="{{ route('finances.index', ['month' => $nextMonth->month, 'year' => $nextMonth->year, 'classification' => $classification, 'status' => $status, 'category_id' => $categoryId]) }}" class="inline-flex items-center justify-center gap-1.5 px-2.5 py-2 sm:px-3.5 sm:py-2 border border-slate-200 text-slate-650 hover:bg-slate-50 text-xs sm:text-sm font-semibold rounded-[5px] transition-colors shadow-sm shrink-0">
+                <span class="hidden sm:inline">Próximo</span>
                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M9 5l7 7-7 7"></path>
                 </svg>
@@ -71,7 +71,7 @@
         </div>
 
         <!-- Filtros e Busca Rápida -->
-        <form method="GET" action="{{ route('finances.index') }}" class="flex flex-wrap items-center gap-2 w-full md:w-auto justify-end">
+        <form method="GET" action="{{ route('finances.index') }}" class="grid grid-cols-2 sm:flex sm:flex-wrap items-center gap-2 w-full md:w-auto justify-end">
             <input type="hidden" name="month" value="{{ $month }}" />
             <input type="hidden" name="year" value="{{ $year }}" />
             <input type="hidden" name="classification" value="{{ $classification }}" />
@@ -83,12 +83,12 @@
                 name="search" 
                 value="{{ $search }}"
                 placeholder="Buscar descrição..." 
-                class="bg-white border border-slate-200 text-slate-700 text-xs font-semibold rounded-[5px] px-3 py-2 focus:outline-none focus:border-slate-350 max-w-[150px]"
+                class="bg-white border border-slate-200 text-slate-700 text-xs font-semibold rounded-[5px] px-3 py-2 focus:outline-none focus:border-slate-350 w-full sm:max-w-[150px] col-span-2 sm:col-span-1"
             />
 
             <!-- Filtro Customizado: Classificação -->
-            <div x-data="{ open: false }" class="relative inline-block text-left">
-                <button @click="open = !open" type="button" class="inline-flex items-center justify-between gap-1.5 bg-white border border-slate-200 text-slate-700 text-xs font-semibold rounded-[5px] px-3 py-2 hover:bg-slate-50 transition-colors min-w-[100px] text-left">
+            <div x-data="{ open: false }" class="relative w-full sm:w-auto sm:inline-block text-left col-span-1">
+                <button @click="open = !open" type="button" class="inline-flex items-center justify-between gap-1.5 bg-white border border-slate-200 text-slate-700 text-xs font-semibold rounded-[5px] px-3 py-2 hover:bg-slate-50 transition-colors w-full sm:min-w-[100px] text-left">
                     <span>{{ $selectedClassLabel }}</span>
                     <svg class="w-3.5 h-3.5 text-slate-400 transition-transform duration-200" :class="open ? 'rotate-180' : ''" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
@@ -102,8 +102,8 @@
             </div>
 
             <!-- Filtro Customizado: Status -->
-            <div x-data="{ open: false }" class="relative inline-block text-left">
-                <button @click="open = !open" type="button" class="inline-flex items-center justify-between gap-1.5 bg-white border border-slate-200 text-slate-700 text-xs font-semibold rounded-[5px] px-3 py-2 hover:bg-slate-50 transition-colors min-w-[120px] text-left">
+            <div x-data="{ open: false }" class="relative w-full sm:w-auto sm:inline-block text-left col-span-1">
+                <button @click="open = !open" type="button" class="inline-flex items-center justify-between gap-1.5 bg-white border border-slate-200 text-slate-700 text-xs font-semibold rounded-[5px] px-3 py-2 hover:bg-slate-50 transition-colors w-full sm:min-w-[120px] text-left">
                     <span>{{ $selectedStatusLabel }}</span>
                     <svg class="w-3.5 h-3.5 text-slate-400 transition-transform duration-200" :class="open ? 'rotate-180' : ''" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
@@ -117,8 +117,8 @@
             </div>
 
             <!-- Filtro Customizado: Categoria -->
-            <div x-data="{ open: false }" class="relative inline-block text-left">
-                <button @click="open = !open" type="button" class="inline-flex items-center justify-between gap-1.5 bg-white border border-slate-200 text-slate-700 text-xs font-semibold rounded-[5px] px-3 py-2 hover:bg-slate-50 transition-colors min-w-[140px] text-left">
+            <div x-data="{ open: false }" class="relative w-full sm:w-auto sm:inline-block text-left col-span-1">
+                <button @click="open = !open" type="button" class="inline-flex items-center justify-between gap-1.5 bg-white border border-slate-200 text-slate-700 text-xs font-semibold rounded-[5px] px-3 py-2 hover:bg-slate-50 transition-colors w-full sm:min-w-[140px] text-left">
                     <span>{!! $selectedCategoryName !!}</span>
                     <svg class="w-3.5 h-3.5 text-slate-400 transition-transform duration-200" :class="open ? 'rotate-180' : ''" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
@@ -134,7 +134,7 @@
                 </div>
             </div>
 
-            <a href="{{ route('finances.index', ['month' => $today->month, 'year' => $today->year]) }}" class="inline-flex items-center gap-1 px-3 py-2 bg-slate-800 hover:bg-slate-900 text-white text-xs font-semibold rounded-[5px] transition-colors shadow-sm">
+            <a href="{{ route('finances.index', ['month' => $today->month, 'year' => $today->year]) }}" class="inline-flex items-center justify-center gap-1 px-3 py-2 bg-slate-800 hover:bg-slate-900 text-white text-xs font-semibold rounded-[5px] transition-colors shadow-sm w-full sm:w-auto col-span-1">
                 Hoje
             </a>
         </form>

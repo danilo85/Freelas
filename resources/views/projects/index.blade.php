@@ -117,9 +117,9 @@
 
     <!-- Filtro e Ações -->
     <div class="space-y-4 bg-white border border-slate-200 p-4 rounded-[5px] shadow-sm">
-        <div class="flex flex-col sm:flex-row gap-4 items-center justify-between">
+        <div class="flex items-center gap-3 w-full">
             <!-- Pesquisa Moderna -->
-            <div class="relative w-full flex-1">
+            <div class="relative flex-1">
                 <span class="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none text-slate-400">
                     <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
@@ -160,54 +160,64 @@
 
         <!-- Filtro por Status via Tags -->
         <div class="flex flex-wrap gap-2 items-center pt-3 border-t border-slate-100">
-            <span class="text-[11px] font-semibold text-slate-400 mr-2 uppercase tracking-wider">Filtrar por:</span>
+            <span class="text-[11px] font-semibold text-slate-400 mr-2 uppercase tracking-wider hidden sm:inline">Filtrar por:</span>
             
             <button type="button" @click="statusFilter = ''" 
                 :class="statusFilter === '' ? 'bg-slate-800 text-white border-slate-800' : 'bg-slate-100 text-slate-700 border-slate-300 hover:bg-slate-200'" 
-                class="px-2.5 py-1 rounded-[5px] text-[10px] font-semibold uppercase tracking-wider border transition-all duration-150">
-                Todos
+                class="px-2.5 py-2 sm:px-3.5 sm:py-1 rounded-full sm:rounded-[5px] text-[10px] font-semibold uppercase tracking-wider border transition-all duration-150 flex items-center justify-center gap-1.5"
+                title="Todos">
+                <svg class="w-3.5 h-3.5 sm:hidden" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M4 6h16M4 12h16M4 18h16"></path>
+                </svg>
+                <span class="hidden sm:inline">Todos</span>
             </button>
             
             <button type="button" @click="statusFilter = 'rascunho'" 
                 :class="statusFilter === 'rascunho' ? 'bg-slate-300 text-slate-900 border-slate-400 ring-2 ring-slate-200' : 'bg-slate-100 text-slate-700 border-slate-300 hover:bg-slate-200'" 
-                class="px-2.5 py-1 rounded-[5px] text-[10px] font-semibold uppercase tracking-wider border transition-all duration-150 flex items-center gap-1.5">
-                <span class="w-1.5 h-1.5 rounded-full bg-slate-400"></span>
-                Rascunho
+                class="px-2 py-2 sm:px-2.5 sm:py-1 rounded-full sm:rounded-[5px] text-[10px] font-semibold uppercase tracking-wider border transition-all duration-150 flex items-center justify-center gap-1.5"
+                title="Rascunho">
+                <span class="w-2.5 h-2.5 sm:w-1.5 sm:h-1.5 rounded-full bg-slate-400"></span>
+                <span class="hidden sm:inline">Rascunho</span>
             </button>
             
             <button type="button" @click="statusFilter = 'analisando'" 
                 :class="statusFilter === 'analisando' ? 'bg-amber-600 text-white border-amber-600 ring-2 ring-amber-300' : 'bg-amber-100 text-amber-900 border-amber-300 hover:bg-amber-200'" 
-                class="px-2.5 py-1 rounded-[5px] text-[10px] font-semibold uppercase tracking-wider border transition-all duration-150 flex items-center gap-1.5">
-                <span class="w-1.5 h-1.5 rounded-full" :class="statusFilter === 'analisando' ? 'bg-white' : 'bg-amber-500'"></span>
-                Analisando
+                class="px-2 py-2 sm:px-2.5 sm:py-1 rounded-full sm:rounded-[5px] text-[10px] font-semibold uppercase tracking-wider border transition-all duration-150 flex items-center justify-center gap-1.5"
+                title="Analisando">
+                <span class="w-2.5 h-2.5 sm:w-1.5 sm:h-1.5 rounded-full" :class="statusFilter === 'analisando' ? 'bg-white' : 'bg-amber-500'"></span>
+                <span class="hidden sm:inline">Analisando</span>
             </button>
             
             <button type="button" @click="statusFilter = 'aprovado'" 
                 :class="statusFilter === 'aprovado' ? 'bg-emerald-600 text-white border-emerald-600 ring-2 ring-emerald-300' : 'bg-emerald-100 text-emerald-900 border-emerald-300 hover:bg-emerald-200'" 
-                class="px-2.5 py-1 rounded-[5px] text-[10px] font-semibold uppercase tracking-wider border transition-all duration-150 flex items-center gap-1.5">
-                <span class="w-1.5 h-1.5 rounded-full" :class="statusFilter === 'aprovado' ? 'bg-white' : 'bg-emerald-500'"></span>
-                Aprovado
+                class="px-2 py-2 sm:px-2.5 sm:py-1 rounded-full sm:rounded-[5px] text-[10px] font-semibold uppercase tracking-wider border transition-all duration-150 flex items-center justify-center gap-1.5"
+                title="Aprovado">
+                <span class="w-2.5 h-2.5 sm:w-1.5 sm:h-1.5 rounded-full" :class="statusFilter === 'aprovado' ? 'bg-white' : 'bg-emerald-500'"></span>
+                <span class="hidden sm:inline">Aprovado</span>
             </button>
             
             <button type="button" @click="statusFilter = 'rejeitado'" 
                 :class="statusFilter === 'rejeitado' ? 'bg-red-600 text-white border-red-600 ring-2 ring-red-300' : 'bg-red-100 text-red-900 border-red-300 hover:bg-red-200'" 
-                class="px-2.5 py-1 rounded-[5px] text-[10px] font-semibold uppercase tracking-wider border transition-all duration-150 flex items-center gap-1.5">
-                <span class="w-1.5 h-1.5 rounded-full" :class="statusFilter === 'rejeitado' ? 'bg-white' : 'bg-red-500'"></span>
-                Rejeitado
+                class="px-2 py-2 sm:px-2.5 sm:py-1 rounded-full sm:rounded-[5px] text-[10px] font-semibold uppercase tracking-wider border transition-all duration-150 flex items-center justify-center gap-1.5"
+                title="Rejeitado">
+                <span class="w-2.5 h-2.5 sm:w-1.5 sm:h-1.5 rounded-full" :class="statusFilter === 'rejeitado' ? 'bg-white' : 'bg-red-500'"></span>
+                <span class="hidden sm:inline">Rejeitado</span>
             </button>
             
             <button type="button" @click="statusFilter = 'quitado'" 
                 :class="statusFilter === 'quitado' ? 'bg-purple-600 text-white border-purple-600 ring-2 ring-purple-300' : 'bg-purple-100 text-purple-900 border-purple-300 hover:bg-purple-200'" 
-                class="px-2.5 py-1 rounded-[5px] text-[10px] font-semibold uppercase tracking-wider border transition-all duration-150 flex items-center gap-1.5">
-                <span class="w-1.5 h-1.5 rounded-full" :class="statusFilter === 'quitado' ? 'bg-white' : 'bg-purple-500'"></span>
-                Quitado
+                class="px-2 py-2 sm:px-2.5 sm:py-1 rounded-full sm:rounded-[5px] text-[10px] font-semibold uppercase tracking-wider border transition-all duration-150 flex items-center justify-center gap-1.5"
+                title="Quitado">
+                <span class="w-2.5 h-2.5 sm:w-1.5 sm:h-1.5 rounded-full" :class="statusFilter === 'quitado' ? 'bg-white' : 'bg-purple-500'"></span>
+                <span class="hidden sm:inline">Quitado</span>
             </button>
             
             <button type="button" @click="statusFilter = 'finalizado'" 
                 :class="statusFilter === 'finalizado' ? 'bg-blue-600 text-white border-blue-600 ring-2 ring-blue-300' : 'bg-blue-100 text-blue-900 border-blue-300 hover:bg-blue-200'" 
-                class="px-2.5 py-1 rounded-[5px] text-[10px] font-semibold uppercase tracking-wider border transition-all duration-150 flex items-center gap-1.5">
-                <span class="w-1.5 h-1.5 rounded-full" :class="statusFilter === 'finalizado' ? 'bg-white' : 'bg-blue-500'"></span>
-                Finalizado
+                class="px-2 py-2 sm:px-2.5 sm:py-1 rounded-full sm:rounded-[5px] text-[10px] font-semibold uppercase tracking-wider border transition-all duration-150 flex items-center justify-center gap-1.5"
+                title="Finalizado">
+                <span class="w-2.5 h-2.5 sm:w-1.5 sm:h-1.5 rounded-full" :class="statusFilter === 'finalizado' ? 'bg-white' : 'bg-blue-500'"></span>
+                <span class="hidden sm:inline">Finalizado</span>
             </button>
         </div>
     </div>

@@ -36,39 +36,37 @@
     <div class="bg-white border border-slate-200 rounded-[5px] p-4 shadow-sm flex flex-col md:flex-row items-center justify-between gap-4">
         
         <!-- Botões de Navegação Rápida -->
-        <div class="flex items-center gap-2 w-full md:w-auto justify-between md:justify-start">
-            <a href="{{ route('payments.index', ['month' => $prevMonth->month, 'year' => $prevMonth->year]) }}" class="inline-flex items-center gap-1.5 px-3.5 py-2 border border-slate-200 text-slate-650 hover:bg-slate-50 text-sm font-semibold rounded-[5px] transition-colors shadow-sm">
+        <div class="flex items-center justify-between md:justify-start gap-3 w-full md:w-auto">
+            <a href="{{ route('payments.index', ['month' => $prevMonth->month, 'year' => $prevMonth->year]) }}" class="inline-flex items-center justify-center gap-1.5 px-2.5 py-2 sm:px-3.5 sm:py-2 border border-slate-200 text-slate-650 hover:bg-slate-50 text-xs sm:text-sm font-semibold rounded-[5px] transition-colors shadow-sm shrink-0">
                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M15 19l-7-7 7-7"></path>
                 </svg>
-                Anterior
+                <span class="hidden sm:inline">Anterior</span>
             </a>
-            <a href="{{ route('payments.index', ['month' => $nextMonth->month, 'year' => $nextMonth->year]) }}" class="inline-flex items-center gap-1.5 px-3.5 py-2 border border-slate-200 text-slate-650 hover:bg-slate-50 text-sm font-semibold rounded-[5px] transition-colors shadow-sm">
-                Próximo
+            <div class="text-base sm:text-lg font-black text-slate-800 tracking-tight text-center flex-1 md:flex-none">
+                {{ $months[$month] }} {{ $year }}
+            </div>
+            <a href="{{ route('payments.index', ['month' => $nextMonth->month, 'year' => $nextMonth->year]) }}" class="inline-flex items-center justify-center gap-1.5 px-2.5 py-2 sm:px-3.5 sm:py-2 border border-slate-200 text-slate-650 hover:bg-slate-50 text-xs sm:text-sm font-semibold rounded-[5px] transition-colors shadow-sm shrink-0">
+                <span class="hidden sm:inline">Próximo</span>
                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M9 5l7 7-7 7"></path>
                 </svg>
             </a>
         </div>
 
-        <!-- Mês Extenso Centralizado -->
-        <div class="text-xl font-black text-slate-800 tracking-tight">
-            {{ $months[$month] }} {{ $year }}
-        </div>
-
         <!-- Dropdowns de Seleção e Hoje -->
-        <form method="GET" action="{{ route('payments.index') }}" class="flex flex-wrap items-center gap-2 w-full md:w-auto justify-end">
-            <select name="month" onchange="this.form.submit()" class="bg-white border border-slate-200 text-slate-700 text-sm font-semibold rounded-[5px] px-3 py-2 focus:outline-none focus:border-slate-350">
+        <form method="GET" action="{{ route('payments.index') }}" class="grid grid-cols-3 gap-2 w-full md:flex md:w-auto justify-end">
+            <select name="month" onchange="this.form.submit()" class="bg-white border border-slate-200 text-slate-700 text-xs font-semibold rounded-[5px] px-2 py-2 focus:outline-none focus:border-slate-350 w-full md:w-auto">
                 @foreach($months as $num => $name)
                     <option value="{{ $num }}" {{ $month == $num ? 'selected' : '' }}>{{ $name }}</option>
                 @endforeach
             </select>
-            <select name="year" onchange="this.form.submit()" class="bg-white border border-slate-200 text-slate-700 text-sm font-semibold rounded-[5px] px-3 py-2 focus:outline-none focus:border-slate-350">
+            <select name="year" onchange="this.form.submit()" class="bg-white border border-slate-200 text-slate-700 text-xs font-semibold rounded-[5px] px-2 py-2 focus:outline-none focus:border-slate-350 w-full md:w-auto">
                 @for($y = $today->year - 5; $y <= $today->year + 5; $y++)
                     <option value="{{ $y }}" {{ $year == $y ? 'selected' : '' }}>{{ $y }}</option>
                 @endfor
             </select>
-            <a href="{{ route('payments.index', ['month' => $today->month, 'year' => $today->year]) }}" class="inline-flex items-center gap-1 px-3 py-2 bg-slate-800 hover:bg-slate-900 text-white text-sm font-semibold rounded-[5px] transition-colors shadow-sm">
+            <a href="{{ route('payments.index', ['month' => $today->month, 'year' => $today->year]) }}" class="inline-flex items-center justify-center gap-1 px-3 py-2 bg-slate-800 hover:bg-slate-900 text-white text-xs font-semibold rounded-[5px] transition-colors shadow-sm w-full md:w-auto">
                 Hoje
             </a>
         </form>
