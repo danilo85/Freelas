@@ -7,7 +7,7 @@
 <div class="space-y-8">
     
     <!-- Seção de Métricas (Cards) -->
-    <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
         
         <!-- Faturamento do Mês -->
         <div class="bg-white rounded-[5px] p-6 border border-slate-200 shadow-sm flex items-center justify-between">
@@ -49,7 +49,7 @@
         </div>
 
         <!-- Projetos Ativos -->
-        <div class="bg-white rounded-[5px] p-6 border border-slate-200 shadow-sm flex items-center justify-between">
+        <div class="bg-white rounded-[5px] p-6 border border-slate-200 shadow-sm flex items-center justify-between sm:col-span-2 lg:col-span-1">
             <div>
                 <p class="text-xs font-semibold text-slate-400 uppercase tracking-wider">Projetos Ativos</p>
                 <h3 class="text-2xl font-bold text-slate-900 mt-2">

@@ -98,17 +98,17 @@
         @if(count($transactions) > 0)
             <div class="bg-white border border-slate-200 rounded-[5px] shadow-sm overflow-hidden divide-y divide-slate-100">
                 @foreach($transactions as $t)
-                    <div class="p-4 flex items-center justify-between gap-4 hover:bg-slate-50/50 transition-colors relative overflow-hidden">
+                    <div class="p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-4 hover:bg-slate-50/50 transition-colors relative overflow-hidden">
                         
-                        <!-- Stamp Carimbo Pago/Pendente no Extrato -->
+                        <!-- Stamp Carimbo Pago/Pendente no Extrato (Apenas Desktop) -->
                         @if($t->status === 'pago')
-                            <div class="absolute right-28 top-1/2 -translate-y-1/2 rotate-[-12deg] pointer-events-none select-none z-10 opacity-30 transform scale-90">
+                            <div class="absolute right-28 top-1/2 -translate-y-1/2 rotate-[-12deg] pointer-events-none select-none z-10 opacity-30 transform scale-90 hidden sm:block">
                                 <div class="border-2 border-emerald-600/75 text-emerald-600/75 font-black text-[9px] px-2 py-0.5 rounded uppercase tracking-widest flex items-center gap-0.5">
                                     <span>✓</span> <span>PAGO</span>
                                 </div>
                             </div>
                         @else
-                            <div class="absolute right-28 top-1/2 -translate-y-1/2 rotate-[-12deg] pointer-events-none select-none z-10 opacity-25 transform scale-90">
+                            <div class="absolute right-28 top-1/2 -translate-y-1/2 rotate-[-12deg] pointer-events-none select-none z-10 opacity-25 transform scale-90 hidden sm:block">
                                 <div class="border-2 border-amber-600/75 text-amber-600/75 font-black text-[8px] px-1.5 py-0.5 rounded uppercase tracking-widest flex items-center gap-0.5">
                                     <span>⏳</span> <span>PENDENTE</span>
                                 </div>
@@ -119,9 +119,9 @@
                             <span class="w-10 h-10 rounded-[5px] bg-slate-50 border border-slate-100 flex items-center justify-center text-xl shrink-0">
                                 {{ $t->category->icon ?? '💳' }}
                             </span>
-                            <div class="min-w-0">
-                                <h4 class="font-bold text-sm text-slate-800 truncate">{{ $t->description }}</h4>
-                                <div class="flex items-center gap-1.5 text-[10px] text-slate-400 font-bold mt-0.5">
+                            <div class="min-w-0 flex-1">
+                                <h4 class="font-bold text-sm text-slate-800 truncate" title="{{ $t->description }}">{{ $t->description }}</h4>
+                                <div class="flex flex-wrap items-center gap-1.5 text-[10px] text-slate-400 font-bold mt-0.5">
                                     <span>{{ $t->due_date->format('d/m/Y') }}</span>
                                     <span>•</span>
                                     <span class="uppercase tracking-wider">{{ $t->category->name ?? 'Outros' }}</span>
@@ -131,11 +131,16 @@
                             </div>
                         </div>
 
-                        <div class="flex items-center gap-4 shrink-0 z-20">
-                            <!-- Valor -->
-                            <div class="text-right">
+                        <div class="flex items-center justify-between sm:justify-end gap-6 shrink-0 w-full sm:w-auto border-t border-slate-100 sm:border-t-0 pt-2.5 sm:pt-0 z-20">
+                            <!-- Valor e Status -->
+                            <div class="text-left sm:text-right">
                                 <span class="font-black text-sm block text-rose-600">
                                     － R$ {{ number_format($t->amount, 2, ',', '.') }}
+                                </span>
+                                <!-- Status Badge (Sempre visível no mobile, oculto no desktop) -->
+                                <span class="inline-block sm:hidden text-[8px] font-black uppercase tracking-wider px-1.5 py-0.5 rounded-[3px] mt-0.5 border
+                                    {{ $t->status === 'pago' ? 'bg-emerald-50 text-emerald-700 border-emerald-100' : 'bg-amber-50 text-amber-700 border-amber-100' }}">
+                                    {{ $t->status === 'pago' ? 'Pago' : 'Pendente' }}
                                 </span>
                             </div>
 

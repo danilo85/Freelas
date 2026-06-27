@@ -76,7 +76,7 @@
     </div>
 
     <!-- Cards de Resumo Estatístico -->
-    <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
         
         <!-- Card 1: Total do Mês (Card Azul) -->
         <div class="bg-blue-600 rounded-[5px] p-6 shadow-sm flex items-center justify-between hover:shadow-md transition-shadow duration-200">
@@ -115,7 +115,7 @@
         </div>
 
         <!-- Card 3: Dias com Pagamento (Card Roxo) -->
-        <div class="bg-purple-600 rounded-[5px] p-6 shadow-sm flex items-center justify-between hover:shadow-md transition-shadow duration-200">
+        <div class="bg-purple-600 rounded-[5px] p-6 shadow-sm flex items-center justify-between hover:shadow-md transition-shadow duration-200 sm:col-span-2 lg:col-span-1">
             <div>
                 <p class="text-sm font-bold text-purple-100 uppercase tracking-wider">Dias com Pagamento</p>
                 <h3 class="text-2xl font-extrabold text-white mt-2">

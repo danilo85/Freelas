@@ -121,5 +121,5 @@ Route::prefix('proposal/{hash}')->name('proposal.')->group(function () {
 });
 
 // Rota pública de extrato para o cliente final
-Route::get('/public/client/{share_token}/statement', [ClientController::class, 'publicStatement'])->name('public.client.statement');
+Route::get('/shared/client/{share_token}/statement', [ClientController::class, 'publicStatement'])->name('public.client.statement');
 

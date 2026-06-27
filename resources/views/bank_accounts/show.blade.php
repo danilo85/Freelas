@@ -91,14 +91,14 @@
                     @php
                         $isIncome = $t->type === 'entrada';
                     @endphp
-                    <div class="p-4 flex items-center justify-between gap-4 hover:bg-slate-50/50 transition-colors">
+                    <div class="p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-4 hover:bg-slate-50/50 transition-colors">
                         <div class="flex items-center gap-3 min-w-0">
                             <span class="w-10 h-10 rounded-[5px] bg-slate-50 border border-slate-100 flex items-center justify-center text-xl shrink-0">
                                 {{ $t->category->icon ?? '💰' }}
                             </span>
-                            <div class="min-w-0">
-                                <h4 class="font-bold text-sm text-slate-800 truncate">{{ $t->description }}</h4>
-                                <div class="flex items-center gap-1.5 text-[10px] text-slate-400 font-bold mt-0.5">
+                            <div class="min-w-0 flex-1">
+                                <h4 class="font-bold text-sm text-slate-800 truncate" title="{{ $t->description }}">{{ $t->description }}</h4>
+                                <div class="flex flex-wrap items-center gap-1.5 text-[10px] text-slate-400 font-bold mt-0.5">
                                     <span>{{ $t->due_date->format('d/m/Y') }}</span>
                                     <span>•</span>
                                     <span class="uppercase tracking-wider">{{ $t->category->name ?? 'Outros' }}</span>
@@ -108,9 +108,9 @@
                             </div>
                         </div>
 
-                        <div class="flex items-center gap-4 shrink-0">
+                        <div class="flex items-center justify-between sm:justify-end gap-6 shrink-0 w-full sm:w-auto border-t border-slate-100 sm:border-t-0 pt-2.5 sm:pt-0">
                             <!-- Valor e Status -->
-                            <div class="text-right">
+                            <div class="text-left sm:text-right">
                                 <span class="font-black text-sm block {{ $isIncome ? 'text-emerald-600' : 'text-rose-600' }}">
                                     {{ $isIncome ? '＋' : '－' }} R$ {{ number_format($t->amount, 2, ',', '.') }}
                                 </span>

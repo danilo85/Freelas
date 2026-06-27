@@ -7,7 +7,7 @@
 <div x-data="bankAccountList()" class="space-y-8">
 
     <!-- Top Cards (Resumo Financeiro da Carteira) -->
-    <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
         
         <!-- Saldo Total em Contas (Card Verde) -->
         <div class="bg-emerald-600 rounded-[5px] p-6 shadow-sm flex items-center justify-between hover:shadow-md transition-shadow duration-200">
@@ -46,7 +46,7 @@
         </div>
 
         <!-- Crédito Utilizado (Card Cinza) -->
-        <div class="bg-slate-700 rounded-[5px] p-6 shadow-sm flex items-center justify-between hover:shadow-md transition-shadow duration-200">
+        <div class="bg-slate-700 rounded-[5px] p-6 shadow-sm flex items-center justify-between hover:shadow-md transition-shadow duration-200 sm:col-span-2 lg:col-span-1">
             <div>
                 <p class="text-sm font-bold text-slate-200 uppercase tracking-wider">Crédito Utilizado</p>
                 <h3 class="text-3xl font-extrabold text-white mt-2">

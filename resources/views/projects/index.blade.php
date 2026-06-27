@@ -28,7 +28,7 @@
 <div x-data="projectList()" @selection-toggled.window="handleSelectionToggled($event)" class="space-y-8">
     
     <!-- Top Cards (Métricas com Cores Sólidas) -->
-    <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
         
         <!-- Total de Orçamentos (Card Azul) -->
         <div class="bg-blue-600 rounded-[5px] p-6 shadow-sm flex items-center justify-between hover:shadow-md transition-shadow duration-200">
@@ -95,7 +95,7 @@
         </div>
 
         <!-- Propostas em Análise (Card Amarelo/Laranja) -->
-        <div class="bg-amber-500 rounded-[5px] p-6 shadow-sm flex items-center justify-between hover:shadow-md transition-shadow duration-200">
+        <div class="bg-amber-500 rounded-[5px] p-6 shadow-sm flex items-center justify-between hover:shadow-md transition-shadow duration-200 sm:col-span-2 lg:col-span-1">
             <div>
                 <p class="text-sm font-semibold text-amber-50 uppercase tracking-wider">Em Negociação</p>
                 <h3 class="text-3xl font-bold text-white mt-2">

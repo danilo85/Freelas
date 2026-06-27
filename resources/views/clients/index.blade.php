@@ -8,7 +8,7 @@
 <div x-data="clientList()" class="space-y-8">
     
     <!-- Top Cards (Métricas com Cores Diferentes) -->
-    <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
         
         <!-- Total de Clientes (Card Azul) -->
         <div class="bg-blue-600 rounded-[5px] p-6 shadow-sm flex items-center justify-between hover:shadow-md transition-shadow duration-200">
@@ -48,7 +48,7 @@
         </div>
 
         <!-- Novos Clientes (Card Roxo) -->
-        <div class="bg-purple-600 rounded-[5px] p-6 shadow-sm flex items-center justify-between hover:shadow-md transition-shadow duration-200">
+        <div class="bg-purple-600 rounded-[5px] p-6 shadow-sm flex items-center justify-between hover:shadow-md transition-shadow duration-200 sm:col-span-2 lg:col-span-1">
             <div>
                 <p class="text-sm font-bold text-purple-100 uppercase tracking-wider">Novos Clientes</p>
                 <h3 class="text-3xl font-extrabold text-white mt-2">
