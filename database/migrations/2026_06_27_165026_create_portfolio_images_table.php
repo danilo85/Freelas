@@ -11,13 +11,15 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('portfolio_images', function (Blueprint $table) {
-            $table->id();
-            $table->foreignId('portfolio_item_id')->constrained()->onDelete('cascade');
-            $table->string('image_path');
-            $table->integer('order')->default(0);
-            $table->timestamps();
-        });
+        if (!Schema::hasTable('portfolio_images')) {
+            Schema::create('portfolio_images', function (Blueprint $table) {
+                $table->id();
+                $table->foreignId('portfolio_item_id')->constrained()->onDelete('cascade');
+                $table->string('image_path');
+                $table->integer('order')->default(0);
+                $table->timestamps();
+            });
+        }
     }
 
     /**
