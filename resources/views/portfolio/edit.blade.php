@@ -248,34 +248,33 @@
                         <div class="space-y-3">
                             <h6 class="text-xs font-bold text-slate-700 uppercase tracking-wider border-b border-slate-100 pb-1.5">Fotos Salvas Atualmente</h6>
                             
-                            <div class="space-y-2.5 max-h-[220px] overflow-y-auto pr-1">
+                            <div class="grid grid-cols-2 sm:grid-cols-3 gap-4 max-h-[250px] overflow-y-auto pr-1">
                                 @foreach($portfolio->images as $img)
-                                    <div class="flex items-center justify-between gap-3 p-2 bg-slate-50 border border-slate-150 rounded-[5px]">
-                                        <div class="flex items-center gap-3 min-w-0">
-                                            <div class="w-10 h-10 rounded bg-slate-200 overflow-hidden shrink-0">
-                                                <img src="{{ asset('storage/' . $img->image_path) }}" class="w-full h-full object-cover">
-                                            </div>
-                                            <span class="text-xs text-slate-500 font-mono truncate max-w-[120px]">{{ basename($img->image_path) }}</span>
-                                        </div>
+                                    <div class="relative bg-slate-50 border border-slate-200 rounded-[5px] overflow-hidden aspect-video flex flex-col justify-between group shadow-sm transition-opacity">
+                                        <!-- Imagem de Fundo -->
+                                        <img src="{{ asset('storage/' . $img->image_path) }}" class="w-full h-full object-cover absolute inset-0">
                                         
-                                        <!-- Controle de Ordem e Deletar -->
-                                        <div class="flex items-center gap-3 shrink-0">
-                                            <div class="flex items-center gap-1.5">
-                                                <span class="text-[10px] text-slate-400 font-semibold uppercase">Ordem:</span>
-                                                <input type="number" 
-                                                       name="existing_gallery_orders[{{ $img->id }}]" 
-                                                       value="{{ $img->order }}"
-                                                       class="w-12 px-1.5 py-1 rounded border border-slate-200 text-xs font-bold text-center focus:outline-none focus:ring-1 focus:ring-primary-500">
-                                            </div>
-                                            
-                                            <!-- Checkbox para deletar -->
-                                            <label class="flex items-center gap-1 cursor-pointer select-none text-red-500 hover:text-red-700">
+                                        <!-- Header da foto com botão de exclusão flutuante -->
+                                        <div class="relative p-1.5 flex justify-end z-10">
+                                            <label class="w-6 h-6 rounded-full bg-slate-900/80 text-white flex items-center justify-center hover:bg-red-600 transition-colors shadow-sm cursor-pointer select-none">
                                                 <input type="checkbox" 
                                                        name="delete_images[]" 
                                                        value="{{ $img->id }}"
-                                                       class="w-3.5 h-3.5 text-red-600 border-slate-300 rounded focus:ring-red-500">
-                                                <span class="text-[10px] font-bold uppercase">Excluir</span>
+                                                       class="hidden"
+                                                       @change="$el.closest('.relative').classList.toggle('opacity-35', $el.checked)">
+                                                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
+                                                </svg>
                                             </label>
+                                        </div>
+
+                                        <!-- Footer da foto com controle de ordem manual -->
+                                        <div class="relative bg-slate-900/80 text-white px-2 py-1 flex items-center justify-between z-10">
+                                            <span class="text-[10px] font-bold text-slate-300">Pos:</span>
+                                            <input type="number" 
+                                                   name="existing_gallery_orders[{{ $img->id }}]" 
+                                                   value="{{ $img->order }}"
+                                                   class="w-10 px-1 py-0.5 rounded bg-slate-800 border border-slate-700 text-[11px] font-bold text-center text-white focus:outline-none focus:ring-1 focus:ring-primary-500">
                                         </div>
                                     </div>
                                 @endforeach
@@ -304,32 +303,59 @@
                                 </label>
                             </div>
 
-                            <!-- Lista de novas fotos com controle de ordem -->
+                            <!-- Lista de novas fotos em Cards com ordenação por setas e exclusão -->
                             <template x-if="galleryFiles.length > 0">
-                                <div class="space-y-2 max-h-[180px] overflow-y-auto pr-1">
+                                <div class="grid grid-cols-2 sm:grid-cols-3 gap-4 max-h-[250px] overflow-y-auto pr-1">
                                     <template x-for="(item, index) in galleryFiles" :key="index">
-                                        <div class="flex items-center justify-between gap-3 p-2 bg-slate-50 border border-slate-150 rounded-[5px]">
-                                            <div class="flex items-center gap-3 min-w-0">
-                                                <div class="w-10 h-10 rounded bg-slate-200 overflow-hidden shrink-0">
-                                                    <img :src="item.url" class="w-full h-full object-cover">
-                                                </div>
-                                                <span class="text-xs text-slate-700 font-medium truncate max-w-[120px]" x-text="item.name"></span>
-                                            </div>
+                                        <div class="relative bg-slate-50 border border-slate-200 rounded-[5px] overflow-hidden aspect-video flex flex-col justify-between group shadow-sm">
+                                            <!-- Imagem de Fundo -->
+                                            <img :src="item.url" class="w-full h-full object-cover absolute inset-0">
                                             
-                                            <!-- Ordem -->
-                                            <div class="flex items-center gap-3 shrink-0">
-                                                <div class="flex items-center gap-1.5">
-                                                    <span class="text-[10px] text-slate-400 font-semibold uppercase">Ordem:</span>
-                                                    <input type="number" 
-                                                           :name="'gallery_orders[' + index + ']'" 
-                                                           x-model="item.order"
-                                                           class="w-12 px-1.5 py-1 rounded border border-slate-200 text-xs font-bold text-center focus:outline-none focus:ring-1 focus:ring-primary-500">
-                                                </div>
-                                                <button type="button" @click="removeGalleryFile(index)" class="text-red-500 hover:text-red-700 p-1">
-                                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <!-- Header da foto com botão de deletar flutuante -->
+                                            <div class="relative p-1.5 flex justify-end z-10">
+                                                <button type="button" 
+                                                        @click="removeGalleryFile(index)" 
+                                                        class="w-6 h-6 rounded-full bg-red-600/90 text-white flex items-center justify-center hover:bg-red-750 transition-colors shadow border-0"
+                                                        title="Remover Imagem">
+                                                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
                                                     </svg>
                                                 </button>
+                                            </div>
+
+                                            <!-- Footer da foto com controles de ordenação por setas -->
+                                            <div class="relative bg-slate-900/80 text-white px-2 py-1.5 flex items-center justify-between z-10">
+                                                <!-- Indicador de Ordem -->
+                                                <div class="flex items-center gap-1">
+                                                    <span class="text-[10px] font-bold text-slate-300">Pos:</span>
+                                                    <span class="text-xs font-black" x-text="'#' + item.order"></span>
+                                                    <input type="hidden" :name="'gallery_orders[' + index + ']'" :value="item.order">
+                                                </div>
+                                                
+                                                <!-- Setas de Mover -->
+                                                <div class="flex items-center gap-1">
+                                                    <!-- Esquerda / Cima -->
+                                                    <button type="button" 
+                                                            @click="moveUp(index)"
+                                                            :disabled="index === 0"
+                                                            class="w-5 h-5 rounded bg-slate-800 text-slate-200 flex items-center justify-center hover:bg-slate-700 disabled:opacity-30 disabled:hover:bg-slate-800 transition-colors border-0"
+                                                            title="Mover para Cima">
+                                                        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path>
+                                                        </svg>
+                                                    </button>
+                                                    
+                                                    <!-- Direita / Baixo -->
+                                                    <button type="button" 
+                                                            @click="moveDown(index)"
+                                                            :disabled="index === galleryFiles.length - 1"
+                                                            class="w-5 h-5 rounded bg-slate-800 text-slate-200 flex items-center justify-center hover:bg-slate-700 disabled:opacity-30 disabled:hover:bg-slate-800 transition-colors border-0"
+                                                            title="Mover para Baixo">
+                                                        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>
+                                                        </svg>
+                                                    </button>
+                                                </div>
                                             </div>
                                         </div>
                                     </template>
@@ -625,6 +651,28 @@
                         name: file.name,
                         url: URL.createObjectURL(file),
                         order: this.galleryFiles.length + 1
+                    });
+                }
+            },
+
+            moveUp(index) {
+                if (index > 0) {
+                    const temp = this.galleryFiles[index];
+                    this.galleryFiles[index] = this.galleryFiles[index - 1];
+                    this.galleryFiles[index - 1] = temp;
+                    this.galleryFiles.forEach((item, idx) => {
+                        item.order = idx + 1;
+                    });
+                }
+            },
+
+            moveDown(index) {
+                if (index < this.galleryFiles.length - 1) {
+                    const temp = this.galleryFiles[index];
+                    this.galleryFiles[index] = this.galleryFiles[index + 1];
+                    this.galleryFiles[index + 1] = temp;
+                    this.galleryFiles.forEach((item, idx) => {
+                        item.order = idx + 1;
                     });
                 }
             },

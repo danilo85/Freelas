@@ -117,7 +117,7 @@ class PortfolioController extends Controller
             'title' => 'required|string|max:255',
             'portfolio_category_id' => 'required|exists:portfolio_categories,id',
             'description' => 'required|string',
-            'thumb' => 'required|image|max:5120', // Máximo 5MB
+            'thumb' => 'required|image|max:20480', // Máximo 20MB
             'status' => 'required|in:rascunho,publicado',
             'is_featured' => 'nullable|boolean',
             'client_id' => 'nullable|exists:clients,id',
@@ -130,7 +130,7 @@ class PortfolioController extends Controller
             'authors' => 'nullable|array',
             'authors.*' => 'exists:authors,id',
             'gallery' => 'nullable|array',
-            'gallery.*' => 'image|max:5120',
+            'gallery.*' => 'image|max:20480',
             'gallery_orders' => 'nullable|array',
         ]);
 
@@ -220,7 +220,7 @@ class PortfolioController extends Controller
             'title' => 'required|string|max:255',
             'portfolio_category_id' => 'required|exists:portfolio_categories,id',
             'description' => 'required|string',
-            'thumb' => 'nullable|image|max:5120',
+            'thumb' => 'nullable|image|max:20480',
             'status' => 'required|in:rascunho,publicado',
             'is_featured' => 'nullable|boolean',
             'client_id' => 'nullable|exists:clients,id',
@@ -232,7 +232,7 @@ class PortfolioController extends Controller
             'authors' => 'nullable|array',
             'authors.*' => 'exists:authors,id',
             'gallery' => 'nullable|array',
-            'gallery.*' => 'image|max:5120',
+            'gallery.*' => 'image|max:20480',
             'gallery_orders' => 'nullable|array',
             'existing_gallery_orders' => 'nullable|array',
             'delete_images' => 'nullable|array',
@@ -333,6 +333,7 @@ class PortfolioController extends Controller
      */
     private function optimizeAndSaveImage($file, $folder = 'portfolio')
     {
+        ini_set('memory_limit', '512M'); // Previne estouro de memória no processamento de imagens de 20MB
         $info = getimagesize($file->getRealPath());
         $mime = $info['mime'] ?? '';
 

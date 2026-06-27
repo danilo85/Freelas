@@ -25,21 +25,21 @@
                 <span class="text-xs text-slate-400 font-semibold">{{ $categories->count() }} registradas</span>
             </div>
 
-            <div class="divide-y divide-slate-100">
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 p-5 bg-slate-50/50">
                 @forelse($categories as $cat)
-                    <div class="p-4 flex items-center justify-between hover:bg-slate-50/50 transition-colors">
-                        <div>
-                            <h4 class="font-bold text-slate-800 text-sm">{{ $cat->name }}</h4>
-                            <p class="text-xs text-slate-400 font-mono mt-0.5">{{ $cat->slug }}</p>
+                    <div class="bg-white border border-slate-200 p-4 rounded-[5px] shadow-sm flex items-center justify-between hover:shadow transition-shadow">
+                        <div class="min-w-0">
+                            <h4 class="font-bold text-slate-800 text-sm truncate" title="{{ $cat->name }}">{{ $cat->name }}</h4>
+                            <p class="text-[10px] text-slate-400 font-mono mt-0.5 truncate" title="{{ $cat->slug }}">{{ $cat->slug }}</p>
                         </div>
                         
-                        <div class="flex items-center gap-2">
+                        <div class="flex items-center gap-1 shrink-0 ml-2">
                             <!-- Botão Editar -->
                             <button type="button" 
                                     @click="editCategory({{ $cat->id }}, '{{ addslashes($cat->name) }}')"
-                                    class="w-8 h-8 flex items-center justify-center text-primary-650 hover:bg-primary-50 rounded-[5px] transition-colors"
+                                    class="w-7 h-7 flex items-center justify-center text-primary-650 hover:bg-primary-50 rounded-[5px] transition-colors border-0"
                                     title="Editar Categoria">
-                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"></path>
                                 </svg>
                             </button>
@@ -52,16 +52,16 @@
                                         action: '{{ route('portfolio-categories.destroy', $cat->id) }}', 
                                         highSecurity: false 
                                     })"
-                                    class="w-8 h-8 flex items-center justify-center text-red-600 hover:bg-red-50 rounded-[5px] transition-colors"
+                                    class="w-7 h-7 flex items-center justify-center text-red-600 hover:bg-red-50 rounded-[5px] transition-colors border-0"
                                     title="Excluir Categoria">
-                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
                                 </svg>
                             </button>
                         </div>
                     </div>
                 @empty
-                    <div class="p-8 text-center text-slate-400 text-sm italic">
+                    <div class="col-span-full py-8 text-center text-slate-400 text-sm italic">
                         Nenhuma categoria cadastrada ainda.
                     </div>
                 @endforelse
