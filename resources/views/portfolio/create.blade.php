@@ -78,7 +78,6 @@
                            id="title" 
                            name="title" 
                            x-model="title"
-                           required 
                            placeholder="Ex: Identidade Visual Studio Criativo, Site E-commerce X..." 
                            class="w-full px-3.5 py-2.5 rounded-[5px] border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500 transition-all placeholder-slate-400">
                 </div>
@@ -89,7 +88,6 @@
                     <select id="portfolio_category_id" 
                             name="portfolio_category_id" 
                             x-model="categoryId"
-                            required
                             class="w-full px-3.5 py-2.5 rounded-[5px] border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500 transition-all bg-white text-slate-700">
                         <option value="">Selecione uma categoria...</option>
                         @foreach($categories as $cat)
@@ -119,7 +117,6 @@
                               name="description" 
                               rows="6"
                               x-model="description"
-                              required 
                               placeholder="Fale detalhadamente sobre o projeto, os desafios encontrados, o processo criativo e o resultado final..." 
                               class="w-full px-3.5 py-2.5 rounded-[5px] border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500 transition-all placeholder-slate-400"></textarea>
                 </div>
@@ -152,7 +149,6 @@
                     <select id="status" 
                             name="status" 
                             x-model="status"
-                            required
                             class="w-full px-3.5 py-2.5 rounded-[5px] border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500 transition-all bg-white text-slate-700">
                         <option value="rascunho">Rascunho (Salvar Internamente)</option>
                         <option value="publicado">Publicado (Exibir Publicamente)</option>
@@ -235,7 +231,7 @@
                                 <template x-if="thumbPreview">
                                     <img :src="thumbPreview" class="absolute inset-0 w-full h-full object-cover">
                                 </template>
-                                <input type="file" id="thumb-input" name="thumb" class="hidden" @change="handleThumbUpload($event)" required>
+                                <input type="file" id="thumb-input" name="thumb" class="hidden" @change="handleThumbUpload($event)">
                             </label>
                         </div>
                         <p class="text-[11px] text-slate-400 leading-normal text-justify">
