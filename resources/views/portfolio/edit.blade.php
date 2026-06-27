@@ -301,7 +301,8 @@
                 <div class="space-y-4">
                     <h5 class="text-xs font-bold text-slate-800 uppercase tracking-wider border-b border-slate-100 pb-2">Imagem de Capa (Thumbnail)</h5>
                     
-                                            <!-- Capa / Thumbnail com Drag & Drop -->
+                    <div class="space-y-3">
+                        <!-- Capa / Thumbnail com Drag & Drop -->
                         <div class="flex items-center justify-center w-full"
                              x-data="{ dragOver: false }"
                              @dragover.prevent="dragOver = true"
