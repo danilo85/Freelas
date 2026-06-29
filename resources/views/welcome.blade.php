@@ -540,7 +540,7 @@
 
                 <div class="space-y-6 pr-0 lg:pr-6">
                     <div class="space-y-2">
-                        <span class="text-[10px] font-black uppercase tracking-widest text-blue-500 block" x-text="modalItem ? modalItem.category.name : ''"></span>
+                        <span class="text-[10px] font-black uppercase tracking-widest text-blue-500 block" x-text="modalItem && modalItem.category ? modalItem.category.name : ''"></span>
                         <h3 class="text-xl sm:text-2xl font-outfit font-black text-white leading-tight" x-text="modalItem ? modalItem.title : ''"></h3>
                     </div>
 
