@@ -26,12 +26,15 @@ Route::middleware('guest')->group(function () {
 
 // Rotas Protegidas (Requer Login)
 Route::middleware('auth')->group(function () {
-    // Dashboard principal
-    Route::get('/', [DashboardController::class, 'index'])->name('dashboard');
-    
     // API de Status do Kanban
     Route::patch('/api/projects/{project}/status', [ProjectController::class, 'updateStatus'])
         ->name('projects.update-status');
+});
+
+// Rotas Web Protegidas sob prefixo /freelas
+Route::middleware('auth')->prefix('freelas')->group(function () {
+    // Dashboard principal
+    Route::get('/', [DashboardController::class, 'index'])->name('dashboard');
 
     // Projetos / Orçamentos do usuário logado (Tenancy)
     Route::get('/projects', [ProjectController::class, 'index'])->name('projects.index');
@@ -129,4 +132,9 @@ Route::prefix('proposal/{hash}')->name('proposal.')->group(function () {
 
 // Rota pública de extrato para o cliente final
 Route::get('/shared/client/{share_token}/statement', [ClientController::class, 'publicStatement'])->name('public.client.statement');
+
+// Rotas do Portfólio Público (Danilo Miguel)
+Route::get('/', [\App\Http\Controllers\PublicPortfolioController::class, 'index'])->name('public.home');
+Route::post('/portfolio/{id}/views', [\App\Http\Controllers\PublicPortfolioController::class, 'incrementViews'])->name('public.portfolio.views');
+Route::post('/portfolio/{id}/likes', [\App\Http\Controllers\PublicPortfolioController::class, 'incrementLikes'])->name('public.portfolio.likes');
 

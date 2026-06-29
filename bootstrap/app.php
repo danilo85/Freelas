@@ -15,6 +15,7 @@ return Application::configure(basePath: dirname(__DIR__))
         $middleware->alias([
             'master' => \App\Http\Middleware\IsMaster::class,
         ]);
+        $middleware->redirectUsersTo('/freelas');
     })
     ->withExceptions(function (Exceptions $exceptions): void {
         $exceptions->shouldRenderJsonWhen(
