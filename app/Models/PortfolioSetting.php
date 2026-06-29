@@ -22,6 +22,9 @@ class PortfolioSetting extends Model
         'contact_phone',
         'behance_url',
         'faq_items',
+        'primary_color',
+        'secondary_color',
+        'theme_mode',
     ];
 
     protected $casts = [

@@ -369,6 +369,9 @@ class PortfolioController extends Controller
                 'contact_email' => 'danilo.a.miguel@hotmail.com',
                 'contact_phone' => '(14) 99143-6268',
                 'behance_url' => 'behance.net/danilomiguel',
+                'primary_color' => '#3b82f6',
+                'secondary_color' => '#1d4ed8',
+                'theme_mode' => 'escuro',
                 'faq_items' => [
                     ['question' => 'Que tipo de materiais você desenvolve?', 'answer' => 'Desenvolvo livros infantis, materiais didáticos/pedagógicos de estimulação cognitiva, jogos personalizados de tabuleiro ou cartas, diagramação de catálogos, capas de livros, logotipos corporativos e peças gráficas gerais.'],
                     ['question' => 'Qual é o prazo de entrega dos projetos?', 'answer' => 'O prazo varia conforme a complexidade de cada demanda. Projetos simples e pontuais levam em média de 10 a 20 dias úteis. Projetos editoriais maiores com alto volume de ilustrações autorais podem requerer prazos mais amplos, definidos em orçamento.'],
@@ -397,6 +400,9 @@ class PortfolioController extends Controller
             'contact_email' => 'required|email|max:255',
             'contact_phone' => 'required|string|max:50',
             'behance_url' => 'nullable|string|max:255',
+            'primary_color' => 'required|string|max:20',
+            'secondary_color' => 'required|string|max:20',
+            'theme_mode' => 'required|in:escuro,claro',
             'faq' => 'nullable|array',
             'faq.*.question' => 'required|string|max:255',
             'faq.*.answer' => 'required|string',
@@ -426,6 +432,9 @@ class PortfolioController extends Controller
                 'contact_email' => $request->contact_email,
                 'contact_phone' => $request->contact_phone,
                 'behance_url' => $request->behance_url,
+                'primary_color' => $request->primary_color,
+                'secondary_color' => $request->secondary_color,
+                'theme_mode' => $request->theme_mode,
                 'faq_items' => $faqItems
             ]
         );

@@ -29,12 +29,22 @@
                             700: '#151e33',
                             600: '#1e294b',
                         },
+                        blue: {
+                            50: '{{ ($settings->primary_color ?? "#3b82f6") }}10',
+                            100: '{{ ($settings->primary_color ?? "#3b82f6") }}20',
+                            200: '{{ ($settings->primary_color ?? "#3b82f6") }}40',
+                            300: '{{ ($settings->primary_color ?? "#3b82f6") }}80',
+                            400: '{{ ($settings->primary_color ?? "#3b82f6") }}c0',
+                            500: '{{ $settings->primary_color ?? "#3b82f6" }}',
+                            600: '{{ $settings->primary_color ?? "#2563eb" }}',
+                            700: '{{ $settings->secondary_color ?? "#1d4ed8" }}',
+                        },
                         primary: {
-                            50: '#eff6ff',
-                            100: '#dbeafe',
-                            500: '#3b82f6',
-                            600: '#2563eb',
-                            700: '#1d4ed8',
+                            50: '{{ ($settings->primary_color ?? "#3b82f6") }}10',
+                            100: '{{ ($settings->primary_color ?? "#3b82f6") }}20',
+                            500: '{{ $settings->primary_color ?? "#3b82f6" }}',
+                            600: '{{ $settings->primary_color ?? "#2563eb" }}',
+                            700: '{{ $settings->secondary_color ?? "#1d4ed8" }}',
                         }
                     }
                 }
@@ -48,7 +58,70 @@
     <style>
         body {
             font-family: 'Inter', sans-serif;
+            transition: background-color 0.3s, color 0.3s;
+        }
+        @if(($settings->theme_mode ?? 'escuro') === 'claro')
+        body {
+            background-color: #f8fafc;
+            color: #1e293b;
+        }
+        .text-white, .text-slate-100 {
+            color: #0f172a !important;
+        }
+        .text-slate-350, .text-slate-400, .text-slate-450 {
+            color: #475569 !important;
+        }
+        .text-slate-300 {
+            color: #334155 !important;
+        }
+        .bg-dark-900, .bg-slate-950 {
+            background-color: #f8fafc !important;
+        }
+        .bg-dark-800 {
+            background-color: #f1f5f9 !important;
+        }
+        .bg-slate-900 {
+            background-color: #ffffff !important;
+        }
+        .bg-slate-900\/50, .bg-slate-900\/40 {
+            background-color: rgba(255, 255, 255, 0.8) !important;
+        }
+        .bg-slate-950\/70 {
+            background-color: rgba(255, 255, 255, 0.9) !important;
+        }
+        .border-slate-900, .border-slate-800, .border-slate-800\/80 {
+            border-color: #e2e8f0 !important;
+        }
+        .border-t {
+            border-color: #e2e8f0 !important;
+        }
+        .glassmorphism {
+            background: rgba(255, 255, 255, 0.75) !important;
+            backdrop-filter: blur(12px) !important;
+            -webkit-backdrop-filter: blur(12px) !important;
+            border: 1px rgba(0, 0, 0, 0.08) solid !important;
+        }
+        .border-white\/\[0\.08\] {
+            border-color: rgba(0, 0, 0, 0.08) !important;
+        }
+        .border-white\/5 {
+            border-color: rgba(0, 0, 0, 0.05) !important;
+        }
+        .bg-slate-900.border-slate-800 {
+            background-color: #ffffff !important;
+            border-color: #cbd5e1 !important;
+            color: #1e293b !important;
+        }
+        .bg-slate-900.border-slate-800:hover {
+            background-color: #f1f5f9 !important;
+        }
+        .hover\:bg-slate-900\/80:hover {
+            background-color: rgba(0, 0, 0, 0.03) !important;
+        }
+        @else
+        body {
             background-color: #070a13;
+            color: #f1f5f9;
         }
         .glassmorphism {
             background: rgba(15, 23, 42, 0.65);
@@ -56,10 +129,39 @@
             -webkit-backdrop-filter: blur(12px);
             border: 1px rgba(255, 255, 255, 0.08) solid;
         }
+        @endif
+        
         .text-gradient {
-            background: linear-gradient(135deg, #60a5fa 0%, #3b82f6 50%, #1d4ed8 100%);
+            background: linear-gradient(135deg, {{ $settings->primary_color ?? '#3b82f6' }}e0 0%, {{ $settings->primary_color ?? '#3b82f6' }} 50%, {{ $settings->secondary_color ?? '#1d4ed8' }} 100%);
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
+        }
+        
+        @keyframes gradient-shift {
+            0% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+            100% { background-position: 0% 50%; }
+        }
+        .animated-gradient-border {
+            position: relative;
+            border-radius: inherit;
+            z-index: 0;
+        }
+        .animated-gradient-border::before {
+            content: '';
+            position: absolute;
+            inset: 0;
+            border-radius: inherit;
+            padding: 1.5px;
+            background: linear-gradient(90deg, {{ $settings->primary_color ?? '#3b82f6' }}, {{ $settings->secondary_color ?? '#1d4ed8' }}, {{ $settings->primary_color ?? '#3b82f6' }});
+            background-size: 200% 200%;
+            -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+            -webkit-mask-composite: xor;
+            mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+            mask-composite: exclude;
+            z-index: 10;
+            pointer-events: none;
+            animation: gradient-shift 3s ease infinite;
         }
         .heart-beat {
             animation: heartbeat 0.4s ease-in-out;
@@ -101,7 +203,7 @@
             <div class="lg:col-span-8 space-y-8">
                 
                 <!-- Imagens Coladas (Estilo Pinterest / Behance) -->
-                <div class="flex flex-col space-y-0 rounded-none overflow-hidden shadow-2xl border border-slate-850">
+                <div class="flex flex-col space-y-0 rounded-none overflow-hidden shadow-2xl border border-white/[0.08]">
                     <!-- Imagem Principal de Capa -->
                     @if($item->thumb_path)
                         <img src="{{ asset('storage/' . $item->thumb_path) }}" 
@@ -114,15 +216,15 @@
                         @foreach($item->images->sortBy('order') as $image)
                             <img src="{{ asset('storage/' . $image->image_path) }}" 
                                  alt="Galeria - {{ $item->title }}"
-                                 class="w-full h-auto object-cover rounded-none block m-0 p-0 border-t border-slate-850/40">
+                                 class="w-full h-auto object-cover rounded-none block m-0 p-0 border-t border-white/[0.04]">
                         @endforeach
                     @endif
                 </div>
 
                 <!-- Caso seja Font / Tipografia: Testador Interativo -->
                 @if(str_contains(strtolower($item->category->name), 'fonte') || str_contains(strtolower($item->category->name), 'tipografia'))
-                    <div class="bg-slate-900/60 border border-slate-850 p-8 rounded-2xl shadow-xl space-y-4">
-                        <div class="flex items-center justify-between border-b border-slate-850 pb-3">
+                    <div class="p-8 rounded-2xl shadow-none space-y-4 glassmorphism">
+                        <div class="flex items-center justify-between border-b border-white/[0.08] pb-3">
                             <h4 class="font-outfit font-extrabold text-white text-base">Teste a Fonte Online</h4>
                             <span class="text-[10px] bg-blue-500/10 text-blue-400 border border-blue-500/20 px-2 py-0.5 rounded font-bold uppercase tracking-wider">Amostra</span>
                         </div>
@@ -130,14 +232,14 @@
                         <div class="space-y-4" x-data="{ sampleText: 'Digite aqui para testar o alinhamento da fonte...', fontSize: 32 }">
                             <div class="flex items-center gap-4 text-xs text-slate-400">
                                 <span class="shrink-0">Tamanho da Letra:</span>
-                                <input type="range" min="16" max="72" x-model="fontSize" class="w-full h-1 bg-slate-850 rounded-lg appearance-none cursor-pointer accent-blue-500">
+                                <input type="range" min="16" max="72" x-model="fontSize" class="w-full h-1 bg-slate-800 rounded-lg appearance-none cursor-pointer accent-blue-500">
                                 <span class="w-12 text-right font-mono" x-text="fontSize + 'px'"></span>
                             </div>
                             
                             <input type="text" x-model="sampleText" class="w-full px-4 py-3 bg-slate-950/80 border border-slate-800 rounded-lg text-sm text-slate-300 focus:outline-none focus:border-blue-500 transition-colors">
                             
                             <!-- Caixa de Amostra Estilizada -->
-                            <div class="p-6 bg-slate-950 border border-slate-850 rounded-lg min-h-[120px] flex items-center justify-center text-center text-white break-all leading-normal"
+                            <div class="p-6 bg-slate-950 border border-white/[0.08] rounded-lg min-h-[120px] flex items-center justify-center text-center text-white break-all leading-normal"
                                  :style="'font-size: ' + fontSize + 'px; font-family: Outfit, sans-serif; font-weight: 800;'"
                                  x-text="sampleText">
                             </div>
@@ -147,7 +249,7 @@
 
                 <!-- Link Externo para Visualizar / Acessar -->
                 @if($item->redirect_url)
-                    <div class="bg-slate-900/50 border border-slate-850 p-6 rounded-2xl text-center space-y-4 shadow-sm">
+                    <div class="p-6 rounded-2xl text-center space-y-4 shadow-none glassmorphism">
                         <p class="text-sm text-slate-350">Este trabalho possui um link interativo ou demonstração online disponível.</p>
                         <a href="{{ $item->redirect_url }}" target="_blank" class="inline-flex items-center justify-center gap-2.5 px-8 py-3 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-full transition-all shadow-md shadow-blue-600/25">
                             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -164,7 +266,7 @@
             <div class="lg:col-span-4 lg:sticky lg:top-24 space-y-6">
                 
                 <!-- Ficha Técnica -->
-                <div class="bg-slate-900/60 border border-slate-850 p-8 rounded-2xl shadow-xl space-y-6">
+                <div class="p-8 rounded-2xl shadow-none space-y-6 glassmorphism">
                     <div class="space-y-3">
                         <span class="text-xs font-extrabold uppercase tracking-widest text-blue-500 block">
                             {{ $item->category->name }}
@@ -175,7 +277,7 @@
                     </div>
 
                     <!-- Métricas de Likes & Views -->
-                    <div class="flex items-center gap-4 py-3 border-y border-slate-850/80">
+                    <div class="flex items-center gap-4 py-3 border-y border-white/[0.08]">
                         <!-- Views -->
                         <div class="flex items-center gap-2 text-slate-400 text-xs font-bold">
                             <svg class="w-4.5 h-4.5 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -252,7 +354,7 @@
                     $whatsappNumber = str_starts_with($cleanPhone, '55') ? $cleanPhone : '55' . $cleanPhone;
                 @endphp
                 <!-- Botão de Contato Rápido -->
-                <div class="bg-slate-900/40 border border-slate-850 p-6 rounded-2xl text-center space-y-3">
+                <div class="p-6 rounded-2xl text-center space-y-3 glassmorphism">
                     <p class="text-xs text-slate-400">Gostou deste trabalho? Vamos desenvolver o seu projeto juntos!</p>
                     <a href="https://wa.me/{{ $whatsappNumber }}?text=Olá Danilo, gostei muito do seu trabalho '{{ rawurlencode($item->title) }}' e gostaria de bater um papo!" 
                        target="_blank" 
@@ -275,7 +377,7 @@
 
                 <div class="grid grid-cols-1 sm:grid-cols-3 gap-6">
                     @foreach($relatedItems as $rel)
-                        <a href="{{ route('public.portfolio.show', $rel->slug) }}" class="group bg-slate-900/40 border border-slate-850/80 hover:border-slate-750 p-4 rounded-xl shadow-sm transition-all duration-300 block">
+                        <a href="{{ route('public.portfolio.show', $rel->slug) }}" class="group bg-slate-900/40 border border-white/[0.08] hover:border-blue-500/50 p-4 rounded-xl shadow-none transition-all duration-300 block">
                             <div class="aspect-video w-full rounded-lg overflow-hidden bg-slate-950 relative">
                                 @if($rel->thumb_path)
                                     <img src="{{ asset('storage/' . $rel->thumb_path) }}" class="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105">

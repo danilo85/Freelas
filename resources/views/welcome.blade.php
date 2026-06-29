@@ -29,12 +29,22 @@
                             700: '#151e33',
                             600: '#1e294b',
                         },
+                        blue: {
+                            50: '{{ ($settings->primary_color ?? "#3b82f6") }}10',
+                            100: '{{ ($settings->primary_color ?? "#3b82f6") }}20',
+                            200: '{{ ($settings->primary_color ?? "#3b82f6") }}40',
+                            300: '{{ ($settings->primary_color ?? "#3b82f6") }}80',
+                            400: '{{ ($settings->primary_color ?? "#3b82f6") }}c0',
+                            500: '{{ $settings->primary_color ?? "#3b82f6" }}',
+                            600: '{{ $settings->primary_color ?? "#2563eb" }}',
+                            700: '{{ $settings->secondary_color ?? "#1d4ed8" }}',
+                        },
                         primary: {
-                            50: '#eff6ff',
-                            100: '#dbeafe',
-                            500: '#3b82f6',
-                            600: '#2563eb',
-                            700: '#1d4ed8',
+                            50: '{{ ($settings->primary_color ?? "#3b82f6") }}10',
+                            100: '{{ ($settings->primary_color ?? "#3b82f6") }}20',
+                            500: '{{ $settings->primary_color ?? "#3b82f6" }}',
+                            600: '{{ $settings->primary_color ?? "#2563eb" }}',
+                            700: '{{ $settings->secondary_color ?? "#1d4ed8" }}',
                         }
                     }
                 }
@@ -48,18 +58,137 @@
     <style>
         body {
             font-family: 'Inter', sans-serif;
-            background-color: #070a13;
+            transition: background-color 0.3s, color 0.3s;
         }
-        .text-gradient {
-            background: linear-gradient(135deg, #60a5fa 0%, #3b82f6 50%, #1d4ed8 100%);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
+        @if(($settings->theme_mode ?? 'escuro') === 'claro')
+        body {
+            background-color: #f8fafc;
+            color: #1e293b;
+        }
+        .text-white, .text-slate-100 {
+            color: #0f172a !important;
+        }
+        .text-slate-350, .text-slate-400, .text-slate-450 {
+            color: #475569 !important;
+        }
+        .text-slate-300 {
+            color: #334155 !important;
+        }
+        .bg-dark-900, .bg-slate-950 {
+            background-color: #f8fafc !important;
+        }
+        .bg-dark-800 {
+            background-color: #f1f5f9 !important;
+        }
+        .bg-slate-900 {
+            background-color: #ffffff !important;
+        }
+        .bg-slate-900\/50, .bg-slate-900\/40 {
+            background-color: rgba(255, 255, 255, 0.8) !important;
+        }
+        .bg-slate-950\/70 {
+            background-color: rgba(255, 255, 255, 0.9) !important;
+        }
+        .bg-slate-950\/80 {
+            background-color: rgba(255, 255, 255, 0.9) !important;
+        }
+        .text-slate-200 {
+            color: #1e293b !important;
+        }
+        .placeholder-slate-650::placeholder {
+            color: #94a3b8 !important;
+        }
+        .border-slate-900, .border-slate-800, .border-slate-800\/80 {
+            border-color: #e2e8f0 !important;
+        }
+        .border-t {
+            border-color: #e2e8f0 !important;
+        }
+        .glassmorphism {
+            background: rgba(255, 255, 255, 0.75) !important;
+            backdrop-filter: blur(12px) !important;
+            -webkit-backdrop-filter: blur(12px) !important;
+            border: 1px rgba(0, 0, 0, 0.08) solid !important;
+        }
+        .border-white\/\[0\.08\] {
+            border-color: rgba(0, 0, 0, 0.08) !important;
+        }
+        .border-white\/5 {
+            border-color: rgba(0, 0, 0, 0.05) !important;
+        }
+        .bg-slate-900.border-slate-800 {
+            background-color: #ffffff !important;
+            border-color: #cbd5e1 !important;
+            color: #1e293b !important;
+        }
+        .bg-slate-900.border-slate-800:hover {
+            background-color: #f1f5f9 !important;
+        }
+        .hover\:bg-slate-900\/80:hover {
+            background-color: rgba(0, 0, 0, 0.03) !important;
+        }
+        @else
+        body {
+            background-color: #070a13;
+            color: #f1f5f9;
         }
         .glassmorphism {
             background: rgba(15, 23, 42, 0.65);
             backdrop-filter: blur(12px);
             -webkit-backdrop-filter: blur(12px);
             border: 1px rgba(255, 255, 255, 0.08) solid;
+        }
+        @endif
+        
+        .text-gradient {
+            background: linear-gradient(135deg, {{ $settings->primary_color ?? '#3b82f6' }}e0 0%, {{ $settings->primary_color ?? '#3b82f6' }} 50%, {{ $settings->secondary_color ?? '#1d4ed8' }} 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+        
+        @keyframes gradient-shift {
+            0% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+            100% { background-position: 0% 50%; }
+        }
+        .animated-gradient-border {
+            position: relative;
+            border-radius: inherit;
+            z-index: 0;
+        }
+        .animated-gradient-border::before {
+            content: '';
+            position: absolute;
+            inset: 0;
+            border-radius: inherit;
+            padding: 1.5px;
+            background: linear-gradient(90deg, {{ $settings->primary_color ?? '#3b82f6' }}, {{ $settings->secondary_color ?? '#1d4ed8' }}, {{ $settings->primary_color ?? '#3b82f6' }});
+            background-size: 200% 200%;
+            -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+            -webkit-mask-composite: xor;
+            mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+            mask-composite: exclude;
+            z-index: 10;
+            pointer-events: none;
+            animation: gradient-shift 3s ease infinite;
+        }
+        
+        @keyframes float-blob-1 {
+            0% { transform: translate(0px, 0px) scale(1); }
+            33% { transform: translate(30px, -50px) scale(1.1); }
+            66% { transform: translate(-20px, 20px) scale(0.95); }
+            100% { transform: translate(0px, 0px) scale(1); }
+        }
+        @keyframes float-blob-2 {
+            0% { transform: translate(0px, 0px) scale(1); }
+            50% { transform: translate(-30px, 40px) scale(1.05); }
+            100% { transform: translate(0px, 0px) scale(1); }
+        }
+        .animate-float-1 {
+            animation: float-blob-1 12s ease-in-out infinite;
+        }
+        .animate-float-2 {
+            animation: float-blob-2 15s ease-in-out infinite;
         }
     </style>
 </head>
@@ -85,24 +214,98 @@
             </nav>
 
             <div class="flex items-center gap-3">
-                <a href="{{ route('dashboard') }}" class="px-4 py-2 rounded-full border border-blue-500/30 hover:border-blue-500 text-blue-400 hover:text-white text-xs font-semibold uppercase tracking-wider transition-all flex items-center gap-2 shadow-sm shadow-blue-500/10">
+                <a href="{{ route('dashboard') }}" class="hidden md:flex px-4 py-2 rounded-full border border-blue-500/30 hover:border-blue-500 text-blue-400 hover:text-white text-xs font-semibold uppercase tracking-wider transition-all items-center gap-2 shadow-sm shadow-blue-500/10">
                     <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"></path>
                     </svg>
                     <span>Área Restrita</span>
                 </a>
+                
+                <!-- Hamburger Menu Button -->
+                <button type="button" @click="mobileMenuOpen = !mobileMenuOpen" class="md:hidden flex flex-col items-center justify-center w-9 h-9 space-y-1.5 focus:outline-none z-50 relative" aria-label="Menu">
+                    <span class="w-6 h-0.5 bg-slate-355 transition-all duration-300 transform" :class="mobileMenuOpen ? 'rotate-45 translate-y-2' : ''"></span>
+                    <span class="w-6 h-0.5 bg-slate-355 transition-all duration-300" :class="mobileMenuOpen ? 'opacity-0' : ''"></span>
+                    <span class="w-6 h-0.5 bg-slate-355 transition-all duration-300 transform" :class="mobileMenuOpen ? '-rotate-45 -translate-y-2' : ''"></span>
+                </button>
             </div>
         </div>
     </header>
 
+    <!-- Menu Lateral Mobile (Drawer) -->
+    <div x-show="mobileMenuOpen" 
+         class="fixed inset-0 z-40 md:hidden flex justify-end"
+         x-transition:enter="transition-opacity ease-out duration-300"
+         x-transition:enter-start="opacity-0"
+         x-transition:enter-end="opacity-100"
+         x-transition:leave="transition-opacity ease-in duration-200"
+         x-transition:leave-start="opacity-100"
+         x-transition:leave-end="opacity-0"
+         @touchstart="handleTouchStart($event)"
+         @touchend="handleTouchEnd($event)"
+         style="display: none;">
+         
+         <!-- Backdrop -->
+         <div class="fixed inset-0 bg-black/60 backdrop-blur-sm" @click="mobileMenuOpen = false"></div>
+
+         <!-- Drawer Panel -->
+         <div class="relative w-80 max-w-full bg-slate-900 border-l border-white/[0.08] h-full flex flex-col justify-between p-6 shadow-2xl z-50 glassmorphism"
+              x-show="mobileMenuOpen"
+              x-transition:enter="transition ease-out duration-300 transform"
+              x-transition:enter-start="translate-x-full"
+              x-transition:enter-end="translate-x-0"
+              x-transition:leave="transition ease-in duration-200 transform"
+              x-transition:leave-start="translate-x-0"
+              x-transition:leave-end="translate-x-full">
+              
+              <div class="space-y-8 pt-16">
+                  <!-- Logo / Título -->
+                  <div class="border-b border-white/[0.08] pb-4">
+                      <span class="font-outfit font-black text-lg tracking-tight text-white">
+                          DANILO<span class="text-blue-500">MIGUEL</span>
+                      </span>
+                  </div>
+
+                  <!-- Links de Navegação -->
+                  <nav class="flex flex-col gap-6">
+                      <a href="#home" @click="mobileMenuOpen = false" class="text-lg font-semibold text-slate-300 hover:text-white transition-colors flex items-center gap-3">
+                          <span>🏠</span> Início
+                      </a>
+                      <a href="#portfolio" @click="mobileMenuOpen = false" class="text-lg font-semibold text-slate-300 hover:text-white transition-colors flex items-center gap-3">
+                          <span>📁</span> Portfólio
+                      </a>
+                      <a href="#about" @click="mobileMenuOpen = false" class="text-lg font-semibold text-slate-300 hover:text-white transition-colors flex items-center gap-3">
+                          <span>🧑‍🎨</span> Sobre Mim
+                      </a>
+                      <a href="#faq" @click="mobileMenuOpen = false" class="text-lg font-semibold text-slate-300 hover:text-white transition-colors flex items-center gap-3">
+                          <span>💬</span> FAQ
+                      </a>
+                      <a href="#contact" @click="mobileMenuOpen = false" class="text-lg font-semibold text-slate-300 hover:text-white transition-colors flex items-center gap-3">
+                          <span>📞</span> Contato
+                      </a>
+                  </nav>
+              </div>
+
+              <!-- Rodapé do Drawer -->
+              <div class="border-t border-white/[0.08] pt-6 flex flex-col gap-4">
+                  <a href="{{ route('dashboard') }}" class="w-full py-3 rounded-full border border-blue-500/30 hover:border-blue-500 text-blue-400 hover:text-white text-xs font-semibold uppercase tracking-wider transition-all text-center flex items-center justify-center gap-2 shadow-sm shadow-blue-500/10">
+                      <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"></path>
+                      </svg>
+                      <span>Área Administrativa</span>
+                  </a>
+                  <p class="text-[10px] text-slate-450 text-center">Arraste para a direita para fechar 👉</p>
+              </div>
+         </div>
+    </div>
+
     <!-- Hero Section -->
     <section id="home" class="relative min-h-screen flex items-center justify-center pt-20 overflow-hidden bg-radial-gradient">
         <!-- Detalhes de luz de fundo -->
-        <div class="absolute top-1/4 left-1/4 -translate-x-1/2 -translate-y-1/2 w-[350px] h-[350px] bg-blue-600/15 rounded-full blur-[100px] pointer-events-none"></div>
-        <div class="absolute bottom-1/4 right-1/4 translate-x-1/2 translate-y-1/2 w-[450px] h-[450px] bg-indigo-600/15 rounded-full blur-[120px] pointer-events-none"></div>
+        <div class="absolute top-[15%] left-[15%] w-[350px] h-[350px] bg-blue-600/15 rounded-full blur-[100px] pointer-events-none animate-float-1"></div>
+        <div class="absolute bottom-[15%] right-[15%] w-[450px] h-[450px] bg-indigo-600/15 rounded-full blur-[120px] pointer-events-none animate-float-2"></div>
 
         <div class="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 text-center space-y-8 relative z-10">
-            <span class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-blue-500/10 border border-blue-500/20 text-blue-400 text-xs font-semibold uppercase tracking-wider shadow-sm animate-pulse">
+            <span class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-blue-500/10 text-blue-400 text-xs font-semibold uppercase tracking-wider shadow-sm animate-pulse">
                 🚀 Ilustrador & Designer Editorial
             </span>
             
@@ -118,17 +321,22 @@
                 $cleanPhone = preg_replace('/\D/', '', $settings->contact_phone);
                 $whatsappNumber = str_starts_with($cleanPhone, '55') ? $cleanPhone : '55' . $cleanPhone;
             @endphp
-            <div class="flex flex-col sm:flex-row items-center justify-center gap-4 pt-4">
-                <a href="#portfolio" class="w-full sm:w-auto px-8 py-3.5 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-full transition-all shadow-lg shadow-blue-600/25 text-center">
-                    Ver Portfólio
+            <div class="flex items-center justify-center gap-4 pt-4">
+                <!-- Ver Portfólio Circular Icon Button -->
+                <a href="#portfolio" title="Ver Portfólio" class="w-14 h-14 bg-blue-600 hover:bg-blue-700 text-white rounded-full transition-all shadow-lg shadow-blue-600/25 flex items-center justify-center">
+                    <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M4 6a2 2 0 012-2h2a2 2 0 012 2v4a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v4a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v4a2 2 0 01-2 2H6a2 2 0 01-2-2v-4zM14 16a2 2 0 012-2h2a2 2 0 012 2v4a2 2 0 01-2 2h-2a2 2 0 01-2-2v-4z"></path>
+                    </svg>
                 </a>
-                <a href="https://wa.me/{{ $whatsappNumber }}" target="_blank" class="w-full sm:w-auto px-8 py-3.5 bg-slate-900 border border-slate-800 hover:bg-slate-850 text-white font-bold rounded-full transition-all text-center flex items-center justify-center gap-2">
-                    <svg class="w-5 h-5 text-emerald-500 fill-emerald-500" viewBox="0 0 24 24">
+                
+                <!-- Falar no WhatsApp Circular Icon Button -->
+                <a href="https://wa.me/{{ $whatsappNumber }}" target="_blank" title="Falar no WhatsApp" class="w-14 h-14 bg-slate-900 border border-slate-800 hover:bg-slate-800 rounded-full transition-all flex items-center justify-center">
+                    <svg class="w-6 h-6 text-emerald-500 fill-emerald-500" viewBox="0 0 24 24">
                         <path d="M.057 24l1.687-6.163c-1.041-1.804-1.588-3.849-1.587-5.946C.06 5.348 5.397.01 12.008.01c3.202.001 6.212 1.246 8.477 3.514 2.266 2.268 3.507 5.28 3.505 8.484-.004 6.657-5.34 11.997-11.953 11.997-2.005-.001-3.973-.502-5.724-1.458L0 24zm6.59-4.846c1.6.95 3.188 1.449 4.825 1.451 5.436 0 9.859-4.42 9.863-9.864.002-2.634-1.02-5.11-2.884-6.978C16.59 1.897 14.113 1.83 12.012 1.83c-5.435 0-9.856 4.419-9.86 9.864-.001 1.944.521 3.823 1.512 5.473L2.658 21.35l4.279-1.124.71.428z"/>
                     </svg>
-                    Falar no WhatsApp
                 </a>
             </div>
+
         </div>
 
         <!-- Indicador de Scroll -->
@@ -176,7 +384,7 @@
                          x-transition:enter-start="opacity-0 scale-95"
                          x-transition:enter-end="opacity-100 scale-100"
                          @click="window.location.href = '{{ route('public.portfolio.show', $item->slug) }}'"
-                         class="break-inside-avoid w-full mb-6 cursor-pointer group bg-slate-900 border border-slate-850 hover:border-slate-750 rounded-[3px] overflow-hidden shadow-sm hover:shadow-xl transition-all duration-300 relative inline-block">
+                         class="break-inside-avoid w-full mb-6 cursor-pointer group bg-slate-900/50 border border-white/[0.08] hover:border-blue-500/50 rounded-[3px] overflow-hidden shadow-sm hover:shadow-xl transition-all duration-300 relative inline-block">
                         
                         <!-- Thumbnail (Pinterest Adaptável) -->
                         <div class="relative w-full overflow-hidden bg-slate-950">
@@ -285,7 +493,7 @@
             <!-- Ilustração / Imagem decorativa de destaque -->
             <div class="relative flex justify-center">
                 <div class="absolute inset-0 bg-blue-600/10 rounded-full blur-[80px] pointer-events-none"></div>
-                <div class="w-full max-w-md aspect-square rounded-2xl bg-gradient-to-tr from-blue-700/20 to-indigo-700/20 border border-slate-800/80 p-8 flex items-center justify-center relative overflow-hidden shadow-2xl">
+                <div class="w-full max-w-md aspect-square rounded-2xl bg-gradient-to-tr from-blue-700/20 to-indigo-700/20 p-8 flex items-center justify-center relative overflow-hidden shadow-2xl">
                     <div class="absolute top-4 left-4 w-3.5 h-3.5 rounded-full bg-red-500/60"></div>
                     <div class="absolute top-4 left-10 w-3.5 h-3.5 rounded-full bg-yellow-500/60"></div>
                     <div class="absolute top-4 left-16 w-3.5 h-3.5 rounded-full bg-emerald-500/60"></div>
@@ -318,7 +526,7 @@
             <!-- Accordion FAQ -->
             <div class="space-y-4" x-data="{ activeFaq: null }">
                 @foreach($settings->faq_items as $index => $faq)
-                    <div class="bg-slate-900/40 border border-slate-850 rounded-xl overflow-hidden">
+                    <div class="bg-slate-900/40 border border-white/[0.08] rounded-xl overflow-hidden">
                         <button class="w-full px-6 py-5 text-left flex items-center justify-between gap-4 font-bold text-white hover:bg-slate-900/80 transition-colors"
                                 @click="activeFaq = activeFaq === {{ $index }} ? null : {{ $index }}">
                             <span>{{ $faq['question'] }}</span>
@@ -376,8 +584,8 @@
             </div>
 
             <!-- Formulário Moderno -->
-            <div class="bg-slate-900/50 border border-slate-850 p-8 rounded-2xl shadow-xl glassmorphism space-y-4">
-                <h4 class="font-outfit font-extrabold text-white text-lg border-b border-slate-850 pb-3">Fale Conosco</h4>
+            <div class="bg-slate-900/50 border border-white/[0.08] p-8 rounded-2xl shadow-xl glassmorphism space-y-4">
+                <h4 class="font-outfit font-extrabold text-white text-lg border-b border-white/[0.08] pb-3">Fale Conosco</h4>
                 
                 <form action="mailto:{{ $settings->contact_email }}" method="GET" enctype="text/plain" class="space-y-4">
                     <div class="space-y-1">
@@ -425,11 +633,32 @@
             return {
                 scrolled: false,
                 activeCategory: 'all',
+                mobileMenuOpen: false,
+                touchStartX: 0,
+                touchEndX: 0,
 
                 init() {
                     window.addEventListener('scroll', () => {
                         this.scrolled = window.scrollY > 50;
                     });
+                },
+
+                handleTouchStart(e) {
+                    this.touchStartX = e.changedTouches[0].clientX;
+                },
+
+                handleTouchEnd(e) {
+                    this.touchEndX = e.changedTouches[0].clientX;
+                    this.handleSwipe();
+                },
+
+                handleSwipe() {
+                    const swipeThreshold = 55;
+                    const diff = this.touchEndX - this.touchStartX;
+                    // Closing drawer (swiping from left to right -> positive diff)
+                    if (diff > swipeThreshold && this.mobileMenuOpen) {
+                        this.mobileMenuOpen = false;
+                    }
                 }
             }
         }
