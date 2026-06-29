@@ -262,7 +262,7 @@
                             
                             <!-- Informações do Cliente, ID e Status -->
                             <div class="min-w-0 flex-1 space-y-1">
-                                <div class="flex items-center justify-between gap-1.5">
+                                <div class="flex flex-wrap items-center justify-between gap-1.5 w-full">
                                     <span class="bg-blue-50 text-blue-700 border border-blue-150 text-xs font-bold px-2 py-0.5 rounded-[5px] shrink-0">
                                         #{{ $project->id }}
                                     </span>
@@ -413,7 +413,7 @@
                         <div class="border-t my-0.5" :class="getDividerClass()"></div>
 
                         <!-- Rodapé com botões de ação compactos e alinhados à direita -->
-                        <div class="flex items-center justify-end pt-1 gap-1">
+                        <div class="flex flex-wrap items-center justify-end pt-1 gap-1">
                             <!-- Visualizar -->
                             <a href="{{ route('projects.show', $project->id) }}" class="w-8 h-8 flex items-center justify-center bg-transparent text-emerald-600 hover:bg-emerald-50 rounded-[5px] transition-all border-0 shadow-none" title="Visualizar Orçamento">
                                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">

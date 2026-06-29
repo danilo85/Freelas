@@ -173,15 +173,15 @@
                         </div>
 
                         <!-- Rodapé: Saldo Atual & Ações -->
-                        <div class="mt-6 pt-3 border-t border-white/20 flex items-center justify-between gap-2">
-                            <div>
+                        <div class="mt-6 pt-3 border-t border-white/20 flex flex-wrap items-center justify-between gap-3">
+                            <div class="min-w-[120px]">
                                 <p class="text-[9px] uppercase tracking-wider opacity-75 font-bold">Saldo Consolidado</p>
-                                <p class="text-xl font-black mt-0.5 tracking-tight {{ $account->brand_style['accent'] }}">
+                                <p class="text-xl font-black mt-0.5 tracking-tight {{ $account->brand_style['accent'] }} truncate" title="R$ {{ number_format($account->current_balance, 2, ',', '.') }}">
                                     R$ {{ number_format($account->current_balance, 2, ',', '.') }}
                                 </p>
                             </div>
                             
-                            <div class="flex items-center gap-1 shrink-0">
+                            <div class="flex flex-wrap items-center gap-1">
                                 <!-- Extrato -->
                                 <a href="{{ route('bank-accounts.show', $account->id) }}" class="w-8 h-8 flex items-center justify-center rounded-full bg-white/10 hover:bg-white/25 text-white transition-all" title="Ver Extrato">
                                     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -261,15 +261,15 @@
                         </div>
 
                         <!-- Rodapé: Limite & Ações -->
-                        <div class="mt-6 pt-3 border-t border-white/20 flex items-center justify-between gap-2">
-                            <div>
+                        <div class="mt-6 pt-3 border-t border-white/20 flex flex-wrap items-center justify-between gap-3">
+                            <div class="min-w-[120px]">
                                 <p class="text-[9px] uppercase tracking-wider opacity-75 font-bold">Limite do Cartão</p>
-                                <p class="text-xl font-black mt-0.5 tracking-tight">
+                                <p class="text-xl font-black mt-0.5 tracking-tight truncate" title="R$ {{ number_format($card->limit, 2, ',', '.') }}">
                                     R$ {{ number_format($card->limit, 2, ',', '.') }}
                                 </p>
                             </div>
                             
-                            <div class="flex items-center gap-1 shrink-0">
+                            <div class="flex flex-wrap items-center gap-1">
                                 <!-- Ver Fatura -->
                                 <a href="{{ route('credit-cards.show', $card->id) }}" class="w-8 h-8 flex items-center justify-center rounded-full bg-white/10 hover:bg-white/25 text-white transition-all" title="Ver Fatura / Extrato">
                                     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">

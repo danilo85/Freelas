@@ -338,7 +338,7 @@
         </header>
 
         <!-- Conteúdo Principal -->
-        <main class="flex-1 overflow-y-auto p-4 sm:p-6 md:p-8">
+        <main class="flex-1 overflow-y-auto p-4 pb-28 sm:p-6 sm:pb-20 md:p-8 md:pb-8">
             <div class="max-w-[1200px] mx-auto w-full">
                 
                 <!-- Alerta Flash: Sucesso -->
