@@ -58,9 +58,8 @@
                 @forelse($categories as $cat)
                     @php
                         $style = getCategoryColorStyle($cat->name);
-                        $borderAccent = str_replace('bg-', 'border-', explode(' ', $style['bg'])[0]);
                     @endphp
-                    <div class="bg-white border-l-4 {{ $borderAccent }} border-y border-r border-slate-200 p-4 rounded-[5px] shadow-sm flex items-center justify-between hover:shadow-md hover:scale-[1.01] transition-all duration-200">
+                    <div class="bg-white border border-slate-200 p-4 rounded-[5px] shadow-sm flex items-center justify-between hover:shadow-md hover:scale-[1.01] transition-all duration-200">
                         <div class="min-w-0 flex-1">
                             <div class="flex items-center gap-2">
                                 <span class="w-2.5 h-2.5 rounded-full {{ $style['badge'] }} shrink-0"></span>
