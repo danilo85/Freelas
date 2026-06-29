@@ -4,6 +4,35 @@
 @section('page_title', 'Administração de Portfólio')
 
 @section('content')
+@php
+    if (!function_exists('getCategoryColorStyle')) {
+        function getCategoryColorStyle($categoryName) {
+            $colors = [
+                'design' => ['bg' => 'bg-indigo-50 text-indigo-750 border-indigo-200', 'badge' => 'bg-indigo-500', 'icon_color' => 'text-indigo-500'],
+                'web' => ['bg' => 'bg-blue-50 text-blue-750 border-blue-200', 'badge' => 'bg-blue-500', 'icon_color' => 'text-blue-500'],
+                'branding' => ['bg' => 'bg-purple-50 text-purple-750 border-purple-200', 'badge' => 'bg-purple-500', 'icon_color' => 'text-purple-500'],
+                'social' => ['bg' => 'bg-rose-50 text-rose-750 border-rose-200', 'badge' => 'bg-rose-500', 'icon_color' => 'text-rose-500'],
+                'video' => ['bg' => 'bg-red-50 text-red-750 border-red-200', 'badge' => 'bg-red-500', 'icon_color' => 'text-red-500'],
+                'foto' => ['bg' => 'bg-emerald-50 text-emerald-750 border-emerald-200', 'badge' => 'bg-emerald-500', 'icon_color' => 'text-emerald-500'],
+                'marketing' => ['bg' => 'bg-amber-50 text-amber-750 border-amber-200', 'badge' => 'bg-amber-500', 'icon_color' => 'text-amber-500'],
+                'default' => ['bg' => 'bg-teal-50 text-teal-750 border-teal-200', 'badge' => 'bg-teal-500', 'icon_color' => 'text-teal-500'],
+            ];
+
+            $lower = mb_strtolower($categoryName);
+            foreach ($colors as $keyword => $style) {
+                if (str_contains($lower, $keyword)) {
+                    return $style;
+                }
+            }
+            
+            // Deterministic selection based on string hash
+            $availableKeys = ['design', 'web', 'branding', 'social', 'video', 'foto', 'marketing', 'default'];
+            $hash = crc32($lower);
+            $key = $availableKeys[abs($hash) % count($availableKeys)];
+            return $colors[$key];
+        }
+    }
+@endphp
 <div x-data="portfolioList()" class="space-y-8">
     
     <!-- Top Cards (Métricas) -->
@@ -159,9 +188,13 @@
 
                 <!-- Detalhes do Conteúdo -->
                 <div class="p-5 flex-1 flex flex-col justify-between space-y-4">
-                    <div class="space-y-2">
-                        <div class="flex items-center justify-between">
-                            <span class="text-[10px] text-slate-400 font-bold uppercase tracking-wider">
+                    <div class="space-y-2.5">
+                        <div class="flex flex-wrap items-center justify-between gap-2">
+                            @php
+                                $style = getCategoryColorStyle($item->category->name);
+                            @endphp
+                            <span class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-[5px] text-[9px] font-bold uppercase tracking-wider border {{ $style['bg'] }}">
+                                <span class="w-1 h-1 rounded-full {{ $style['badge'] }}"></span>
                                 {{ $item->category->name }}
                             </span>
                             @if($item->client)
@@ -173,59 +206,95 @@
                         <h4 class="font-extrabold text-slate-900 text-base line-clamp-1" title="{{ $item->title }}">
                             {{ $item->title }}
                         </h4>
-                        <p class="text-xs text-slate-500 line-clamp-2 leading-relaxed">
+                        <p class="text-xs text-slate-500 line-clamp-2 leading-relaxed font-normal">
                             {{ strip_tags($item->description) }}
                         </p>
                     </div>
 
-                    <!-- Tecnologias & Autores -->
+                    <!-- Tecnologias, Autores & Data -->
                     <div class="space-y-3 pt-3 border-t border-slate-100">
+                        <div class="flex flex-wrap items-center justify-between gap-2 text-[10px] text-slate-400 font-semibold">
+                            <span>Criado em: <strong class="text-slate-650">{{ $item->created_at->format('d/m/Y') }}</strong></span>
+                        </div>
+
                         @if($item->technologies)
                             <div class="flex flex-wrap gap-1 items-center">
                                 @foreach(explode(',', $item->technologies) as $tech)
-                                    <span class="bg-slate-100 text-slate-600 text-[10px] font-bold px-2 py-0.5 rounded-[4px] border border-slate-200">
+                                    <span class="bg-slate-100 text-slate-650 text-[10px] font-bold px-2 py-0.5 rounded-[4px] border border-slate-200">
                                         {{ trim($tech) }}
                                     </span>
                                 @endforeach
                             </div>
                         @endif
 
+                        @if($item->authors->count() > 0)
+                            <div class="space-y-1">
+                                <span class="text-[9px] font-semibold text-slate-400 uppercase tracking-wider block">Autores</span>
+                                <div class="flex flex-wrap gap-1">
+                                    @foreach($item->authors as $author)
+                                        <span class="bg-slate-50 border border-slate-200/50 text-slate-650 px-2 py-0.5 rounded-[4px] text-[9px] font-bold uppercase tracking-wider inline-block">
+                                            {{ $author->name }}
+                                        </span>
+                                    @endforeach
+                                </div>
+                            </div>
+                        @endif
+
                         <!-- Botões de Ações -->
-                        <div class="flex items-center justify-end gap-1.5 pt-2">
-                            <!-- Visualizar -->
-                            <a href="{{ route('portfolio.show', $item->id) }}" 
-                               class="w-8 h-8 flex items-center justify-center text-emerald-600 hover:bg-emerald-50 rounded-[5px] transition-colors"
-                               title="Visualizar Trabalho">
-                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path>
-                                </svg>
-                            </a>
+                        <div class="flex flex-wrap items-center justify-between gap-2 pt-3 border-t border-slate-100 mt-2">
+                            <!-- Visualizações & Likes (Pre-implementado) -->
+                            <div class="flex items-center gap-3 text-slate-400 text-[11px] font-bold shrink-0 select-none">
+                                <div class="flex items-center gap-1.5" title="{{ $item->views }} visualizações">
+                                    <svg class="w-4 h-4 text-slate-450" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path>
+                                    </svg>
+                                    <span>{{ $item->views }}</span>
+                                </div>
+                                <div class="flex items-center gap-1.5" title="{{ $item->likes }} curtidas">
+                                    <svg class="w-3.5 h-3.5 text-rose-500 fill-rose-500" viewBox="0 0 24 24">
+                                        <path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/>
+                                    </svg>
+                                    <span class="text-slate-500">{{ $item->likes }}</span>
+                                </div>
+                            </div>
 
-                            <!-- Editar -->
-                            <a href="{{ route('portfolio.edit', $item->id) }}" 
-                               class="w-8 h-8 flex items-center justify-center text-primary-650 hover:bg-primary-50 rounded-[5px] transition-colors"
-                               title="Editar Trabalho">
-                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"></path>
-                                </svg>
-                            </a>
+                            <div class="flex items-center gap-1">
+                                <!-- Visualizar -->
+                                <a href="{{ route('portfolio.show', $item->id) }}" 
+                                   class="w-8 h-8 flex items-center justify-center text-emerald-600 hover:bg-emerald-50 rounded-[5px] transition-colors"
+                                   title="Visualizar Trabalho">
+                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path>
+                                    </svg>
+                                </a>
 
-                            <!-- Excluir -->
-                            <button type="button" 
-                                    @click="$dispatch('trigger-global-delete', { 
-                                        title: 'Excluir Trabalho do Portfólio', 
-                                        message: 'Tem certeza de que deseja excluir o trabalho <strong class=\'text-slate-800\'>{{ addslashes($item->title) }}</strong>?<br><span class=\'text-xs text-red-500 mt-1 block\'>Aviso: Esta ação excluirá permanentemente o registro e todas as fotos da galeria.</span>', 
-                                        action: '{{ route('portfolio.destroy', $item->id) }}', 
-                                        highSecurity: false 
-                                    })" 
-                                    class="w-8 h-8 flex items-center justify-center text-red-600 hover:bg-red-50 rounded-[5px] transition-colors"
-                                    title="Excluir Trabalho">
-                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
-                                </svg>
-                            </button>
-                        </div>
+                                <!-- Editar -->
+                                <a href="{{ route('portfolio.edit', $item->id) }}" 
+                                   class="w-8 h-8 flex items-center justify-center text-primary-650 hover:bg-primary-50 rounded-[5px] transition-colors"
+                                   title="Editar Trabalho">
+                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"></path>
+                                    </svg>
+                                </a>
+
+                                <!-- Excluir -->
+                                <button type="button" 
+                                        @click="$dispatch('trigger-global-delete', { 
+                                            title: 'Excluir Trabalho do Portfólio', 
+                                            message: 'Tem certeza de que deseja excluir o trabalho <strong class=\'text-slate-800\'>{{ addslashes($item->title) }}</strong>?<br><span class=\'text-xs text-red-500 mt-1 block\'>Aviso: Esta ação excluirá permanentemente o registro e todas as fotos da galeria.</span>', 
+                                            action: '{{ route('portfolio.destroy', $item->id) }}', 
+                                            highSecurity: false 
+                                        })" 
+                                        class="w-8 h-8 flex items-center justify-center text-red-600 hover:bg-red-50 rounded-[5px] transition-colors"
+                                        title="Excluir Trabalho">
+                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
+                                    </svg>
+                                </button>
+                            </div>
+                        </div>                 </div>
                     </div>
                 </div>
 

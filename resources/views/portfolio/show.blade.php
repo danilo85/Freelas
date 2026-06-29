@@ -4,6 +4,35 @@
 @section('page_title', 'Visualizar Trabalho')
 
 @section('content')
+@php
+    if (!function_exists('getCategoryColorStyle')) {
+        function getCategoryColorStyle($categoryName) {
+            $colors = [
+                'design' => ['bg' => 'bg-indigo-50 text-indigo-750 border-indigo-200', 'badge' => 'bg-indigo-500', 'icon_color' => 'text-indigo-500'],
+                'web' => ['bg' => 'bg-blue-50 text-blue-750 border-blue-200', 'badge' => 'bg-blue-500', 'icon_color' => 'text-blue-500'],
+                'branding' => ['bg' => 'bg-purple-50 text-purple-750 border-purple-200', 'badge' => 'bg-purple-500', 'icon_color' => 'text-purple-500'],
+                'social' => ['bg' => 'bg-rose-50 text-rose-750 border-rose-200', 'badge' => 'bg-rose-500', 'icon_color' => 'text-rose-500'],
+                'video' => ['bg' => 'bg-red-50 text-red-750 border-red-200', 'badge' => 'bg-red-500', 'icon_color' => 'text-red-500'],
+                'foto' => ['bg' => 'bg-emerald-50 text-emerald-750 border-emerald-200', 'badge' => 'bg-emerald-500', 'icon_color' => 'text-emerald-500'],
+                'marketing' => ['bg' => 'bg-amber-50 text-amber-750 border-amber-200', 'badge' => 'bg-amber-500', 'icon_color' => 'text-amber-500'],
+                'default' => ['bg' => 'bg-teal-50 text-teal-750 border-teal-200', 'badge' => 'bg-teal-500', 'icon_color' => 'text-teal-500'],
+            ];
+
+            $lower = mb_strtolower($categoryName);
+            foreach ($colors as $keyword => $style) {
+                if (str_contains($lower, $keyword)) {
+                    return $style;
+                }
+            }
+            
+            // Deterministic selection based on string hash
+            $availableKeys = ['design', 'web', 'branding', 'social', 'video', 'foto', 'marketing', 'default'];
+            $hash = crc32($lower);
+            $key = $availableKeys[abs($hash) % count($availableKeys)];
+            return $colors[$key];
+        }
+    }
+@endphp
 <div class="space-y-6">
     
     <!-- Link de Voltar & Ações -->
@@ -110,8 +139,37 @@
                     </div>
 
                     <div class="space-y-1">
-                        <span class="text-slate-400 font-semibold uppercase tracking-wider block">Categoria</span>
-                        <span class="bg-slate-100 text-slate-700 text-[11px] font-bold px-2 py-0.5 rounded border border-slate-150 inline-block">{{ $portfolio->category->name }}</span>
+                        <span class="text-slate-400 font-semibold uppercase tracking-wider block mb-1">Categoria</span>
+                        @php
+                            $style = getCategoryColorStyle($portfolio->category->name);
+                        @endphp
+                        <span class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-[5px] text-[10px] font-bold uppercase tracking-wider border {{ $style['bg'] }}">
+                            <span class="w-1.5 h-1.5 rounded-full {{ $style['badge'] }}"></span>
+                            {{ $portfolio->category->name }}
+                        </span>
+                    </div>
+
+                    <!-- Métricas Pré-implementadas -->
+                    <div class="grid grid-cols-2 gap-3 pt-1">
+                        <div class="bg-slate-50 border border-slate-200 p-2.5 rounded-[5px] flex items-center justify-between">
+                            <div>
+                                <span class="text-slate-400 font-bold uppercase tracking-wider block text-[9px]">Visualizações</span>
+                                <span class="text-slate-800 font-extrabold text-sm block mt-0.5">{{ $portfolio->views }}</span>
+                            </div>
+                            <svg class="w-5 h-5 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path>
+                            </svg>
+                        </div>
+                        <div class="bg-slate-50 border border-slate-200 p-2.5 rounded-[5px] flex items-center justify-between">
+                            <div>
+                                <span class="text-slate-400 font-bold uppercase tracking-wider block text-[9px]">Curtidas</span>
+                                <span class="text-slate-800 font-extrabold text-sm block mt-0.5">{{ $portfolio->likes }}</span>
+                            </div>
+                            <svg class="w-4 h-4 text-rose-550 fill-rose-500" viewBox="0 0 24 24">
+                                <path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/>
+                            </svg>
+                        </div>
                     </div>
 
                     @if($portfolio->client)

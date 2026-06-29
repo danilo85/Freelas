@@ -19,7 +19,7 @@ class PortfolioController extends Controller
      */
     public function index(Request $request)
     {
-        $query = auth()->user()->portfolioItems()->with(['category', 'client']);
+        $query = auth()->user()->portfolioItems()->with(['category', 'client', 'authors']);
 
         // Estatísticas para os cards
         $totalCount = auth()->user()->portfolioItems()->count();

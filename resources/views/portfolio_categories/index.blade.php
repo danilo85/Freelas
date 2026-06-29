@@ -4,6 +4,35 @@
 @section('page_title', 'Categorias de Portfólio')
 
 @section('content')
+@php
+    if (!function_exists('getCategoryColorStyle')) {
+        function getCategoryColorStyle($categoryName) {
+            $colors = [
+                'design' => ['bg' => 'bg-indigo-50 text-indigo-750 border-indigo-200', 'badge' => 'bg-indigo-500', 'icon_color' => 'text-indigo-500'],
+                'web' => ['bg' => 'bg-blue-50 text-blue-750 border-blue-200', 'badge' => 'bg-blue-500', 'icon_color' => 'text-blue-500'],
+                'branding' => ['bg' => 'bg-purple-50 text-purple-750 border-purple-200', 'badge' => 'bg-purple-500', 'icon_color' => 'text-purple-500'],
+                'social' => ['bg' => 'bg-rose-50 text-rose-750 border-rose-200', 'badge' => 'bg-rose-500', 'icon_color' => 'text-rose-500'],
+                'video' => ['bg' => 'bg-red-50 text-red-750 border-red-200', 'badge' => 'bg-red-500', 'icon_color' => 'text-red-500'],
+                'foto' => ['bg' => 'bg-emerald-50 text-emerald-750 border-emerald-200', 'badge' => 'bg-emerald-500', 'icon_color' => 'text-emerald-500'],
+                'marketing' => ['bg' => 'bg-amber-50 text-amber-750 border-amber-200', 'badge' => 'bg-amber-500', 'icon_color' => 'text-amber-500'],
+                'default' => ['bg' => 'bg-teal-50 text-teal-750 border-teal-200', 'badge' => 'bg-teal-500', 'icon_color' => 'text-teal-500'],
+            ];
+
+            $lower = mb_strtolower($categoryName);
+            foreach ($colors as $keyword => $style) {
+                if (str_contains($lower, $keyword)) {
+                    return $style;
+                }
+            }
+            
+            // Deterministic selection based on string hash
+            $availableKeys = ['design', 'web', 'branding', 'social', 'video', 'foto', 'marketing', 'default'];
+            $hash = crc32($lower);
+            $key = $availableKeys[abs($hash) % count($availableKeys)];
+            return $colors[$key];
+        }
+    }
+@endphp
 <div class="space-y-6" x-data="categoryManager()">
     
     <!-- Retorno rápido -->
@@ -27,10 +56,19 @@
 
             <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 p-5 bg-slate-50/50">
                 @forelse($categories as $cat)
-                    <div class="bg-white border border-slate-200 p-4 rounded-[5px] shadow-sm flex items-center justify-between hover:shadow transition-shadow">
-                        <div class="min-w-0">
-                            <h4 class="font-bold text-slate-800 text-sm truncate" title="{{ $cat->name }}">{{ $cat->name }}</h4>
-                            <p class="text-[10px] text-slate-400 font-mono mt-0.5 truncate" title="{{ $cat->slug }}">{{ $cat->slug }}</p>
+                    @php
+                        $style = getCategoryColorStyle($cat->name);
+                        $borderAccent = str_replace('bg-', 'border-', explode(' ', $style['bg'])[0]);
+                    @endphp
+                    <div class="bg-white border-l-4 {{ $borderAccent }} border-y border-r border-slate-200 p-4 rounded-[5px] shadow-sm flex items-center justify-between hover:shadow-md hover:scale-[1.01] transition-all duration-200">
+                        <div class="min-w-0 flex-1">
+                            <div class="flex items-center gap-2">
+                                <span class="w-2.5 h-2.5 rounded-full {{ $style['badge'] }} shrink-0"></span>
+                                <h4 class="font-extrabold text-slate-800 text-sm truncate" title="{{ $cat->name }}">{{ $cat->name }}</h4>
+                            </div>
+                            <div class="flex items-center gap-1.5 mt-1.5 pl-4 text-[10px] text-slate-400 font-semibold">
+                                <span class="font-mono bg-slate-100 px-1.5 py-0.5 rounded text-slate-500">{{ $cat->slug }}</span>
+                            </div>
                         </div>
                         
                         <div class="flex items-center gap-1 shrink-0 ml-2">
