@@ -43,6 +43,31 @@ class PublicPortfolioController extends Controller
     }
 
     /**
+     * Exibe os detalhes de um trabalho do portfólio.
+     */
+    public function show($slug)
+    {
+        $item = PortfolioItem::with(['category', 'authors', 'images', 'client'])
+            ->where('slug', $slug)
+            ->where('status', 'publicado')
+            ->firstOrFail();
+
+        // Incrementa visualizações
+        $item->increment('views');
+
+        // Carrega trabalhos relacionados da mesma categoria
+        $relatedItems = PortfolioItem::with(['category'])
+            ->where('portfolio_category_id', $item->portfolio_category_id)
+            ->where('id', '!=', $item->id)
+            ->where('status', 'publicado')
+            ->orderBy('created_at', 'desc')
+            ->take(3)
+            ->get();
+
+        return view('portfolio_detail', compact('item', 'relatedItems'));
+    }
+
+    /**
      * Incrementa visualizações de forma assíncrona (AJAX).
      */
     public function incrementViews($id)

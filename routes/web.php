@@ -135,6 +135,7 @@ Route::get('/shared/client/{share_token}/statement', [ClientController::class, '
 
 // Rotas do Portfólio Público (Danilo Miguel)
 Route::get('/', [\App\Http\Controllers\PublicPortfolioController::class, 'index'])->name('public.home');
+Route::get('/trabalho/{slug}', [\App\Http\Controllers\PublicPortfolioController::class, 'show'])->name('public.portfolio.show');
 Route::post('/portfolio/{id}/views', [\App\Http\Controllers\PublicPortfolioController::class, 'incrementViews'])->name('public.portfolio.views');
 Route::post('/portfolio/{id}/likes', [\App\Http\Controllers\PublicPortfolioController::class, 'incrementLikes'])->name('public.portfolio.likes');
 

@@ -164,23 +164,24 @@
                 @endforeach
             </div>
 
-            <!-- Grid de Trabalhos -->
-            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
+            <!-- Grid de Trabalhos (Pinterest Masonry) -->
+            <div class="columns-1 sm:columns-2 lg:columns-3 gap-6 space-y-0">
                 @forelse($items as $item)
                     <div x-show="activeCategory === 'all' || activeCategory === '{{ $item->portfolio_category_id }}'"
                          x-transition:enter="transition ease-out duration-300"
                          x-transition:enter-start="opacity-0 scale-95"
                          x-transition:enter-end="opacity-100 scale-100"
-                         class="group bg-slate-900/50 border border-slate-850 hover:border-slate-700/80 rounded-xl overflow-hidden shadow-sm flex flex-col justify-between hover:shadow-xl transition-all duration-300 relative">
+                         @click="window.location.href = '{{ route('public.portfolio.show', $item->slug) }}'"
+                         class="break-inside-avoid w-full mb-6 cursor-pointer group bg-slate-900/50 border border-slate-850 hover:border-slate-700/80 rounded-xl overflow-hidden shadow-sm flex flex-col justify-between hover:shadow-xl transition-all duration-300 relative inline-block">
                         
-                        <!-- Thumbnail aspect-video -->
-                        <div class="relative aspect-video bg-slate-950 overflow-hidden">
+                        <!-- Thumbnail (Pinterest Adaptável) -->
+                        <div class="relative w-full overflow-hidden bg-slate-950">
                             @if($item->thumb_path)
                                 <img src="{{ asset('storage/' . $item->thumb_path) }}" 
-                                     class="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105" 
+                                     class="w-full h-auto object-cover transition-transform duration-500 group-hover:scale-[1.03]" 
                                      loading="lazy">
                             @else
-                                <div class="w-full h-full flex items-center justify-center text-slate-600">
+                                <div class="aspect-video w-full flex items-center justify-center text-slate-600 bg-slate-900">
                                     <svg class="w-12 h-12" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
                                     </svg>
@@ -203,7 +204,7 @@
                                 <h4 class="font-extrabold text-white text-base leading-tight group-hover:text-blue-400 transition-colors">
                                     {{ $item->title }}
                                 </h4>
-                                <p class="text-xs text-slate-400 line-clamp-2 leading-relaxed">
+                                <p class="text-xs text-slate-400 line-clamp-3 leading-relaxed font-normal">
                                     {{ strip_tags($item->description) }}
                                 </p>
                             </div>
@@ -218,7 +219,7 @@
                                 </div>
                             @endif
 
-                            <div class="flex items-center justify-between pt-3 border-t border-slate-850">
+                            <div class="flex items-center justify-between pt-3 border-t border-slate-850" @click.stop="">
                                 <!-- Likes & Views -->
                                 <div class="flex items-center gap-3 text-slate-500 text-xs font-bold">
                                     <span class="flex items-center gap-1">
@@ -236,11 +237,10 @@
                                     </span>
                                 </div>
 
-                                <button type="button" 
-                                        @click="openModal({{ json_encode($item) }})" 
-                                        class="px-3.5 py-1.5 bg-blue-600/10 hover:bg-blue-600 text-blue-400 hover:text-white text-xs font-semibold rounded transition-colors uppercase tracking-wider">
+                                <a href="{{ route('public.portfolio.show', $item->slug) }}" 
+                                   class="px-3.5 py-1.5 bg-blue-600/10 hover:bg-blue-600 text-blue-400 hover:text-white text-xs font-semibold rounded transition-colors uppercase tracking-wider">
                                     Detalhes
-                                </button>
+                                </a>
                             </div>
                         </div>
 
@@ -480,217 +480,17 @@
         </div>
     </footer>
 
-    <!-- Overlay Modal de Detalhes do Trabalho -->
-    <div class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-sm"
-         x-show="modalOpen"
-         x-transition
-         x-cloak>
-        
-        <div class="bg-[#0b1120] border border-slate-800 rounded-2xl w-full max-w-4xl max-h-[90vh] overflow-y-auto shadow-2xl flex flex-col lg:flex-row"
-             @click.away="closeModal()">
-            
-            <!-- Esquerda: Imagem e Galeria Carousel -->
-            <div class="w-full lg:w-1/2 bg-slate-950 p-6 flex flex-col justify-center border-b lg:border-b-0 lg:border-r border-slate-850 relative">
-                <!-- Botão fechar (Mobile) -->
-                <button type="button" 
-                        @click="closeModal()" 
-                        class="absolute top-4 right-4 lg:hidden w-8 h-8 rounded-full bg-slate-900/80 text-slate-400 hover:text-white flex items-center justify-center border border-slate-800 z-10">
-                    &times;
-                </button>
-
-                <!-- Imagem Principal Ativa -->
-                <div class="aspect-video w-full rounded-lg overflow-hidden bg-slate-900 border border-slate-800">
-                    <img :src="activeImage" class="w-full h-full object-cover" x-show="activeImage">
-                    <div class="w-full h-full flex items-center justify-center text-slate-700" x-show="!activeImage">
-                        Sem Imagem
-                    </div>
-                </div>
-
-                <!-- Carousel de Miniaturas -->
-                <div class="flex gap-2 mt-4 overflow-x-auto py-1" x-show="modalItem && modalItem.images && modalItem.images.length > 0">
-                    <!-- Thumbnail principal como miniatura -->
-                    <button type="button" 
-                            @click="activeImage = '{{ asset('storage') }}/' + modalItem.thumb_path" 
-                            class="w-16 h-12 rounded border overflow-hidden shrink-0 transition-all duration-200"
-                            :class="activeImage === '{{ asset('storage') }}/' + modalItem.thumb_path ? 'border-blue-500 ring-2 ring-blue-500/20' : 'border-slate-800 hover:border-slate-600'">
-                        <img :src="'{{ asset('storage') }}/' + modalItem.thumb_path" class="w-full h-full object-cover">
-                    </button>
-                    <!-- Extra Images -->
-                    <template x-for="img in (modalItem ? modalItem.images : [])" :key="img.id">
-                        <button type="button" 
-                                @click="activeImage = '{{ asset('storage') }}/' + img.image_path" 
-                                class="w-16 h-12 rounded border overflow-hidden shrink-0 transition-all duration-200"
-                                :class="activeImage === '{{ asset('storage') }}/' + img.image_path ? 'border-blue-500 ring-2 ring-blue-500/20' : 'border-slate-800 hover:border-slate-600'">
-                            <img :src="'{{ asset('storage') }}/' + img.image_path" class="w-full h-full object-cover">
-                        </button>
-                    </template>
-                </div>
-            </div>
-
-            <!-- Direita: Informações Detalhadas -->
-            <div class="w-full lg:w-1/2 p-8 flex flex-col justify-between space-y-6 relative">
-                <!-- Botão fechar (Desktop) -->
-                <button type="button" 
-                        @click="closeModal()" 
-                        class="hidden lg:flex absolute top-6 right-6 w-8 h-8 rounded-full bg-slate-900 border border-slate-850 text-slate-400 hover:text-white items-center justify-center transition-colors">
-                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M6 18L18 6M6 6l12 12"></path>
-                    </svg>
-                </button>
-
-                <div class="space-y-6 pr-0 lg:pr-6">
-                    <div class="space-y-2">
-                        <span class="text-[10px] font-black uppercase tracking-widest text-blue-500 block" x-text="modalItem && modalItem.category ? modalItem.category.name : ''"></span>
-                        <h3 class="text-xl sm:text-2xl font-outfit font-black text-white leading-tight" x-text="modalItem ? modalItem.title : ''"></h3>
-                    </div>
-
-                    <!-- Métricas interativas -->
-                    <div class="flex items-center gap-6 text-slate-400 text-xs font-bold py-2 border-y border-slate-850">
-                        <span class="flex items-center gap-2">
-                            <svg class="w-4 h-4 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path>
-                            </svg>
-                            <span x-text="(modalItem ? modalItem.views : 0) + ' Visualizações'"></span>
-                        </span>
-                        
-                        <button type="button" 
-                                @click="likeItem()" 
-                                class="flex items-center gap-2 text-slate-400 hover:text-rose-500 transition-colors"
-                                :disabled="liked">
-                            <svg class="w-4 h-4 text-rose-500 transition-transform" 
-                                 :class="liked ? 'scale-110' : 'hover:scale-120'"
-                                 :fill="liked ? 'currentColor' : 'none'"
-                                 stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"></path>
-                            </svg>
-                            <span x-text="(modalItem ? modalItem.likes : 0) + ' Curtidas'"></span>
-                        </button>
-                    </div>
-
-                    <div class="space-y-4">
-                        <!-- Descrição -->
-                        <div class="space-y-1">
-                            <span class="text-[9px] font-bold text-slate-500 uppercase tracking-wider block">Descrição</span>
-                            <div class="text-xs text-slate-350 leading-relaxed font-normal text-justify select-text whitespace-pre-line" x-text="modalItem ? stripTags(modalItem.description) : ''"></div>
-                        </div>
-
-                        <!-- Cliente -->
-                        <div class="space-y-1" x-show="modalItem && modalItem.client">
-                            <span class="text-[9px] font-bold text-slate-500 uppercase tracking-wider block">Cliente</span>
-                            <div class="text-xs text-white font-semibold" x-text="modalItem && modalItem.client ? modalItem.client.name : ''"></div>
-                        </div>
-
-                        <!-- Tecnologias -->
-                        <div class="space-y-1.5" x-show="modalItem && modalItem.technologies">
-                            <span class="text-[9px] font-bold text-slate-500 uppercase tracking-wider block">Tecnologias Utilizadas</span>
-                            <div class="flex flex-wrap gap-1.5">
-                                <template x-for="tech in (modalItem && modalItem.technologies ? modalItem.technologies.split(',') : [])" :key="tech">
-                                    <span class="bg-slate-900 text-slate-300 border border-slate-800 text-[10px] font-medium px-2.5 py-0.5 rounded" x-text="tech.trim()"></span>
-                                </template>
-                            </div>
-                        </div>
-
-                        <!-- Autores -->
-                        <div class="space-y-1.5" x-show="modalItem && modalItem.authors && modalItem.authors.length > 0">
-                            <span class="text-[9px] font-bold text-slate-500 uppercase tracking-wider block">Equipe / Autores</span>
-                            <div class="flex flex-wrap gap-1.5">
-                                <template x-for="author in (modalItem ? modalItem.authors : [])" :key="author.id">
-                                    <span class="bg-slate-900 text-slate-300 border border-slate-800 text-[10px] font-medium px-2.5 py-0.5 rounded" x-text="author.name"></span>
-                                </template>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Footer do Modal -->
-                <div class="pt-6 border-t border-slate-850 flex items-center justify-end gap-2 pr-0 lg:pr-6">
-                    <button type="button" 
-                            @click="closeModal()" 
-                            class="px-4 py-2 border border-slate-800 text-slate-400 hover:text-white text-xs font-semibold rounded transition-colors uppercase tracking-wider">
-                        Fechar
-                    </button>
-                    <a :href="modalItem && modalItem.redirect_url ? modalItem.redirect_url : '#'" 
-                       target="_blank" 
-                       x-show="modalItem && modalItem.redirect_url" 
-                       class="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold rounded transition-colors uppercase tracking-wider">
-                        Acessar Link
-                    </a>
-                </div>
-            </div>
-
-        </div>
-    </div>
-
     <!-- Script Inline da Página -->
     <script>
         function publicPortfolio() {
             return {
                 scrolled: false,
                 activeCategory: 'all',
-                
-                // Modal
-                modalOpen: false,
-                modalItem: null,
-                activeImage: '',
-                liked: false,
 
                 init() {
                     window.addEventListener('scroll', () => {
                         this.scrolled = window.scrollY > 50;
                     });
-                },
-
-                openModal(item) {
-                    this.modalItem = item;
-                    this.activeImage = '{{ asset('storage') }}/' + item.thumb_path;
-                    this.liked = false;
-                    this.modalOpen = true;
-
-                    // Incrementa visualização via fetch
-                    fetch(`/portfolio/${item.id}/views`, {
-                        method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/json',
-                            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
-                        }
-                    })
-                    .then(res => res.json())
-                    .then(data => {
-                        if (data.success) {
-                            item.views = data.views;
-                        }
-                    });
-                },
-
-                closeModal() {
-                    this.modalOpen = false;
-                    this.modalItem = null;
-                    this.activeImage = '';
-                },
-
-                likeItem() {
-                    if (this.liked || !this.modalItem) return;
-                    this.liked = true;
-
-                    fetch(`/portfolio/${this.modalItem.id}/likes`, {
-                        method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/json',
-                            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
-                        }
-                    })
-                    .then(res => res.json())
-                    .then(data => {
-                        if (data.success) {
-                            this.modalItem.likes = data.likes;
-                        }
-                    });
-                },
-
-                stripTags(html) {
-                    let doc = new DOMParser().parseFromString(html, 'text/html');
-                    return doc.body.textContent || "";
                 }
             }
         }
