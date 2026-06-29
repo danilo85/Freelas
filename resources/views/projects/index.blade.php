@@ -598,23 +598,23 @@
 
             getCardClass() {
                 if (this.isSelected) {
-                    return 'bg-violet-50/20 border-violet-500 shadow-[0_0_20px_rgba(109,40,217,0.25)] ring-2 ring-violet-400/20';
+                    return 'bg-violet-50/30 border-violet-500 shadow-[0_0_20px_rgba(109,40,217,0.25)] ring-2 ring-violet-400/20';
                 }
                 switch (this.status) {
                     case 'rascunho':
-                        return 'bg-slate-50/70 border-slate-200 hover:border-slate-350 hover:bg-slate-100/40';
+                        return 'bg-slate-100/80 border-slate-300 hover:border-slate-400 hover:bg-slate-200/50';
                     case 'analisando':
-                        return 'bg-amber-50/40 border-amber-200 hover:border-amber-350 hover:bg-amber-50/70';
+                        return 'bg-amber-50/80 border-amber-300 hover:border-amber-400 hover:bg-amber-100/40';
                     case 'aprovado':
-                        return 'bg-emerald-50/40 border-emerald-250 hover:border-emerald-350 hover:bg-emerald-50/70';
+                        return 'bg-emerald-50/80 border-emerald-300 hover:border-emerald-400 hover:bg-emerald-100/40';
                     case 'rejeitado':
-                        return 'bg-red-50/40 border-red-250 hover:border-red-350 hover:bg-red-50/70';
+                        return 'bg-red-50/80 border-red-300 hover:border-red-400 hover:bg-red-100/40';
                     case 'quitado':
-                        return 'bg-purple-50/40 border-purple-255 hover:border-purple-350 hover:bg-purple-50/70';
+                        return 'bg-purple-50/80 border-purple-300 hover:border-purple-400 hover:bg-purple-100/40';
                     case 'finalizado':
-                        return 'bg-blue-50/40 border-blue-255 hover:border-blue-350 hover:bg-blue-50/70';
+                        return 'bg-blue-50/80 border-blue-300 hover:border-blue-400 hover:bg-blue-100/40';
                     default:
-                        return 'bg-white border-slate-200 hover:border-slate-300';
+                        return 'bg-white border-slate-200 hover:border-slate-350';
                 }
             },
 
@@ -651,11 +651,11 @@
                 }
                 switch (this.status) {
                     case 'rascunho': return 'border-slate-200/60';
-                    case 'analisando': return 'border-amber-200/50';
-                    case 'aprovado': return 'border-emerald-200/50';
-                    case 'rejeitado': return 'border-red-250/50';
-                    case 'quitado': return 'border-purple-250/50';
-                    case 'finalizado': return 'border-blue-250/50';
+                    case 'analisando': return 'border-amber-200/60';
+                    case 'aprovado': return 'border-emerald-200/60';
+                    case 'rejeitado': return 'border-red-200/60';
+                    case 'quitado': return 'border-purple-200/60';
+                    case 'finalizado': return 'border-blue-200/60';
                     default: return 'border-slate-100';
                 }
             },
