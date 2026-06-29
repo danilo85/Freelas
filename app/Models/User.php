@@ -62,4 +62,12 @@ class User extends Authenticatable
     {
         return $this->hasMany(PortfolioItem::class);
     }
+
+    /**
+     * Relacionamento com Configurações do Portfólio.
+     */
+    public function portfolioSetting(): \Illuminate\Database\Eloquent\Relations\HasOne
+    {
+        return $this->hasOne(PortfolioSetting::class);
+    }
 }

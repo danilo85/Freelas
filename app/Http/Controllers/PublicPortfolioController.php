@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\User;
 use App\Models\PortfolioItem;
 use App\Models\PortfolioCategory;
+use App\Models\PortfolioSetting;
 use Illuminate\Http\Request;
 
 class PublicPortfolioController extends Controller
@@ -23,7 +24,8 @@ class PublicPortfolioController extends Controller
             return view('welcome', [
                 'items' => collect(),
                 'categories' => collect(),
-                'user' => null
+                'user' => null,
+                'settings' => $this->getSettings(null)
             ]);
         }
 
@@ -39,7 +41,9 @@ class PublicPortfolioController extends Controller
             ->orderBy('name')
             ->get();
 
-        return view('welcome', compact('items', 'categories', 'user'));
+        $settings = $this->getSettings($user);
+
+        return view('welcome', compact('items', 'categories', 'user', 'settings'));
     }
 
     /**
@@ -47,7 +51,7 @@ class PublicPortfolioController extends Controller
      */
     public function show($slug)
     {
-        $item = PortfolioItem::with(['category', 'authors', 'images', 'client'])
+        $item = PortfolioItem::with(['category', 'authors', 'images', 'client', 'user'])
             ->where('slug', $slug)
             ->where('status', 'publicado')
             ->firstOrFail();
@@ -64,7 +68,9 @@ class PublicPortfolioController extends Controller
             ->take(3)
             ->get();
 
-        return view('portfolio_detail', compact('item', 'relatedItems'));
+        $settings = $this->getSettings($item->user);
+
+        return view('portfolio_detail', compact('item', 'relatedItems', 'settings'));
     }
 
     /**
@@ -85,5 +91,36 @@ class PublicPortfolioController extends Controller
         $item = PortfolioItem::findOrFail($id);
         $item->increment('likes');
         return response()->json(['success' => true, 'likes' => $item->likes]);
+    }
+
+    /**
+     * Obtém as configurações ou retorna as padrões do Danilo Miguel.
+     */
+    protected function getSettings($user)
+    {
+        $settings = $user ? $user->portfolioSetting : null;
+        
+        if (!$settings) {
+            $settings = new PortfolioSetting([
+                'site_title' => 'Danilo Miguel | Designer e Ilustrador',
+                'site_subtitle' => 'Transformando ideias em experiências visuais marcantes',
+                'site_description' => "Cada traço, cor e forma é pensado de maneira estratégica para contar histórias envolventes em livros infantis, materiais pedagógicos e jogos educativos.",
+                'about_title' => 'Prazer, sou Danilo Miguel',
+                'about_text' => "Com anos de experiência focados em design editorial e ilustração, crio soluções sob medida que integram beleza artística e inteligência estrutural. Desenvolvo livros de literatura infantil, materiais didáticos de estimulação cognitiva, jogos personalizados de tabuleiro ou cartas e identidades visuais corporativas.\n\nMeu trabalho visa transformar ideias abstratas e materiais textuais densos em composições leves, dinâmicas e altamente interativas. Acompanho autores e editoras desde o conceito original até a entrega do arquivo final preparado para as gráficas.",
+                'skills' => 'Ilustração Infantil, Diagramação Editorial, Design de Jogos Pedagógicos, Identidade Visual, Criação de Personagens',
+                'contact_email' => 'danilo.a.miguel@hotmail.com',
+                'contact_phone' => '(14) 99143-6268',
+                'behance_url' => 'behance.net/danilomiguel',
+                'faq_items' => [
+                    ['question' => 'Que tipo de materiais você desenvolve?', 'answer' => 'Desenvolvo livros infantis, materiais didáticos/pedagógicos de estimulação cognitiva, jogos personalizados de tabuleiro ou cartas, diagramação de catálogos, capas de livros, logotipos corporativos e peças gráficas gerais.'],
+                    ['question' => 'Qual é o prazo de entrega dos projetos?', 'answer' => 'O prazo varia conforme a complexidade de cada demanda. Projetos simples e pontuais levam em média de 10 a 20 dias úteis. Projetos editoriais maiores com alto volume de ilustrações autorais podem requerer prazos mais amplos, definidos em orçamento.'],
+                    ['question' => 'Como posso solicitar um orçamento?', 'answer' => 'Basta clicar no botão do WhatsApp disponível em nosso site e enviar uma mensagem com os detalhes básicos do seu projeto. Retorno o contato no mesmo dia para alinhar mais informações.'],
+                    ['question' => 'Você atende clientes de fora do seu estado?', 'answer' => 'Sim! Atendo clientes e editoras de todo o Brasil e do exterior de forma 100% remota. O processo é simples: compartilhamento de referências e arquivos por e-mail/nuvem e reuniões por WhatsApp ou videoconferência.'],
+                    ['question' => 'Em quais formatos você entrega os arquivos finais?', 'answer' => 'Entrego os arquivos finais fechados prontos para impressão (geralmente PDF em padrão X1a ou similar) e, caso acordado no contrato, posso fornecer os arquivos editáveis fontes (Adobe InDesign, Illustrator ou Photoshop).']
+                ]
+            ]);
+        }
+
+        return $settings;
     }
 }

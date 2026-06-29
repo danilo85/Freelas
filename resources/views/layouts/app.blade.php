@@ -268,6 +268,9 @@
                     <a href="{{ route('portfolio.pipeline') }}" class="block py-2 px-3 text-xs font-semibold rounded-[5px] transition-colors {{ request()->routeIs('portfolio.pipeline') ? 'text-white bg-slate-850' : 'text-slate-400 hover:text-white' }}">
                         Pipeline
                     </a>
+                    <a href="{{ route('portfolio.settings') }}" class="block py-2 px-3 text-xs font-semibold rounded-[5px] transition-colors {{ request()->routeIs('portfolio.settings') ? 'text-white bg-slate-850' : 'text-slate-400 hover:text-white' }}">
+                        Configurações do Site
+                    </a>
                 </div>
             </div>
 

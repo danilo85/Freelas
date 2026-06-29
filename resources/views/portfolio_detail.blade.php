@@ -100,32 +100,24 @@
             <!-- Coluna Esquerda: Showcase do Trabalho (8 colunas) -->
             <div class="lg:col-span-8 space-y-8">
                 
-                <!-- Imagem Principal de Capa -->
-                <div class="bg-slate-900 border border-slate-800 rounded-2xl overflow-hidden shadow-2xl">
+                <!-- Imagens Coladas (Estilo Pinterest / Behance) -->
+                <div class="flex flex-col space-y-0 rounded-none overflow-hidden shadow-2xl border border-slate-850">
+                    <!-- Imagem Principal de Capa -->
                     @if($item->thumb_path)
                         <img src="{{ asset('storage/' . $item->thumb_path) }}" 
                              alt="{{ $item->title }}"
-                             class="w-full h-auto object-cover max-h-[600px]">
+                             class="w-full h-auto object-cover rounded-none block m-0 p-0">
+                    @endif
+
+                    <!-- Showcase de Imagens Adicionais -->
+                    @if($item->images->count() > 0)
+                        @foreach($item->images->sortBy('order') as $image)
+                            <img src="{{ asset('storage/' . $image->image_path) }}" 
+                                 alt="Galeria - {{ $item->title }}"
+                                 class="w-full h-auto object-cover rounded-none block m-0 p-0 border-t border-slate-850/40">
+                        @endforeach
                     @endif
                 </div>
-
-                <!-- Showcase de Imagens Adicionais (Vertical - Behance Style) -->
-                @if($item->images->count() > 0)
-                    <div class="space-y-6">
-                        @foreach($item->images->sortBy('order') as $image)
-                            <div class="bg-slate-900 border border-slate-800 rounded-2xl overflow-hidden shadow-xl group">
-                                <img src="{{ asset('storage/' . $image->image_path) }}" 
-                                     alt="Galeria - {{ $item->title }}"
-                                     class="w-full h-auto object-cover transition-transform duration-500 group-hover:scale-[1.01]">
-                                @if($image->order)
-                                    <div class="p-3 bg-slate-950/70 border-t border-slate-850/80 text-[10px] text-slate-500 font-mono text-right">
-                                        Imagem #{{ $image->order }}
-                                    </div>
-                                @endif
-                            </div>
-                        @endforeach
-                    </div>
-                @endif
 
                 <!-- Caso seja Font / Tipografia: Testador Interativo -->
                 @if(str_contains(strtolower($item->category->name), 'fonte') || str_contains(strtolower($item->category->name), 'tipografia'))
@@ -255,10 +247,14 @@
                     @endif
                 </div>
 
+                @php
+                    $cleanPhone = preg_replace('/\D/', '', $settings->contact_phone);
+                    $whatsappNumber = str_starts_with($cleanPhone, '55') ? $cleanPhone : '55' . $cleanPhone;
+                @endphp
                 <!-- Botão de Contato Rápido -->
                 <div class="bg-slate-900/40 border border-slate-850 p-6 rounded-2xl text-center space-y-3">
                     <p class="text-xs text-slate-400">Gostou deste trabalho? Vamos desenvolver o seu projeto juntos!</p>
-                    <a href="https://wa.me/5514991436268?text=Olá Danilo, gostei muito do seu trabalho '{{ rawurlencode($item->title) }}' e gostaria de bater um papo!" 
+                    <a href="https://wa.me/{{ $whatsappNumber }}?text=Olá Danilo, gostei muito do seu trabalho '{{ rawurlencode($item->title) }}' e gostaria de bater um papo!" 
                        target="_blank" 
                        class="w-full py-2.5 px-4 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-lg text-xs transition-colors flex items-center justify-center gap-2 shadow-sm shadow-emerald-600/10">
                         Falar com Danilo no WhatsApp

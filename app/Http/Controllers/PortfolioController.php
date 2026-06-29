@@ -352,6 +352,89 @@ class PortfolioController extends Controller
     }
 
     /**
+     * Exibe o formulário de configurações do site de portfólio.
+     */
+    public function settings()
+    {
+        $settings = auth()->user()->portfolioSetting;
+
+        if (!$settings) {
+            $settings = new \App\Models\PortfolioSetting([
+                'site_title' => 'Danilo Miguel | Designer e Ilustrador',
+                'site_subtitle' => 'Transformando ideias em experiências visuais marcantes',
+                'site_description' => "Cada traço, cor e forma é pensado de maneira estratégica para contar histórias envolventes em livros infantis, materiais pedagógicos e jogos educativos.",
+                'about_title' => 'Prazer, sou Danilo Miguel',
+                'about_text' => "Com anos de experiência focados em design editorial e ilustração, crio soluções sob medida que integram beleza artística e inteligência estrutural. Desenvolvo livros de literatura infantil, materiais didáticos de estimulação cognitiva, jogos personalizados de tabuleiro ou cartas e identidades visuais corporativas.\n\nMeu trabalho visa transformar ideias abstratas e materiais textuais densos em composições leves, dinâmicas e altamente interativas. Acompanho autores e editoras desde o conceito original até a entrega do arquivo final preparado para as gráficas.",
+                'skills' => 'Ilustração Infantil, Diagramação Editorial, Design de Jogos Pedagógicos, Identidade Visual, Criação de Personagens',
+                'contact_email' => 'danilo.a.miguel@hotmail.com',
+                'contact_phone' => '(14) 99143-6268',
+                'behance_url' => 'behance.net/danilomiguel',
+                'faq_items' => [
+                    ['question' => 'Que tipo de materiais você desenvolve?', 'answer' => 'Desenvolvo livros infantis, materiais didáticos/pedagógicos de estimulação cognitiva, jogos personalizados de tabuleiro ou cartas, diagramação de catálogos, capas de livros, logotipos corporativos e peças gráficas gerais.'],
+                    ['question' => 'Qual é o prazo de entrega dos projetos?', 'answer' => 'O prazo varia conforme a complexidade de cada demanda. Projetos simples e pontuais levam em média de 10 a 20 dias úteis. Projetos editoriais maiores com alto volume de ilustrações autorais podem requerer prazos mais amplos, definidos em orçamento.'],
+                    ['question' => 'Como posso solicitar um orçamento?', 'answer' => 'Basta clicar no botão do WhatsApp disponível em nosso site e enviar uma mensagem com os detalhes básicos do seu projeto. Retorno o contato no mesmo dia para alinhar mais informações.'],
+                    ['question' => 'Você atende clientes de fora do seu estado?', 'answer' => 'Sim! Atendo clientes e editoras de todo o Brasil e do exterior de forma 100% remota. O processo é simples: compartilhamento de referências e arquivos por e-mail/nuvem e reuniões por WhatsApp ou videoconferência.'],
+                    ['question' => 'Em quais formatos você entrega os arquivos finais?', 'answer' => 'Entrego os arquivos finais fechados prontos para impressão (geralmente PDF em padrão X1a ou similar) e, caso acordado no contrato, posso fornecer os arquivos editáveis fontes (Adobe InDesign, Illustrator ou Photoshop).']
+                ]
+            ]);
+        }
+
+        return view('portfolio.settings', compact('settings'));
+    }
+
+    /**
+     * Atualiza as configurações do site de portfólio.
+     */
+    public function updateSettings(Request $request)
+    {
+        $request->validate([
+            'site_title' => 'required|string|max:255',
+            'site_subtitle' => 'required|string|max:255',
+            'site_description' => 'required|string',
+            'about_title' => 'nullable|string|max:255',
+            'about_text' => 'required|string',
+            'skills' => 'required|string',
+            'contact_email' => 'required|email|max:255',
+            'contact_phone' => 'required|string|max:50',
+            'behance_url' => 'nullable|string|max:255',
+            'faq' => 'nullable|array',
+            'faq.*.question' => 'required|string|max:255',
+            'faq.*.answer' => 'required|string',
+        ]);
+
+        $faqItems = [];
+        if ($request->filled('faq')) {
+            foreach ($request->input('faq') as $faq) {
+                if (!empty($faq['question']) && !empty($faq['answer'])) {
+                    $faqItems[] = [
+                        'question' => $faq['question'],
+                        'answer' => $faq['answer']
+                    ];
+                }
+            }
+        }
+
+        auth()->user()->portfolioSetting()->updateOrCreate(
+            ['user_id' => auth()->id()],
+            [
+                'site_title' => $request->site_title,
+                'site_subtitle' => $request->site_subtitle,
+                'site_description' => $request->site_description,
+                'about_title' => $request->about_title,
+                'about_text' => $request->about_text,
+                'skills' => $request->skills,
+                'contact_email' => $request->contact_email,
+                'contact_phone' => $request->contact_phone,
+                'behance_url' => $request->behance_url,
+                'faq_items' => $faqItems
+            ]
+        );
+
+        return redirect()->route('portfolio.settings')
+            ->with('success', 'Configurações do portfólio atualizadas com sucesso!');
+    }
+
+    /**
      * Auxiliar: Otimiza imagens usando a biblioteca nativa GD do PHP, 
      * convertendo para WebP de alta performance com compressão 80%.
      */

@@ -104,6 +104,8 @@ Route::middleware('auth')->prefix('freelas')->group(function () {
         
     // Portfólio do usuário logado (Tenancy)
     Route::get('/portfolio/pipeline', [PortfolioController::class, 'pipeline'])->name('portfolio.pipeline');
+    Route::get('/portfolio-settings', [PortfolioController::class, 'settings'])->name('portfolio.settings');
+    Route::put('/portfolio-settings', [PortfolioController::class, 'updateSettings'])->name('portfolio.settings.update');
     Route::resource('/portfolio', PortfolioController::class);
     Route::resource('/portfolio-categories', PortfolioCategoryController::class)->except(['show', 'create', 'edit']);
 
