@@ -37,4 +37,9 @@ class Author extends Model
     {
         return $this->belongsToMany(Project::class);
     }
+
+    public function revisions()
+    {
+        return $this->hasMany(ProjectRevision::class);
+    }
 }

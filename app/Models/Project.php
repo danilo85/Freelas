@@ -58,6 +58,11 @@ class Project extends Model
         return $this->hasMany(ProjectAttachment::class);
     }
 
+    public function revisions()
+    {
+        return $this->hasMany(ProjectRevision::class);
+    }
+
     public function payments(): HasMany
     {
         return $this->hasMany(Payment::class);

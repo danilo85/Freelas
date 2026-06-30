@@ -123,6 +123,25 @@ Route::middleware('auth')->prefix('freelas')->group(function () {
         Route::put('/users/{user}', [UserController::class, 'update'])->name('users.update');
         Route::delete('/users/{user}', [UserController::class, 'destroy'])->name('users.destroy');
     });
+
+    // Utilidades - Revisão de Trabalhos
+    Route::get('/utilidades/revisoes', [\App\Http\Controllers\ProjectRevisionController::class, 'index'])->name('revisoes.index');
+    Route::post('/utilidades/revisoes', [\App\Http\Controllers\ProjectRevisionController::class, 'store'])->name('revisoes.store');
+    Route::get('/utilidades/revisoes/{revision}', [\App\Http\Controllers\ProjectRevisionController::class, 'show'])->name('revisoes.show');
+    Route::delete('/utilidades/revisoes/{revision}', [\App\Http\Controllers\ProjectRevisionController::class, 'destroy'])->name('revisoes.destroy');
+    
+    // Autocomplete / AJAX Helpers
+    Route::get('/utilidades/api/autores', [\App\Http\Controllers\ProjectRevisionController::class, 'searchAuthors'])->name('revisoes.api.authors');
+    Route::get('/utilidades/api/projetos-autor/{author}', [\App\Http\Controllers\ProjectRevisionController::class, 'getProjectsByAuthor'])->name('revisoes.api.projects');
+
+    // Rodadas de Ajustes e Gerenciamento de Arquivos
+    Route::post('/utilidades/revisoes/{revision}/rounds', [\App\Http\Controllers\RevisionRoundController::class, 'storeRound'])->name('revisoes.rounds.store');
+    Route::delete('/utilidades/rounds/{round}', [\App\Http\Controllers\RevisionRoundController::class, 'destroyRound'])->name('revisoes.rounds.destroy');
+    Route::patch('/utilidades/rounds/{round}/status', [\App\Http\Controllers\RevisionRoundController::class, 'updateRoundStatus'])->name('revisoes.rounds.status');
+
+    Route::get('/utilidades/rounds/{round}/files', [\App\Http\Controllers\RevisionRoundController::class, 'manageFiles'])->name('revisoes.rounds.files');
+    Route::post('/utilidades/rounds/{round}/files', [\App\Http\Controllers\RevisionRoundController::class, 'uploadFiles'])->name('revisoes.rounds.upload');
+    Route::delete('/utilidades/files/{file}', [\App\Http\Controllers\RevisionRoundController::class, 'deleteFile'])->name('revisoes.files.destroy');
 });
 
 // Rotas públicas de orçamentos (propostas) para aprovação e rejeição pelo cliente final
@@ -140,4 +159,15 @@ Route::get('/', [\App\Http\Controllers\PublicPortfolioController::class, 'index'
 Route::get('/trabalho/{slug}', [\App\Http\Controllers\PublicPortfolioController::class, 'show'])->name('public.portfolio.show');
 Route::post('/portfolio/{id}/views', [\App\Http\Controllers\PublicPortfolioController::class, 'incrementViews'])->name('public.portfolio.views');
 Route::post('/portfolio/{id}/likes', [\App\Http\Controllers\PublicPortfolioController::class, 'incrementLikes'])->name('public.portfolio.likes');
+
+// Rotas Públicas de Revisão de Trabalhos (Cliente)
+Route::get('/revisao/{token}', [\App\Http\Controllers\PublicRevisionController::class, 'show'])->name('public.revisao.show');
+Route::post('/revisao/file/{file}/annotations', [\App\Http\Controllers\PublicRevisionController::class, 'storeAnnotation'])->name('public.revisao.annotation.store');
+Route::delete('/revisao/annotation/{annotation}', [\App\Http\Controllers\PublicRevisionController::class, 'deleteAnnotation'])->name('public.revisao.annotation.destroy');
+Route::post('/revisao/annotation/{annotation}/resolve', [\App\Http\Controllers\PublicRevisionController::class, 'resolveAnnotation'])->name('public.revisao.annotation.resolve');
+Route::post('/revisao/annotation/{annotation}/update', [\App\Http\Controllers\PublicRevisionController::class, 'updateAnnotation'])->name('public.revisao.annotation.update');
+Route::get('/revisao/file/{file}/download', [\App\Http\Controllers\PublicRevisionController::class, 'downloadFile'])->name('public.revisao.download.file');
+Route::get('/revisao/round/{round}/download-all', [\App\Http\Controllers\PublicRevisionController::class, 'downloadAllFiles'])->name('public.revisao.download.all');
+Route::get('/revisao/round/{round}/download-annotations', [\App\Http\Controllers\PublicRevisionController::class, 'downloadAnnotationsReport'])->name('public.revisao.download.report');
+
 

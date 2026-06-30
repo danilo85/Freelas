@@ -6,6 +6,7 @@
     <meta name="csrf-token" content="{{ csrf_token() }}">
 
     <title>{{ $item->title }} | Danilo Miguel</title>
+    <link rel="icon" type="image/png" href="{{ asset('storage/favicon_site.png') }}">
 
     <!-- Google Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
