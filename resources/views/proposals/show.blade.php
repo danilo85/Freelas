@@ -163,7 +163,7 @@
         <!-- Seção: Prazo -->
         <div class="space-y-1.5 mt-6 border-t border-slate-100 pt-4">
             <h5 class="text-sm font-bold text-slate-800 uppercase tracking-wider">Prazo:</h5>
-            <p class="text-sm text-slate-660 font-medium">Prazo estimado é de {{ $proposal->project->term }}</p>
+            <p class="text-sm text-slate-660 font-medium">Prazo estimado é de {{ $proposal->project->term }} dias</p>
         </div>
 
         <!-- Bloco Financeiro e Forma de Pagamento -->

@@ -59,6 +59,14 @@
                     <span>{{ session('success') }}</span>
                 </div>
             @endif
+            @if(session('error'))
+                <div class="bg-red-50 border border-red-200 text-red-800 rounded-[5px] p-3 text-sm flex items-center gap-2">
+                    <svg class="w-4 h-4 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path>
+                    </svg>
+                    <span>{{ session('error') }}</span>
+                </div>
+            @endif
 
             <form action="{{ route('login') }}" method="POST" class="space-y-4">
                 @csrf
@@ -94,9 +102,15 @@
         </div>
 
         <!-- Rodapé de Auth -->
-        <p class="text-center text-xs text-slate-400 mt-6">
-            Ainda não tem conta? <a href="{{ route('register') }}" class="font-semibold text-green-600 hover:text-green-800 transition-colors">Cadastre-se aqui</a>
-        </p>
+        @php
+            $systemSetting = \App\Models\SystemSetting::first();
+            $allowReg = $systemSetting ? $systemSetting->allow_registration : true;
+        @endphp
+        @if($allowReg)
+            <p class="text-center text-xs text-slate-400 mt-6">
+                Ainda não tem conta? <a href="{{ route('register') }}" class="font-semibold text-green-600 hover:text-green-800 transition-colors">Cadastre-se aqui</a>
+            </p>
+        @endif
     </div>
 
 </body>

@@ -14,7 +14,15 @@
     <!-- Tailwind CSS CDN -->
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
+        // Check theme before rendering to avoid flashing
+        if (localStorage.getItem('theme') === 'dark' || (!('theme' in localStorage) && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+            document.documentElement.classList.add('dark');
+        } else {
+            document.documentElement.classList.remove('dark');
+        }
+        
         tailwind.config = {
+            darkMode: 'class',
             theme: {
                 extend: {
                     colors: {
@@ -138,10 +146,161 @@
             stroke: #475569 !important;
             stroke-width: 2.5 !important;
         }
+
+        /* Premium global dark theme styles & CSS overrides */
+        .dark body {
+            background-color: #0b0f19 !important; /* Premium dark background */
+            color: #f1f5f9 !important;
+        }
+        
+        /* Prevent general text selectors from overwriting status colored text */
+        .dark .text-slate-900:not([class*="text-yellow-"]):not([class*="text-amber-"]):not([class*="text-emerald-"]):not([class*="text-green-"]):not([class*="text-rose-"]):not([class*="text-red-"]):not([class*="text-blue-"]):not([class*="text-indigo-"]),
+        .dark .text-slate-800:not([class*="text-yellow-"]):not([class*="text-amber-"]):not([class*="text-emerald-"]):not([class*="text-green-"]):not([class*="text-rose-"]):not([class*="text-red-"]):not([class*="text-blue-"]):not([class*="text-indigo-"]),
+        .dark .text-slate-750,
+        .dark .text-slate-700:not([class*="text-yellow-"]):not([class*="text-amber-"]):not([class*="text-emerald-"]):not([class*="text-green-"]):not([class*="text-rose-"]):not([class*="text-red-"]):not([class*="text-blue-"]):not([class*="text-indigo-"]),
+        .dark .text-gray-900:not([class*="text-yellow-"]):not([class*="text-amber-"]):not([class*="text-emerald-"]):not([class*="text-green-"]):not([class*="text-rose-"]):not([class*="text-red-"]):not([class*="text-blue-"]):not([class*="text-indigo-"]),
+        .dark .text-gray-800:not([class*="text-yellow-"]):not([class*="text-amber-"]):not([class*="text-emerald-"]):not([class*="text-green-"]):not([class*="text-rose-"]):not([class*="text-red-"]):not([class*="text-blue-"]):not([class*="text-indigo-"]),
+        .dark .text-gray-700:not([class*="text-yellow-"]):not([class*="text-amber-"]):not([class*="text-emerald-"]):not([class*="text-green-"]):not([class*="text-rose-"]):not([class*="text-red-"]):not([class*="text-blue-"]):not([class*="text-indigo-"]) {
+            color: #f8fafc !important;
+        }
+
+        .dark .text-slate-655 {
+            color: #cbd5e1 !important;
+        }
+
+        .dark .text-slate-600, .dark .text-slate-500, .dark .text-gray-600, .dark .text-gray-500 {
+            color: #94a3b8 !important;
+        }
+        
+        /* White Card background override, but preserving custom status cards */
+        .dark .bg-white:not([class*="bg-yellow-"]):not([class*="bg-amber-"]):not([class*="bg-emerald-"]):not([class*="bg-green-"]):not([class*="bg-rose-"]):not([class*="bg-red-"]):not([class*="bg-blue-"]):not([class*="bg-indigo-"]) {
+            background-color: #111827 !important; 
+        }
+
+        .dark .border-slate-200, .dark .border-slate-100, .dark .border-gray-200, .dark .border-gray-100 {
+            border-color: #1f2937 !important;
+        }
+        
+        /* Inputs */
+        .dark input, .dark select, .dark textarea {
+            background-color: #1f2937 !important;
+            border-color: #374151 !important;
+            color: #f9fafb !important;
+        }
+
+        .dark .bg-slate-50, .dark .bg-slate-100, .dark .bg-gray-50, .dark .bg-gray-100 {
+            background-color: #111827 !important;
+        }
+
+        .dark .bg-slate-50\/80, .dark .bg-slate-50\/50 {
+            background-color: rgba(17, 24, 39, 0.8) !important;
+        }
+
+        /* Buttons background overrides if they are white/slate-100 */
+        .dark button.bg-slate-100, .dark a.bg-slate-100, .dark .bg-slate-100 button {
+            background-color: #1f2937 !important;
+            color: #e5e7eb !important;
+        }
+        
+        /* Tables */
+        .dark table th {
+            background-color: #1f2937 !important;
+            color: #f9fafb !important;
+            border-bottom-color: #374151 !important;
+        }
+        .dark table td {
+            color: #e5e7eb !important;
+            border-bottom-color: #1f2937 !important;
+        }
+
+        .dark .shadow-sm, .dark .shadow-md, .dark .shadow-lg {
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.4), 0 2px 4px -1px rgba(0, 0, 0, 0.24) !important;
+        }
+
+        /* SlimSelect */
+        .dark .ss-main {
+            background-color: #1f2937 !important;
+            color: #f9fafb !important;
+            border-color: #374151 !important;
+        }
+        .dark .ss-content {
+            background-color: #1f2937 !important;
+            border-color: #374151 !important;
+        }
+        .dark .ss-list .ss-option {
+            color: #f9fafb !important;
+        }
+        .dark .ss-list .ss-option:hover, .dark .ss-list .ss-option.ss-highlighted {
+            background-color: #111827 !important;
+            color: #ffffff !important;
+        }
+
+        .dark .divide-y > :not([hidden]) ~ :not([hidden]) {
+            border-color: #1f2937 !important;
+        }
+
+        /* Theme adjustments for status colored cards and badges */
+        /* 1. Yellow/Amber/Warning - e.g. Pending Payments / Proposals */
+        .dark [class*="bg-yellow-"], .dark [class*="bg-amber-"] {
+            background-color: rgba(245, 158, 11, 0.12) !important;
+            border-color: rgba(245, 158, 11, 0.25) !important;
+        }
+        .dark [class*="text-yellow-"], .dark [class*="text-amber-"] {
+            color: #fbbf24 !important;
+        }
+
+        /* 2. Green/Emerald/Success - e.g. Paid Payments / Approved Proposals */
+        .dark [class*="bg-green-"], .dark [class*="bg-emerald-"] {
+            background-color: rgba(16, 185, 129, 0.12) !important;
+            border-color: rgba(16, 185, 129, 0.25) !important;
+        }
+        .dark [class*="text-green-"], .dark [class*="text-emerald-"] {
+            color: #34d399 !important;
+        }
+
+        /* 3. Red/Rose/Danger - e.g. Canceled Payments / Late Tasks */
+        .dark [class*="bg-red-"], .dark [class*="bg-rose-"] {
+            background-color: rgba(244, 63, 94, 0.12) !important;
+            border-color: rgba(244, 63, 94, 0.25) !important;
+        }
+        .dark [class*="text-red-"], .dark [class*="text-rose-"] {
+            color: #fb7185 !important;
+        }
+
+        /* 4. Blue/Indigo/Info - e.g. In Progress / Active */
+        .dark [class*="bg-blue-"], .dark [class*="bg-indigo-"] {
+            background-color: rgba(59, 130, 246, 0.12) !important;
+            border-color: rgba(59, 130, 246, 0.25) !important;
+        }
+        .dark [class*="text-blue-"], .dark [class*="text-indigo-"] {
+            color: #60a5fa !important;
+        }
+        /* Custom scrollbar for the system */
+        ::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: transparent;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: rgba(156, 163, 175, 0.35);
+            border-radius: 9999px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: rgba(156, 163, 175, 0.55);
+        }
+        .dark ::-webkit-scrollbar-thumb {
+            background: rgba(75, 85, 99, 0.45);
+        }
+        .dark ::-webkit-scrollbar-thumb:hover {
+            background: rgba(75, 85, 99, 0.65);
+        }
     </style>
 </head>
-<body class="bg-slate-50 font-sans text-slate-800 antialiased min-h-screen flex flex-col md:flex-row overflow-x-hidden relative"
+<body class="bg-slate-50 dark:bg-slate-950 dark:text-slate-100 font-sans text-slate-800 antialiased min-h-screen flex flex-col md:flex-row overflow-x-hidden relative"
       x-data="layoutState()"
+      @scroll.window="scrolled = window.scrollY > 10"
       @trigger-global-delete.window="initGlobalDeleteListener($event)"
       @touchstart.window="handleTouchStart($event)"
       @touchend.window="handleTouchEnd($event)">
@@ -150,11 +309,11 @@
     <div x-show="sidebarOpen" @click="sidebarOpen = false" class="fixed inset-0 bg-slate-900/40 z-30 md:hidden" x-transition x-cloak></div>
 
     <!-- Sidebar (Drawer no mobile, estática no desktop) -->
-    <aside class="fixed inset-y-0 left-0 z-40 w-64 bg-slate-900 text-slate-100 flex flex-col border-r border-slate-800 transform -translate-x-full transition-transform duration-300 ease-in-out md:sticky md:top-0 md:h-screen md:translate-x-0 md:flex"
+    <aside class="fixed inset-y-0 left-0 z-40 w-64 bg-slate-900 dark:bg-slate-950 text-slate-100 flex flex-col border-r border-slate-800 dark:border-slate-900 transform -translate-x-full transition-transform duration-300 ease-in-out md:sticky md:top-0 md:h-screen md:translate-x-0 md:flex"
            :class="sidebarOpen ? 'translate-x-0' : '-translate-x-full'">
         
         <!-- Logo -->
-        <div class="h-16 flex items-center px-6 border-b border-slate-800 justify-between">
+        <div class="h-16 flex items-center px-6 border-b border-slate-800 dark:border-slate-900 justify-between">
             <span class="text-xl font-bold tracking-tight text-white flex items-center gap-2">
                 <svg class="w-6 h-6 text-primary-500" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
@@ -170,7 +329,7 @@
         </div>
 
         <!-- Menu de Navegação -->
-        <nav class="flex-1 py-6 px-4 space-y-1">
+        <nav class="flex-1 py-6 px-4 space-y-1 overflow-y-auto">
             <!-- Link: Dashboard -->
             <a href="{{ route('dashboard') }}" class="flex items-center gap-3 px-4 py-2.5 rounded-[5px] text-sm font-medium transition-colors 
                 {{ request()->routeIs('dashboard') ? 'bg-slate-800 text-white' : 'text-slate-400 hover:text-white hover:bg-slate-800' }}">
@@ -180,136 +339,151 @@
                 Dashboard
             </a>
 
-            <!-- Link: Usuários (Apenas Master) -->
-            @if(auth()->check() && auth()->user()->role === 'master')
-                <a href="{{ route('users.index') }}" class="flex items-center gap-3 px-4 py-2.5 rounded-[5px] text-sm font-medium transition-colors 
-                    {{ request()->routeIs('users.*') ? 'bg-slate-800 text-white' : 'text-slate-400 hover:text-white hover:bg-slate-800' }}">
-                    <svg class="w-5 h-5 {{ request()->routeIs('users.*') ? 'text-primary-500' : 'text-slate-400' }}" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"></path>
-                    </svg>
-                    Usuários
-                </a>
+            <!-- Link/Aba de Administração (Apenas Master) -->
+            @if(auth()->check() && auth()->user()->isMaster())
+                <div x-data="{ open: {{ (request()->routeIs('users.*') || request()->routeIs('admin.settings.*') || request()->routeIs('portfolio.settings')) ? 'true' : 'false' }} }" class="space-y-1">
+                    <button @click="open = !open" class="flex items-center justify-between w-full px-4 py-2.5 rounded-[5px] text-sm font-medium transition-colors text-slate-400 hover:text-white hover:bg-slate-800 focus:outline-none" :class="open ? 'text-white bg-slate-800/50' : ''">
+                        <div class="flex items-center gap-3">
+                            <svg class="w-5 h-5 {{ (request()->routeIs('users.*') || request()->routeIs('admin.settings.*') || request()->routeIs('portfolio.settings')) ? 'text-primary-500' : 'text-slate-400' }}" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4"></path>
+                            </svg>
+                            Administração
+                        </div>
+                        <svg class="w-3 h-3 text-slate-400 transition-transform duration-200" :class="open ? 'rotate-180' : ''" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
+                        </svg>
+                    </button>
+                    <div x-show="open" class="pl-9 space-y-1" style="display: none;" :style="open ? 'display: block;' : 'display: none;'">
+                        <a href="{{ route('portfolio.settings') }}" class="block py-2 px-3 text-xs font-semibold rounded-[5px] transition-colors {{ request()->routeIs('portfolio.settings') ? 'text-white bg-slate-850' : 'text-slate-400 hover:text-white' }}">
+                            Perfil
+                        </a>
+                        <a href="{{ route('admin.settings.index') }}" class="block py-2 px-3 text-xs font-semibold rounded-[5px] transition-colors {{ request()->routeIs('admin.settings.*') ? 'text-white bg-slate-850' : 'text-slate-400 hover:text-white' }}">
+                            Configurações Gerais
+                        </a>
+                        <a href="{{ route('users.index') }}" class="block py-2 px-3 text-xs font-semibold rounded-[5px] transition-colors {{ request()->routeIs('users.*') ? 'text-white bg-slate-850' : 'text-slate-400 hover:text-white' }}">
+                            Gerenciar Equipe
+                        </a>
+                    </div>
+                </div>
             @endif
 
-            <!-- Link: Projetos -->
-            <a href="{{ route('projects.index') }}" class="flex items-center gap-3 px-4 py-2.5 rounded-[5px] text-sm font-medium transition-colors 
-                {{ request()->routeIs('projects.*') ? 'bg-slate-800 text-white' : 'text-slate-400 hover:text-white hover:bg-slate-800' }}">
-                <svg class="w-5 h-5 {{ request()->routeIs('projects.*') ? 'text-primary-500' : 'text-slate-400' }}" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"></path>
-                </svg>
-                Projetos
-            </a>
-
-            <!-- Link: Pagamentos -->
-            <a href="{{ route('payments.index') }}" class="flex items-center gap-3 px-4 py-2.5 rounded-[5px] text-sm font-medium transition-colors 
-                {{ request()->routeIs('payments.*') ? 'bg-slate-800 text-white' : 'text-slate-400 hover:text-white hover:bg-slate-800' }}">
-                <svg class="w-5 h-5 {{ request()->routeIs('payments.*') ? 'text-primary-500' : 'text-slate-400' }}" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-                </svg>
-                Pagamentos
-            </a>
-
-            <!-- Link: Financeiro -->
-            <a href="{{ route('finances.index') }}" class="flex items-center gap-3 px-4 py-2.5 rounded-[5px] text-sm font-medium transition-colors 
-                {{ (request()->routeIs('finances.*') || request()->routeIs('categories.*')) ? 'bg-slate-800 text-white' : 'text-slate-400 hover:text-white hover:bg-slate-800' }}">
-                <svg class="w-5 h-5 {{ (request()->routeIs('finances.*') || request()->routeIs('categories.*')) ? 'text-primary-500' : 'text-slate-400' }}" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path>
-                </svg>
-                Controle Financeiro
-            </a>
-
-            <!-- Link: Carteira -->
-            <a href="{{ route('bank-accounts.index') }}" class="flex items-center gap-3 px-4 py-2.5 rounded-[5px] text-sm font-medium transition-colors 
-                {{ (request()->routeIs('bank-accounts.*') || request()->routeIs('credit-cards.*')) ? 'bg-slate-800 text-white' : 'text-slate-400 hover:text-white hover:bg-slate-800' }}">
-                <svg class="w-5 h-5 {{ (request()->routeIs('bank-accounts.*') || request()->routeIs('credit-cards.*')) ? 'text-primary-500' : 'text-slate-400' }}" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z"></path>
-                </svg>
-                Carteira
-            </a>
-
-            <!-- Link: Clientes -->
-            <a href="{{ route('clients.index') }}" class="flex items-center gap-3 px-4 py-2.5 rounded-[5px] text-sm font-medium transition-colors 
-                {{ request()->routeIs('clients.*') ? 'bg-slate-800 text-white' : 'text-slate-400 hover:text-white hover:bg-slate-800' }}">
-                <svg class="w-5 h-5 {{ request()->routeIs('clients.*') ? 'text-primary-500' : 'text-slate-400' }}" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"></path>
-                </svg>
-                Clientes
-            </a>
-
-            <!-- Link: Autores -->
-            <a href="{{ route('authors.index') }}" class="flex items-center gap-3 px-4 py-2.5 rounded-[5px] text-sm font-medium transition-colors 
-                {{ request()->routeIs('authors.*') ? 'bg-slate-800 text-white' : 'text-slate-400 hover:text-white hover:bg-slate-800' }}">
-                <svg class="w-5 h-5 {{ request()->routeIs('authors.*') ? 'text-primary-500' : 'text-slate-400' }}" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"></path>
-                </svg>
-                Autores
-            </a>
-
-            <!-- Dropdown: Portfólio -->
-            <div x-data="{ open: {{ (request()->routeIs('portfolio.*') || request()->routeIs('portfolio-categories.*')) ? 'true' : 'false' }} }" class="space-y-1">
+            <!-- Pasta: Projetos e Contatos -->
+            <div x-data="{ open: {{ (request()->routeIs('projects.*') || request()->routeIs('clients.*') || request()->routeIs('authors.*')) ? 'true' : 'false' }} }" class="space-y-1">
                 <button @click="open = !open" class="flex items-center justify-between w-full px-4 py-2.5 rounded-[5px] text-sm font-medium transition-colors text-slate-400 hover:text-white hover:bg-slate-800 focus:outline-none" :class="open ? 'text-white bg-slate-800/50' : ''">
                     <div class="flex items-center gap-3">
-                        <svg class="w-5 h-5 {{ (request()->routeIs('portfolio.*') || request()->routeIs('portfolio-categories.*')) ? 'text-primary-500' : 'text-slate-400' }}" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
+                        <svg class="w-5 h-5 {{ (request()->routeIs('projects.*') || request()->routeIs('clients.*') || request()->routeIs('authors.*')) ? 'text-primary-500' : 'text-slate-400' }}" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"></path>
                         </svg>
-                        Portfólio
+                        Projetos
                     </div>
                     <svg class="w-3 h-3 text-slate-400 transition-transform duration-200" :class="open ? 'rotate-180' : ''" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
                     </svg>
                 </button>
                 <div x-show="open" class="pl-9 space-y-1" style="display: none;" :style="open ? 'display: block;' : 'display: none;'">
-                    <a href="{{ route('portfolio.index') }}" class="block py-2 px-3 text-xs font-semibold rounded-[5px] transition-colors {{ request()->routeIs('portfolio.index') || request()->routeIs('portfolio.show') || request()->routeIs('portfolio.edit') || request()->routeIs('portfolio.create') ? 'text-white bg-slate-850' : 'text-slate-400 hover:text-white' }}">
-                        Trabalhos
+                    <a href="{{ route('projects.index') }}" class="block py-2 px-3 text-xs font-semibold rounded-[5px] transition-colors {{ request()->routeIs('projects.*') ? 'text-white bg-slate-850' : 'text-slate-400 hover:text-white' }}">
+                        Lista de Projetos
                     </a>
-                    <a href="{{ route('portfolio-categories.index') }}" class="block py-2 px-3 text-xs font-semibold rounded-[5px] transition-colors {{ request()->routeIs('portfolio-categories.*') ? 'text-white bg-slate-850' : 'text-slate-400 hover:text-white' }}">
-                        Categorias
-                    </a>
-                    <a href="{{ route('portfolio.pipeline') }}" class="block py-2 px-3 text-xs font-semibold rounded-[5px] transition-colors {{ request()->routeIs('portfolio.pipeline') ? 'text-white bg-slate-850' : 'text-slate-400 hover:text-white' }}">
-                        Pipeline
-                    </a>
-                    <a href="{{ route('portfolio.settings') }}" class="block py-2 px-3 text-xs font-semibold rounded-[5px] transition-colors {{ request()->routeIs('portfolio.settings') ? 'text-white bg-slate-850' : 'text-slate-400 hover:text-white' }}">
-                        Configurações do Site
-                    </a>
+                    @if(auth()->check() && auth()->user()->isMaster())
+                        <a href="{{ route('clients.index') }}" class="block py-2 px-3 text-xs font-semibold rounded-[5px] transition-colors {{ request()->routeIs('clients.*') ? 'text-white bg-slate-850' : 'text-slate-400 hover:text-white' }}">
+                            Clientes
+                        </a>
+                        <a href="{{ route('authors.index') }}" class="block py-2 px-3 text-xs font-semibold rounded-[5px] transition-colors {{ request()->routeIs('authors.*') ? 'text-white bg-slate-850' : 'text-slate-400 hover:text-white' }}">
+                            Autores
+                        </a>
+                    @endif
                 </div>
             </div>
 
-            <!-- Dropdown: Utilidades -->
-            <div x-data="{ open: {{ (request()->routeIs('revisoes.*')) ? 'true' : 'false' }} }" class="space-y-1">
+            <!-- Pasta: Controle Financeiro -->
+            <div x-data="{ open: {{ (request()->routeIs('finances.*') || request()->routeIs('categories.*') || request()->routeIs('payments.*') || request()->routeIs('bank-accounts.*') || request()->routeIs('credit-cards.*')) ? 'true' : 'false' }} }" class="space-y-1">
                 <button @click="open = !open" class="flex items-center justify-between w-full px-4 py-2.5 rounded-[5px] text-sm font-medium transition-colors text-slate-400 hover:text-white hover:bg-slate-800 focus:outline-none" :class="open ? 'text-white bg-slate-800/50' : ''">
                     <div class="flex items-center gap-3">
-                        <svg class="w-5 h-5 {{ (request()->routeIs('revisoes.*')) ? 'text-primary-500' : 'text-slate-400' }}" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"></path>
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
+                        <svg class="w-5 h-5 {{ (request()->routeIs('finances.*') || request()->routeIs('categories.*') || request()->routeIs('payments.*') || request()->routeIs('bank-accounts.*') || request()->routeIs('credit-cards.*')) ? 'text-primary-500' : 'text-slate-400' }}" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
                         </svg>
-                        Utilidades
+                        Financeiro
                     </div>
                     <svg class="w-3 h-3 text-slate-400 transition-transform duration-200" :class="open ? 'rotate-180' : ''" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
                     </svg>
                 </button>
                 <div x-show="open" class="pl-9 space-y-1" style="display: none;" :style="open ? 'display: block;' : 'display: none;'">
-                    <a href="{{ route('revisoes.index') }}" class="block py-2 px-3 text-xs font-semibold rounded-[5px] transition-colors {{ request()->routeIs('revisoes.*') ? 'text-white bg-slate-850' : 'text-slate-400 hover:text-white' }}">
-                        Revisão de Trabalhos
+                    <a href="{{ route('finances.index') }}" class="block py-2 px-3 text-xs font-semibold rounded-[5px] transition-colors {{ request()->routeIs('finances.*') || request()->routeIs('categories.*') ? 'text-white bg-slate-850' : 'text-slate-400 hover:text-white' }}">
+                        Controle Financeiro
+                    </a>
+                    <a href="{{ route('payments.index') }}" class="block py-2 px-3 text-xs font-semibold rounded-[5px] transition-colors {{ request()->routeIs('payments.*') ? 'text-white bg-slate-850' : 'text-slate-400 hover:text-white' }}">
+                        Pagamentos
+                    </a>
+                    <a href="{{ route('bank-accounts.index') }}" class="block py-2 px-3 text-xs font-semibold rounded-[5px] transition-colors {{ request()->routeIs('bank-accounts.*') || request()->routeIs('credit-cards.*') ? 'text-white bg-slate-850' : 'text-slate-400 hover:text-white' }}">
+                        Carteira
                     </a>
                 </div>
             </div>
 
-            <!-- Link: Configurações -->
+            @if(auth()->check() && auth()->user()->isMaster())
+                <!-- Dropdown: Portfólio -->
+                <div x-data="{ open: {{ (request()->routeIs('portfolio.*') || request()->routeIs('portfolio-categories.*')) && !request()->routeIs('portfolio.settings') ? 'true' : 'false' }} }" class="space-y-1">
+                    <button @click="open = !open" class="flex items-center justify-between w-full px-4 py-2.5 rounded-[5px] text-sm font-medium transition-colors text-slate-400 hover:text-white hover:bg-slate-800 focus:outline-none" :class="open ? 'text-white bg-slate-800/50' : ''">
+                        <div class="flex items-center gap-3">
+                            <svg class="w-5 h-5 {{ (request()->routeIs('portfolio.*') || request()->routeIs('portfolio-categories.*')) && !request()->routeIs('portfolio.settings') ? 'text-primary-500' : 'text-slate-400' }}" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
+                            </svg>
+                            Portfólio
+                        </div>
+                        <svg class="w-3 h-3 text-slate-400 transition-transform duration-200" :class="open ? 'rotate-180' : ''" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
+                        </svg>
+                    </button>
+                    <div x-show="open" class="pl-9 space-y-1" style="display: none;" :style="open ? 'display: block;' : 'display: none;'">
+                        <a href="{{ route('portfolio.index') }}" class="block py-2 px-3 text-xs font-semibold rounded-[5px] transition-colors {{ request()->routeIs('portfolio.index') || request()->routeIs('portfolio.show') || request()->routeIs('portfolio.edit') || request()->routeIs('portfolio.create') ? 'text-white bg-slate-850' : 'text-slate-400 hover:text-white' }}">
+                            Trabalhos
+                        </a>
+                        <a href="{{ route('portfolio-categories.index') }}" class="block py-2 px-3 text-xs font-semibold rounded-[5px] transition-colors {{ request()->routeIs('portfolio-categories.*') ? 'text-white bg-slate-850' : 'text-slate-400 hover:text-white' }}">
+                            Categorias
+                        </a>
+                        <a href="{{ route('portfolio.pipeline') }}" class="block py-2 px-3 text-xs font-semibold rounded-[5px] transition-colors {{ request()->routeIs('portfolio.pipeline') ? 'text-white bg-slate-850' : 'text-slate-400 hover:text-white' }}">
+                            Pipeline
+                        </a>
+                    </div>
+                </div>
+
+                <!-- Dropdown: Utilidades -->
+                <div x-data="{ open: {{ (request()->routeIs('revisoes.*')) ? 'true' : 'false' }} }" class="space-y-1">
+                    <button @click="open = !open" class="flex items-center justify-between w-full px-4 py-2.5 rounded-[5px] text-sm font-medium transition-colors text-slate-400 hover:text-white hover:bg-slate-800 focus:outline-none" :class="open ? 'text-white bg-slate-800/50' : ''">
+                        <div class="flex items-center gap-3">
+                            <svg class="w-5 h-5 {{ (request()->routeIs('revisoes.*')) ? 'text-primary-500' : 'text-slate-400' }}" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"></path>
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
+                            </svg>
+                            Utilidades
+                        </div>
+                        <svg class="w-3 h-3 text-slate-400 transition-transform duration-200" :class="open ? 'rotate-180' : ''" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
+                        </svg>
+                    </button>
+                    <div x-show="open" class="pl-9 space-y-1" style="display: none;" :style="open ? 'display: block;' : 'display: none;'">
+                        <a href="{{ route('revisoes.index') }}" class="block py-2 px-3 text-xs font-semibold rounded-[5px] transition-colors {{ request()->routeIs('revisoes.*') ? 'text-white bg-slate-850' : 'text-slate-400 hover:text-white' }}">
+                            Revisão de Trabalhos
+                        </a>
+                    </div>
+                </div>
+            @endif
+
+            <!-- Link: Minha Conta -->
             <a href="{{ route('profile.edit') }}" class="flex items-center gap-3 px-4 py-2.5 rounded-[5px] text-sm font-medium transition-colors 
                 {{ request()->routeIs('profile.*') ? 'bg-slate-800 text-white' : 'text-slate-400 hover:text-white hover:bg-slate-800' }}">
                 <svg class="w-5 h-5 {{ request()->routeIs('profile.*') ? 'text-primary-500' : 'text-slate-400' }}" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"></path>
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path>
                 </svg>
-                Configurações
+                Minha Conta
             </a>
         </nav>
 
         <!-- Footer da Sidebar: Perfil & Logout -->
-        <div class="p-4 border-t border-slate-800 flex items-center justify-between gap-2">
+        <div class="p-4 border-t border-slate-800 dark:border-slate-900 flex items-center justify-between gap-2 shrink-0">
             <div class="flex items-center gap-3">
-                <div class="w-9 h-9 rounded-full bg-slate-800 border border-slate-700 text-white font-bold flex items-center justify-center text-sm shadow-inner shrink-0 overflow-hidden">
+                <div class="w-9 h-9 rounded-full bg-slate-800 dark:bg-slate-900 border border-slate-700 dark:border-slate-800 text-white font-bold flex items-center justify-center text-sm shadow-inner shrink-0 overflow-hidden">
                     @if(auth()->check() && auth()->user()->avatar)
                         <img src="{{ asset('storage/' . auth()->user()->avatar) }}" class="w-full h-full object-cover">
                     @elseif(auth()->check())
@@ -339,10 +513,11 @@
     </aside>
 
     <!-- Área Principal -->
-    <div class="flex-1 flex flex-col overflow-hidden min-h-screen">
+    <div class="flex-1 flex flex-col overflow-hidden min-h-screen pt-16 dark:bg-slate-950">
         
         <!-- Header -->
-        <header class="h-16 bg-white border-b border-slate-200 flex items-center justify-between px-4 sm:px-6 md:px-8 shrink-0">
+        <header class="h-16 flex items-center justify-between px-4 sm:px-6 md:px-8 shrink-0 fixed top-0 left-0 right-0 md:left-64 z-30 transition-all duration-300 backdrop-blur-md border-b"
+                :class="scrolled ? 'bg-white/95 dark:bg-slate-900/95 shadow-md border-slate-200/80 dark:border-slate-800/80' : 'bg-white/70 dark:bg-slate-900/70 border-transparent'">
             <!-- Botão Hambúrguer Mobile -->
             <div class="flex items-center gap-3">
                 <button @click="sidebarOpen = !sidebarOpen" class="text-slate-500 hover:text-slate-800 p-2 md:hidden">
@@ -350,14 +525,32 @@
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path>
                     </svg>
                 </button>
-                <h1 class="text-lg font-bold text-slate-900">@yield('page_title', 'Painel de Controle')</h1>
+                <h1 class="text-lg font-bold text-slate-900 dark:text-white">@yield('page_title', 'Painel de Controle')</h1>
             </div>
             
-            <div class="flex items-center gap-4">
-                <span class="text-xs font-medium text-slate-500 bg-slate-100 px-2.5 py-1 rounded-[5px] flex items-center gap-1.5">
-                    <span class="w-2 h-2 rounded-full bg-primary-500 animate-pulse"></span>
-                    Servidor Local
-                </span>
+            <div class="flex items-center gap-2">
+                <!-- Botão de Alternância de Tema -->
+                <button @click="toggleTheme()" class="text-slate-500 hover:text-primary-500 dark:text-slate-400 dark:hover:text-primary-400 p-2 rounded-[5px] transition-colors" title="Alternar Tema">
+                    <!-- Ícone do Sol (Mostrado no modo escuro) -->
+                    <svg x-show="darkMode" class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" x-cloak>
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364-6.364l-.707.707M6.364 17.636l-.707.707M6.364 5.636l.707.707m12.728 12.728l.707.707M12 8a4 4 0 100 8 4 4 0 000-8z"></path>
+                    </svg>
+                    <!-- Ícone da Lua (Mostrado no modo claro) -->
+                    <svg x-show="!darkMode" class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z"></path>
+                    </svg>
+                </button>
+
+                @if(auth()->check())
+                    <form action="{{ route('logout') }}" method="POST" class="inline">
+                        @csrf
+                        <button type="submit" class="text-slate-500 hover:text-rose-600 dark:text-slate-400 dark:hover:text-rose-455 p-2 rounded-[5px] transition-colors" title="Sair da Conta">
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"></path>
+                            </svg>
+                        </button>
+                    </form>
+                @endif
             </div>
         </header>
 
@@ -464,6 +657,20 @@
                 sidebarOpen: false,
                 touchStartX: 0,
                 touchEndX: 0,
+                scrolled: false,
+                
+                // Dark mode state
+                darkMode: localStorage.getItem('theme') === 'dark',
+                toggleTheme() {
+                    this.darkMode = !this.darkMode;
+                    if (this.darkMode) {
+                        document.documentElement.classList.add('dark');
+                        localStorage.setItem('theme', 'dark');
+                    } else {
+                        document.documentElement.classList.remove('dark');
+                        localStorage.setItem('theme', 'light');
+                    }
+                },
                 
                 // Modal de exclusão global
                 globalDeleteOpen: false,

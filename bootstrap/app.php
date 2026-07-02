@@ -14,6 +14,8 @@ return Application::configure(basePath: dirname(__DIR__))
     ->withMiddleware(function (Middleware $middleware): void {
         $middleware->alias([
             'master' => \App\Http\Middleware\IsMaster::class,
+            'approved' => \App\Http\Middleware\ApprovedOnly::class,
+            'maintenance' => \App\Http\Middleware\PortfolioMaintenance::class,
         ]);
         $middleware->redirectUsersTo('/freelas');
     })

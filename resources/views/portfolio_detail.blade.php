@@ -175,6 +175,9 @@
     </style>
 </head>
 <body class="text-slate-100 antialiased min-h-screen pb-16 selection:bg-blue-500 selection:text-white" x-data="portfolioDetail()">
+    <!-- Custom Cursor Elements -->
+    <div id="custom-cursor" class="pointer-events-none fixed top-0 left-0 w-8 h-8 rounded-full border border-blue-500/40 mix-blend-difference z-[9999] transition-all duration-200 ease-out transform -translate-x-1/2 -translate-y-1/2 hidden md:block"></div>
+    <div id="custom-cursor-dot" class="pointer-events-none fixed top-0 left-0 w-1.5 h-1.5 bg-blue-500 rounded-full z-[9999] transition-all duration-200 ease-out transform -translate-x-1/2 -translate-y-1/2 hidden md:block"></div>
 
     <!-- Header / Navbar -->
     <header class="sticky top-0 z-50 glassmorphism py-4 shadow-md">
@@ -290,8 +293,8 @@
                         
                         <!-- Curtidas -->
                         <button type="button" 
-                                @click="likeItem()" 
-                                class="flex items-center gap-2 text-slate-400 hover:text-rose-500 text-xs font-bold transition-colors select-none"
+                                @click="likeItem($event)" 
+                                class="like-btn flex items-center gap-2 text-slate-400 hover:text-rose-500 text-xs font-bold transition-colors select-none"
                                 :disabled="liked">
                             <svg class="w-4.5 h-4.5 text-rose-500 transition-transform" 
                                  :class="liked ? 'scale-110 heart-beat' : 'hover:scale-110'"
@@ -423,9 +426,92 @@
                 liked: false,
                 likesCount: {{ $item->likes }},
                 
-                likeItem() {
+                init() {
+                    // Cursor Follower Logic
+                    const cursor = document.getElementById('custom-cursor');
+                    const cursorDot = document.getElementById('custom-cursor-dot');
+                    if (cursor && cursorDot) {
+                        window.addEventListener('mousemove', (e) => {
+                            cursor.style.transform = `translate3d(${e.clientX}px, ${e.clientY}px, 0)`;
+                            cursorDot.style.transform = `translate3d(${e.clientX}px, ${e.clientY}px, 0)`;
+                        });
+
+                        const clickables = document.querySelectorAll('a, button, input, select, textarea, [role="button"], .group');
+                        clickables.forEach(el => {
+                            el.addEventListener('mouseenter', () => {
+                                cursor.classList.add('scale-[2.5]', 'bg-white');
+                                cursor.classList.remove('border-blue-500/40');
+                                cursorDot.classList.add('opacity-0');
+                            });
+                            el.addEventListener('mouseleave', () => {
+                                cursor.classList.remove('scale-[2.5]', 'bg-white');
+                                cursor.classList.add('border-blue-500/40');
+                                cursorDot.classList.remove('opacity-0');
+                            });
+                        });
+                    }
+
+                    // Click particle emoji effect
+                    window.addEventListener('click', (e) => {
+                        if (e.target.closest('select') || e.target.closest('input[type="file"]') || e.target.closest('button.like-btn')) return;
+
+                        const particle = document.createElement('div');
+                        particle.className = 'pointer-events-none fixed z-[9999] text-2xl transition-all duration-1000 ease-out transform -translate-x-1/2 -translate-y-1/2';
+                        
+                        const icons = ['👍', '✨', '🎨', '🔥', '🚀'];
+                        particle.innerHTML = icons[Math.floor(Math.random() * icons.length)];
+                        
+                        particle.style.left = `${e.clientX}px`;
+                        particle.style.top = `${e.clientY}px`;
+                        particle.style.opacity = '1';
+                        particle.style.transform = 'translate3d(-50%, -50%, 0) scale(0.5)';
+                        document.body.appendChild(particle);
+                        
+                        setTimeout(() => {
+                            particle.style.transform = `translate3d(-50%, -120px, 0) scale(1.5) rotate(${Math.random() > 0.5 ? 20 : -20}deg)`;
+                            particle.style.opacity = '0';
+                        }, 50);
+                        
+                        setTimeout(() => {
+                            particle.remove();
+                        }, 1050);
+                    });
+                },
+
+                likeItem(event) {
                     if (this.liked) return;
                     this.liked = true;
+
+                    // Hearts burst animation
+                    const btn = event.currentTarget;
+                    const rect = btn.getBoundingClientRect();
+                    const centerX = rect.left + rect.width / 2;
+                    const centerY = rect.top + rect.height / 2;
+
+                    for (let i = 0; i < 12; i++) {
+                        const heart = document.createElement('div');
+                        heart.className = 'pointer-events-none fixed z-[9999] text-base transition-all duration-1000 ease-out transform -translate-x-1/2 -translate-y-1/2';
+                        heart.innerHTML = '❤️';
+                        heart.style.left = `${centerX}px`;
+                        heart.style.top = `${centerY}px`;
+                        heart.style.opacity = '1';
+                        heart.style.transform = 'translate3d(-50%, -50%, 0) scale(0.5)';
+                        document.body.appendChild(heart);
+
+                        const angle = Math.random() * Math.PI * 2;
+                        const velocity = 40 + Math.random() * 70;
+                        const targetX = Math.cos(angle) * velocity;
+                        const targetY = Math.sin(angle) * velocity - 20;
+
+                        setTimeout(() => {
+                            heart.style.transform = `translate3d(calc(-50% + ${targetX}px), calc(-50% + ${targetY}px), 0) scale(${1.2 + Math.random() * 0.8}) rotate(${Math.random() * 360}deg)`;
+                            heart.style.opacity = '0';
+                        }, 50);
+
+                        setTimeout(() => {
+                            heart.remove();
+                        }, 1050);
+                    }
 
                     fetch("{{ route('public.portfolio.likes', $item->id) }}", {
                         method: 'POST',

@@ -181,22 +181,84 @@
                 </div>
             @endif
 
-            <!-- Tabs de Ajustes (Aberto / Resolvido) -->
+            <!-- Tabs de Ajustes (Aberto / Resolvido / Gerais) -->
             <div class="flex border-b border-slate-200 text-xs font-bold uppercase tracking-wider shrink-0" id="tour-step-tabs">
                 <button @click="activeTab = 'aberto'" 
-                        class="flex-1 py-3 text-center border-b-2"
+                        class="flex-1 py-3 text-center border-b-2 text-[10px]"
                         :class="activeTab === 'aberto' ? 'border-blue-500 text-blue-600 bg-slate-50/50' : 'border-transparent text-slate-400 hover:text-slate-600'">
                     Pendentes
                 </button>
                 <button @click="activeTab = 'resolvido'" 
-                        class="flex-1 py-3 text-center border-b-2"
+                        class="flex-1 py-3 text-center border-b-2 text-[10px]"
                         :class="activeTab === 'resolvido' ? 'border-blue-500 text-blue-600 bg-slate-50/50' : 'border-transparent text-slate-400 hover:text-slate-600'">
                     Resolvidos
+                </button>
+                <button @click="activeTab = 'geral'" 
+                        class="flex-1 py-3 text-center border-b-2 text-[10px]"
+                        :class="activeTab === 'geral' ? 'border-blue-500 text-blue-600 bg-slate-50/50' : 'border-transparent text-slate-400 hover:text-slate-600'">
+                    Gerais 📝
                 </button>
             </div>
 
             <!-- Annotations Feed -->
-            <div class="flex-1 overflow-y-auto p-4 space-y-4">
+            <div class="flex-1 overflow-y-auto p-4 space-y-4 flex flex-col justify-start">
+                
+                <!-- General Adjustment Creator (only visible in Gerais tab) -->
+                <div x-show="activeTab === 'geral'" class="bg-slate-50 border border-slate-200 p-3.5 rounded-[5px] space-y-3 shrink-0 mb-2">
+                    <span class="text-[10px] font-black text-slate-600 uppercase tracking-wider block">✍️ Novo Ajuste Geral</span>
+                    
+                    <div class="space-y-2">
+                        <!-- Formatting Bar -->
+                        <div class="flex items-center gap-1.5 bg-white border border-slate-200 p-1.5 rounded-[3px]">
+                            <button type="button" @click="formatGeneralText('bold')" class="px-2 py-0.5 rounded text-[10px] font-bold hover:bg-slate-100 text-slate-700 cursor-pointer" title="Negrito">B</button>
+                            <button type="button" @click="formatGeneralText('italic')" class="px-2 py-0.5 rounded text-[10px] italic hover:bg-slate-100 text-slate-700 cursor-pointer" title="Itálico">I</button>
+                            <button type="button" @click="formatGeneralText('underline')" class="px-2 py-0.5 rounded text-[10px] underline hover:bg-slate-100 text-slate-700 cursor-pointer" title="Sublinhado">U</button>
+                        </div>
+
+                        <!-- WYSIWYG Editor for General Observations -->
+                        <div id="general-wysiwyg-editor" 
+                             contenteditable="true"
+                             class="w-full bg-white border border-slate-200 text-slate-800 rounded-[5px] p-2 text-xs focus:outline-none focus:ring-1 focus:ring-blue-500 min-h-[80px] max-h-[140px] overflow-y-auto"
+                             @blur="generalCommentText = $el.innerHTML"></div>
+
+                        <!-- Citations Helper -->
+                        <div class="space-y-1">
+                            <span class="text-[8px] font-bold text-slate-400 uppercase tracking-wider block">Citar arquivos desta rodada:</span>
+                            <div class="flex flex-wrap gap-1 max-h-24 overflow-y-auto p-1 bg-white border border-slate-150 rounded-[3px]">
+                                @foreach($files as $file)
+                                    <button type="button" 
+                                            @click="insertGeneralCitation('{{ addslashes($file->filename) }}')"
+                                            class="px-1.5 py-0.5 rounded-[3px] text-[8px] font-extrabold uppercase bg-slate-100 text-slate-600 hover:bg-slate-200 hover:text-slate-800 transition-all select-none cursor-pointer"
+                                            title="Citar {{ $file->filename }}">
+                                        📎 {{ \Illuminate\Support\Str::limit($file->filename, 14) }}
+                                    </button>
+                                @endforeach
+                            </div>
+                        </div>
+
+                        <!-- Dropzone / Drag & Drop Visual Reference -->
+                        <div class="space-y-1">
+                            <div @dragover.prevent="generalDragover = true"
+                                 @dragleave.prevent="generalDragover = false"
+                                 @drop.prevent="handleGeneralDrop($event)"
+                                 @click="$refs.genAttachInput.click()"
+                                 class="border border-dashed rounded-[5px] p-2.5 text-center cursor-pointer transition-colors"
+                                 :class="generalDragover ? 'border-blue-500 bg-blue-50/20' : 'border-slate-200 hover:border-slate-300 bg-white'">
+                                <span class="text-[9px] text-slate-500 block leading-snug" x-text="generalAttachmentFileName || 'Arraste referência visual ou clique'"></span>
+                                <input type="file" x-ref="genAttachInput" accept="image/*" class="hidden" @change="handleGeneralFileSelect($event)">
+                            </div>
+                        </div>
+
+                        <!-- Submit Button -->
+                        <button type="button" 
+                                @click="saveGeneralObservation()"
+                                :disabled="!generalCommentText.trim() || isUploading"
+                                class="w-full bg-blue-600 hover:bg-blue-700 disabled:bg-slate-350 disabled:cursor-not-allowed text-white font-bold text-[10px] uppercase tracking-wider py-2 rounded-[5px] transition-all shadow-sm cursor-pointer">
+                            <span x-text="isUploading ? 'Salvando...' : 'Salvar Ajuste Geral'"></span>
+                        </button>
+                    </div>
+                </div>
+
                 <div id="annotations-list" class="space-y-3">
                     
                     <div class="text-center text-sm text-slate-450 py-12 italic" 
@@ -207,12 +269,12 @@
                     <template x-for="(anno, idx) in annotationsList" :key="anno.id">
                         <div class="bg-white border border-slate-200 rounded-[5px] p-3.5 hover:border-slate-350 transition-all hover:shadow-sm cursor-pointer relative"
                              :id="'anno-card-' + anno.id"
-                             x-show="shouldShowAnno(anno.status)"
+                             x-show="shouldShowAnno(anno)"
                              @click="focusAnnotation(anno.id, anno.page_number, anno.drawing_data)">
                             
                             <!-- Header Ajuste -->
                             <div class="flex items-center justify-between pb-1.5 border-b border-slate-100 mb-2 text-[10px] font-bold text-slate-500">
-                                <span x-text="'Ajuste #' + (idx + 1) + ' • Página ' + anno.page_number"></span>
+                                <span x-text="Number(anno.page_number) === 0 ? '📝 Ajuste Geral' : ('Ajuste #' + (idx + 1) + ' • Página ' + anno.page_number)"></span>
                                 <span class="uppercase tracking-wider font-black px-2 py-0.5 rounded-full border text-[9px]"
                                       :class="anno.status === 'aberto' ? 'bg-rose-50 text-rose-600 border-rose-100' : 'bg-emerald-50 text-emerald-600 border-emerald-100'"
                                       :id="'anno-badge-' + anno.id"
@@ -242,16 +304,21 @@
                             <!-- Data e Ações -->
                             <div class="flex items-center justify-between mt-2.5 pt-2.5 border-t border-slate-100">
                                 <span class="text-[9px] text-slate-400 font-medium" x-text="formatDate(anno.created_at)"></span>
-                                <div class="flex gap-2">
-                                    <button @click.stop="editAnnotation(anno.id)" class="text-[10px] font-bold uppercase text-blue-600 hover:text-blue-700 hover:underline">
+                                <div class="flex items-center gap-1.5">
+                                    <!-- Editar -->
+                                    <button type="button" @click.stop="editAnnotation(anno.id)" class="px-2 py-0.5 rounded-[3px] text-[8px] font-extrabold uppercase tracking-wide bg-blue-50 text-blue-600 border border-blue-200/60 hover:bg-blue-100/80 transition-all cursor-pointer">
                                         Editar
                                     </button>
-                                    <button @click.stop="toggleResolve(anno.id)" 
-                                            class="text-[10px] font-bold uppercase hover:underline"
-                                            :class="anno.status === 'aberto' ? 'text-emerald-600 hover:text-emerald-700' : 'text-slate-500 hover:text-slate-800'">
-                                        <span x-text="resolveBtnText[anno.id] || (anno.status === 'aberto' ? 'Resolvido' : 'Reabrir')"></span>
+                                    
+                                    <!-- Resolver / Reabrir -->
+                                    <button type="button" @click.stop="toggleResolve(anno.id)" 
+                                            class="px-2 py-0.5 rounded-[3px] text-[8px] font-extrabold uppercase tracking-wide border transition-all cursor-pointer"
+                                            :class="anno.status === 'aberto' ? 'bg-emerald-50 text-emerald-600 border-emerald-200/60 hover:bg-emerald-100/85' : 'bg-amber-50 text-amber-600 border-amber-200/60 hover:bg-amber-100/85'">
+                                        <span x-text="resolveBtnText[anno.id] || (anno.status === 'aberto' ? 'Resolver' : 'Reabrir')"></span>
                                     </button>
-                                    <button @click.stop="deleteAnnotation(anno.id)" class="text-[10px] font-bold uppercase text-rose-600 hover:text-rose-700 hover:underline">
+
+                                    <!-- Excluir -->
+                                    <button type="button" @click.stop="deleteAnnotation(anno.id)" class="px-2 py-0.5 rounded-[3px] text-[8px] font-extrabold uppercase tracking-wide bg-rose-50 text-rose-600 border border-rose-200/60 hover:bg-rose-100/80 transition-all cursor-pointer">
                                         Excluir
                                     </button>
                                 </div>
@@ -599,17 +666,45 @@
                                     @endphp
                                     <a href="{{ route('public.revisao.show', $revision->share_token) }}?file={{ $file->id }}" 
                                        class="flex items-center justify-between gap-2 p-1.5 rounded-[5px] text-xs font-medium truncate transition-colors 
-                                            {{ ($activeFile && $activeFile->id === $file->id) ? 'bg-blue-50 text-blue-600 border border-blue-200' : 'text-slate-600 hover:text-slate-800 hover:bg-slate-100' }}">
-                                        
+                                            {{ ($activeFile && $activeFile->id === $file->id) ? 'bg-blue-50 text-blue-600 border border-blue-200' : 'text-slate-600 hover:text-slate-800 hover:bg-slate-100' }}"
+                                       @if($activeFile && $activeFile->id === $file->id)
+                                           :class="annotationsList.filter(a => a.status === 'aberto').length === 0 ? 'bg-emerald-50 text-emerald-600 border border-emerald-250/60' : 'bg-blue-50 text-blue-600 border border-blue-200'"
+                                       @endif
+                                    >
                                         <div class="flex items-center gap-2 min-w-0">
                                             <span>{{ $icon }}</span>
-                                            <span class="truncate" title="{{ $file->filename }}">{{ $file->filename }}</span>
+                                            <span class="truncate" title="{{ $file->filename }}"
+                                                  @if($activeFile && $activeFile->id === $file->id)
+                                                      :class="annotationsList.filter(a => a.status === 'aberto').length === 0 ? 'text-emerald-600 font-bold' : ''"
+                                                  @elseif($file->annotations->count() > 0 && $file->annotations->where('status', 'aberto')->count() === 0)
+                                                      class="text-emerald-600 font-bold"
+                                                  @endif
+                                            >{{ $file->filename }}</span>
                                         </div>
                                         
-                                        @if($file->annotations->count() > 0)
-                                            <span class="text-[9px] font-extrabold px-1.5 py-0.5 rounded-full bg-rose-50 text-rose-600 border border-rose-100 shrink-0">
-                                                {{ $file->annotations->where('status', 'aberto')->count() }}
+                                        @if($activeFile && $activeFile->id === $file->id)
+                                            <!-- Dynamic Active File count -->
+                                            <span x-show="annotationsList.filter(a => a.status === 'aberto').length > 0" 
+                                                  x-text="annotationsList.filter(a => a.status === 'aberto').length"
+                                                  class="text-[9px] font-extrabold px-1.5 py-0.5 rounded-full bg-rose-50 text-rose-600 border border-rose-100 shrink-0">
                                             </span>
+                                            <span x-show="annotationsList.length > 0 && annotationsList.filter(a => a.status === 'aberto').length === 0" 
+                                                  class="text-[9px] font-extrabold px-1.5 py-0.5 rounded-full bg-emerald-50 text-emerald-600 border border-emerald-100 shrink-0">
+                                                ✓
+                                            </span>
+                                        @else
+                                            <!-- Static counts for other files -->
+                                            @if($file->annotations->count() > 0)
+                                                @if($file->annotations->where('status', 'aberto')->count() > 0)
+                                                    <span class="text-[9px] font-extrabold px-1.5 py-0.5 rounded-full bg-rose-50 text-rose-600 border border-rose-100 shrink-0">
+                                                        {{ $file->annotations->where('status', 'aberto')->count() }}
+                                                    </span>
+                                                @else
+                                                    <span class="text-[9px] font-extrabold px-1.5 py-0.5 rounded-full bg-emerald-50 text-emerald-600 border border-emerald-100 shrink-0">
+                                                        ✓
+                                                    </span>
+                                                @endif
+                                            @endif
                                         @endif
                                     </a>
                                 @endforeach
@@ -879,6 +974,11 @@
                 // Reactive annotations array list
                 annotationsList: initialAnnotations || [],
                 
+                // General observations state variables
+                generalCommentText: '',
+                generalDragover: false,
+                generalAttachmentFileName: '',
+
                 // Sidebar Redesign Options
                 activeTab: 'aberto', // aberto, resolvido
                 selectedAuthorId: localStorage.getItem('rev_selected_author_id') || '',
@@ -1291,12 +1391,20 @@
                 },
 
                 // Filters helpers
-                shouldShowAnno(status) {
-                    return status === this.activeTab;
+                shouldShowAnno(anno) {
+                    const isGeral = Number(anno.page_number) === 0;
+                    if (this.activeTab === 'geral') {
+                        return isGeral;
+                    }
+                    return !isGeral && anno.status === this.activeTab;
                 },
 
                 filteredAnnotationsCount() {
-                    return this.annotationsList.filter(anno => anno.status === this.activeTab).length;
+                    return this.annotationsList.filter(anno => {
+                        const isGeral = Number(anno.page_number) === 0;
+                        if (this.activeTab === 'geral') return isGeral;
+                        return !isGeral && anno.status === this.activeTab;
+                    }).length;
                 },
 
                 formatDate(dateStr) {
@@ -1959,14 +2067,14 @@
                                     this.ctx.beginPath();
                                     this.ctx.moveTo(boundMaxX, centerY);
                                     this.ctx.lineTo(targetLineX, centerY);
-                                    this.ctx.strokeStyle = parsed.color || '#f43f5e';
+                                    this.ctx.strokeStyle = anno.status === 'resolvido' ? '#10b981' : (parsed.color || '#f43f5e');
                                     this.ctx.lineWidth = 1.5;
                                     this.ctx.stroke();
 
                                     // Circle Badge
                                     this.ctx.beginPath();
                                     this.ctx.arc(circleX, centerY, 10, 0, 2 * Math.PI);
-                                    this.ctx.fillStyle = '#3b82f6';
+                                    this.ctx.fillStyle = anno.status === 'resolvido' ? '#10b981' : '#3b82f6';
                                     this.ctx.fill();
                                     
                                     this.ctx.fillStyle = '#ffffff';
@@ -1979,12 +2087,12 @@
                                     const finalBubbleX = clamp(bubbleX, 2, this.canvas.width - bubbleWidth - 2);
                                     const bubbleY = centerY - (bubbleHeight / 2);
 
-                                    this.ctx.fillStyle = '#fef08a';
+                                    this.ctx.fillStyle = anno.status === 'resolvido' ? '#d1fae5' : '#fef08a';
                                     this.ctx.beginPath();
                                     this.ctx.roundRect(finalBubbleX, bubbleY, bubbleWidth, bubbleHeight, 4);
                                     this.ctx.fill();
 
-                                    this.ctx.fillStyle = '#1e293b';
+                                    this.ctx.fillStyle = anno.status === 'resolvido' ? '#065f46' : '#1e293b';
                                     this.ctx.textAlign = 'left';
                                     this.ctx.font = '500 11px sans-serif';
                                     
@@ -2001,14 +2109,14 @@
                                     this.ctx.beginPath();
                                     this.ctx.moveTo(boundMinX, centerY);
                                     this.ctx.lineTo(targetLineX, centerY);
-                                    this.ctx.strokeStyle = parsed.color || '#f43f5e';
+                                    this.ctx.strokeStyle = anno.status === 'resolvido' ? '#10b981' : (parsed.color || '#f43f5e');
                                     this.ctx.lineWidth = 1.5;
                                     this.ctx.stroke();
 
                                     // Circle Badge
                                     this.ctx.beginPath();
                                     this.ctx.arc(circleX, centerY, 10, 0, 2 * Math.PI);
-                                    this.ctx.fillStyle = '#3b82f6';
+                                    this.ctx.fillStyle = anno.status === 'resolvido' ? '#10b981' : '#3b82f6';
                                     this.ctx.fill();
                                     
                                     this.ctx.fillStyle = '#ffffff';
@@ -2021,12 +2129,12 @@
                                     const finalBubbleX = clamp(bubbleX, 2, this.canvas.width - bubbleWidth - 2);
                                     const bubbleY = centerY - (bubbleHeight / 2);
 
-                                    this.ctx.fillStyle = '#fef08a';
+                                    this.ctx.fillStyle = anno.status === 'resolvido' ? '#d1fae5' : '#fef08a';
                                     this.ctx.beginPath();
                                     this.ctx.roundRect(finalBubbleX, bubbleY, bubbleWidth, bubbleHeight, 4);
                                     this.ctx.fill();
 
-                                    this.ctx.fillStyle = '#1e293b';
+                                    this.ctx.fillStyle = anno.status === 'resolvido' ? '#065f46' : '#1e293b';
                                     this.ctx.textAlign = 'left';
                                     this.ctx.font = '500 11px sans-serif';
                                     
@@ -2050,6 +2158,17 @@
 
                 focusAnnotation(id, page, data) {
                     this.focusedAnnoId = id;
+
+                    if (Number(page) === 0) {
+                        const cards = document.querySelectorAll('[id^="anno-card-"]');
+                        cards.forEach(c => c.classList.remove('border-blue-500', 'ring-2', 'ring-blue-500/20'));
+                        const card = document.getElementById('anno-card-' + id);
+                        if (card) {
+                            card.classList.add('border-blue-500', 'ring-2', 'ring-blue-500/20');
+                            card.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+                        }
+                        return;
+                    }
 
                     let targetPage = page;
                     if (this.pageMode === 'double') {
@@ -2127,6 +2246,110 @@
                             this.triggerAlert('Erro', 'Falha ao deletar ajuste.', 'error');
                         });
                     });
+                },
+
+                // General Observations Helpers
+                formatGeneralText(command) {
+                    document.execCommand(command, false, null);
+                    const editor = document.getElementById('general-wysiwyg-editor');
+                    if (editor) {
+                        this.generalCommentText = editor.innerHTML;
+                    }
+                },
+
+                insertGeneralCitation(filename) {
+                    const editor = document.getElementById('general-wysiwyg-editor');
+                    if (editor) {
+                        editor.focus();
+                        const citationText = ` <strong>[Arquivo: ${filename}]</strong> `;
+                        document.execCommand('insertHTML', false, citationText);
+                        this.generalCommentText = editor.innerHTML;
+                    }
+                },
+
+                handleGeneralFileSelect(e) {
+                    if (e.target.files && e.target.files[0]) {
+                        this.generalAttachmentFileName = e.target.files[0].name;
+                    }
+                },
+
+                handleGeneralDrop(e) {
+                    this.generalDragover = false;
+                    if (e.dataTransfer.files && e.dataTransfer.files[0]) {
+                        this.generalAttachmentFileName = e.dataTransfer.files[0].name;
+                        const input = this.$refs.genAttachInput;
+                        if (input) {
+                            input.files = e.dataTransfer.files;
+                        }
+                    }
+                },
+
+                saveGeneralObservation() {
+                    const editor = document.getElementById('general-wysiwyg-editor');
+                    const commentHtml = editor ? editor.innerHTML : '';
+
+                    if (!commentHtml.trim()) {
+                        this.triggerAlert('Campo Vazio', 'Por favor, digite uma observação antes de salvar.', 'warning');
+                        return;
+                    }
+
+                    const formData = new FormData();
+                    formData.append('comment', commentHtml);
+                    formData.append('page_number', 0); // 0 signifies general observation
+                    if (this.selectedAuthorId) formData.append('author_id', this.selectedAuthorId);
+
+                    const fileInput = this.$refs.genAttachInput;
+                    if (fileInput && fileInput.files[0]) {
+                        formData.append('attachment', fileInput.files[0]);
+                    }
+
+                    @if($activeFile)
+                        const url = "{{ route('public.revisao.annotation.store', $activeFile->id) }}";
+                        const csrfToken = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
+
+                        this.isUploading = true;
+                        this.uploadPercentage = 0;
+
+                        const xhr = new XMLHttpRequest();
+                        xhr.open('POST', url, true);
+                        xhr.setRequestHeader('X-CSRF-TOKEN', csrfToken);
+
+                        xhr.upload.addEventListener('progress', (e) => {
+                            if (e.lengthComputable) {
+                                this.uploadPercentage = Math.round((e.loaded / e.total) * 100);
+                            }
+                        });
+
+                        xhr.onload = () => {
+                            this.isUploading = false;
+                            this.uploadPercentage = 0;
+
+                            if (xhr.status >= 200 && xhr.status < 300) {
+                                const data = JSON.parse(xhr.responseText);
+                                if (data.success) {
+                                    this.annotationsList.push(data.annotation);
+                                    
+                                    // Reset General Observation input variables
+                                    this.generalCommentText = '';
+                                    if (editor) editor.innerHTML = '';
+                                    this.generalAttachmentFileName = '';
+                                    if (fileInput) fileInput.value = '';
+                                }
+                            } else {
+                                this.triggerAlert('Erro', 'Falha ao salvar a observação geral.', 'error');
+                            }
+                        };
+
+                        xhr.onerror = () => {
+                            this.isUploading = false;
+                            this.uploadPercentage = 0;
+                            this.triggerAlert('Erro', 'Houve um erro de conexão ao realizar o upload.', 'error');
+                        };
+
+                        xhr.send(formData);
+                    @else
+                        this.triggerAlert('Erro', 'Nenhum arquivo ativo para associar o ajuste geral.', 'error');
+                    @endif
                 }
             }
         }

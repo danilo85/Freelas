@@ -298,8 +298,7 @@
                     </div>
                 </div>
 
-            </div>
-        @empty
+            @empty
             <div class="col-span-full border-2 border-dashed border-slate-200 p-12 text-center text-slate-400 rounded-[5px] text-sm">
                 Nenhum trabalho de portfólio cadastrado ainda.
             </div>

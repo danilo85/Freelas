@@ -197,12 +197,56 @@
         .animate-float-2 {
             animation: float-blob-2 15s ease-in-out infinite;
         }
+
+        /* Custom themed scrollbar for portfolio site */
+        ::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #070a13;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: linear-gradient(180deg, {{ $settings->primary_color ?? '#3b82f6' }} 0%, {{ $settings->secondary_color ?? '#1d4ed8' }} 100%);
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: {{ $settings->primary_color ?? '#3b82f6' }};
+        }
+        .footer-social-link {
+            transition: all 0.3s ease;
+        }
+        .footer-social-link:hover {
+            color: {{ $settings->primary_color ?? '#3b82f6' }} !important;
+            border-color: {{ ($settings->primary_color ?? '#3b82f6') }}40 !important;
+            background-color: {{ ($settings->primary_color ?? '#3b82f6') }}15 !important;
+        }
     </style>
 </head>
 <body class="text-slate-100 antialiased min-h-screen selection:bg-blue-500 selection:text-white" x-data="publicPortfolio()">
+    <!-- Custom Cursor Elements -->
+    <div id="custom-cursor" class="pointer-events-none fixed top-0 left-0 w-8 h-8 rounded-full border border-blue-500/40 mix-blend-difference z-[9999] transition-all duration-200 ease-out transform -translate-x-1/2 -translate-y-1/2 hidden md:block"></div>
+    <div id="custom-cursor-dot" class="pointer-events-none fixed top-0 left-0 w-1.5 h-1.5 bg-blue-500 rounded-full z-[9999] transition-all duration-200 ease-out transform -translate-x-1/2 -translate-y-1/2 hidden md:block"></div>
     @php
         $cleanPhone = preg_replace('/\D/', '', $settings->contact_phone);
         $whatsappNumber = str_starts_with($cleanPhone, '55') ? $cleanPhone : '55' . $cleanPhone;
+
+        $getSvg = function($filename, $class = 'w-5 h-5 fill-current') {
+            $path = storage_path('app/public/' . $filename);
+            if (file_exists($path)) {
+                $svg = file_get_contents($path);
+                $svg = preg_replace('/<\?xml.*?\?>/s', '', $svg);
+                
+                // Remove hardcoded fills and strokes to allow CSS/Tailwind coloring
+                $svg = preg_replace('/fill="[^"]*"/', '', $svg);
+                $svg = preg_replace('/stroke="[^"]*"/', '', $svg);
+                
+                // Inject classes
+                $svg = preg_replace('/<svg/', '<svg class="' . $class . '"', $svg, 1);
+                return $svg;
+            }
+            return '';
+        };
     @endphp
 
     <!-- Header / Navbar -->
@@ -381,7 +425,7 @@
             </h1>
 
             <p class="text-lg sm:text-xl text-slate-400 max-w-2xl mx-auto font-normal leading-relaxed">
-                {{ $settings->site_description }}
+                {!! $settings->site_description !!}
             </p>
 
         </div>
@@ -523,7 +567,7 @@
                     {{ $settings->about_title ?? 'Prazer, sou Danilo Miguel' }}
                 </h3>
                 <div class="text-slate-350 leading-relaxed text-sm sm:text-base space-y-4 whitespace-pre-line">
-                    {{ $settings->about_text }}
+                    {!! $settings->about_text !!}
                 </div>
 
                 <!-- Skills Grid -->
@@ -537,19 +581,60 @@
                 </div>
             </div>
 
-            <!-- Ilustração / Imagem decorativa de destaque: Caricatura Animada -->
+            <!-- Ilustração / Imagem decorativa de destaque: Caricatura Animada ou Mídia Personalizada -->
             <div class="relative flex justify-center items-center">
                 <div class="absolute inset-0 bg-blue-600/15 rounded-full blur-[85px] pointer-events-none"></div>
                 <div class="w-full max-w-xs sm:max-w-md aspect-square rounded-full border border-white/[0.08] overflow-hidden shadow-2xl relative bg-slate-950 flex items-center justify-center">
-                    <video autoplay loop muted playsinline class="w-full h-full object-cover">
-                        <source src="{{ asset('storage/caricatura.mp4') }}" type="video/mp4">
-                        Seu navegador não suporta vídeos.
-                    </video>
+                    @if($settings->media_path)
+                        @if(in_array(pathinfo($settings->media_path, PATHINFO_EXTENSION), ['mp4', 'webm', 'ogg']))
+                            <video autoplay loop muted playsinline class="w-full h-full object-cover">
+                                <source src="{{ asset('storage/' . $settings->media_path) }}">
+                                Seu navegador não suporta vídeos.
+                            </video>
+                        @else
+                            <img src="{{ asset('storage/' . $settings->media_path) }}" class="w-full h-full object-cover">
+                        @endif
+                    @else
+                        <video autoplay loop muted playsinline class="w-full h-full object-cover">
+                            <source src="{{ asset('storage/caricatura.mp4') }}" type="video/mp4">
+                            Seu navegador não suporta vídeos.
+                        </video>
+                    @endif
                 </div>
             </div>
 
         </div>
     </section>
+
+    <!-- Partners Section -->
+    @if($settings->show_partners && !empty($settings->partner_items))
+        <section id="partners" class="py-16 bg-dark-900 border-t border-slate-900 overflow-hidden">
+            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-8">
+                <div class="text-center space-y-2">
+                    <span class="text-xs font-extrabold uppercase tracking-widest text-blue-500">Parcerias de Sucesso</span>
+                    <h3 class="text-2xl sm:text-3xl font-outfit font-extrabold text-white">Empresas e Projetos que Confiam</h3>
+                </div>
+                
+                <!-- Logos Grid -->
+                <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-6">
+                    @foreach($settings->partner_items as $partner)
+                        @if($partner['logo_path'])
+                            <a @if(!empty($partner['url'])) href="{{ str_starts_with($partner['url'], 'http') ? $partner['url'] : 'https://' . $partner['url'] }}" target="_blank" @endif 
+                               class="group relative block bg-slate-950/40 border border-white/[0.05] p-6 rounded-2xl shadow-xl hover:shadow-blue-500/5 hover:border-blue-500/25 hover:bg-slate-950/80 transition-all duration-500 overflow-hidden flex items-center justify-center h-28" 
+                               title="{{ $partner['name'] }}">
+                                <!-- Glow Neon Ambient -->
+                                <div class="absolute -inset-10 bg-[radial-gradient(circle_at_center,{{ $settings->primary_color ?? '#3b82f6' }}12_0%,transparent_60%)] opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none"></div>
+                                
+                                <img src="{{ asset('storage/' . $partner['logo_path']) }}" 
+                                     alt="{{ $partner['name'] }}" 
+                                     class="max-h-12 w-auto max-w-full object-contain filter grayscale opacity-45 brightness-200 group-hover:grayscale-0 group-hover:opacity-100 group-hover:brightness-100 transition-all duration-500 ease-out">
+                            </a>
+                        @endif
+                    @endforeach
+                </div>
+            </div>
+        </section>
+    @endif
 
     <!-- FAQ Section -->
     <section id="faq" class="py-24 bg-dark-800 border-t border-slate-900">
@@ -597,7 +682,7 @@
                 <p class="text-slate-350 text-sm sm:text-base leading-relaxed">
                     Precisa ilustrar um livro infantil, diagramar material pedagógico ou desenvolver um jogo educativo? Mande uma mensagem agora mesmo! Estou sempre aberto a novas parcerias e colaborações.
                 </p>
-
+                
                 <!-- Infos -->
                 <div class="space-y-4 pt-4 flex flex-col items-center lg:items-start">
                     <a href="mailto:{{ $settings->contact_email }}" class="flex items-center gap-3 text-sm text-slate-300 hover:text-blue-400 transition-colors w-fit">
@@ -608,38 +693,146 @@
                     </a>
                     
                     <a href="https://wa.me/{{ $whatsappNumber }}" target="_blank" class="flex items-center gap-3 text-sm text-slate-300 hover:text-emerald-400 transition-colors w-fit">
-                        <svg class="w-5 h-5 text-emerald-500 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M17 8h2a2 2 0 012 2v6a2 2 0 01-2 2h-2v4l-4-4H9a1.994 1.994 0 01-1.414-.586m0 0L11 14h4a2 2 0 002-2V6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2v4l.586-.586z"></path>
-                        </svg>
+                        {!! $getSvg('whatsapp.svg', 'w-5 h-5 text-emerald-500 shrink-0') !!}
                         <span>{{ $settings->contact_phone }}</span>
                     </a>
 
-                    <a href="https://{{ str_replace(['http://', 'https://'], '', $settings->behance_url) }}" target="_blank" class="flex items-center gap-3 text-sm text-slate-300 hover:text-blue-400 transition-colors w-fit">
-                        <svg class="w-5 h-5 text-sky-500 shrink-0" fill="currentColor" viewBox="0 0 24 24">
-                            <path d="M22 11.085h-3.414v.933H22v-.933zm.006-2.585h-3.42v.91h3.42v-.91zM24 12c0 6.627-5.373 12-12 12S0 18.627 0 12 5.373 0 12 0s12 5.373 12 12zm-12.822-1.954c0-1.125-.568-1.503-1.478-1.503H6.844v3.006h2.72c1.026-.001 1.614-.383 1.614-1.503zm.215 3.528c0-1.17-.611-1.545-1.579-1.545H6.844v3.09h2.951c1.077 0 1.599-.375 1.599-1.545zm8.932-1.28c0-2.302-1.325-3.08-3.056-3.08-1.848 0-3.078 1.139-3.078 3.099 0 2.012 1.341 3.061 3.256 3.061 1.677 0 2.766-.757 2.99-2.036h-1.411c-.198.543-.701.815-1.507.815-.99 0-1.543-.538-1.63-1.442h4.63c.036-.129.046-.264.046-.417zm-1.636-.931h-3.21c.125-.79.624-1.218 1.543-1.218.89 0 1.488.428 1.667 1.218z"/>
-                        </svg>
-                        <span>{{ $settings->behance_url }}</span>
+                    @if(!empty($settings->behance_url))
+                    <a href="https://{{ str_replace(['http://', 'https://'], '', $settings->behance_url) }}" target="_blank" class="flex items-center gap-3 text-sm text-slate-300 hover:text-blue-450 transition-colors w-fit">
+                        {!! $getSvg('behance.svg', 'w-5 h-5 text-sky-500 shrink-0') !!}
+                        <span>{{ str_replace(['http://', 'https://'], '', $settings->behance_url) }}</span>
                     </a>
+                    @endif
+
+                    @if(!empty($settings->instagram_url))
+                    <a href="https://{{ str_replace(['http://', 'https://'], '', $settings->instagram_url) }}" target="_blank" class="flex items-center gap-3 text-sm text-slate-300 hover:text-pink-400 transition-colors w-fit">
+                        {!! $getSvg('instagram.svg', 'w-5 h-5 text-pink-500 shrink-0') !!}
+                        <span>{{ str_replace(['http://', 'https://'], '', $settings->instagram_url) }}</span>
+                    </a>
+                    @endif
+
+                    @if(!empty($settings->linkedin_url))
+                    <a href="https://{{ str_replace(['http://', 'https://'], '', $settings->linkedin_url) }}" target="_blank" class="flex items-center gap-3 text-sm text-slate-300 hover:text-blue-400 transition-colors w-fit">
+                        {!! $getSvg('linkedin.svg', 'w-5 h-5 text-blue-600 shrink-0') !!}
+                        <span>{{ str_replace(['http://', 'https://'], '', $settings->linkedin_url) }}</span>
+                    </a>
+                    @endif
+
+                    @if(!empty($settings->facebook_url))
+                    <a href="https://{{ str_replace(['http://', 'https://'], '', $settings->facebook_url) }}" target="_blank" class="flex items-center gap-3 text-sm text-slate-300 hover:text-blue-500 transition-colors w-fit">
+                        {!! $getSvg('facebook.svg', 'w-5 h-5 text-blue-500 shrink-0') !!}
+                        <span>{{ str_replace(['http://', 'https://'], '', $settings->facebook_url) }}</span>
+                    </a>
+                    @endif
                 </div>
             </div>
 
             <!-- Formulário Moderno -->
-            <div class="bg-slate-900/50 border border-white/[0.08] p-8 rounded-2xl shadow-xl glassmorphism space-y-4">
+            <div class="bg-slate-900/50 border border-white/[0.08] p-8 rounded-2xl shadow-xl glassmorphism space-y-4"
+                 x-data="{
+                     name: '',
+                     email: '',
+                     phone: '',
+                     message: '',
+                     website: '',
+                     loading: false,
+                     successMsg: '',
+                     errorMsg: '',
+                     errors: {},
+                     
+                     submitForm() {
+                         this.loading = true;
+                         this.successMsg = '';
+                         this.errorMsg = '';
+                         this.errors = {};
+                         
+                         fetch('{{ route('public.contact.send') }}', {
+                             method: 'POST',
+                             headers: {
+                                 'Content-Type': 'application/json',
+                                 'X-CSRF-TOKEN': '{{ csrf_token() }}'
+                             },
+                             body: JSON.stringify({
+                                 name: this.name,
+                                 email: this.email,
+                                 phone: this.phone,
+                                 message: this.message,
+                                 website: this.website
+                             })
+                         })
+                         .then(async res => {
+                             const data = await res.json();
+                             if (res.ok && data.success) {
+                                 this.successMsg = data.message;
+                                 this.name = '';
+                                 this.email = '';
+                                 this.phone = '';
+                                 this.message = '';
+                                 this.website = '';
+                             } else {
+                                 this.errors = data.errors || {};
+                                 this.errorMsg = this.errors.rate_limit ? this.errors.rate_limit[0] : 'Por favor, corrija os erros no formulário.';
+                             }
+                         })
+                         .catch(err => {
+                             this.errorMsg = 'Ocorreu um erro ao enviar sua mensagem. Tente novamente.';
+                         })
+                         .finally(() => {
+                             this.loading = false;
+                         });
+                     }
+                 }">
                 <h4 class="font-outfit font-extrabold text-white text-lg border-b border-white/[0.08] pb-3">Fale Conosco</h4>
                 
-                <form action="mailto:{{ $settings->contact_email }}" method="GET" enctype="text/plain" class="space-y-4">
+                <div x-show="successMsg" class="p-4 bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 text-xs font-bold rounded-lg" x-cloak>
+                    ✨ <span x-text="successMsg"></span>
+                </div>
+                
+                <div x-show="errorMsg" class="p-4 bg-rose-500/10 border border-rose-500/30 text-rose-400 text-xs font-bold rounded-lg" x-cloak>
+                    ⚠️ <span x-text="errorMsg"></span>
+                </div>
+
+                <form @submit.prevent="submitForm()" class="space-y-4" x-show="!successMsg">
+                    <!-- Honeypot -->
+                    <input type="text" name="website" x-model="website" class="hidden" style="display: none !important;" tabindex="-1" autocomplete="off">
+
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div class="space-y-1">
+                            <label class="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Seu Nome</label>
+                            <input type="text" x-model="name" required placeholder="Ex: João Silva" class="w-full px-4 py-3 bg-slate-950/80 border border-slate-800 rounded-lg text-sm text-slate-200 focus:outline-none focus:border-blue-500 transition-colors placeholder-slate-650">
+                            <template x-if="errors.name">
+                                <span class="text-[10px] text-rose-500 font-bold" x-text="errors.name[0]"></span>
+                            </template>
+                        </div>
+                        
+                        <div class="space-y-1">
+                            <label class="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Seu E-mail</label>
+                            <input type="email" x-model="email" required placeholder="Ex: joao@email.com" class="w-full px-4 py-3 bg-slate-950/80 border border-slate-800 rounded-lg text-sm text-slate-200 focus:outline-none focus:border-blue-500 transition-colors placeholder-slate-650">
+                            <template x-if="errors.email">
+                                <span class="text-[10px] text-rose-500 font-bold" x-text="errors.email[0]"></span>
+                            </template>
+                        </div>
+                    </div>
+
                     <div class="space-y-1">
-                        <label class="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Seu Nome</label>
-                        <input type="text" name="subject" required placeholder="Ex: João Silva" class="w-full px-4 py-3 bg-slate-950/80 border border-slate-800 rounded-lg text-sm text-slate-200 focus:outline-none focus:border-blue-500 transition-colors placeholder-slate-650">
+                        <label class="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Telefone / WhatsApp (Opcional)</label>
+                        <input type="text" x-model="phone" placeholder="Ex: (14) 99123-4567" class="w-full px-4 py-3 bg-slate-950/80 border border-slate-800 rounded-lg text-sm text-slate-200 focus:outline-none focus:border-blue-500 transition-colors placeholder-slate-650">
+                        <template x-if="errors.phone">
+                            <span class="text-[10px] text-rose-500 font-bold" x-text="errors.phone[0]"></span>
+                        </template>
                     </div>
                     
                     <div class="space-y-1">
                         <label class="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Mensagem</label>
-                        <textarea name="body" required rows="4" placeholder="Descreva brevemente sua necessidade..." class="w-full px-4 py-3 bg-slate-950/80 border border-slate-800 rounded-lg text-sm text-slate-200 focus:outline-none focus:border-blue-500 transition-colors placeholder-slate-650"></textarea>
+                        <textarea x-model="message" required rows="4" placeholder="Descreva brevemente sua necessidade..." class="w-full px-4 py-3 bg-slate-950/80 border border-slate-800 rounded-lg text-sm text-slate-200 focus:outline-none focus:border-blue-500 transition-colors placeholder-slate-650"></textarea>
+                        <template x-if="errors.message">
+                            <span class="text-[10px] text-rose-500 font-bold" x-text="errors.message[0]"></span>
+                        </template>
                     </div>
 
-                    <button type="submit" class="w-full py-3 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-lg transition-colors text-center text-sm shadow-md shadow-blue-600/10">
-                        Enviar E-mail
+                    <button type="submit" :disabled="loading" class="w-full py-3 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-lg transition-colors text-center text-sm shadow-md shadow-blue-600/10 flex items-center justify-center gap-2">
+                        <span x-show="loading" class="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></span>
+                        <span x-text="loading ? 'Enviando...' : 'Enviar Mensagem'"></span>
                     </button>
                 </form>
             </div>
@@ -657,6 +850,29 @@
             <p class="text-center md:text-left leading-relaxed">
                 &copy; 2026 Danilo Miguel - Designer e Ilustrador. Todos os direitos reservados.
             </p>
+
+            <div class="flex items-center gap-3">
+                @if(!empty($settings->behance_url))
+                <a href="https://{{ str_replace(['http://', 'https://'], '', $settings->behance_url) }}" target="_blank" class="footer-social-link w-8 h-8 rounded-full bg-slate-950 border border-white/5 flex items-center justify-center text-slate-400" title="Behance">
+                    {!! $getSvg('behance.svg', 'w-4 h-4 fill-current') !!}
+                </a>
+                @endif
+                @if(!empty($settings->instagram_url))
+                <a href="https://{{ str_replace(['http://', 'https://'], '', $settings->instagram_url) }}" target="_blank" class="footer-social-link w-8 h-8 rounded-full bg-slate-950 border border-white/5 flex items-center justify-center text-slate-400" title="Instagram">
+                    {!! $getSvg('instagram.svg', 'w-4 h-4 fill-current') !!}
+                </a>
+                @endif
+                @if(!empty($settings->linkedin_url))
+                <a href="https://{{ str_replace(['http://', 'https://'], '', $settings->linkedin_url) }}" target="_blank" class="footer-social-link w-8 h-8 rounded-full bg-slate-950 border border-white/5 flex items-center justify-center text-slate-400" title="LinkedIn">
+                    {!! $getSvg('linkedin.svg', 'w-4 h-4 fill-current') !!}
+                </a>
+                @endif
+                @if(!empty($settings->facebook_url))
+                <a href="https://{{ str_replace(['http://', 'https://'], '', $settings->facebook_url) }}" target="_blank" class="footer-social-link w-8 h-8 rounded-full bg-slate-950 border border-white/5 flex items-center justify-center text-slate-400" title="Facebook">
+                    {!! $getSvg('facebook.svg', 'w-4 h-4 fill-current') !!}
+                </a>
+                @endif
+            </div>
 
             <a href="{{ route('dashboard') }}" class="hover:text-white transition-colors flex items-center gap-1.5">
                 <span>Área Administrativa</span>
@@ -680,6 +896,57 @@
                 init() {
                     window.addEventListener('scroll', () => {
                         this.scrolled = window.scrollY > 50;
+                    });
+
+                    // Cursor Follower Logic
+                    const cursor = document.getElementById('custom-cursor');
+                    const cursorDot = document.getElementById('custom-cursor-dot');
+                    if (cursor && cursorDot) {
+                        window.addEventListener('mousemove', (e) => {
+                            cursor.style.transform = `translate3d(${e.clientX}px, ${e.clientY}px, 0)`;
+                            cursorDot.style.transform = `translate3d(${e.clientX}px, ${e.clientY}px, 0)`;
+                        });
+
+                        // Hover scaling for interactive elements (inverted text effect)
+                        const clickables = document.querySelectorAll('a, button, input, select, textarea, [role="button"], .group');
+                        clickables.forEach(el => {
+                            el.addEventListener('mouseenter', () => {
+                                cursor.classList.add('scale-[2.5]', 'bg-white');
+                                cursor.classList.remove('border-blue-500/40');
+                                cursorDot.classList.add('opacity-0');
+                            });
+                            el.addEventListener('mouseleave', () => {
+                                cursor.classList.remove('scale-[2.5]', 'bg-white');
+                                cursor.classList.add('border-blue-500/40');
+                                cursorDot.classList.remove('opacity-0');
+                            });
+                        });
+                    }
+
+                    // Click particle thumb effect
+                    window.addEventListener('click', (e) => {
+                        if (e.target.closest('select') || e.target.closest('input[type="file"]')) return;
+
+                        const particle = document.createElement('div');
+                        particle.className = 'pointer-events-none fixed z-[9999] text-2xl transition-all duration-1000 ease-out transform -translate-x-1/2 -translate-y-1/2';
+                        
+                        const icons = ['👍', '✨', '🎨', '🔥', '🚀'];
+                        particle.innerHTML = icons[Math.floor(Math.random() * icons.length)];
+                        
+                        particle.style.left = `${e.clientX}px`;
+                        particle.style.top = `${e.clientY}px`;
+                        particle.style.opacity = '1';
+                        particle.style.transform = 'translate3d(-50%, -50%, 0) scale(0.5)';
+                        document.body.appendChild(particle);
+                        
+                        setTimeout(() => {
+                            particle.style.transform = `translate3d(-50%, -120px, 0) scale(1.5) rotate(${Math.random() > 0.5 ? 20 : -20}deg)`;
+                            particle.style.opacity = '0';
+                        }, 50);
+                        
+                        setTimeout(() => {
+                            particle.remove();
+                        }, 1050);
                     });
                 },
 

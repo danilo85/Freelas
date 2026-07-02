@@ -31,8 +31,13 @@ Route::middleware('auth')->group(function () {
         ->name('projects.update-status');
 });
 
+// Rota de Usuário Aguardando Aprovação
+Route::middleware('auth')->get('/freelas/waiting-approval', function () {
+    return view('auth.waiting-approval');
+})->name('waiting-approval');
+
 // Rotas Web Protegidas sob prefixo /freelas
-Route::middleware('auth')->prefix('freelas')->group(function () {
+Route::middleware(['auth', 'approved'])->prefix('freelas')->group(function () {
     // Dashboard principal
     Route::get('/', [DashboardController::class, 'index'])->name('dashboard');
 
@@ -84,31 +89,6 @@ Route::middleware('auth')->prefix('freelas')->group(function () {
     Route::get('/finances/{transaction}/download-attachment', [\App\Http\Controllers\FinanceController::class, 'downloadAttachment'])->name('finances.download-attachment');
     Route::post('/finances/credit-card/{creditCard}/pay-invoice', [\App\Http\Controllers\FinanceController::class, 'payInvoice'])->name('finances.pay-invoice');
         
-    // Clientes do usuário logado (Tenancy) - Ordem correta de rotas
-    Route::get('/clients', [ClientController::class, 'index'])->name('clients.index');
-    Route::get('/clients/create', [ClientController::class, 'create'])->name('clients.create');
-    Route::post('/clients', [ClientController::class, 'store'])->name('clients.store');
-    Route::get('/clients/{client}', [ClientController::class, 'show'])->name('clients.show');
-    Route::get('/clients/{client}/edit', [ClientController::class, 'edit'])->name('clients.edit');
-    Route::put('/clients/{client}', [ClientController::class, 'update'])->name('clients.update');
-    Route::delete('/clients/{client}', [ClientController::class, 'destroy'])->name('clients.destroy');
-        
-    // Autores do usuário logado (Tenancy)
-    Route::get('/authors', [AuthorController::class, 'index'])->name('authors.index');
-    Route::get('/authors/create', [AuthorController::class, 'create'])->name('authors.create');
-    Route::post('/authors', [AuthorController::class, 'store'])->name('authors.store');
-    Route::get('/authors/{author}', [AuthorController::class, 'show'])->name('authors.show');
-    Route::get('/authors/{author}/edit', [AuthorController::class, 'edit'])->name('authors.edit');
-    Route::put('/authors/{author}', [AuthorController::class, 'update'])->name('authors.update');
-    Route::delete('/authors/{author}', [AuthorController::class, 'destroy'])->name('authors.destroy');
-        
-    // Portfólio do usuário logado (Tenancy)
-    Route::get('/portfolio/pipeline', [PortfolioController::class, 'pipeline'])->name('portfolio.pipeline');
-    Route::get('/portfolio-settings', [PortfolioController::class, 'settings'])->name('portfolio.settings');
-    Route::put('/portfolio-settings', [PortfolioController::class, 'updateSettings'])->name('portfolio.settings.update');
-    Route::resource('/portfolio', PortfolioController::class);
-    Route::resource('/portfolio-categories', PortfolioCategoryController::class)->except(['show', 'create', 'edit']);
-
     // Perfil do Usuário
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
     Route::put('/profile', [ProfileController::class, 'update'])->name('profile.update');
@@ -116,32 +96,65 @@ Route::middleware('auth')->prefix('freelas')->group(function () {
     // Logout
     Route::post('/logout', [LoginController::class, 'logout'])->name('logout');
 
-    // Rotas de Controle de Usuários (Apenas Master)
+    // Rotas Privadas / Recursos (Apenas Master)
     Route::middleware('master')->group(function () {
+        // Clientes do usuário logado (Tenancy) - Ordem correta de rotas
+        Route::get('/clients', [ClientController::class, 'index'])->name('clients.index');
+        Route::get('/clients/create', [ClientController::class, 'create'])->name('clients.create');
+        Route::post('/clients', [ClientController::class, 'store'])->name('clients.store');
+        Route::get('/clients/{client}', [ClientController::class, 'show'])->name('clients.show');
+        Route::get('/clients/{client}/edit', [ClientController::class, 'edit'])->name('clients.edit');
+        Route::put('/clients/{client}', [ClientController::class, 'update'])->name('clients.update');
+        Route::delete('/clients/{client}', [ClientController::class, 'destroy'])->name('clients.destroy');
+            
+        // Autores do usuário logado (Tenancy)
+        Route::get('/authors', [AuthorController::class, 'index'])->name('authors.index');
+        Route::get('/authors/create', [AuthorController::class, 'create'])->name('authors.create');
+        Route::post('/authors', [AuthorController::class, 'store'])->name('authors.store');
+        Route::get('/authors/{author}', [AuthorController::class, 'show'])->name('authors.show');
+        Route::get('/authors/{author}/edit', [AuthorController::class, 'edit'])->name('authors.edit');
+        Route::put('/authors/{author}', [AuthorController::class, 'update'])->name('authors.update');
+        Route::delete('/authors/{author}', [AuthorController::class, 'destroy'])->name('authors.destroy');
+            
+        // Portfólio do usuário logado (Tenancy)
+        Route::get('/portfolio/pipeline', [PortfolioController::class, 'pipeline'])->name('portfolio.pipeline');
+        Route::get('/portfolio-settings', [PortfolioController::class, 'settings'])->name('portfolio.settings');
+        Route::put('/portfolio-settings', [PortfolioController::class, 'updateSettings'])->name('portfolio.settings.update');
+        Route::resource('/portfolio', PortfolioController::class);
+        Route::resource('/portfolio-categories', PortfolioCategoryController::class)->except(['show', 'create', 'edit']);
+
+        // Controle de Usuários e Configurações
         Route::get('/users', [UserController::class, 'index'])->name('users.index');
         Route::post('/users', [UserController::class, 'store'])->name('users.store');
         Route::put('/users/{user}', [UserController::class, 'update'])->name('users.update');
         Route::delete('/users/{user}', [UserController::class, 'destroy'])->name('users.destroy');
+
+        // Configurações Administrativas do Sistema
+        Route::get('/admin/settings', [\App\Http\Controllers\AdminSystemController::class, 'index'])->name('admin.settings.index');
+        Route::put('/admin/settings', [\App\Http\Controllers\AdminSystemController::class, 'updateSettings'])->name('admin.settings.update');
+        Route::post('/admin/users/{user}/approve', [\App\Http\Controllers\AdminSystemController::class, 'approveUser'])->name('admin.users.approve');
+        Route::post('/admin/users/{user}/disapprove', [\App\Http\Controllers\AdminSystemController::class, 'disapproveUser'])->name('admin.users.disapprove');
+        Route::patch('/admin/users/{user}/role', [\App\Http\Controllers\AdminSystemController::class, 'changeRole'])->name('admin.users.role');
+
+        // Utilidades - Revisão de Trabalhos
+        Route::get('/utilidades/revisoes', [\App\Http\Controllers\ProjectRevisionController::class, 'index'])->name('revisoes.index');
+        Route::post('/utilidades/revisoes', [\App\Http\Controllers\ProjectRevisionController::class, 'store'])->name('revisoes.store');
+        Route::get('/utilidades/revisoes/{revision}', [\App\Http\Controllers\ProjectRevisionController::class, 'show'])->name('revisoes.show');
+        Route::delete('/utilidades/revisoes/{revision}', [\App\Http\Controllers\ProjectRevisionController::class, 'destroy'])->name('revisoes.destroy');
+        
+        // Autocomplete / AJAX Helpers
+        Route::get('/utilidades/api/autores', [\App\Http\Controllers\ProjectRevisionController::class, 'searchAuthors'])->name('revisoes.api.authors');
+        Route::get('/utilidades/api/projetos-autor/{author}', [\App\Http\Controllers\ProjectRevisionController::class, 'getProjectsByAuthor'])->name('revisoes.api.projects');
+
+        // Rodadas de Ajustes e Gerenciamento de Arquivos
+        Route::post('/utilidades/revisoes/{revision}/rounds', [\App\Http\Controllers\RevisionRoundController::class, 'storeRound'])->name('revisoes.rounds.store');
+        Route::delete('/utilidades/rounds/{round}', [\App\Http\Controllers\RevisionRoundController::class, 'destroyRound'])->name('revisoes.rounds.destroy');
+        Route::patch('/utilidades/rounds/{round}/status', [\App\Http\Controllers\RevisionRoundController::class, 'updateRoundStatus'])->name('revisoes.rounds.status');
+
+        Route::get('/utilidades/rounds/{round}/files', [\App\Http\Controllers\RevisionRoundController::class, 'manageFiles'])->name('revisoes.rounds.files');
+        Route::post('/utilidades/rounds/{round}/files', [\App\Http\Controllers\RevisionRoundController::class, 'uploadFiles'])->name('revisoes.rounds.upload');
+        Route::delete('/utilidades/files/{file}', [\App\Http\Controllers\RevisionRoundController::class, 'deleteFile'])->name('revisoes.files.destroy');
     });
-
-    // Utilidades - Revisão de Trabalhos
-    Route::get('/utilidades/revisoes', [\App\Http\Controllers\ProjectRevisionController::class, 'index'])->name('revisoes.index');
-    Route::post('/utilidades/revisoes', [\App\Http\Controllers\ProjectRevisionController::class, 'store'])->name('revisoes.store');
-    Route::get('/utilidades/revisoes/{revision}', [\App\Http\Controllers\ProjectRevisionController::class, 'show'])->name('revisoes.show');
-    Route::delete('/utilidades/revisoes/{revision}', [\App\Http\Controllers\ProjectRevisionController::class, 'destroy'])->name('revisoes.destroy');
-    
-    // Autocomplete / AJAX Helpers
-    Route::get('/utilidades/api/autores', [\App\Http\Controllers\ProjectRevisionController::class, 'searchAuthors'])->name('revisoes.api.authors');
-    Route::get('/utilidades/api/projetos-autor/{author}', [\App\Http\Controllers\ProjectRevisionController::class, 'getProjectsByAuthor'])->name('revisoes.api.projects');
-
-    // Rodadas de Ajustes e Gerenciamento de Arquivos
-    Route::post('/utilidades/revisoes/{revision}/rounds', [\App\Http\Controllers\RevisionRoundController::class, 'storeRound'])->name('revisoes.rounds.store');
-    Route::delete('/utilidades/rounds/{round}', [\App\Http\Controllers\RevisionRoundController::class, 'destroyRound'])->name('revisoes.rounds.destroy');
-    Route::patch('/utilidades/rounds/{round}/status', [\App\Http\Controllers\RevisionRoundController::class, 'updateRoundStatus'])->name('revisoes.rounds.status');
-
-    Route::get('/utilidades/rounds/{round}/files', [\App\Http\Controllers\RevisionRoundController::class, 'manageFiles'])->name('revisoes.rounds.files');
-    Route::post('/utilidades/rounds/{round}/files', [\App\Http\Controllers\RevisionRoundController::class, 'uploadFiles'])->name('revisoes.rounds.upload');
-    Route::delete('/utilidades/files/{file}', [\App\Http\Controllers\RevisionRoundController::class, 'deleteFile'])->name('revisoes.files.destroy');
 });
 
 // Rotas públicas de orçamentos (propostas) para aprovação e rejeição pelo cliente final
@@ -155,10 +168,13 @@ Route::prefix('proposal/{hash}')->name('proposal.')->group(function () {
 Route::get('/shared/client/{share_token}/statement', [ClientController::class, 'publicStatement'])->name('public.client.statement');
 
 // Rotas do Portfólio Público (Danilo Miguel)
-Route::get('/', [\App\Http\Controllers\PublicPortfolioController::class, 'index'])->name('public.home');
-Route::get('/trabalho/{slug}', [\App\Http\Controllers\PublicPortfolioController::class, 'show'])->name('public.portfolio.show');
-Route::post('/portfolio/{id}/views', [\App\Http\Controllers\PublicPortfolioController::class, 'incrementViews'])->name('public.portfolio.views');
-Route::post('/portfolio/{id}/likes', [\App\Http\Controllers\PublicPortfolioController::class, 'incrementLikes'])->name('public.portfolio.likes');
+Route::middleware('maintenance')->group(function () {
+    Route::get('/', [\App\Http\Controllers\PublicPortfolioController::class, 'index'])->name('public.home');
+    Route::get('/trabalho/{slug}', [\App\Http\Controllers\PublicPortfolioController::class, 'show'])->name('public.portfolio.show');
+    Route::post('/portfolio/{id}/views', [\App\Http\Controllers\PublicPortfolioController::class, 'incrementViews'])->name('public.portfolio.views');
+    Route::post('/portfolio/{id}/likes', [\App\Http\Controllers\PublicPortfolioController::class, 'incrementLikes'])->name('public.portfolio.likes');
+    Route::post('/contato', [\App\Http\Controllers\PublicPortfolioController::class, 'sendContact'])->name('public.contact.send');
+});
 
 // Rotas Públicas de Revisão de Trabalhos (Cliente)
 Route::get('/revisao/{token}', [\App\Http\Controllers\PublicRevisionController::class, 'show'])->name('public.revisao.show');

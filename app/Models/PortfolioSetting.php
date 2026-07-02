@@ -21,14 +21,21 @@ class PortfolioSetting extends Model
         'contact_email',
         'contact_phone',
         'behance_url',
+        'instagram_url',
+        'linkedin_url',
+        'facebook_url',
         'faq_items',
         'primary_color',
         'secondary_color',
         'theme_mode',
+        'media_path',
+        'show_partners',
+        'partner_items',
     ];
 
     protected $casts = [
         'faq_items' => 'array',
+        'partner_items' => 'array',
     ];
 
     /**

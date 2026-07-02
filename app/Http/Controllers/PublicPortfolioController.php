@@ -94,6 +94,76 @@ class PublicPortfolioController extends Controller
     }
 
     /**
+     * Envia mensagem de contato de forma segura e assíncrona.
+     */
+    public function sendContact(Request $request)
+    {
+        // 1. Defesa contra spam (Honeypot)
+        if ($request->filled('website')) {
+            // Retorna sucesso silencioso para enganar bots
+            return response()->json([
+                'success' => true,
+                'message' => 'Sua mensagem foi enviada com sucesso!'
+            ]);
+        }
+
+        // 2. Rate Limiting (Máximo de 3 mensagens por hora por IP)
+        $ip = $request->ip();
+        $key = 'contact-submission:' . $ip;
+        if (\Illuminate\Support\Facades\RateLimiter::tooManyAttempts($key, 3)) {
+            return response()->json([
+                'success' => false,
+                'errors' => ['rate_limit' => ['Limite de envio excedido. Tente novamente mais tarde.']]
+            ], 429);
+        }
+        \Illuminate\Support\Facades\RateLimiter::hit($key, 3600);
+
+        // 3. Validação dos Campos
+        $validated = $request->validate([
+            'name' => 'required|string|max:255',
+            'email' => 'required|email|max:255',
+            'phone' => 'nullable|string|max:50',
+            'message' => 'required|string|max:5000',
+        ]);
+
+        // 4. Salva no Banco de Dados
+        \App\Models\ContactMessage::create([
+            'name' => $validated['name'],
+            'email' => $validated['email'],
+            'phone' => $validated['phone'] ?? null,
+            'message' => $validated['message'],
+            'ip_address' => $ip,
+        ]);
+
+        // 5. Envia por E-mail (Se configurado)
+        $user = User::where('role', 'master')->first() ?? User::first();
+        $settings = $this->getSettings($user);
+        $destEmail = $settings->contact_email ?? 'danilo.a.miguel@hotmail.com';
+
+        try {
+            \Illuminate\Support\Facades\Mail::raw(
+                "Nova mensagem recebida no portfólio:\n\n" .
+                "Nome: " . $validated['name'] . "\n" .
+                "E-mail: " . $validated['email'] . "\n" .
+                "Telefone: " . ($validated['phone'] ?? 'Não informado') . "\n\n" .
+                "Mensagem:\n" . $validated['message'],
+                function ($message) use ($destEmail, $validated) {
+                    $message->to($destEmail)
+                            ->subject("Novo Contato do Portfólio: " . $validated['name'])
+                            ->replyTo($validated['email']);
+                }
+            );
+        } catch (\Exception $e) {
+            \Log::warning("Erro ao enviar e-mail do portfólio: " . $e->getMessage());
+        }
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Sua mensagem foi enviada com sucesso!'
+        ]);
+    }
+
+    /**
      * Obtém as configurações ou retorna as padrões do Danilo Miguel.
      */
     protected function getSettings($user)

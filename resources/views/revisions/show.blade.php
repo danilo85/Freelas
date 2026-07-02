@@ -4,6 +4,15 @@
 @section('page_title', 'Linha do Tempo de Revisão')
 
 @section('content')
+<style>
+    @keyframes pulse-glow-rose {
+        0%, 100% { box-shadow: 0 0 5px rgba(244, 63, 94, 0.15), 0 1px 2px 0 rgba(0, 0, 0, 0.05); border-color: rgba(244, 63, 94, 0.35); }
+        50% { box-shadow: 0 0 15px rgba(244, 63, 94, 0.5), 0 1px 2px 0 rgba(0, 0, 0, 0.05); border-color: rgba(244, 63, 94, 0.65); }
+    }
+    .pulse-glow-rose {
+        animation: pulse-glow-rose 2s infinite ease-in-out;
+    }
+</style>
 <div x-data="timelineManager()" class="space-y-8">
     
     <!-- Link de Retorno -->
@@ -110,8 +119,31 @@
                                 {{ $round->status === 'aprovado' ? 'bg-emerald-500' : ($round->status === 'em_ajuste' ? 'bg-amber-400' : 'bg-blue-500') }}">
                             </span>
 
+                            @php
+                                $isRoundAllOk = ($resolvedCount > 0 && $pendingCount === 0);
+                                $isRoundApproved = ($round->status === 'aprovado');
+                                $roundHasAdjustments = ($pendingCount > 0);
+
+                                $roundCardClass = 'bg-white border-slate-200';
+                                if ($isRoundAllOk) {
+                                    $roundCardClass = 'bg-white border-slate-200';
+                                } elseif ($roundHasAdjustments) {
+                                    $roundCardClass = 'bg-rose-50/25 border-rose-200 pulse-glow-rose';
+                                } elseif ($isRoundApproved) {
+                                    $roundCardClass = 'bg-emerald-50/25 border-emerald-200';
+                                }
+                            @endphp
+
                             <!-- Round Card -->
-                            <div class="bg-white border border-slate-200 rounded-[5px] p-6 shadow-sm space-y-4 hover:shadow-md transition-shadow">
+                            <div class="{{ $roundCardClass }} rounded-[5px] p-6 shadow-sm space-y-4 hover:shadow-md transition-shadow relative overflow-hidden">
+                                <!-- Stamp Carimbo Tudo Ok -->
+                                @if($isRoundAllOk)
+                                    <div class="absolute right-4 top-[55%] -translate-y-1/2 -rotate-12 pointer-events-none select-none z-10 opacity-30 transform scale-110">
+                                        <div class="border-4 border-emerald-600/75 text-emerald-600/75 font-black text-lg px-3 py-1.5 rounded uppercase tracking-widest flex items-center gap-1">
+                                            <span>✓</span> <span>TUDO OK</span>
+                                        </div>
+                                    </div>
+                                @endif
                                 <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-slate-100">
                                     <div>
                                         <h5 class="font-outfit font-black text-slate-800 text-md">

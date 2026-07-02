@@ -190,6 +190,14 @@ class PortfolioController extends Controller
             }
         }
 
+        if ($request->expectsJson()) {
+            return response()->json([
+                'success' => true,
+                'redirect_url' => route('portfolio.index'),
+                'message' => 'Trabalho de portfólio cadastrado com sucesso!'
+            ]);
+        }
+
         return redirect()->route('portfolio.index')->with('success', 'Trabalho de portfólio cadastrado com sucesso!');
     }
 
@@ -323,6 +331,14 @@ class PortfolioController extends Controller
             }
         }
 
+        if ($request->expectsJson()) {
+            return response()->json([
+                'success' => true,
+                'redirect_url' => route('portfolio.index'),
+                'message' => 'Trabalho de portfólio atualizado com sucesso!'
+            ]);
+        }
+
         return redirect()->route('portfolio.index')->with('success', 'Trabalho de portfólio atualizado com sucesso!');
     }
 
@@ -400,12 +416,23 @@ class PortfolioController extends Controller
             'contact_email' => 'required|email|max:255',
             'contact_phone' => 'required|string|max:50',
             'behance_url' => 'nullable|string|max:255',
+            'instagram_url' => 'nullable|string|max:255',
+            'linkedin_url' => 'nullable|string|max:255',
+            'facebook_url' => 'nullable|string|max:255',
             'primary_color' => 'required|string|max:20',
             'secondary_color' => 'required|string|max:20',
             'theme_mode' => 'required|in:escuro,claro',
+            'about_media' => 'nullable|file|mimes:mp4,webm,ogg,gif,jpg,jpeg,png,svg|max:102400', // 100MB limit
             'faq' => 'nullable|array',
             'faq.*.question' => 'required|string|max:255',
             'faq.*.answer' => 'required|string',
+            'show_partners' => 'nullable',
+            'partners' => 'nullable|array',
+            'partners.*.name' => 'required|string|max:255',
+            'partners.*.url' => 'nullable|string|max:255',
+            'partners.*.logo_path' => 'nullable|string',
+            'partner_logos' => 'nullable|array',
+            'partner_logos.*' => 'nullable|file|mimes:jpeg,png,jpg,gif,svg,webp|max:10240',
         ]);
 
         $faqItems = [];
@@ -420,23 +447,62 @@ class PortfolioController extends Controller
             }
         }
 
+        // Process Partners
+        $partnerItems = [];
+        if (is_array($request->input('partners'))) {
+            $logos = $request->file('partner_logos', []);
+            foreach ($request->input('partners') as $index => $partner) {
+                $logoPath = $partner['logo_path'] ?? null;
+                
+                if (isset($logos[$index]) && $logos[$index]->isValid()) {
+                    if ($logoPath) {
+                        \Storage::disk('public')->delete($logoPath);
+                    }
+                    $logoPath = $logos[$index]->store('portfolio/partners', 'public');
+                }
+
+                if (!empty($partner['name'])) {
+                    $partnerItems[] = [
+                        'name' => $partner['name'],
+                        'url' => $partner['url'] ?? null,
+                        'logo_path' => $logoPath
+                    ];
+                }
+            }
+        }
+
+        $data = [
+            'site_title' => $request->site_title,
+            'site_subtitle' => $request->site_subtitle,
+            'site_description' => $request->site_description,
+            'about_title' => $request->about_title,
+            'about_text' => $request->about_text,
+            'skills' => $request->skills,
+            'contact_email' => $request->contact_email,
+            'contact_phone' => $request->contact_phone,
+            'behance_url' => $request->behance_url,
+            'instagram_url' => $request->instagram_url,
+            'linkedin_url' => $request->linkedin_url,
+            'facebook_url' => $request->facebook_url,
+            'primary_color' => $request->primary_color,
+            'secondary_color' => $request->secondary_color,
+            'theme_mode' => $request->theme_mode,
+            'faq_items' => $faqItems,
+            'show_partners' => $request->has('show_partners'),
+            'partner_items' => $partnerItems
+        ];
+
+        if ($request->hasFile('about_media')) {
+            $settings = auth()->user()->portfolioSetting;
+            if ($settings && $settings->media_path) {
+                \Storage::disk('public')->delete($settings->media_path);
+            }
+            $data['media_path'] = $request->file('about_media')->store('portfolio/media', 'public');
+        }
+
         auth()->user()->portfolioSetting()->updateOrCreate(
             ['user_id' => auth()->id()],
-            [
-                'site_title' => $request->site_title,
-                'site_subtitle' => $request->site_subtitle,
-                'site_description' => $request->site_description,
-                'about_title' => $request->about_title,
-                'about_text' => $request->about_text,
-                'skills' => $request->skills,
-                'contact_email' => $request->contact_email,
-                'contact_phone' => $request->contact_phone,
-                'behance_url' => $request->behance_url,
-                'primary_color' => $request->primary_color,
-                'secondary_color' => $request->secondary_color,
-                'theme_mode' => $request->theme_mode,
-                'faq_items' => $faqItems
-            ]
+            $data
         );
 
         return redirect()->route('portfolio.settings')

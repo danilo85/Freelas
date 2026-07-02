@@ -11,10 +11,22 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 
-#[Fillable(['name', 'email', 'password', 'role', 'avatar', 'phone', 'theme_color', 'mei_limit'])]
+#[Fillable(['name', 'email', 'password', 'role', 'avatar', 'phone', 'theme_color', 'mei_limit', 'is_approved'])]
 #[Hidden(['password', 'remember_token'])]
 class User extends Authenticatable
 {
+    /**
+     * Helper checks for roles.
+     */
+    public function isMaster(): bool
+    {
+        return $this->role === 'master';
+    }
+
+    public function isCommon(): bool
+    {
+        return $this->role === 'comum';
+    }
     /** @use HasFactory<UserFactory> */
     use HasFactory, Notifiable;
 

@@ -31,8 +31,8 @@
         <div class="space-y-6">
             <h4 class="font-outfit font-black text-slate-800 text-lg uppercase tracking-tight">Upload de Arquivos</h4>
             
-            <div class="bg-white border border-slate-200 rounded-[5px] p-6 shadow-sm space-y-4">
-                <form action="{{ route('revisoes.rounds.upload', $round->id) }}" method="POST" enctype="multipart/form-data" class="space-y-4">
+            <div class="bg-white border border-slate-200 rounded-[5px] p-6 shadow-sm space-y-4" x-data="fileUploadManager()">
+                <form id="upload-form" @submit.prevent="submitForm($event)" class="space-y-4">
                     @csrf
                     
                     <!-- Pasta Virtual -->
@@ -40,23 +40,87 @@
                         <label class="text-xs font-bold text-slate-500 uppercase tracking-wider block">Pasta de Destino (Opcional)</label>
                         <input type="text" 
                                name="folder_name" 
+                               x-model="folderName"
                                placeholder="Ex: Ilustrações, Páginas Internas, Capa"
                                class="w-full px-4 py-2.5 rounded-[5px] border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500 transition-all placeholder-slate-400">
                         <p class="text-[9px] text-slate-400">Deixe em branco para salvar na pasta principal (Raiz).</p>
                     </div>
 
-                    <!-- Input Files -->
+                    <!-- Input Files Drag & Drop Zone -->
                     <div class="space-y-1">
-                        <label class="text-xs font-bold text-slate-500 uppercase tracking-wider block">Arquivos a Revisar</label>
-                        <input type="file" 
-                               name="files[]" 
-                               multiple
-                               required
-                               class="w-full text-xs text-slate-500 border border-slate-200 rounded-[5px] p-2 bg-slate-50 focus:outline-none file:mr-4 file:py-1 file:px-3 file:rounded-[3px] file:border-0 file:text-[10px] file:font-bold file:uppercase file:bg-slate-900 file:text-white hover:file:bg-slate-800 file:cursor-pointer cursor-pointer">
-                        <p class="text-[9px] text-slate-400">Selecione um ou mais arquivos (PDF ou Imagens são recomendados).</p>
+                        <label class="text-xs font-bold text-slate-500 uppercase tracking-wider block font-outfit">Arquivos a Revisar</label>
+                        
+                        <div 
+                            @dragover.prevent="dragover = true"
+                            @dragleave.prevent="dragover = false"
+                            @drop.prevent="handleDrop($event)"
+                            @click="$refs.fileInput.click()"
+                            class="border-2 border-dashed rounded-[5px] p-6 text-center cursor-pointer transition-all relative flex flex-col items-center justify-center min-h-[140px]"
+                            :class="dragover ? 'border-blue-500 bg-blue-50/10' : 'border-slate-200 hover:border-slate-350 bg-slate-50/30'"
+                        >
+                            <input 
+                                type="file" 
+                                x-ref="fileInput" 
+                                name="files[]" 
+                                multiple 
+                                class="hidden" 
+                                @change="handleFileSelect($event)"
+                            >
+                            
+                            <span class="text-3xl block mb-2">📤</span>
+                            <span class="text-xs font-bold text-slate-700 block leading-snug">
+                                Arraste arquivos aqui ou clique para selecionar
+                            </span>
+                            <span class="text-[9px] text-slate-400 block mt-1">PDF ou Imagens recomendados</span>
+                        </div>
                     </div>
 
-                    <button type="submit" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs uppercase tracking-wider py-3 rounded-[5px] transition-all shadow-sm shadow-blue-500/10">
+                    <!-- Previews of selected files -->
+                    <template x-if="selectedFiles.length > 0">
+                        <div class="space-y-2 pt-2 border-t border-slate-100">
+                            <span class="text-[9px] font-bold text-slate-400 uppercase tracking-widest block">Arquivos Selecionados (<span x-text="selectedFiles.length"></span>)</span>
+                            <div class="grid grid-cols-1 gap-2 max-h-48 overflow-y-auto">
+                                <template x-for="(file, index) in selectedFiles" :key="index">
+                                    <div class="flex items-center justify-between p-2 bg-slate-50 border border-slate-200 rounded-[5px]">
+                                        <div class="flex items-center gap-2 min-w-0">
+                                            <!-- Simple File Preview -->
+                                            <template x-if="file.isImage">
+                                                <img :src="file.previewUrl" class="w-8 h-8 object-cover rounded-[3px] border border-slate-300">
+                                            </template>
+                                            <template x-if="!file.isImage">
+                                                <div class="w-8 h-8 rounded-[3px] bg-slate-200 text-slate-600 flex items-center justify-center font-bold text-[10px]">PDF</div>
+                                            </template>
+                                            
+                                            <div class="min-w-0">
+                                                <p class="text-xs font-bold text-slate-700 truncate leading-tight" x-text="file.name"></p>
+                                                <span class="text-[8px] text-slate-400 uppercase" x-text="(file.size / 1024).toFixed(1) + ' KB'"></span>
+                                            </div>
+                                        </div>
+                                        <button type="button" @click="removeFile(index)" class="text-rose-500 hover:text-rose-700 p-1 font-bold text-xs cursor-pointer">✕</button>
+                                    </div>
+                                </template>
+                            </div>
+                        </div>
+                    </template>
+
+                    <!-- Progress Bar -->
+                    <template x-if="isUploading">
+                        <div class="space-y-1.5 pt-2">
+                            <div class="flex justify-between items-center text-[10px] font-bold text-blue-600">
+                                <span class="uppercase tracking-wider">Enviando Arquivos...</span>
+                                <span x-text="uploadPercentage + '%'"></span>
+                            </div>
+                            <div class="w-full bg-slate-100 h-2 rounded-full overflow-hidden">
+                                <div class="bg-blue-600 h-2 rounded-full transition-all duration-150" :style="'width: ' + uploadPercentage + '%'"></div>
+                            </div>
+                        </div>
+                    </template>
+
+                    <button 
+                        type="submit" 
+                        :disabled="selectedFiles.length === 0 || isUploading"
+                        class="w-full bg-blue-600 hover:bg-blue-700 disabled:bg-slate-300 disabled:cursor-not-allowed text-white font-bold text-xs uppercase tracking-wider py-3 rounded-[5px] transition-all shadow-sm shadow-blue-500/10 cursor-pointer"
+                    >
                         Enviar Arquivos
                     </button>
                 </form>
@@ -127,9 +191,13 @@
                                         <div class="flex items-center gap-3 shrink-0">
                                             
                                             <!-- Ajustes Contador Badge -->
-                                            @if($file->annotations->count() > 0)
-                                                <span class="text-[10px] font-extrabold uppercase px-2.5 py-1 rounded-[5px] bg-rose-50 text-rose-600 border border-rose-200">
-                                                    {{ $file->annotations->where('status', 'aberto')->count() }} Ajustes
+                                            @if($file->annotations->count() > 0 && $file->annotations->where('status', 'aberto')->count() > 0)
+                                                <span class="text-[10px] font-extrabold uppercase px-2.5 py-1 rounded-[5px] bg-rose-50 text-rose-600 border border-rose-200 shadow-sm">
+                                                    ⚠️ {{ $file->annotations->where('status', 'aberto')->count() }} Ajustes
+                                                </span>
+                                            @else
+                                                <span class="text-[10px] font-extrabold uppercase px-2.5 py-1 rounded-[5px] bg-emerald-50 text-emerald-600 border border-emerald-250/60 shadow-sm flex items-center gap-1">
+                                                    ✓ Tudo Ok
                                                 </span>
                                             @endif
 
@@ -164,6 +232,95 @@
     function fileManager() {
         return {
             // file manager state helper
+        }
+    }
+
+    function fileUploadManager() {
+        return {
+            dragover: false,
+            selectedFiles: [],
+            isUploading: false,
+            uploadPercentage: 0,
+            folderName: '',
+
+            handleFileSelect(e) {
+                this.addFiles(e.target.files);
+            },
+
+            handleDrop(e) {
+                this.dragover = false;
+                if (e.dataTransfer.files) {
+                    this.addFiles(e.dataTransfer.files);
+                }
+            },
+
+            addFiles(fileList) {
+                Array.from(fileList).forEach(file => {
+                    const isImage = file.type.startsWith('image/');
+                    const previewUrl = isImage ? URL.createObjectURL(file) : null;
+                    this.selectedFiles.push({
+                        fileObject: file,
+                        name: file.name,
+                        size: file.size,
+                        isImage: isImage,
+                        previewUrl: previewUrl
+                    });
+                });
+            },
+
+            removeFile(index) {
+                const file = this.selectedFiles[index];
+                if (file.previewUrl) {
+                    URL.revokeObjectURL(file.previewUrl);
+                }
+                this.selectedFiles.splice(index, 1);
+            },
+
+            submitForm(e) {
+                if (this.selectedFiles.length === 0) return;
+                
+                this.isUploading = true;
+                this.uploadPercentage = 0;
+
+                const formData = new FormData();
+                formData.append('folder_name', this.folderName);
+                
+                // Append files
+                this.selectedFiles.forEach(file => {
+                    formData.append('files[]', file.fileObject);
+                });
+
+                const xhr = new XMLHttpRequest();
+                xhr.open('POST', "{{ route('revisoes.rounds.upload', $round->id) }}", true);
+                
+                // CSRF Token
+                const csrfToken = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
+                xhr.setRequestHeader('X-CSRF-TOKEN', csrfToken);
+
+                // Progress event listener
+                xhr.upload.addEventListener('progress', (event) => {
+                    if (event.lengthComputable) {
+                        this.uploadPercentage = Math.round((event.loaded / event.total) * 100);
+                    }
+                });
+
+                xhr.onload = () => {
+                    if (xhr.status >= 200 && xhr.status < 300) {
+                        // Success - reload
+                        window.location.reload();
+                    } else {
+                        alert('Erro ao enviar arquivos. Por favor, tente novamente.');
+                        this.isUploading = false;
+                    }
+                };
+
+                xhr.onerror = () => {
+                    alert('Erro de conexão ao enviar arquivos.');
+                    this.isUploading = false;
+                };
+
+                xhr.send(formData);
+            }
         }
     }
 </script>

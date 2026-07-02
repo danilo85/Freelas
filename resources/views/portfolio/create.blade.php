@@ -59,8 +59,23 @@
         </div>
     @endif
 
+    <!-- Erros de Validação Dinâmicos (AJAX) -->
+    <div x-show="validationErrors.length > 0" x-cloak class="bg-rose-50 dark:bg-rose-950/20 border border-rose-200 dark:border-rose-900 text-rose-800 dark:text-rose-200 p-4 rounded-[5px] text-sm space-y-1.5 shadow-sm">
+        <div class="flex items-center gap-2 font-bold">
+            <svg class="w-4 h-4 text-rose-650" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path>
+            </svg>
+            Por favor, verifique os campos obrigatórios:
+        </div>
+        <ul class="list-disc list-inside text-xs font-normal space-y-0.5 text-rose-700 dark:text-rose-300">
+            <template x-for="err in validationErrors">
+                <li x-text="err"></li>
+            </template>
+        </ul>
+    </div>
+
     <!-- Formulário Principal -->
-    <form action="{{ route('portfolio.store') }}" method="POST" enctype="multipart/form-data" class="space-y-6" @submit="syncGalleryInput($event)">
+    <form action="{{ route('portfolio.store') }}" method="POST" enctype="multipart/form-data" class="space-y-6" @submit.prevent="submitForm($event)">
         @csrf
 
         @if($projectData)
@@ -283,9 +298,9 @@
             </div>
 
             <!-- Navegação -->
-            <div class="flex justify-end pt-4 border-t border-slate-100">
+            <div class="flex flex-col sm:flex-row sm:justify-end gap-3 pt-4 border-t border-slate-100">
                 <button type="button" @click="activeTab = 'galeria'" 
-                        class="py-2.5 px-5 bg-slate-800 hover:bg-slate-900 text-white text-xs font-bold rounded-[5px] transition-colors shadow-sm flex items-center gap-1.5">
+                        class="w-full sm:w-auto justify-center py-2.5 px-5 bg-slate-800 hover:bg-slate-900 text-white text-xs font-bold rounded-[5px] transition-colors shadow-sm flex items-center gap-1.5">
                     Ir para Galeria
                     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>
@@ -420,9 +435,9 @@
             </div>
 
             <!-- Navegação -->
-            <div class="flex justify-between pt-4 border-t border-slate-100">
+            <div class="flex flex-col sm:flex-row justify-between gap-3 pt-4 border-t border-slate-100">
                 <button type="button" @click="activeTab = 'geral'" 
-                        class="py-2.5 px-4 bg-slate-100 hover:bg-slate-200 text-slate-600 text-xs font-bold rounded-[5px] transition-colors flex items-center gap-1.5">
+                        class="w-full sm:w-auto justify-center py-2.5 px-4 bg-slate-100 hover:bg-slate-200 text-slate-600 text-xs font-bold rounded-[5px] transition-colors flex items-center gap-1.5">
                     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path>
                     </svg>
@@ -430,7 +445,7 @@
                 </button>
 
                 <button type="button" @click="activeTab = 'seo'" 
-                        class="py-2.5 px-5 bg-slate-800 hover:bg-slate-900 text-white text-xs font-bold rounded-[5px] transition-colors shadow-sm flex items-center gap-1.5">
+                        class="w-full sm:w-auto justify-center py-2.5 px-5 bg-slate-800 hover:bg-slate-900 text-white text-xs font-bold rounded-[5px] transition-colors shadow-sm flex items-center gap-1.5">
                     Ir para SEO & IA
                     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>
@@ -454,15 +469,19 @@
                         <p class="text-xs text-violet-800 mt-1 font-normal leading-relaxed">Gere tags meta (Title, Meta Description, Meta Keywords) otimizadas para busca de forma automática baseada no título e descrição do trabalho.</p>
                     </div>
                 </div>
-                
-                <button type="button" 
-                        @click="generateSEO()"
-                        class="py-2 px-3.5 bg-violet-600 hover:bg-violet-700 text-white text-xs font-bold rounded-[5px] transition-all flex items-center gap-1.5 shadow-sm whitespace-nowrap"
-                        :class="aiLoading ? 'opacity-70 cursor-not-allowed' : ''"
-                        :disabled="aiLoading">
-                    <span x-show="aiLoading" class="w-3.5 h-3.5 border-2 border-white border-t-transparent rounded-full animate-spin"></span>
-                    <span x-show="!aiLoading">✨ Otimizar SEO</span>
-                </button>
+                <div class="flex flex-col sm:flex-row sm:items-center gap-3">
+                    <button type="button" 
+                            @click="generateSEO()"
+                            class="py-2 px-3.5 bg-violet-600 hover:bg-violet-700 text-white text-xs font-bold rounded-[5px] transition-all flex items-center gap-1.5 shadow-sm whitespace-nowrap"
+                            :class="aiLoading ? 'opacity-70 cursor-not-allowed' : ''"
+                            :disabled="aiLoading">
+                        <span x-show="aiLoading" class="w-3.5 h-3.5 border-2 border-white border-t-transparent rounded-full animate-spin"></span>
+                        <span x-show="!aiLoading">✨ Otimizar SEO</span>
+                    </button>
+                    <div x-show="aiError" class="text-xs text-red-600 font-bold flex items-center gap-1 animate-pulse" x-cloak>
+                        ⚠️ <span x-text="aiError"></span>
+                    </div>
+                </div>
             </div>
 
             <!-- Campos SEO -->
@@ -510,9 +529,9 @@
             </div>
 
             <!-- Navegação -->
-            <div class="flex justify-between pt-4 border-t border-slate-100">
+            <div class="flex flex-col sm:flex-row justify-between gap-3 pt-4 border-t border-slate-100">
                 <button type="button" @click="activeTab = 'galeria'" 
-                        class="py-2.5 px-4 bg-slate-100 hover:bg-slate-200 text-slate-600 text-xs font-bold rounded-[5px] transition-colors flex items-center gap-1.5">
+                        class="w-full sm:w-auto justify-center py-2.5 px-4 bg-slate-100 hover:bg-slate-200 text-slate-600 text-xs font-bold rounded-[5px] transition-colors flex items-center gap-1.5">
                     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path>
                     </svg>
@@ -520,7 +539,7 @@
                 </button>
 
                 <button type="button" @click="activeTab = 'revisao'" 
-                        class="py-2.5 px-5 bg-slate-800 hover:bg-slate-900 text-white text-xs font-bold rounded-[5px] transition-colors shadow-sm flex items-center gap-1.5">
+                        class="w-full sm:w-auto justify-center py-2.5 px-5 bg-slate-800 hover:bg-slate-900 text-white text-xs font-bold rounded-[5px] transition-colors shadow-sm flex items-center gap-1.5">
                     Ir para Revisão Geral
                     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>
@@ -604,9 +623,9 @@
             </div>
 
             <!-- Navegação e Submissão -->
-            <div class="flex justify-between pt-6 border-t border-slate-100">
+            <div class="flex flex-col sm:flex-row justify-between gap-3 pt-6 border-t border-slate-100">
                 <button type="button" @click="activeTab = 'seo'" 
-                        class="py-2.5 px-4 bg-slate-100 hover:bg-slate-200 text-slate-600 text-xs font-bold rounded-[5px] transition-colors flex items-center gap-1.5">
+                        class="w-full sm:w-auto justify-center py-2.5 px-4 bg-slate-100 hover:bg-slate-200 text-slate-600 text-xs font-bold rounded-[5px] transition-colors flex items-center gap-1.5">
                     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path>
                     </svg>
@@ -614,7 +633,7 @@
                 </button>
 
                 <button type="submit" 
-                        class="py-3 px-6 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-extrabold rounded-[5px] transition-colors shadow-sm flex items-center gap-1.5">
+                        class="w-full sm:w-auto justify-center py-3 px-6 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-extrabold rounded-[5px] transition-colors shadow-sm flex items-center gap-1.5">
                     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
                     </svg>
@@ -625,6 +644,25 @@
         </div>
 
     </form>
+
+    <!-- Modal Loader Overlay de Upload -->
+    <div x-show="isUploading" class="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 backdrop-blur-sm" x-cloak>
+        <div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-lg p-6 max-w-sm w-full mx-4 shadow-2xl text-center space-y-4">
+            <!-- Spinner -->
+            <div class="relative flex items-center justify-center">
+                <div class="w-12 h-12 border-4 border-slate-200 border-t-primary-600 rounded-full animate-spin"></div>
+                <span class="absolute text-[10px] font-extrabold text-slate-700 dark:text-slate-350" x-text="uploadPercentage + '%'"></span>
+            </div>
+            <div>
+                <h4 class="text-sm font-bold text-slate-900 dark:text-slate-100">Enviando arquivos...</h4>
+                <p class="text-[10px] text-slate-400 mt-1">Carregando mídias para o servidor. Por favor, aguarde.</p>
+            </div>
+            <!-- Progress Bar -->
+            <div class="w-full bg-slate-100 dark:bg-slate-800 rounded-full h-2.5 overflow-hidden">
+                <div class="bg-primary-655 h-2.5 rounded-full transition-all duration-150" :style="'width: ' + uploadPercentage + '%'"></div>
+            </div>
+        </div>
+    </div>
 </div>
 
 <script>
@@ -652,6 +690,12 @@
             
             // AI simulated loading
             aiLoading: false,
+            aiError: '',
+            
+            // Upload progress & Validation errors
+            isUploading: false,
+            uploadPercentage: 0,
+            validationErrors: [],
 
             // Formatador do Editor WYSIWYG
             format(command, value = null) {
@@ -717,6 +761,64 @@
                 input.files = dataTransfer.files;
             },
 
+            submitForm(event) {
+                this.syncGalleryInput();
+
+                const form = event.target;
+                const formData = new FormData(form);
+
+                // Add list orders
+                this.galleryFiles.forEach((item, index) => {
+                    formData.append(`gallery_orders[${index}]`, item.order);
+                });
+
+                this.validationErrors = [];
+                this.isUploading = true;
+                this.uploadPercentage = 0;
+
+                const xhr = new XMLHttpRequest();
+                xhr.open('POST', form.action, true);
+                xhr.setRequestHeader('Accept', 'application/json');
+                xhr.setRequestHeader('X-Requested-With', 'XMLHttpRequest');
+
+                xhr.upload.addEventListener('progress', (e) => {
+                    if (e.lengthComputable) {
+                        this.uploadPercentage = Math.round((e.loaded / e.total) * 100);
+                    }
+                });
+
+                xhr.addEventListener('load', () => {
+                    this.isUploading = false;
+                    if (xhr.status >= 200 && xhr.status < 300) {
+                        const res = JSON.parse(xhr.responseText);
+                        if (res.success && res.redirect_url) {
+                            window.location.href = res.redirect_url;
+                        }
+                    } else if (xhr.status === 422) {
+                        const res = JSON.parse(xhr.responseText);
+                        if (res.errors) {
+                            let errorsList = [];
+                            Object.keys(res.errors).forEach(key => {
+                                res.errors[key].forEach(msg => {
+                                    errorsList.push(msg);
+                                });
+                            });
+                            this.validationErrors = errorsList;
+                            window.scrollTo({ top: 0, behavior: 'smooth' });
+                        }
+                    } else {
+                        alert('Erro ao salvar. Por favor, tente novamente.');
+                    }
+                });
+
+                xhr.addEventListener('error', () => {
+                    this.isUploading = false;
+                    alert('Erro de rede ou tamanho de arquivo excedido.');
+                });
+
+                xhr.send(formData);
+            },
+
             handleGalleryUpload(event) {
                 const files = event.target.files;
                 for (let i = 0; i < files.length; i++) {
@@ -761,8 +863,9 @@
 
             // Simulated Local AI SEO content optimization generator
             generateSEO() {
+                this.aiError = '';
                 if (!this.title) {
-                    alert('Insira o título do trabalho primeiro.');
+                    this.aiError = 'Insira o título do trabalho primeiro.';
                     return;
                 }
                 
