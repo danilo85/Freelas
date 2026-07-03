@@ -237,12 +237,12 @@
                 $svg = file_get_contents($path);
                 $svg = preg_replace('/<\?xml.*?\?>/s', '', $svg);
                 
-                // Remove hardcoded fills and strokes to allow CSS/Tailwind coloring
-                $svg = preg_replace('/fill="[^"]*"/', '', $svg);
-                $svg = preg_replace('/stroke="[^"]*"/', '', $svg);
+                // Replace hardcoded fills and strokes with currentColor to allow CSS/Tailwind coloring
+                $svg = preg_replace('/fill="[^"]*"/', 'fill="currentColor"', $svg);
+                $svg = preg_replace('/stroke="[^"]*"/', 'stroke="currentColor"', $svg);
                 
-                // Inject classes
-                $svg = preg_replace('/<svg/', '<svg class="' . $class . '"', $svg, 1);
+                // Inject classes and default fill
+                $svg = preg_replace('/<svg/', '<svg fill="currentColor" class="' . $class . '"', $svg, 1);
                 return $svg;
             }
             return '';

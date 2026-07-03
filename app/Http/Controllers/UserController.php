@@ -34,7 +34,7 @@ class UserController extends Controller
             'theme_color' => 'green',
         ]);
 
-        return redirect()->route('users.index')->with('success', 'Usuário criado com sucesso!');
+        return redirect()->route('admin.settings.index')->with('success', 'Usuário criado com sucesso!');
     }
 
     public function update(Request $request, User $user)
@@ -48,7 +48,7 @@ class UserController extends Controller
 
         // Impede que o master logado retire o seu próprio nível master
         if ($user->id === auth()->id() && $validated['role'] !== 'master') {
-            return redirect()->route('users.index')->with('error', 'Você não pode alterar o seu próprio nível de acesso.');
+            return redirect()->route('admin.settings.index')->with('error', 'Você não pode alterar o seu próprio nível de acesso.');
         }
 
         $user->update([
@@ -58,13 +58,13 @@ class UserController extends Controller
             'phone' => $validated['phone'] ?? null,
         ]);
 
-        return redirect()->route('users.index')->with('success', 'Usuário atualizado com sucesso!');
+        return redirect()->route('admin.settings.index')->with('success', 'Usuário atualizado com sucesso!');
     }
 
     public function destroy(User $user)
     {
         if ($user->id === auth()->id()) {
-            return redirect()->route('users.index')->with('error', 'Você não pode excluir sua própria conta.');
+            return redirect()->route('admin.settings.index')->with('error', 'Você não pode excluir sua própria conta.');
         }
 
         if ($user->avatar) {
@@ -73,6 +73,6 @@ class UserController extends Controller
 
         $user->delete();
 
-        return redirect()->route('users.index')->with('success', 'Usuário excluído com sucesso!');
+        return redirect()->route('admin.settings.index')->with('success', 'Usuário excluído com sucesso!');
     }
 }

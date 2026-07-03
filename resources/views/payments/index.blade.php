@@ -4,7 +4,7 @@
 @section('page_title', 'Calendário de Pagamentos')
 
 @section('content')
-<div class="space-y-6">
+<div id="pjax-container" class="space-y-6">
 
     <!-- Topo da página: Título e Link de Retorno -->
     <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
@@ -153,8 +153,8 @@
                     @php
                         $isToday = $cell['is_current_month'] && $cell['date'] === $today->toDateString();
                     @endphp
-                    <div class="min-h-[110px] p-2.5 flex flex-col justify-between transition-colors hover:bg-slate-50/50 
-                        {{ $cell['is_current_month'] ? 'bg-white' : 'bg-slate-50/30 text-slate-400' }}
+                    <div class="min-h-[110px] p-2.5 flex flex-col justify-between transition-all hover:bg-slate-50/50 relative
+                        {{ $cell['payments_sum'] > 0 ? 'bg-emerald-50/40 border border-emerald-200/80 shadow-[inset_0_0_10px_rgba(16,185,129,0.06),_0_0_8px_rgba(16,185,129,0.15)] z-10' : ($cell['is_current_month'] ? 'bg-white' : 'bg-slate-50/30 text-slate-400') }}
                         {{ $isToday ? 'ring-2 ring-primary-500 ring-inset' : '' }}">
                         
                         <!-- Dia número -->

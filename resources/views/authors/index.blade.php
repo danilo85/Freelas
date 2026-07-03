@@ -103,7 +103,7 @@
                      x-transition
                      class="w-full flex"
                 >
-                    <div class="{{ in_array($author->id, $topAuthorIds) ? 'bg-gradient-to-br from-amber-50/40 to-yellow-50/10 border-amber-350 ring-1 ring-amber-300/30 shadow-md' : (!$author->registration_completed ? 'bg-amber-50/25 border-amber-200' : 'bg-white border-slate-200') }} border p-5 rounded-[5px] shadow-sm flex flex-col justify-between space-y-4 hover:shadow-md transition-all duration-200 w-full relative overflow-hidden">
+                    <div class="{{ in_array($author->id, $topAuthorIds) ? 'bg-gradient-to-br from-amber-50/40 to-yellow-50/10 dark:from-amber-950/25 dark:to-slate-900/40 border-amber-350 dark:border-amber-800/40 ring-1 ring-amber-300/30 dark:ring-amber-950/20 shadow-md' : (!$author->registration_completed ? 'bg-amber-50/25 border-amber-200' : 'bg-white border-slate-200') }} border p-5 rounded-[5px] shadow-sm flex flex-col justify-between space-y-4 hover:shadow-md transition-all duration-200 w-full relative overflow-hidden">
                     
                     @if(in_array($author->id, $topAuthorIds))
                         <!-- Destaque Ouro -->

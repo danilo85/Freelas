@@ -346,7 +346,7 @@
                                 </div>
                                 
                                 <!-- Nome do cliente -->
-                                <p class="text-[11px] font-semibold uppercase tracking-wider text-slate-400 mt-1 truncate" title="{{ $project->client->name }}">
+                                <p class="text-xs font-semibold uppercase tracking-wider text-slate-400 mt-1 truncate" title="{{ $project->client->name }}">
                                     {{ $project->client->name }}
                                 </p>
                             </div>
@@ -365,10 +365,10 @@
                         <!-- Autores como mini cards estruturados -->
                         @if($project->authors->count() > 0)
                             <div class="space-y-1.5 pt-0.5">
-                                <span class="text-[9px] font-semibold text-slate-400 uppercase tracking-wider block">Equipe / Autores</span>
+                                <span class="text-[10px] font-semibold text-slate-400 uppercase tracking-wider block">Equipe / Autores</span>
                                 <div class="flex flex-wrap gap-1.5">
                                     @foreach($project->authors as $author)
-                                        <span class="bg-slate-50 border border-slate-200/50 text-slate-650 px-2 py-0.5 rounded-[5px] text-[10px] font-semibold uppercase tracking-wider inline-block">
+                                        <span class="bg-slate-50 border border-slate-200/50 text-slate-650 px-2.5 py-0.5 rounded-[5px] text-xs font-semibold uppercase tracking-wider inline-block">
                                             {{ $author->name }}
                                         </span>
                                     @endforeach
@@ -384,7 +384,7 @@
                         <div :class="getBoxClass()" class="border p-3.5 rounded-[5px] space-y-2.5 transition-colors duration-200">
                             <!-- Valores Alinhados -->
                             <div class="flex justify-between items-baseline">
-                                <span class="text-[10px] font-semibold text-slate-400 uppercase tracking-wider">Valor do Projeto</span>
+                                <span class="text-xs font-semibold text-slate-400 uppercase tracking-wider">Valor do Projeto</span>
                                 <span class="text-base font-bold text-slate-800" :class="isSelected ? 'text-violet-950' : ''">
                                     <span x-text="privacyMode ? 'R$ ••••' : 'R$ ' + formatMoney({{ $project->total_value }})"></span>
                                 </span>
@@ -395,7 +395,7 @@
                                 <div class="w-full bg-slate-150 border border-slate-200/40 rounded-full h-1.5 overflow-hidden">
                                     <div class="bg-emerald-600 h-full rounded-full transition-all duration-500" style="width: {{ $percentPaid }}%"></div>
                                 </div>
-                                <div class="flex justify-between text-[9px] font-semibold text-slate-400 uppercase tracking-wide">
+                                <div class="flex justify-between text-[11px] font-semibold text-slate-400 uppercase tracking-wide">
                                     <span>Pago: <span class="font-bold text-emerald-600" x-text="privacyMode ? '••••' : 'R$ ' + formatMoney({{ $totalPaid }})"></span></span>
                                     <span>Restante: <span class="font-bold text-amber-600" x-text="privacyMode ? '••••' : 'R$ ' + formatMoney({{ $project->remaining_balance }})"></span></span>
                                 </div>
@@ -404,7 +404,7 @@
 
                         <!-- Data como Badge/Tag -->
                         <div class="text-center">
-                            <span class="bg-slate-100 text-slate-500 border border-slate-200/50 px-2 py-0.5 rounded-[5px] text-[10px] font-semibold uppercase tracking-wider inline-block">
+                            <span class="bg-slate-100 text-slate-500 border border-slate-200/50 px-2.5 py-0.5 rounded-[5px] text-xs font-semibold uppercase tracking-wider inline-block">
                                 Criado em {{ \Carbon\Carbon::parse($project->created_at)->format('d/m/Y \à\s H:i') }}
                             </span>
                         </div>

@@ -154,6 +154,33 @@ Route::middleware(['auth', 'approved'])->prefix('freelas')->group(function () {
         Route::get('/utilidades/rounds/{round}/files', [\App\Http\Controllers\RevisionRoundController::class, 'manageFiles'])->name('revisoes.rounds.files');
         Route::post('/utilidades/rounds/{round}/files', [\App\Http\Controllers\RevisionRoundController::class, 'uploadFiles'])->name('revisoes.rounds.upload');
         Route::delete('/utilidades/files/{file}', [\App\Http\Controllers\RevisionRoundController::class, 'deleteFile'])->name('revisoes.files.destroy');
+
+        // Utilidades - Compartilhamento de Arquivos (estilo WeTransfer)
+        Route::get('/utilidades/compartilhamento', [\App\Http\Controllers\FileShareController::class, 'index'])->name('revisoes.shares.index');
+        Route::get('/utilidades/compartilhamento/novo', [\App\Http\Controllers\FileShareController::class, 'create'])->name('revisoes.shares.create');
+        Route::post('/utilidades/compartilhamento', [\App\Http\Controllers\FileShareController::class, 'store'])->name('revisoes.shares.store');
+        Route::delete('/utilidades/compartilhamento/{share}', [\App\Http\Controllers\FileShareController::class, 'destroy'])->name('revisoes.shares.destroy');
+        Route::post('/utilidades/compartilhamento/{share}/toggle-active', [\App\Http\Controllers\FileShareController::class, 'toggleActive'])->name('revisoes.shares.toggle-active');
+        Route::put('/utilidades/compartilhamento/{share}/settings', [\App\Http\Controllers\FileShareController::class, 'updateSettings'])->name('revisoes.shares.settings');
+
+        // Utilidades - Banco de Assets
+        Route::get('/utilidades/assets', [\App\Http\Controllers\AssetController::class, 'index'])->name('revisoes.assets.index');
+        Route::post('/utilidades/assets', [\App\Http\Controllers\AssetController::class, 'store'])->name('revisoes.assets.store');
+        Route::put('/utilidades/assets/{asset}', [\App\Http\Controllers\AssetController::class, 'update'])->name('revisoes.assets.update');
+        Route::delete('/utilidades/assets/{asset}', [\App\Http\Controllers\AssetController::class, 'destroy'])->name('revisoes.assets.destroy');
+        Route::get('/utilidades/assets/{asset}/download', [\App\Http\Controllers\AssetController::class, 'download'])->name('revisoes.assets.download');
+        Route::post('/utilidades/assets/download-batch', [\App\Http\Controllers\AssetController::class, 'downloadBatch'])->name('revisoes.assets.download-batch');
+        Route::post('/utilidades/assets/destroy-batch', [\App\Http\Controllers\AssetController::class, 'destroyBatch'])->name('revisoes.assets.destroy-batch');
+
+        // Utilidades - Lembretes e Notas (Google Keep Style)
+        Route::get('/utilidades/lembretes', [\App\Http\Controllers\ReminderController::class, 'index'])->name('lembretes.index');
+        Route::post('/utilidades/lembretes', [\App\Http\Controllers\ReminderController::class, 'store'])->name('lembretes.store');
+        Route::put('/utilidades/lembretes/{reminder}', [\App\Http\Controllers\ReminderController::class, 'update'])->name('lembretes.update');
+        Route::delete('/utilidades/lembretes/{reminder}', [\App\Http\Controllers\ReminderController::class, 'destroy'])->name('lembretes.destroy');
+        Route::post('/utilidades/lembretes/{reminder}/pin', [\App\Http\Controllers\ReminderController::class, 'togglePin'])->name('lembretes.pin');
+        Route::post('/utilidades/lembretes/{reminder}/color', [\App\Http\Controllers\ReminderController::class, 'updateColor'])->name('lembretes.color');
+        Route::post('/utilidades/lembretes/{reminder}/archive', [\App\Http\Controllers\ReminderController::class, 'toggleArchive'])->name('lembretes.archive');
+        Route::post('/utilidades/lembretes/reorder', [\App\Http\Controllers\ReminderController::class, 'reorder'])->name('lembretes.reorder');
     });
 });
 
@@ -175,6 +202,12 @@ Route::middleware('maintenance')->group(function () {
     Route::post('/portfolio/{id}/likes', [\App\Http\Controllers\PublicPortfolioController::class, 'incrementLikes'])->name('public.portfolio.likes');
     Route::post('/contato', [\App\Http\Controllers\PublicPortfolioController::class, 'sendContact'])->name('public.contact.send');
 });
+
+// Rotas Públicas de Compartilhamento de Arquivos
+Route::get('/compartilhar/{share_token}', [\App\Http\Controllers\FileShareController::class, 'publicShow'])->name('public.share.show');
+Route::post('/compartilhar/{share_token}/verify', [\App\Http\Controllers\FileShareController::class, 'publicVerifyPassword'])->name('public.share.verify');
+Route::get('/compartilhar/{share_token}/download/{itemId}', [\App\Http\Controllers\FileShareController::class, 'publicDownloadFile'])->name('public.share.download');
+Route::get('/compartilhar/{share_token}/zip', [\App\Http\Controllers\FileShareController::class, 'publicDownloadZip'])->name('public.share.zip');
 
 // Rotas Públicas de Revisão de Trabalhos (Cliente)
 Route::get('/revisao/{token}', [\App\Http\Controllers\PublicRevisionController::class, 'show'])->name('public.revisao.show');

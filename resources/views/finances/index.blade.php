@@ -4,7 +4,7 @@
 @section('page_title', 'Controle Financeiro')
 
 @section('content')
-<div class="space-y-6" x-data="financeManager()">
+<div id="pjax-container" class="space-y-6" x-data="financeManager()">
 
     <!-- Topo da página: Título e Link de Categorias -->
     <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
@@ -331,19 +331,19 @@
                                                 @click="handleCardClick({{ $t->id }}, {{ $t->amount }}, $event)"
                                             >
                                                 <!-- Stamp Carimbo Pago/Pendente no Modal -->
-                                                @if($t->status === 'pago')
-                                                    <div class="absolute right-12 top-1.5 rotate-[-12deg] pointer-events-none select-none z-10 opacity-30 transform scale-90">
-                                                        <div class="border-2 border-emerald-600/75 text-emerald-600/75 font-black text-[9px] px-2 py-0.5 rounded uppercase tracking-widest flex items-center gap-0.5">
-                                                            <span>✓</span> <span>PAGO</span>
-                                                        </div>
+                                                <div id="modal-status-stamp-{{ $t->id }}" class="absolute right-12 top-1.5 rotate-[-12deg] pointer-events-none select-none z-10 opacity-30 transform scale-90" style="display: {{ $t->status === 'pago' ? 'block' : 'none' }}">
+                                                    <div class="border-2 border-emerald-600/75 text-emerald-600/75 font-black text-[9px] px-2 py-0.5 rounded uppercase tracking-widest flex items-center gap-0.5">
+                                                        <span>✓</span> <span>PAGO</span>
                                                     </div>
-                                                @else
-                                                    <div class="absolute right-12 top-1.5 rotate-[-12deg] pointer-events-none select-none z-10 opacity-25 transform scale-90">
-                                                        <div class="border-2 border-amber-600/75 text-amber-600/75 font-black text-[8px] px-1.5 py-0.5 rounded uppercase tracking-widest flex items-center gap-0.5">
-                                                            <span>⏳</span> <span>PENDENTE</span>
-                                                        </div>
+                                                </div>
+                                                <div id="modal-status-stamp-pending-{{ $t->id }}" class="absolute right-12 top-1.5 rotate-[-12deg] pointer-events-none select-none z-10 opacity-25 transform scale-90" style="display: {{ $t->status === 'pago' ? 'none' : 'block' }}">
+                                                    <div class="border-2 border-amber-600/75 text-amber-600/75 font-black text-[8px] px-1.5 py-0.5 rounded uppercase tracking-widest flex items-center gap-0.5">
+                                                        <span>⏳</span> <span>PENDENTE</span>
                                                     </div>
-                                                @endif
+                                                </div>
+                                                @php
+                                                    // keep PHP compiler happy
+                                                @endphp
 
                                                 <div class="flex justify-between items-start gap-2 z-20">
                                                     <div class="min-w-0">
@@ -366,9 +366,9 @@
                                                     </label>
 
                                                     <!-- Toggle Status -->
-                                                    <form action="{{ route('finances.toggle-status', $t->id) }}" method="POST" class="inline">
+                                                    <form action="{{ route('finances.toggle-status', $t->id) }}" method="POST" class="inline" @submit.prevent="toggleTransactionStatus({{ $t->id }}, '{{ route('finances.toggle-status', $t->id) }}')">
                                                         @csrf
-                                                        <button type="submit" class="w-7 h-7 flex items-center justify-center bg-transparent text-emerald-600 hover:bg-emerald-50 rounded-[5px] transition-all border-0 shadow-none" title="Alternar status Pago/Pendente">
+                                                        <button type="submit" class="w-7 h-7 flex items-center justify-center bg-transparent text-emerald-600 hover:bg-emerald-50 rounded-[5px] transition-all border-0 shadow-none cursor-pointer" title="Alternar status Pago/Pendente">
                                                             <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"></path>
                                                             </svg>
@@ -456,19 +456,19 @@
                         @click="handleCardClick({{ $t->id }}, {{ $t->amount }}, $event)"
                     >
                         <!-- Stamp Carimbo Pago/Pendente -->
-                        @if($t->status === 'pago')
-                            <div class="absolute right-4 top-[40%] -translate-y-1/2 -rotate-12 pointer-events-none select-none z-10 opacity-30 transform scale-110">
-                                <div class="border-4 border-emerald-600/75 text-emerald-600/75 font-black text-xl px-3.5 py-1.5 rounded uppercase tracking-widest flex items-center gap-1">
-                                    <span>✓</span> <span>PAGO</span>
-                                </div>
+                        <div id="status-stamp-{{ $t->id }}" class="absolute right-4 top-[40%] -translate-y-1/2 -rotate-12 pointer-events-none select-none z-10 opacity-30 transform scale-110" style="display: {{ $t->status === 'pago' ? 'block' : 'none' }}">
+                            <div class="border-4 border-emerald-600/75 text-emerald-600/75 font-black text-xl px-3.5 py-1.5 rounded uppercase tracking-widest flex items-center gap-1">
+                                <span>✓</span> <span>PAGO</span>
                             </div>
-                        @else
-                            <div class="absolute right-4 top-[40%] -translate-y-1/2 -rotate-12 pointer-events-none select-none z-10 opacity-25 transform scale-110">
-                                <div class="border-4 border-amber-600/75 text-amber-600/75 font-black text-base px-3 py-1.5 rounded uppercase tracking-widest flex items-center gap-1">
-                                    <span>⏳</span> <span>PENDENTE</span>
-                                </div>
+                        </div>
+                        <div id="status-stamp-pending-{{ $t->id }}" class="absolute right-4 top-[40%] -translate-y-1/2 -rotate-12 pointer-events-none select-none z-10 opacity-25 transform scale-110" style="display: {{ $t->status === 'pago' ? 'none' : 'block' }}">
+                            <div class="border-4 border-amber-600/75 text-amber-600/75 font-black text-base px-3 py-1.5 rounded uppercase tracking-widest flex items-center gap-1">
+                                <span>⏳</span> <span>PENDENTE</span>
                             </div>
-                        @endif
+                        </div>
+                        @php
+                            // keep compiler happy
+                        @endphp
                         
                         <!-- Header Card -->
                         <div class="flex items-start justify-between gap-4">
@@ -526,9 +526,9 @@
                             <!-- Ações -->
                             <div class="flex items-center gap-1 shrink-0 no-print">
                                 <!-- Marcar Pago / Pendente -->
-                                <form action="{{ route('finances.toggle-status', $t->id) }}" method="POST" class="inline">
+                                <form action="{{ route('finances.toggle-status', $t->id) }}" method="POST" class="inline" @submit.prevent="toggleTransactionStatus({{ $t->id }}, '{{ route('finances.toggle-status', $t->id) }}')">
                                     @csrf
-                                    <button type="submit" class="w-8 h-8 flex items-center justify-center bg-transparent text-emerald-600 hover:bg-emerald-50 rounded-[5px] transition-all border-0 shadow-none" title="Alternar Pago/Pendente">
+                                    <button type="submit" class="w-8 h-8 flex items-center justify-center bg-transparent text-emerald-600 hover:bg-emerald-50 rounded-[5px] transition-all border-0 shadow-none cursor-pointer" title="Alternar Pago/Pendente">
                                         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"></path>
                                         </svg>
@@ -717,6 +717,35 @@
                     action: action
                 };
                 this.showDeleteModal = true;
+            },
+
+            toggleTransactionStatus(id, url) {
+                const csrfToken = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
+                fetch(url, {
+                    method: 'POST',
+                    headers: {
+                        'X-CSRF-TOKEN': csrfToken,
+                        'Accept': 'application/json',
+                        'X-Requested-With': 'XMLHttpRequest'
+                    }
+                })
+                .then(res => res.json())
+                .then(data => {
+                    if (data.success) {
+                        const stampPaid = document.getElementById('status-stamp-' + id);
+                        const stampPending = document.getElementById('status-stamp-pending-' + id);
+                        if (stampPaid) stampPaid.style.display = data.status === 'pago' ? 'block' : 'none';
+                        if (stampPending) stampPending.style.display = data.status === 'pago' ? 'none' : 'block';
+
+                        const modalStampPaid = document.getElementById('modal-status-stamp-' + id);
+                        const modalStampPending = document.getElementById('modal-status-stamp-pending-' + id);
+                        if (modalStampPaid) modalStampPaid.style.display = data.status === 'pago' ? 'block' : 'none';
+                        if (modalStampPending) modalStampPending.style.display = data.status === 'pago' ? 'none' : 'block';
+                    }
+                })
+                .catch(err => {
+                    console.error('Erro ao alternar status da transação:', err);
+                });
             }
         };
     }

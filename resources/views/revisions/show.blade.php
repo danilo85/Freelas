@@ -114,28 +114,38 @@
                         
                         <!-- Timeline Node Item -->
                         <div class="relative">
-                            <!-- Timeline Dot Icon -->
-                            <span class="absolute -left-[33px] top-1.5 w-4 h-4 rounded-full border-2 border-white flex items-center justify-center shadow-sm 
-                                {{ $round->status === 'aprovado' ? 'bg-emerald-500' : ($round->status === 'em_ajuste' ? 'bg-amber-400' : 'bg-blue-500') }}">
-                            </span>
-
                             @php
+                                $displayStatus = $round->status;
+                                if ($round->status !== 'aprovado') {
+                                    if ($resolvedCount > 0) {
+                                        $displayStatus = 'em_ajuste';
+                                    } else {
+                                        $displayStatus = 'pendente';
+                                    }
+                                }
+
                                 $isRoundAllOk = ($resolvedCount > 0 && $pendingCount === 0);
-                                $isRoundApproved = ($round->status === 'aprovado');
+                                $isRoundApproved = ($displayStatus === 'aprovado');
+                                $isRoundInAdjustment = ($displayStatus === 'em_ajuste');
                                 $roundHasAdjustments = ($pendingCount > 0);
 
-                                $roundCardClass = 'bg-white border-slate-200';
-                                if ($isRoundAllOk) {
-                                    $roundCardClass = 'bg-white border-slate-200';
+                                $roundCardClass = 'bg-slate-50/60 border-slate-200 dark:bg-slate-900/40 dark:border-slate-800/40';
+                                if ($isRoundApproved) {
+                                    $roundCardClass = 'bg-emerald-50/60 border-emerald-300 dark:bg-emerald-950/15 dark:border-emerald-850/40';
+                                } elseif ($isRoundInAdjustment) {
+                                    $roundCardClass = 'bg-amber-50/65 border-amber-300 dark:bg-amber-950/15 dark:border-amber-850/40';
                                 } elseif ($roundHasAdjustments) {
-                                    $roundCardClass = 'bg-rose-50/25 border-rose-200 pulse-glow-rose';
-                                } elseif ($isRoundApproved) {
-                                    $roundCardClass = 'bg-emerald-50/25 border-emerald-200';
+                                    $roundCardClass = 'bg-rose-50/60 border-rose-300 pulse-glow-rose dark:bg-rose-950/15 dark:border-rose-850/40';
                                 }
                             @endphp
 
+                            <!-- Timeline Dot Icon -->
+                            <span class="absolute -left-[33px] top-1.5 w-4 h-4 rounded-full border-2 border-white flex items-center justify-center shadow-sm 
+                                {{ $displayStatus === 'aprovado' ? 'bg-emerald-500' : ($displayStatus === 'em_ajuste' ? 'bg-amber-400' : 'bg-blue-500') }}">
+                            </span>
+
                             <!-- Round Card -->
-                            <div class="{{ $roundCardClass }} rounded-[5px] p-6 shadow-sm space-y-4 hover:shadow-md transition-shadow relative overflow-hidden">
+                            <div class="{{ $roundCardClass }} border rounded-[5px] p-4 shadow-sm space-y-3.5 hover:shadow-md transition-shadow relative overflow-hidden">
                                 <!-- Stamp Carimbo Tudo Ok -->
                                 @if($isRoundAllOk)
                                     <div class="absolute right-4 top-[55%] -translate-y-1/2 -rotate-12 pointer-events-none select-none z-10 opacity-30 transform scale-110">
@@ -144,39 +154,41 @@
                                         </div>
                                     </div>
                                 @endif
-                                <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-slate-100">
+                                <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 pb-2.5 border-b border-slate-100 dark:border-slate-800">
                                     <div>
-                                        <h5 class="font-outfit font-black text-slate-800 text-md">
+                                        <h5 class="font-outfit font-black text-slate-800 text-sm">
                                             Rodada de Ajustes #{{ $round->round_number }}
                                         </h5>
-                                        <span class="text-[10px] text-slate-400 font-medium">
+                                        <span class="text-[9px] text-slate-400 font-medium">
                                             Enviado em: {{ $round->created_at->format('d/m/Y \à\s H:i') }}
                                         </span>
                                     </div>
 
                                     <!-- Status Badge dropdown/form -->
                                     <div class="flex items-center gap-2">
-                                        <form action="{{ route('revisoes.rounds.status', $round->id) }}" method="POST" class="flex items-center gap-1.5 bg-slate-50 border border-slate-200 px-2.5 py-1 rounded-[5px]">
+                                        <form action="{{ route('revisoes.rounds.status', $round->id) }}" method="POST" class="flex items-center gap-1.5 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 px-2 py-0.5 rounded-[5px]">
                                             @csrf
                                             @method('PATCH')
                                             <span class="text-[8px] font-bold text-slate-400 uppercase tracking-wide">Status:</span>
                                             <select name="status" 
                                                     onchange="this.form.submit()"
-                                                    class="bg-transparent border-none text-[10px] font-extrabold uppercase focus:outline-none py-0.5 cursor-pointer 
-                                                        {{ $round->status === 'aprovado' ? 'text-emerald-600' : ($round->status === 'em_ajuste' ? 'text-amber-600' : 'text-blue-600') }}">
-                                                <option value="pendente" {{ $round->status === 'pendente' ? 'selected' : '' }}>Pendente</option>
-                                                <option value="em_ajuste" {{ $round->status === 'em_ajuste' ? 'selected' : '' }}>Em Ajuste</option>
-                                                <option value="aprovado" {{ $round->status === 'aprovado' ? 'selected' : '' }}>Aprovado</option>
+                                                    class="bg-transparent border-none text-[9px] font-black uppercase focus:outline-none py-0.5 cursor-pointer 
+                                                        {{ $displayStatus === 'aprovado' ? 'text-emerald-600' : ($displayStatus === 'em_ajuste' ? 'text-amber-600' : 'text-blue-600') }}">
+                                                <option value="pendente" {{ $displayStatus === 'pendente' ? 'selected' : '' }}>Pendente</option>
+                                                <option value="em_ajuste" {{ $displayStatus === 'em_ajuste' ? 'selected' : '' }}>Em Ajuste</option>
+                                                <option value="aprovado" {{ $displayStatus === 'aprovado' ? 'selected' : '' }}>Aprovado</option>
                                             </select>
                                         </form>
                                     </div>
                                 </div>
 
                                 <!-- Descrição da Rodada -->
-                                <div class="text-xs text-slate-600 leading-relaxed whitespace-pre-line bg-slate-50/50 p-3 rounded-[5px] border border-slate-100">
-                                    <span class="text-[8px] font-bold text-slate-400 uppercase block mb-1">Notas / Instruções</span>
-                                    {{ $round->description }}
-                                </div>
+                                @if($round->description)
+                                    <div class="text-[11px] text-slate-650 dark:text-slate-300 leading-relaxed whitespace-pre-line bg-slate-50/50 dark:bg-slate-900/50 p-2.5 rounded-[5px] border border-slate-100 dark:border-slate-800">
+                                        <span class="text-[8px] font-bold text-slate-400 uppercase block mb-1">Notas / Instruções</span>
+                                        {{ $round->description }}
+                                    </div>
+                                @endif
 
                                 <!-- Stats de Arquivos e Ajustes -->
                                 <div class="flex flex-wrap items-center gap-3 text-xs">
@@ -213,15 +225,14 @@
 
                                     <!-- Excluir Rodada (se não for a primeira) -->
                                     @if($round->round_number > 1)
-                                        <form action="{{ route('revisoes.rounds.destroy', $round->id) }}" method="POST" onsubmit="return confirm('Deseja realmente excluir esta rodada de ajustes e todos os seus arquivos?')" class="inline ml-auto">
-                                            @csrf
-                                            @method('DELETE')
-                                            <button type="submit" class="border border-slate-200 text-rose-600 hover:bg-rose-50 p-2.5 rounded-[5px] transition-all flex items-center gap-1" title="Excluir Rodada">
-                                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
-                                                </svg>
-                                            </button>
-                                        </form>
+                                        <button type="button" 
+                                                @click="$dispatch('trigger-global-delete', { title: 'Excluir Rodada', message: 'Deseja realmente excluir esta rodada de ajustes e todos os seus arquivos?', action: '{{ route('revisoes.rounds.destroy', $round->id) }}', highSecurity: false })"
+                                                class="border border-slate-200 text-rose-600 hover:bg-rose-50 p-2.5 rounded-[5px] transition-all flex items-center gap-1 cursor-pointer ml-auto" 
+                                                title="Excluir Rodada">
+                                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
+                                            </svg>
+                                        </button>
                                     @endif
                                 </div>
                             </div>
@@ -245,7 +256,6 @@
                     <div class="space-y-1">
                         <label class="text-xs font-bold text-slate-500 uppercase tracking-wider block">O que precisa ser mudado?</label>
                         <textarea name="description" 
-                                  required
                                   rows="4" 
                                   placeholder="Digite as instruções repassadas pelo cliente ou as anotações do feedback..."
                                   class="w-full px-4 py-2.5 rounded-[5px] border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500 transition-all placeholder-slate-400"></textarea>

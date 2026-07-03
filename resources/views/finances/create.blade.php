@@ -350,13 +350,13 @@
     function transactionForm() {
         return {
             type: 'saida', // entrada ou saida
-            classification: 'PJ', // PJ ou PF
+            classification: 'PF', // PJ ou PF
             destinationType: 'bank', // bank ou card
             repeatType: 'single', // single, installments, recurring
             installmentMode: 'total', // total ou installment
             installmentsCount: 3,
             amount: '',
-            status: 'pago',
+            status: 'pendente',
 
             // File state
             isDragging: false,

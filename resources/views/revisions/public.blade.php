@@ -173,7 +173,8 @@
                 <div class="p-4 border-b border-slate-200 bg-slate-50/50 flex items-center justify-between shrink-0">
                     <div class="min-w-0">
                         <span class="text-[8px] font-bold text-slate-400 uppercase tracking-widest block">Arquivo Ativo</span>
-                        <h5 class="text-xs font-bold text-slate-800 truncate mt-1" title="{{ $activeFile->filename }}">{{ $activeFile->filename }}</h5>
+                        <h5 class="text-xs font-bold text-slate-800 truncate mt-1 animate-pulse-slow" title="{{ $activeFile->filename }}">{{ $activeFile->filename }}</h5>
+                        <span x-show="fileDimensions" class="text-[9px] text-slate-500 font-bold block mt-0.5" x-text="fileDimensions"></span>
                     </div>
                     <span class="text-[9px] font-bold bg-slate-200 px-2 py-0.5 rounded-full uppercase tracking-wider text-slate-600 shrink-0">
                         {{ strtoupper($activeFile->file_type) }}
@@ -816,7 +817,7 @@
     <div x-show="showNotification" 
          class="fixed inset-0 flex items-center justify-center bg-slate-900/40 backdrop-blur-sm"
          style="z-index: 99999;"
-         x-transition
+         x-transition.opacity
          x-cloak>
         <div class="bg-white border border-slate-250 shadow-2xl rounded-lg max-w-sm w-full p-6 glassmorphism space-y-4 text-left select-none">
             <div class="flex items-center gap-3">
@@ -836,7 +837,7 @@
     <div x-show="showConfirmModal" 
          class="fixed inset-0 flex items-center justify-center bg-slate-900/40 backdrop-blur-sm"
          style="z-index: 99999;"
-         x-transition
+         x-transition.opacity
          x-cloak>
         <div class="bg-white border border-slate-250 shadow-2xl rounded-lg max-w-sm w-full p-6 glassmorphism space-y-4 text-left select-none">
             <div class="flex items-center gap-3">
@@ -978,6 +979,7 @@
                 generalCommentText: '',
                 generalDragover: false,
                 generalAttachmentFileName: '',
+                fileDimensions: '',
 
                 // Sidebar Redesign Options
                 activeTab: 'aberto', // aberto, resolvido
@@ -1504,6 +1506,10 @@
                 initImageDimensions() {
                     setTimeout(() => {
                         this.initCanvasSize();
+                        const img = document.getElementById('image-viewer');
+                        if (img) {
+                            this.fileDimensions = `📐 ${img.naturalWidth} x ${img.naturalHeight} px`;
+                        }
                     }, 100);
                 },
 
@@ -1604,6 +1610,11 @@
 
                     if (this.pageMode === 'single') {
                         pdfDocInstance.getPage(this.currentPage).then(page => {
+                            const baseViewport = page.getViewport({ scale: 1.0 });
+                            const wMM = Math.round(baseViewport.width * 25.4 / 72);
+                            const hMM = Math.round(baseViewport.height * 25.4 / 72);
+                            this.fileDimensions = `📐 ${wMM} x ${hMM} mm (${Math.round(baseViewport.width)}x${Math.round(baseViewport.height)} pt)`;
+
                             const viewport = page.getViewport({ scale: 1.25 * this.zoomScale });
                             pdfCanvas.width = viewport.width;
                             pdfCanvas.height = viewport.height;
@@ -1633,84 +1644,138 @@
                             });
                         });
                     } else {
-                        pdfDocInstance.getPage(this.currentPage).then(pageLeft => {
-                            const viewportLeft = pageLeft.getViewport({ scale: 1.0 * this.zoomScale });
-                            
-                            const nextPageIndex = this.currentPage + 1;
-                            if (nextPageIndex <= this.numPages) {
-                                pdfDocInstance.getPage(nextPageIndex).then(pageRight => {
-                                    const viewportRight = pageRight.getViewport({ scale: 1.0 * this.zoomScale });
+                        if (this.currentPage === 1) {
+                            pdfDocInstance.getPage(1).then(page => {
+                                const baseViewport = page.getViewport({ scale: 1.0 });
+                                const wMM = Math.round(baseViewport.width * 25.4 / 72);
+                                const hMM = Math.round(baseViewport.height * 25.4 / 72);
+                                this.fileDimensions = `📐 ${wMM} x ${hMM} mm (${Math.round(baseViewport.width)}x${Math.round(baseViewport.height)} pt)`;
 
-                                    pdfCanvas.width = viewportLeft.width + viewportRight.width;
-                                    pdfCanvas.height = Math.max(viewportLeft.height, viewportRight.height);
+                                const viewport = page.getViewport({ scale: 1.0 * this.zoomScale });
+                                pdfCanvas.width = viewport.width;
+                                pdfCanvas.height = viewport.height;
 
-                                    const renderContextLeft = {
-                                        canvasContext: context,
-                                        viewport: viewportLeft
-                                    };
-                                    
-                                    pageLeft.render(renderContextLeft).promise.then(() => {
-                                        context.save();
-                                        context.translate(viewportLeft.width, 0);
-
-                                        const renderContextRight = {
-                                            canvasContext: context,
-                                            viewport: viewportRight
-                                        };
-                                        
-                                        currentRenderTask = pageRight.render(renderContextRight);
-                                        currentRenderTask.promise.then(() => {
-                                            context.restore(); 
-                                            this.renderRetryCount = 0; 
-                                            if (spinner) spinner.classList.add('hidden');
-                                            this.initCanvasSize();
-                                        }).catch(err => {
-                                            context.restore();
-                                            if (err.name === 'RenderingCancelledException') {
-                                                return;
-                                            }
-                                            console.error('Right page rendering failed:', err);
-                                            if (this.renderRetryCount < 3) {
-                                                this.renderRetryCount++;
-                                                setTimeout(() => this.renderPDFPage(), 400);
-                                            } else {
-                                                if (spinner) spinner.classList.add('hidden');
-                                            }
-                                        });
-                                    });
-                                });
-                            } else {
-                                pdfCanvas.width = viewportLeft.width * 2;
-                                pdfCanvas.height = viewportLeft.height;
-                                
-                                const renderContextLeft = {
+                                const renderContext = {
                                     canvasContext: context,
-                                    viewport: viewportLeft,
-                                    transform: [1, 0, 0, 1, viewportLeft.width / 2, 0]
+                                    viewport: viewport
                                 };
-                                pageLeft.render(renderContextLeft).promise.then(() => {
+
+                                currentRenderTask = page.render(renderContext);
+                                currentRenderTask.promise.then(() => {
+                                    this.renderRetryCount = 0; 
                                     if (spinner) spinner.classList.add('hidden');
                                     this.initCanvasSize();
+                                }).catch(err => {
+                                    if (err.name === 'RenderingCancelledException') return;
+                                    console.error('PDF rendering failed:', err);
+                                    if (this.renderRetryCount < 3) {
+                                        this.renderRetryCount++;
+                                        setTimeout(() => this.renderPDFPage(), 400);
+                                    } else {
+                                        if (spinner) spinner.classList.add('hidden');
+                                        this.triggerAlert('Erro', 'Ocorreu uma falha ao renderizar a página. Tente recarregar.', 'error');
+                                    }
                                 });
-                            }
-                        });
+                            });
+                        } else {
+                            pdfDocInstance.getPage(this.currentPage).then(pageLeft => {
+                                const baseViewport = pageLeft.getViewport({ scale: 1.0 });
+                                const wMM = Math.round(baseViewport.width * 25.4 / 72);
+                                const hMM = Math.round(baseViewport.height * 25.4 / 72);
+                                this.fileDimensions = `📐 ${wMM} x ${hMM} mm (${Math.round(baseViewport.width)}x${Math.round(baseViewport.height)} pt)`;
+
+                                const viewportLeft = pageLeft.getViewport({ scale: 1.0 * this.zoomScale });
+                                
+                                const nextPageIndex = this.currentPage + 1;
+                                if (nextPageIndex <= this.numPages) {
+                                    pdfDocInstance.getPage(nextPageIndex).then(pageRight => {
+                                        const viewportRight = pageRight.getViewport({ scale: 1.0 * this.zoomScale });
+
+                                        pdfCanvas.width = viewportLeft.width + viewportRight.width;
+                                        pdfCanvas.height = Math.max(viewportLeft.height, viewportRight.height);
+
+                                        const renderContextLeft = {
+                                            canvasContext: context,
+                                            viewport: viewportLeft
+                                        };
+                                        
+                                        pageLeft.render(renderContextLeft).promise.then(() => {
+                                            context.save();
+                                            context.translate(viewportLeft.width, 0);
+
+                                            const renderContextRight = {
+                                                canvasContext: context,
+                                                viewport: viewportRight
+                                            };
+                                            
+                                            currentRenderTask = pageRight.render(renderContextRight);
+                                            currentRenderTask.promise.then(() => {
+                                                context.restore(); 
+                                                this.renderRetryCount = 0; 
+                                                if (spinner) spinner.classList.add('hidden');
+                                                this.initCanvasSize();
+                                            }).catch(err => {
+                                                context.restore();
+                                                if (err.name === 'RenderingCancelledException') {
+                                                    return;
+                                                }
+                                                console.error('Right page rendering failed:', err);
+                                                if (this.renderRetryCount < 3) {
+                                                    this.renderRetryCount++;
+                                                    setTimeout(() => this.renderPDFPage(), 400);
+                                                } else {
+                                                    if (spinner) spinner.classList.add('hidden');
+                                                }
+                                            });
+                                        });
+                                    });
+                                } else {
+                                    pdfCanvas.width = viewportLeft.width * 2;
+                                    pdfCanvas.height = viewportLeft.height;
+                                    
+                                    const renderContextLeft = {
+                                        canvasContext: context,
+                                        viewport: viewportLeft,
+                                        transform: [1, 0, 0, 1, viewportLeft.width / 2, 0]
+                                    };
+                                    pageLeft.render(renderContextLeft).promise.then(() => {
+                                        if (spinner) spinner.classList.add('hidden');
+                                        this.initCanvasSize();
+                                    });
+                                }
+                            });
+                        }
                     }
                 },
 
                 prevPage() {
-                    const step = this.pageMode === 'double' ? 2 : 1;
                     if (this.currentPage > 1) {
-                        this.currentPage = Math.max(1, this.currentPage - step);
+                        if (this.pageMode === 'double') {
+                            if (this.currentPage === 2) {
+                                this.currentPage = 1;
+                            } else {
+                                this.currentPage = Math.max(2, this.currentPage - 2);
+                            }
+                        } else {
+                            this.currentPage = this.currentPage - 1;
+                        }
                         this.renderPDFPage();
                         this.cancelAnnotation();
                     }
                 },
 
                 nextPage() {
-                    const step = this.pageMode === 'double' ? 2 : 1;
                     if (this.currentPage < this.numPages) {
-                        if (this.pageMode === 'double' && this.currentPage + 1 >= this.numPages) return;
-                        this.currentPage = Math.min(this.numPages, this.currentPage + step);
+                        if (this.pageMode === 'double') {
+                            if (this.currentPage === 1) {
+                                this.currentPage = 2;
+                            } else {
+                                if (this.currentPage + 1 >= this.numPages) return;
+                                this.currentPage = Math.min(this.numPages, this.currentPage + 2);
+                            }
+                        } else {
+                            this.currentPage = this.currentPage + 1;
+                        }
                         this.renderPDFPage();
                         this.cancelAnnotation();
                     }
@@ -1851,22 +1916,65 @@
                         return;
                     }
 
+                    let targetPage = this.currentPage;
                     let drawingData = null;
                     if (!this.editingAnnoId) {
-                        if (this.activeTool === 'freehand' && this.currentPoints.length > 0) {
+                        let finalPoints = null;
+                        let finalRect = null;
+                        let finalCanvasWidth = this.canvas.width;
+
+                        if (this.pageMode === 'double' && this.currentPage > 1) {
+                            // Determine which page the drawing belongs to based on the starting coordinate
+                            let isRightPage = false;
+                            if (this.activeTool === 'freehand' && this.currentPoints.length > 0) {
+                                isRightPage = this.currentPoints[0].x > (this.canvas.width / 2);
+                            } else if (this.activeTool === 'rectangle' && this.tempRect) {
+                                isRightPage = this.tempRect.x1 > (this.canvas.width / 2);
+                            }
+
+                            if (isRightPage) {
+                                targetPage = this.currentPage + 1;
+                                finalCanvasWidth = this.canvas.width / 2;
+                                const halfWidth = this.canvas.width / 2;
+                                
+                                if (this.activeTool === 'freehand') {
+                                    finalPoints = this.currentPoints.map(pt => ({
+                                        x: pt.x - halfWidth,
+                                        y: pt.y
+                                    }));
+                                } else if (this.activeTool === 'rectangle') {
+                                    finalRect = {
+                                        x1: this.tempRect.x1 - halfWidth,
+                                        y1: this.tempRect.y1,
+                                        x2: this.tempRect.x2 - halfWidth,
+                                        y2: this.tempRect.y2
+                                    };
+                                }
+                            } else {
+                                // Left page: store with half canvas width
+                                finalCanvasWidth = this.canvas.width / 2;
+                                finalPoints = this.currentPoints;
+                                finalRect = this.tempRect;
+                            }
+                        } else {
+                            finalPoints = this.currentPoints;
+                            finalRect = this.tempRect;
+                        }
+
+                        if (this.activeTool === 'freehand' && (finalPoints || this.currentPoints).length > 0) {
                             drawingData = JSON.stringify({
                                 type: 'freehand',
-                                points: this.currentPoints,
+                                points: finalPoints || this.currentPoints,
                                 color: this.strokeColor,
-                                canvasWidth: this.canvas.width,
+                                canvasWidth: finalCanvasWidth,
                                 canvasHeight: this.canvas.height
                             });
-                        } else if (this.activeTool === 'rectangle' && this.tempRect) {
+                        } else if (this.activeTool === 'rectangle' && (finalRect || this.tempRect)) {
                             drawingData = JSON.stringify({
                                 type: 'rectangle',
-                                rect: this.tempRect,
+                                rect: finalRect || this.tempRect,
                                 color: this.strokeColor,
-                                canvasWidth: this.canvas.width,
+                                canvasWidth: finalCanvasWidth,
                                 canvasHeight: this.canvas.height
                             });
                         }
@@ -1875,7 +1983,7 @@
                     const formData = new FormData();
                     formData.append('comment', commentHtml);
                     if (drawingData) formData.append('drawing_data', drawingData);
-                    formData.append('page_number', this.currentPage);
+                    formData.append('page_number', targetPage);
                     if (this.selectedAuthorId) formData.append('author_id', this.selectedAuthorId);
 
                     const fileInput = document.getElementById('attachmentInput');
@@ -1985,7 +2093,33 @@
                             this.ctx.lineCap = 'round';
                             this.ctx.lineJoin = 'round';
 
-                            const scaleX = this.canvas.width / parsed.canvasWidth;
+                            const isDoubleCanvas = parsed.canvasWidth > parsed.canvasHeight;
+                            
+                            let scaleX;
+                            let shiftX = 0;
+
+                            if (isDoubleCanvas) {
+                                // Legacy double canvas annotation
+                                scaleX = this.canvas.width / parsed.canvasWidth;
+                                if (this.pageMode === 'single') {
+                                    scaleX = this.canvas.width / (parsed.canvasWidth / 2);
+                                    const isRightPage = Number(anno.page_number) % 2 === 1;
+                                    if (isRightPage) {
+                                        shiftX = - (parsed.canvasWidth / 2) * scaleX;
+                                    }
+                                }
+                            } else {
+                                // Normalized annotation (saved relative to single page width)
+                                if (this.pageMode === 'double' && this.currentPage > 1) {
+                                    scaleX = (this.canvas.width / 2) / parsed.canvasWidth;
+                                    if (Number(anno.page_number) === Number(this.currentPage) + 1) {
+                                        shiftX = this.canvas.width / 2;
+                                    }
+                                } else {
+                                    scaleX = this.canvas.width / parsed.canvasWidth;
+                                }
+                            }
+
                             const scaleY = this.canvas.height / parsed.canvasHeight;
 
                             let boundMaxX = 0;
@@ -1993,10 +2127,6 @@
                             let boundMinY = 99999;
                             let boundMaxY = 0;
 
-                            let shiftX = 0;
-                            if (this.pageMode === 'double' && Number(anno.page_number) === Number(this.currentPage) + 1) {
-                                shiftX = this.canvas.width / 2;
-                            }
 
                             if (parsed.type === 'freehand') {
                                 this.ctx.beginPath();

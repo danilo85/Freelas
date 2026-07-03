@@ -74,40 +74,57 @@
 
     </div>
 
-    <!-- Filtros e Busca -->
-    <div class="flex flex-col sm:flex-row gap-4 items-center justify-between bg-white border border-slate-200 p-4 rounded-[5px] shadow-sm">
-        <form action="{{ route('revisoes.index') }}" method="GET" class="flex flex-col sm:flex-row gap-3 w-full">
-            <!-- Input Pesquisa -->
-            <div class="relative flex-1">
-                <span class="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none text-slate-400">
-                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
-                    </svg>
-                </span>
-                <input type="text" 
-                       name="search"
-                       value="{{ request('search') }}"
-                       placeholder="Buscar por título, subtítulo ou autor..." 
-                       class="w-full pl-10 pr-4 py-2.5 rounded-[5px] border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500 transition-all">
-            </div>
-
-            <!-- Filtro Status -->
-            <select name="status" class="py-2.5 px-4 rounded-[5px] border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500 transition-all bg-white min-w-[150px]">
-                <option value="">Todos os Status</option>
-                <option value="ativo" {{ request('status') === 'ativo' ? 'selected' : '' }}>Ativos</option>
-                <option value="arquivado" {{ request('status') === 'arquivado' ? 'selected' : '' }}>Arquivados</option>
-            </select>
-
-            <button type="submit" class="bg-slate-900 text-white font-bold text-xs uppercase tracking-wider px-6 py-2.5 rounded-[5px] hover:bg-slate-800 transition-all shadow-sm">
-                Filtrar
+    <!-- Busca e Filtros -->
+    <div class="bg-white border border-slate-200 p-4 rounded-[5px] shadow-sm select-none space-y-4">
+        <!-- Campo de Busca -->
+        <div class="relative w-full">
+            <span class="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none text-slate-400">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
+                </svg>
+            </span>
+            <input type="text" 
+                   x-model="searchQuery"
+                   placeholder="Buscar por título, subtítulo ou autor..." 
+                   class="w-full pl-10 pr-10 py-2.5 rounded-[5px] border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500 transition-all placeholder-slate-400">
+            <button type="button" 
+                    x-show="searchQuery" 
+                    @click="searchQuery = ''" 
+                    class="absolute inset-y-0 right-0 flex items-center pr-3 text-slate-400 hover:text-slate-655 cursor-pointer">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                </svg>
             </button>
+        </div>
+
+        <!-- Filtros Rápidos (Status) -->
+        <div class="flex flex-wrap items-center gap-2 text-xs">
+            <span class="text-[10px] font-bold text-slate-400 uppercase tracking-wider mr-1">Status:</span>
             
-            @if(request()->anyFilled(['search', 'status']))
-                <a href="{{ route('revisoes.index') }}" class="border border-slate-200 text-slate-500 hover:text-slate-800 flex items-center justify-center px-4 rounded-[5px] text-xs font-bold uppercase tracking-wider transition-all">
-                    Limpar
-                </a>
-            @endif
-        </form>
+            <!-- Todos -->
+            <button type="button" 
+                    @click="filterStatus = ''" 
+                    class="px-3.5 py-1.5 rounded-full text-xs font-bold transition-all cursor-pointer border uppercase tracking-wider focus:outline-none"
+                    :style="!filterStatus ? 'background-color: #0f172a; border-color: #0f172a; color: #ffffff;' : 'background-color: #f1f5f9; border-color: #e2e8f0; color: #475569;'">
+                Todos
+            </button>
+
+            <!-- Ativos -->
+            <button type="button" 
+                    @click="filterStatus = 'ativo'" 
+                    class="px-3.5 py-1.5 rounded-full text-xs font-bold transition-all cursor-pointer border uppercase tracking-wider focus:outline-none"
+                    :style="filterStatus === 'ativo' ? 'background-color: #10b981; border-color: #10b981; color: #ffffff;' : 'background-color: #ecfdf5; border-color: #d1fae5; color: #047857;'">
+                Ativos
+            </button>
+
+            <!-- Arquivados -->
+            <button type="button" 
+                    @click="filterStatus = 'arquivado'" 
+                    class="px-3.5 py-1.5 rounded-full text-xs font-bold transition-all cursor-pointer border uppercase tracking-wider focus:outline-none"
+                    :style="filterStatus === 'arquivado' ? 'background-color: #f59e0b; border-color: #f59e0b; color: #ffffff;' : 'background-color: #fffbeb; border-color: #fef3c7; color: #b45309;'">
+                Arquivados
+            </button>
+        </div>
     </div>
 
     <!-- Grid de Projetos de Revisão -->
@@ -142,7 +159,9 @@
                         $cardClass = 'bg-emerald-50/25 border-emerald-200';
                     }
                 @endphp
-                <div class="{{ $cardClass }} rounded-[5px] p-6 shadow-sm hover:shadow-md transition-all duration-200 flex flex-col justify-between relative overflow-hidden">
+                <div x-show="shouldShowRevision('{{ addslashes($rev->title) }}', '{{ addslashes($rev->subtitle) }}', '{{ addslashes($rev->author ? $rev->author->name : '') }}', '{{ $rev->status }}')"
+                     class="{{ $cardClass }} rounded-[5px] p-6 shadow-sm hover:shadow-md transition-all duration-200 flex flex-col justify-between relative overflow-hidden"
+                     x-transition>
                     
                     <!-- Stamp Carimbo Tudo Ok -->
                     @if($isAllOk)
@@ -232,62 +251,53 @@
                                 <span class="text-sm font-extrabold text-emerald-600 block mt-0.5">{{ $resolvedCount }}</span>
                             </div>
                         </div>
-
-                        <!-- Bloco de Compartilhamento -->
-                        <div x-data="{ 
-                            copied: false, 
-                            emailMessage: 'Revisão de Trabalho: {{ $rev->title }} - {{ now()->format('d/m/Y') }}\n\nOlá!\n\nSegue o link para revisão e anotações dos arquivos do projeto:\n\n{{ route('public.revisao.show', $rev->share_token) }}',
-                            whatsappMessage: 'Olá! Segue o link para a revisão de arquivos do projeto *{{ $rev->title }}* ({{ now()->format('d/m/Y') }}):\n\n{{ route('public.revisao.show', $rev->share_token) }}'
-                        }" class="space-y-1.5 pt-3 border-t border-slate-100">
-                            <div class="flex items-center justify-between">
-                                <span class="text-[9px] font-bold text-slate-400 uppercase tracking-widest">Copiar Mensagem</span>
-                                <span x-show="copied" x-cloak class="text-[9px] font-extrabold text-emerald-500 uppercase tracking-wider animate-pulse">📋 Copiado!</span>
-                            </div>
-                            <div class="grid grid-cols-2 gap-2">
-                                <!-- E-mail -->
-                                <button type="button"
-                                   @click="navigator.clipboard.writeText(emailMessage); copied = true; setTimeout(() => copied = false, 2000)"
-                                   class="inline-flex items-center justify-center py-2 px-3 bg-slate-50 hover:bg-slate-100 border border-slate-200 hover:border-slate-300 rounded-[5px] text-[10px] font-extrabold uppercase tracking-wider text-slate-600 hover:text-slate-800 transition-all gap-1.5 cursor-pointer"
-                                   title="Copiar texto formatado para E-mail">
-                                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"></path>
-                                    </svg>
-                                    Para E-mail
-                                </button>
-
-                                <!-- WhatsApp -->
-                                <button type="button"
-                                   @click="navigator.clipboard.writeText(whatsappMessage); copied = true; setTimeout(() => copied = false, 2000)"
-                                   class="inline-flex items-center justify-center py-2 px-3 bg-emerald-50 hover:bg-emerald-100 border border-emerald-250 hover:border-emerald-300 rounded-[5px] text-[10px] font-extrabold uppercase tracking-wider text-emerald-600 hover:text-emerald-755 transition-all gap-1.5 cursor-pointer"
-                                   title="Copiar texto formatado para WhatsApp">
-                                    <svg class="w-3.5 h-3.5 fill-current" viewBox="0 0 24 24">
-                                        <path d="M.057 24l1.687-6.163c-1.041-1.804-1.588-3.849-1.587-5.946C.06 5.348 5.397.01 12.008.01c3.202.001 6.212 1.246 8.477 3.514 2.266 2.268 3.507 5.28 3.505 8.484-.004 6.657-5.34 11.997-11.953 11.997-2.005-.001-3.973-.502-5.724-1.455L0 24zm6.59-4.846c1.6.95 3.188 1.449 4.825 1.451 5.436 0 9.86-4.42 9.864-9.852.002-2.632-1.023-5.105-2.89-6.973C16.48 1.813 14.006.788 11.375.788 5.94 1.788 1.517 6.212 1.513 11.643c-.001 1.645.499 3.244 1.447 4.82l-1.022 3.729 3.71-.973zm13.067-5.814c-.33-.165-1.951-.963-2.253-1.074-.302-.11-.522-.165-.742.165-.22.33-.852 1.074-1.045 1.294-.193.22-.385.247-.715.082-1.745-.873-2.906-1.534-4.053-2.513-.303-.258-.6-.566-.883-.912-.663-.82-.192-1.267.243-1.702.39-.39.852-1.018.962-1.267.112-.247.056-.467-.028-.632-.082-.165-.742-1.79-1.017-2.45-.267-.645-.526-.557-.742-.568-.19-.009-.413-.011-.632-.011-.22 0-.577.082-.88.413-.302.33-1.155 1.128-1.155 2.75s1.182 3.193 1.347 3.413c.165.22 2.328 3.555 5.637 4.982 2.756 1.19 3.844 1.272 5.228 1.066.828-.124 2.252-.92 2.57-1.815.318-.894.318-1.66.223-1.815-.094-.165-.357-.275-.712-.44z"/>
-                                    </svg>
-                                    Para WhatsApp
-                                </button>
-                            </div>
-                        </div>
                     </div>
 
                     <!-- Rodapé do Card: Ações -->
-                    <div class="flex items-center gap-2 mt-6 pt-4 border-t border-slate-100">
+                    <div class="flex items-center gap-2 mt-6 pt-4 border-t border-slate-100"
+                         x-data="{ 
+                             copied: false,
+                             shareMessage: 'Olá! Segue o link para a revisão de arquivos do projeto *{{ $rev->title }}*:\n\n{{ route('public.revisao.show', $rev->share_token) }}'
+                         }">
                         <a href="{{ route('revisoes.show', $rev->id) }}" class="flex-1 text-center bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs uppercase tracking-wider py-2.5 rounded-[5px] transition-all shadow-sm shadow-blue-500/10">
                             Ver Linha do Tempo
                         </a>
-                        
-                        <form action="{{ route('revisoes.destroy', $rev->id) }}" method="POST" onsubmit="return confirm('Deseja realmente excluir este projeto de revisão de arquivos e todas as suas rodadas?')" class="inline">
-                            @csrf
-                            @method('DELETE')
-                            <button type="submit" class="border border-slate-200 text-rose-600 hover:bg-rose-50 p-2.5 rounded-[5px] transition-all" title="Excluir Projeto de Revisão">
+
+                        <!-- Copiar Link de Revisão -->
+                        <button type="button" 
+                                @click="navigator.clipboard.writeText(shareMessage); copied = true; setTimeout(() => copied = false, 2000)"
+                                class="w-8 h-8 flex items-center justify-center rounded-[5px] transition-all border-0 shadow-none bg-transparent cursor-pointer"
+                                :class="copied ? 'text-emerald-600 bg-emerald-50' : 'text-slate-500 hover:bg-slate-50'"
+                                :title="copied ? 'Copiado!' : 'Copiar Link de Revisão'">
+                            <span x-show="!copied">
                                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1"></path>
                                 </svg>
-                            </button>
-                        </form>
+                            </span>
+                            <span x-show="copied" x-cloak class="font-extrabold text-emerald-600">✓</span>
+                        </button>
+                        
+                        <button type="button" 
+                                @click="$dispatch('trigger-global-delete', { title: 'Excluir Projeto de Revisão', message: 'Deseja realmente excluir este projeto de revisão de arquivos e todas as suas rodadas?', action: '{{ route('revisoes.destroy', $rev->id) }}', highSecurity: false })"
+                                class="w-8 h-8 flex items-center justify-center bg-transparent border-0 shadow-none text-rose-600 hover:bg-rose-50 rounded-[5px] transition-all cursor-pointer" 
+                                title="Excluir Projeto de Revisão">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
+                            </svg>
+                        </button>
                     </div>
 
                 </div>
             @endforeach
+        </div>
+
+        <!-- Estado de Filtro Vazio (Client-side) -->
+        <div x-show="revisionsList.filter(r => shouldShowRevision(r.title, r.subtitle, r.author ? r.author.name : '', r.status)).length === 0 && revisionsList.length > 0" 
+             class="text-center py-12 bg-white border border-slate-200 rounded-[5px] shadow-sm select-none" 
+             x-cloak>
+            <span class="text-5xl block">🔍</span>
+            <h3 class="font-outfit font-black text-slate-800 text-md uppercase tracking-tight mt-4">Nenhum projeto de revisão corresponde à busca</h3>
+            <p class="text-xs text-slate-400 mt-1">Experimente limpar a sua busca ou trocar as tags selecionadas.</p>
         </div>
     @endif
 
@@ -401,6 +411,31 @@
             selectedAuthor: '',
             projects: [],
             loadingProjects: false,
+
+            // Filter states
+            searchQuery: '{{ request('search', '') }}',
+            filterStatus: '{{ request('status', '') }}',
+            revisionsList: {!! json_encode($revisions->map(function($r) {
+                return [
+                    'id' => $r->id,
+                    'title' => $r->title,
+                    'subtitle' => $r->subtitle,
+                    'status' => $r->status,
+                    'author' => $r->author ? ['name' => $r->author->name] : null
+                ];
+            })) !!},
+
+            shouldShowRevision(title, subtitle, authorName, status) {
+                if (this.filterStatus && status !== this.filterStatus) return false;
+                if (this.searchQuery) {
+                    const q = this.searchQuery.toLowerCase();
+                    const t = (title || '').toLowerCase();
+                    const sub = (subtitle || '').toLowerCase();
+                    const auth = (authorName || '').toLowerCase();
+                    return t.includes(q) || sub.includes(q) || auth.includes(q);
+                }
+                return true;
+            },
 
             loadAuthorProjects() {
                 if (!this.selectedAuthor) {

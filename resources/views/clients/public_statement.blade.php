@@ -101,7 +101,7 @@
                         <div class="p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-4 hover:bg-slate-50/50 transition-colors">
                             <div class="space-y-1">
                                 <h4 class="font-bold text-slate-800 text-lg">{{ $project->title }}</h4>
-                                <p class="text-sm text-slate-500 line-clamp-2 leading-relaxed">{{ $project->description ?? 'Sem descrição fornecida.' }}</p>
+                                <p class="text-sm text-slate-500 line-clamp-2 leading-relaxed">{{ strip_tags($project->description) ?: 'Sem descrição fornecida.' }}</p>
                                 <span class="text-xs text-slate-400 block font-semibold uppercase tracking-wider">Aprovado em: {{ $project->updated_at->format('d/m/Y') }}</span>
                             </div>
 
@@ -152,7 +152,7 @@
                                         <span class="uppercase tracking-wider">Método: {{ $payment->payment_method ?? 'Transferência' }}</span>
                                         @if($payment->observations)
                                             <span>•</span>
-                                            <span class="normal-case font-medium italic text-slate-500 truncate max-w-[200px]" title="{{ $payment->observations }}">{{ $payment->observations }}</span>
+                                            <span class="normal-case font-medium italic text-slate-500 truncate max-w-[200px]" title="{{ strip_tags($payment->observations) }}">{{ strip_tags($payment->observations) }}</span>
                                         @endif
                                     </div>
                                 </div>

@@ -93,66 +93,96 @@
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z"></path>
                 </svg>
             </div>
+    </div>
+</div>
+
+    <!-- Busca e Filtros -->
+    <div class="bg-white border border-slate-200 p-4 rounded-[5px] shadow-sm select-none space-y-4">
+        
+        <!-- Campo de Busca -->
+        <div class="relative w-full">
+            <span class="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none text-slate-400">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
+                </svg>
+            </span>
+            <input type="text" 
+                   x-model="searchQuery"
+                   placeholder="Buscar por título, descrição ou tecnologia..." 
+                   class="w-full pl-9 pr-10 py-2.5 rounded-[5px] border border-slate-200 text-xs focus:outline-none focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500 transition-all placeholder-slate-400">
+            <button type="button" 
+                    x-show="searchQuery" 
+                    @click="searchQuery = ''" 
+                    class="absolute inset-y-0 right-0 flex items-center pr-3 text-slate-400 hover:text-slate-655 cursor-pointer">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                </svg>
+            </button>
         </div>
 
-    </div>
+        <!-- Filtros Rápidos (Categorias e Status) -->
+        <div class="space-y-3">
+            <!-- Categorias -->
+            <div class="flex flex-wrap items-center gap-2 text-xs">
+                <span class="text-[10px] font-bold text-slate-400 uppercase tracking-wider mr-1">Categoria:</span>
+                
+                <!-- Todas Categorias -->
+                <button type="button" 
+                        @click="filterCategoryId = ''" 
+                        class="px-3 py-1 rounded-full text-[11px] font-bold transition-all cursor-pointer border uppercase tracking-wider focus:outline-none"
+                        :style="!filterCategoryId ? 'background-color: #0f172a; border-color: #0f172a; color: #ffffff;' : 'background-color: #f1f5f9; border-color: #e2e8f0; color: #475569;'">
+                    Todas
+                </button>
 
-    <!-- Filtros e Busca -->
-    <div class="bg-white border border-slate-200 p-4 rounded-[5px] shadow-sm">
-        <form action="{{ route('portfolio.index') }}" method="GET" class="grid grid-cols-1 sm:grid-cols-12 gap-4 items-center">
-            <!-- Campo de Busca -->
-            <div class="relative sm:col-span-6 w-full">
-                <span class="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none text-slate-400">
-                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
-                    </svg>
-                </span>
-                <input type="text" 
-                       name="search" 
-                       value="{{ request('search') }}"
-                       placeholder="Buscar por título, descrição ou tecnologia..." 
-                       class="w-full pl-9 pr-4 py-2 rounded-[5px] border border-slate-200 text-xs focus:outline-none focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500 transition-all placeholder-slate-400">
+                @foreach($categories as $cat)
+                    <!-- Category specific button -->
+                    <button type="button" 
+                            @click="filterCategoryId = '{{ $cat->id }}'" 
+                            class="px-3 py-1 rounded-full text-[11px] font-bold transition-all cursor-pointer border uppercase tracking-wider focus:outline-none"
+                            :style="filterCategoryId == '{{ $cat->id }}' ? 'background-color: #2563eb; border-color: #2563eb; color: #ffffff;' : 'background-color: #eff6ff; border-color: #dbeafe; color: #1d4ed8;'">
+                        {{ $cat->name }}
+                    </button>
+                @endforeach
             </div>
 
-            <!-- Categoria Select -->
-            <div class="sm:col-span-3 w-full">
-                <select name="category_id" 
-                        onchange="this.form.submit()"
-                        class="w-full px-3 py-2 rounded-[5px] border border-slate-200 text-xs focus:outline-none focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500 transition-all bg-white text-slate-700">
-                    <option value="">Todas as Categorias</option>
-                    @foreach($categories as $cat)
-                        <option value="{{ $cat->id }}" {{ request('category_id') == $cat->id ? 'selected' : '' }}>
-                            {{ $cat->name }}
-                        </option>
-                    @endforeach
-                </select>
-            </div>
+            <!-- Status -->
+            <div class="flex flex-wrap items-center gap-2 text-xs">
+                <span class="text-[10px] font-bold text-slate-400 uppercase tracking-wider mr-1">Status:</span>
+                
+                <!-- Todos Status -->
+                <button type="button" 
+                        @click="filterStatus = ''" 
+                        class="px-3 py-1 rounded-full text-[11px] font-bold transition-all cursor-pointer border uppercase tracking-wider focus:outline-none"
+                        :style="!filterStatus ? 'background-color: #0f172a; border-color: #0f172a; color: #ffffff;' : 'background-color: #f1f5f9; border-color: #e2e8f0; color: #475569;'">
+                    Todos
+                </button>
 
-            <!-- Status Select -->
-            <div class="sm:col-span-2 w-full">
-                <select name="status" 
-                        onchange="this.form.submit()"
-                        class="w-full px-3 py-2 rounded-[5px] border border-slate-200 text-xs focus:outline-none focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500 transition-all bg-white text-slate-700">
-                    <option value="">Todos os Status</option>
-                    <option value="publicado" {{ request('status') === 'publicado' ? 'selected' : '' }}>Publicado</option>
-                    <option value="rascunho" {{ request('status') === 'rascunho' ? 'selected' : '' }}>Rascunho</option>
-                </select>
-            </div>
+                <!-- Publicados -->
+                <button type="button" 
+                        @click="filterStatus = 'publicado'" 
+                        class="px-3 py-1 rounded-full text-[11px] font-bold transition-all cursor-pointer border uppercase tracking-wider focus:outline-none"
+                        :style="filterStatus === 'publicado' ? 'background-color: #10b981; border-color: #10b981; color: #ffffff;' : 'background-color: #ecfdf5; border-color: #d1fae5; color: #047857;'">
+                    Publicados
+                </button>
 
-            <!-- Limpar Filtros -->
-            <div class="sm:col-span-1 w-full text-right">
-                <a href="{{ route('portfolio.index') }}" 
-                   class="w-full inline-flex items-center justify-center py-2 px-3 bg-slate-100 hover:bg-slate-200 text-slate-650 text-xs font-semibold rounded-[5px] transition-colors shadow-sm text-center">
-                    Limpar
-                </a>
+                <!-- Rascunhos -->
+                <button type="button" 
+                        @click="filterStatus = 'rascunho'" 
+                        class="px-3 py-1 rounded-full text-[11px] font-bold transition-all cursor-pointer border uppercase tracking-wider focus:outline-none"
+                        :style="filterStatus === 'rascunho' ? 'background-color: #f59e0b; border-color: #f59e0b; color: #ffffff;' : 'background-color: #fffbeb; border-color: #fef3c7; color: #b45309;'">
+                    Rascunhos
+                </button>
             </div>
-        </form>
+        </div>
+
     </div>
 
     <!-- Grid de Trabalhos -->
     <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
         @forelse($items as $item)
-            <div class="bg-white border border-slate-200 rounded-[5px] overflow-hidden shadow-sm flex flex-col justify-between hover:shadow-md transition-shadow duration-200 relative group">
+            <div x-show="shouldShowItem('{{ addslashes($item->title) }}', '{{ addslashes(strip_tags($item->description)) }}', '{{ addslashes($item->technologies) }}', '{{ $item->category_id }}', '{{ $item->status }}')"
+                 class="bg-white border border-slate-200 rounded-[5px] overflow-hidden shadow-sm flex flex-col justify-between hover:shadow-md transition-shadow duration-200 relative group"
+                 x-transition>
                 
                 <!-- Thumb / Imagem Principal -->
                 <div class="relative aspect-video bg-slate-100 overflow-hidden shrink-0">
@@ -305,6 +335,15 @@
         @endforelse
     </div>
 
+    <!-- Estado de Filtro Vazio (Client-side) -->
+    <div x-show="itemsList.filter(i => shouldShowItem(i.title, i.description, i.technologies, i.category_id, i.status)).length === 0 && itemsList.length > 0" 
+         class="text-center py-12 bg-white border border-slate-200 rounded-[5px] shadow-sm select-none" 
+         x-cloak>
+        <span class="text-5xl block">🔍</span>
+        <h3 class="font-outfit font-black text-slate-800 text-md uppercase tracking-tight mt-4">Nenhum trabalho corresponde à busca</h3>
+        <p class="text-xs text-slate-400 mt-1">Experimente limpar a sua busca ou trocar as tags selecionadas.</p>
+    </div>
+
     <!-- Botão Flutuante Redondo (FAB) -->
     <a href="{{ route('portfolio.create') }}" 
        class="fixed bottom-8 right-8 z-40 w-14 h-14 bg-primary-600 hover:bg-primary-700 text-white rounded-full flex items-center justify-center shadow-lg hover:shadow-xl transition-all focus:outline-none focus:ring-4 focus:ring-primary-500/30" 
@@ -318,7 +357,26 @@
 
 <script>
     function portfolioList() {
-        return {}
+        return {
+            itemsList: @json($items),
+            searchQuery: '{{ request('search', '') }}',
+            filterCategoryId: '{{ request('category_id', '') }}',
+            filterStatus: '{{ request('status', '') }}',
+
+            shouldShowItem(title, description, technologies, categoryId, status) {
+                if (this.filterCategoryId && categoryId != this.filterCategoryId) return false;
+                if (this.filterStatus && status !== this.filterStatus) return false;
+                
+                if (this.searchQuery) {
+                    const q = this.searchQuery.toLowerCase();
+                    const t = (title || '').toLowerCase();
+                    const d = (description || '').toLowerCase();
+                    const tech = (technologies || '').toLowerCase();
+                    return t.includes(q) || d.includes(q) || tech.includes(q);
+                }
+                return true;
+            }
+        }
     }
 </script>
 @endsection

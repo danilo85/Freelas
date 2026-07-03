@@ -437,6 +437,14 @@ class FinanceController extends Controller
             'paid_at' => $newStatus === 'pago' ? Carbon::now()->toDateString() : null,
         ]);
 
+        if (request()->wantsJson() || request()->ajax()) {
+            return response()->json([
+                'success' => true,
+                'status' => $newStatus,
+                'paid_at' => $transaction->paid_at ? Carbon::parse($transaction->paid_at)->format('d/m/Y') : '-'
+            ]);
+        }
+
         return back()->with('success', 'Status da transação atualizado com sucesso!');
     }
 

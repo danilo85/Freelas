@@ -302,6 +302,7 @@
       x-data="layoutState()"
       @scroll.window="scrolled = window.scrollY > 10"
       @trigger-global-delete.window="initGlobalDeleteListener($event)"
+      @trigger-global-preview.window="initGlobalPreviewListener($event)"
       @touchstart.window="handleTouchStart($event)"
       @touchend.window="handleTouchEnd($event)">
 
@@ -340,31 +341,15 @@
             </a>
 
             <!-- Link/Aba de Administração (Apenas Master) -->
+            <!-- Link de Administração (Apenas Master) -->
             @if(auth()->check() && auth()->user()->isMaster())
-                <div x-data="{ open: {{ (request()->routeIs('users.*') || request()->routeIs('admin.settings.*') || request()->routeIs('portfolio.settings')) ? 'true' : 'false' }} }" class="space-y-1">
-                    <button @click="open = !open" class="flex items-center justify-between w-full px-4 py-2.5 rounded-[5px] text-sm font-medium transition-colors text-slate-400 hover:text-white hover:bg-slate-800 focus:outline-none" :class="open ? 'text-white bg-slate-800/50' : ''">
-                        <div class="flex items-center gap-3">
-                            <svg class="w-5 h-5 {{ (request()->routeIs('users.*') || request()->routeIs('admin.settings.*') || request()->routeIs('portfolio.settings')) ? 'text-primary-500' : 'text-slate-400' }}" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4"></path>
-                            </svg>
-                            Administração
-                        </div>
-                        <svg class="w-3 h-3 text-slate-400 transition-transform duration-200" :class="open ? 'rotate-180' : ''" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
-                        </svg>
-                    </button>
-                    <div x-show="open" class="pl-9 space-y-1" style="display: none;" :style="open ? 'display: block;' : 'display: none;'">
-                        <a href="{{ route('portfolio.settings') }}" class="block py-2 px-3 text-xs font-semibold rounded-[5px] transition-colors {{ request()->routeIs('portfolio.settings') ? 'text-white bg-slate-850' : 'text-slate-400 hover:text-white' }}">
-                            Perfil
-                        </a>
-                        <a href="{{ route('admin.settings.index') }}" class="block py-2 px-3 text-xs font-semibold rounded-[5px] transition-colors {{ request()->routeIs('admin.settings.*') ? 'text-white bg-slate-850' : 'text-slate-400 hover:text-white' }}">
-                            Configurações Gerais
-                        </a>
-                        <a href="{{ route('users.index') }}" class="block py-2 px-3 text-xs font-semibold rounded-[5px] transition-colors {{ request()->routeIs('users.*') ? 'text-white bg-slate-850' : 'text-slate-400 hover:text-white' }}">
-                            Gerenciar Equipe
-                        </a>
-                    </div>
-                </div>
+                <a href="{{ route('admin.settings.index') }}" 
+                   class="flex items-center gap-3 px-4 py-2.5 rounded-[5px] text-sm font-medium transition-colors {{ (request()->routeIs('admin.settings.*') || request()->routeIs('users.*')) ? 'text-white bg-slate-800' : 'text-slate-400 hover:text-white hover:bg-slate-800' }}">
+                    <svg class="w-5 h-5 {{ (request()->routeIs('admin.settings.*') || request()->routeIs('users.*')) ? 'text-primary-500' : 'text-slate-400' }}" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4"></path>
+                    </svg>
+                    Administração
+                </a>
             @endif
 
             <!-- Pasta: Projetos e Contatos -->
@@ -423,10 +408,10 @@
 
             @if(auth()->check() && auth()->user()->isMaster())
                 <!-- Dropdown: Portfólio -->
-                <div x-data="{ open: {{ (request()->routeIs('portfolio.*') || request()->routeIs('portfolio-categories.*')) && !request()->routeIs('portfolio.settings') ? 'true' : 'false' }} }" class="space-y-1">
+                <div x-data="{ open: {{ (request()->routeIs('portfolio.*') || request()->routeIs('portfolio-categories.*') || request()->routeIs('portfolio.settings')) ? 'true' : 'false' }} }" class="space-y-1">
                     <button @click="open = !open" class="flex items-center justify-between w-full px-4 py-2.5 rounded-[5px] text-sm font-medium transition-colors text-slate-400 hover:text-white hover:bg-slate-800 focus:outline-none" :class="open ? 'text-white bg-slate-800/50' : ''">
                         <div class="flex items-center gap-3">
-                            <svg class="w-5 h-5 {{ (request()->routeIs('portfolio.*') || request()->routeIs('portfolio-categories.*')) && !request()->routeIs('portfolio.settings') ? 'text-primary-500' : 'text-slate-400' }}" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <svg class="w-5 h-5 {{ (request()->routeIs('portfolio.*') || request()->routeIs('portfolio-categories.*') || request()->routeIs('portfolio.settings')) ? 'text-primary-500' : 'text-slate-400' }}" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
                             </svg>
                             Portfólio
@@ -444,6 +429,9 @@
                         </a>
                         <a href="{{ route('portfolio.pipeline') }}" class="block py-2 px-3 text-xs font-semibold rounded-[5px] transition-colors {{ request()->routeIs('portfolio.pipeline') ? 'text-white bg-slate-850' : 'text-slate-400 hover:text-white' }}">
                             Pipeline
+                        </a>
+                        <a href="{{ route('portfolio.settings') }}" class="block py-2 px-3 text-xs font-semibold rounded-[5px] transition-colors {{ request()->routeIs('portfolio.settings') ? 'text-white bg-slate-850' : 'text-slate-400 hover:text-white' }}">
+                            Configurações do Portfólio
                         </a>
                     </div>
                 </div>
@@ -463,8 +451,17 @@
                         </svg>
                     </button>
                     <div x-show="open" class="pl-9 space-y-1" style="display: none;" :style="open ? 'display: block;' : 'display: none;'">
-                        <a href="{{ route('revisoes.index') }}" class="block py-2 px-3 text-xs font-semibold rounded-[5px] transition-colors {{ request()->routeIs('revisoes.*') ? 'text-white bg-slate-850' : 'text-slate-400 hover:text-white' }}">
+                        <a href="{{ route('revisoes.index') }}" class="block py-2 px-3 text-xs font-semibold rounded-[5px] transition-colors {{ request()->routeIs('revisoes.index') || request()->routeIs('revisoes.show') ? 'text-white bg-slate-850' : 'text-slate-400 hover:text-white' }}">
                             Revisão de Trabalhos
+                        </a>
+                        <a href="{{ route('revisoes.shares.index') }}" class="block py-2 px-3 text-xs font-semibold rounded-[5px] transition-colors {{ request()->routeIs('revisoes.shares.*') ? 'text-white bg-slate-850' : 'text-slate-400 hover:text-white' }}">
+                            Compartilhar Arquivos
+                        </a>
+                        <a href="{{ route('revisoes.assets.index') }}" class="block py-2 px-3 text-xs font-semibold rounded-[5px] transition-colors {{ request()->routeIs('revisoes.assets.*') ? 'text-white bg-slate-850' : 'text-slate-400 hover:text-white' }}">
+                            Banco de Assets
+                        </a>
+                        <a href="{{ route('lembretes.index') }}" class="block py-2 px-3 text-xs font-semibold rounded-[5px] transition-colors {{ request()->routeIs('lembretes.*') ? 'text-white bg-slate-850' : 'text-slate-400 hover:text-white' }}">
+                            Lembretes e Notas
                         </a>
                     </div>
                 </div>
@@ -650,6 +647,143 @@
         </div>
     </div>
 
+    <!-- Modal de Visualização Premium Global (Preview Lightbox) -->
+    <div x-show="previewModalOpen" 
+         class="fixed inset-0 z-[99999] overflow-y-auto bg-slate-900/60 backdrop-blur-sm p-4 flex justify-center items-start md:items-center animate-fade-in"
+         x-transition.opacity
+         x-cloak>
+        <div class="bg-white border border-slate-250 shadow-2xl rounded-lg max-w-4xl w-full p-6 space-y-4 text-left select-none relative animate-scale-up" @click.away="previewModalOpen = false">
+            
+            <div class="flex items-center justify-between border-b border-slate-100 pb-3">
+                <div class="flex items-center gap-2">
+                    <span class="text-xs font-extrabold uppercase px-1.5 py-0.5 rounded-[3px]"
+                          :class="previewAsset.type === 'imagem' ? 'bg-emerald-50 text-emerald-600' : (previewAsset.type === 'fonte' ? 'bg-purple-50 text-purple-600' : (previewAsset.type === 'codigo' ? 'bg-blue-50 text-blue-600' : 'bg-amber-50 text-amber-600'))"
+                          x-text="previewAsset.type"></span>
+                    <h3 class="font-outfit font-black text-slate-800 text-md uppercase tracking-tight text-slate-850" x-text="previewAsset.title"></h3>
+                </div>
+                <button @click="previewModalOpen = false" class="text-slate-400 hover:text-slate-650 transition-colors">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                    </svg>
+                </button>
+            </div>
+
+            <!-- Modal Content Area -->
+            <div class="overflow-y-auto max-h-[70vh] space-y-4 pr-1">
+                
+                <!-- PREVIEW: IMAGEM -->
+                <div x-show="previewAsset.type === 'imagem'" class="space-y-4">
+                    <div class="bg-slate-150 border border-slate-200 rounded-[5px] p-4 flex items-center justify-center max-h-[45vh] overflow-auto select-none cursor-grab active:cursor-grabbing">
+                        <img :src="previewAsset.file_path ? '{{ asset('storage') }}/' + previewAsset.file_path : ''" 
+                             class="max-h-[40vh] object-contain rounded shadow-sm"
+                             :style="`transform: scale(${imageZoom}); transition: transform 0.15s ease-out; transform-origin: center center;`"
+                             @load="getImageDetails($event); imageZoom = 1;" />
+                    </div>
+
+                    <!-- Zoom Control Bar -->
+                    <div class="flex items-center justify-center gap-4 bg-slate-50 border border-slate-200 rounded-[5px] py-2 px-4 text-xs font-bold text-slate-500 max-w-xs mx-auto">
+                        <span>🔍 Zoom: <span x-text="Math.round(imageZoom * 100) + '%'" class="text-slate-700 font-extrabold"></span></span>
+                        <input type="range" min="0.5" max="3" step="0.1" x-model="imageZoom" class="w-28 accent-primary-600 cursor-pointer" />
+                        <button type="button" @click="imageZoom = 1" class="text-slate-400 hover:text-slate-700 transition-colors uppercase font-black text-[9px]">Reset</button>
+                    </div>
+
+                    <!-- Metadata Info -->
+                    <div class="grid grid-cols-2 sm:grid-cols-4 gap-4 text-center border-t border-slate-100 pt-4">
+                        <div class="bg-slate-50 p-2.5 rounded-[5px] border border-slate-100">
+                            <span class="text-[9px] font-bold text-slate-455 uppercase tracking-wider block">Dimensões</span>
+                            <span class="text-xs font-black text-slate-700 mt-1 block" x-text="imageDimensions">Carregando...</span>
+                        </div>
+                        <div class="bg-slate-50 p-2.5 rounded-[5px] border border-slate-100">
+                            <span class="text-[9px] font-bold text-slate-455 uppercase tracking-wider block">Tamanho</span>
+                            <span class="text-xs font-black text-slate-700 mt-1 block" x-text="formatBytes(previewAsset.file_size)"></span>
+                        </div>
+                        <div class="bg-slate-50 p-2.5 rounded-[5px] border border-slate-100">
+                            <span class="text-[9px] font-bold text-slate-455 uppercase tracking-wider block">Formato</span>
+                            <span class="text-xs font-black text-slate-700 mt-1 block uppercase" x-text="previewAsset.mime_type ? previewAsset.mime_type.split('/').pop() : ''"></span>
+                        </div>
+                        <div class="bg-slate-50 p-2.5 rounded-[5px] border border-slate-100">
+                            <span class="text-[9px] font-bold text-slate-455 uppercase tracking-wider block">Enviado em</span>
+                            <span class="text-xs font-black text-slate-700 mt-1 block" x-text="formatDate(previewAsset.created_at)"></span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- PREVIEW: FONTE (Google Fonts-like Tester) -->
+                <div x-show="previewAsset.type === 'fonte'" class="space-y-4" x-data="{ fontText: 'O freela do seu jeito. Organizado e prático.', fontSize: 32 }">
+                    <div class="bg-slate-50 border border-slate-200 p-4 rounded-[5px] space-y-4">
+                        <!-- Controls -->
+                        <div class="flex flex-col sm:flex-row gap-4 items-center justify-between border-b border-slate-150 pb-3">
+                            <!-- Custom Text Input -->
+                            <div class="w-full sm:flex-1">
+                                <input type="text" x-model="fontText" class="w-full border-0 bg-transparent text-sm font-bold text-slate-700 placeholder-slate-400 focus:outline-none" placeholder="Digite um texto customizado para testar..." />
+                            </div>
+                            <!-- Size Slider -->
+                            <div class="flex items-center gap-3 w-full sm:w-auto shrink-0">
+                                <span class="text-[10px] font-bold text-slate-405 uppercase tracking-wider">Tamanho: <span x-text="fontSize + 'px'" class="text-slate-700 font-extrabold"></span></span>
+                                <input type="range" min="12" max="72" x-model="fontSize" class="w-24 accent-primary-600 cursor-pointer" />
+                            </div>
+                        </div>
+                        
+                        <!-- Font Sample Display -->
+                        <div class="py-8 px-4 overflow-x-hidden min-h-[120px] bg-white border border-slate-100 rounded-[5px] flex items-center justify-start">
+                            <p :style="`font-family: font_preview_${previewAsset.id}; font-size: ${fontSize}px;`" 
+                               class="text-slate-800 break-words w-full" 
+                               x-text="fontText"></p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- PREVIEW: CODIGO (Code Editor view) -->
+                <div x-show="previewAsset.type === 'codigo'" class="space-y-3" x-data="{ copyStatus: false }">
+                    <div class="flex items-center justify-between text-xs">
+                        <span class="text-slate-455 font-bold uppercase tracking-wider font-mono bg-slate-100 px-2 py-1 rounded border border-slate-200" x-text="previewAsset.file_path ? previewAsset.file_path.split('.').pop().toUpperCase() : 'SNIPPET'"></span>
+                        <button type="button" 
+                                @click="navigator.clipboard.writeText(previewAsset.code_snippet); copyStatus = true; setTimeout(() => copyStatus = false, 2000)"
+                                class="bg-slate-900 hover:bg-slate-800 text-white font-bold text-xs uppercase tracking-wider px-3.5 py-1.5 rounded-[5px] transition-colors cursor-pointer"
+                                x-text="copyStatus ? '✓ Copiado!' : '📋 Copiar Código'"></button>
+                    </div>
+                    
+                    <div class="flex bg-[#282c34] border border-[#181a1f] rounded-[5px] font-mono text-xs max-h-[50vh] overflow-y-auto select-text">
+                        <!-- Line Numbers Gutter -->
+                        <div class="bg-[#21252b] text-slate-500 px-3 py-4 text-right border-r border-[#181a1f] select-none min-w-[3rem] leading-5">
+                            <template x-for="(line, idx) in (previewAsset.code_snippet || '').split('\n')">
+                                <div x-text="idx + 1" class="h-5 text-[10px]"></div>
+                            </template>
+                        </div>
+                        <!-- Code container -->
+                        <pre class="p-4 overflow-x-auto flex-1 leading-5 bg-transparent m-0"><code class="hljs bg-transparent p-0 select-text" x-text="previewAsset.code_snippet" x-ref="previewCodeBlock"></code></pre>
+                    </div>
+                </div>
+
+                <!-- PREVIEW: VIDEO / PLAYER -->
+                <template x-if="isVideoAsset(previewAsset)">
+                    <div class="space-y-4">
+                        <div class="bg-slate-950 border border-slate-900 rounded-[5px] overflow-hidden flex items-center justify-center max-h-[50vh] relative select-none">
+                            <video :src="previewAsset.file_path ? '{{ asset('storage') }}/' + previewAsset.file_path : ''" 
+                                   controls 
+                                   autoplay
+                                   class="max-h-[48vh] w-full object-contain"></video>
+                        </div>
+                    </div>
+                </template>
+
+                <!-- PREVIEW: OUTROS ARQUIVOS -->
+                <div x-show="previewAsset.type === 'arquivo' && !isVideoAsset(previewAsset)" class="p-8 text-center bg-slate-50 border border-slate-200 rounded-[5px] space-y-4">
+                    <span class="text-6xl block">📄</span>
+                    <h4 class="font-outfit font-black text-slate-800 text-base text-slate-850" x-text="previewAsset.title"></h4>
+                    <div class="text-xs text-slate-455 font-medium space-y-1">
+                        <p>Tipo de Arquivo: <span class="font-bold text-slate-600 uppercase" x-text="previewAsset.mime_type || 'Desconhecido'"></span></p>
+                        <p>Tamanho: <span class="font-bold text-slate-600" x-text="formatBytes(previewAsset.file_size)"></span></p>
+                    </div>
+                    <a :href="'{{ url('admin/utilidades/assets') }}/' + previewAsset.id + '/download'" class="inline-flex items-center gap-2 bg-slate-900 hover:bg-slate-800 text-white font-bold text-xs uppercase tracking-wider px-6 py-3 rounded-[5px] transition-colors">
+                        📥 Baixar Arquivo
+                    </a>
+                </div>
+
+            </div>
+        </div>
+    </div>
+
     <!-- Script de Estado do Layout Base (Drawer + Gestos) -->
     <script>
         function layoutState() {
@@ -679,6 +813,62 @@
                 globalDeleteAction: '',
                 globalDeleteHighSecurity: false,
                 globalDeleteConfirmInput: '',
+
+                // Visualizador Premium Global (Assets Lightbox)
+                previewModalOpen: false,
+                previewAsset: {},
+                imageDimensions: 'Calculando...',
+                imageZoom: 1,
+
+                initGlobalPreviewListener(event) {
+                    this.previewAsset = event.detail.asset;
+                    this.imageDimensions = 'Calculando...';
+                    this.imageZoom = 1;
+                    this.previewModalOpen = true;
+
+                    if (this.previewAsset.type === 'codigo') {
+                        this.$nextTick(() => {
+                            if (window.hljs) {
+                                const codeBlock = this.$refs.previewCodeBlock;
+                                if (codeBlock) {
+                                    codeBlock.className = 'hljs bg-transparent p-0 select-text';
+                                    const ext = this.previewAsset.file_path 
+                                        ? this.previewAsset.file_path.split('.').pop().toLowerCase() 
+                                        : (this.previewAsset.title.includes('.') ? this.previewAsset.title.split('.').pop().toLowerCase() : '');
+                                    if (ext) {
+                                        codeBlock.classList.add('language-' + ext);
+                                    }
+                                    hljs.highlightElement(codeBlock);
+                                }
+                            }
+                        });
+                    }
+                },
+
+                getImageDetails(e) {
+                    this.imageDimensions = e.target.naturalWidth + ' × ' + e.target.naturalHeight + ' px';
+                },
+
+                isVideoAsset(asset) {
+                    if (!asset || !asset.file_path) return false;
+                    const ext = asset.file_path.split('.').pop().toLowerCase();
+                    const videoExtensions = ['mp4', 'webm', 'ogg', 'mov'];
+                    return videoExtensions.includes(ext) || (asset.mime_type && asset.mime_type.startsWith('video/'));
+                },
+
+                formatBytes(bytes) {
+                    if (!bytes) return '0 B';
+                    const k = 1024;
+                    const sizes = ['B', 'KB', 'MB', 'GB'];
+                    const i = Math.floor(Math.log(bytes) / Math.log(k));
+                    return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+                },
+
+                formatDate(dateStr) {
+                    if (!dateStr) return '';
+                    const date = new Date(dateStr);
+                    return date.toLocaleDateString('pt-BR') + ' às ' + date.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
+                },
 
                 handleTouchStart(e) {
                     this.touchStartX = e.changedTouches[0].clientX;
@@ -723,7 +913,7 @@
         }
     </script>
 
-    <!-- SlimSelect JavaScript CDN and Auto-Initialization -->
+    <!-- PJAX and SlimSelect JavaScript CDN and Auto-Initialization -->
     <script src="https://cdn.jsdelivr.net/npm/slim-select@2.8.2/dist/slimselect.min.js"></script>
     <script>
         document.addEventListener('DOMContentLoaded', () => {
@@ -749,6 +939,95 @@
                 initSlimSelect();
             });
             observer.observe(document.body, { childList: true, subtree: true });
+
+            // --- PJAX Container Swapper ---
+            document.body.addEventListener('click', async (e) => {
+                const link = e.target.closest('#pjax-container a:not([target]):not([href^="#"])');
+                if (!link) return;
+                
+                if (link.href.includes('/download') || link.href.includes('/export') || link.classList.contains('no-pjax')) return;
+                
+                e.preventDefault();
+                await loadPjaxPage(link.href);
+            });
+
+            document.body.addEventListener('submit', async (e) => {
+                const form = e.target.closest('#pjax-container form');
+                if (!form) return;
+                if (form.method.toLowerCase() === 'post' && !form.classList.contains('pjax-form')) return;
+                
+                e.preventDefault();
+                const url = new URL(form.action || window.location.href);
+                const formData = new FormData(form);
+                
+                if (form.method.toLowerCase() === 'get') {
+                    for (const [key, val] of formData.entries()) {
+                        if (val !== '') {
+                            url.searchParams.set(key, val);
+                        } else {
+                            url.searchParams.delete(key);
+                        }
+                    }
+                    await loadPjaxPage(url.toString());
+                } else {
+                    const response = await fetch(form.action, {
+                        method: 'POST',
+                        body: formData,
+                        headers: {
+                            'X-Requested-With': 'XMLHttpRequest',
+                            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content
+                        }
+                    });
+                    if (response.ok) {
+                        await loadPjaxPage(window.location.href);
+                    }
+                }
+            });
+
+            async function loadPjaxPage(url) {
+                try {
+                    const container = document.getElementById('pjax-container');
+                    if (container) {
+                        container.style.opacity = '0.4';
+                        container.style.pointerEvents = 'none';
+                        container.style.transition = 'opacity 0.1s ease-out';
+                    }
+                    
+                    const res = await fetch(url, {
+                        headers: {
+                            'X-Requested-With': 'XMLHttpRequest'
+                        }
+                    });
+                    const html = await res.text();
+                    
+                    const parser = new DOMParser();
+                    const doc = parser.parseFromString(html, 'text/html');
+                    const newContent = doc.getElementById('pjax-container');
+                    
+                    if (newContent && container) {
+                        container.outerHTML = newContent.outerHTML;
+                        window.history.pushState(null, '', url);
+                        
+                        const freshContainer = document.getElementById('pjax-container');
+                        if (window.Alpine && freshContainer) {
+                            window.Alpine.initTree(freshContainer);
+                        }
+                        
+                        initSlimSelect();
+                    } else {
+                        window.location.href = url;
+                    }
+                } catch (err) {
+                    console.error('PJAX Nav Error:', err);
+                    window.location.href = url;
+                }
+            }
+
+            window.addEventListener('popstate', () => {
+                if (document.getElementById('pjax-container')) {
+                    loadPjaxPage(window.location.href);
+                }
+            });
         });
     </script>
 </body>

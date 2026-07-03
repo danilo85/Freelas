@@ -14,7 +14,7 @@ class RevisionRoundController extends Controller
     public function storeRound(Request $request, $revisionId)
     {
         $request->validate([
-            'description' => 'required|string',
+            'description' => 'nullable|string',
         ]);
 
         $revision = ProjectRevision::where('user_id', auth()->id())->findOrFail($revisionId);
