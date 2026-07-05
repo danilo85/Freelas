@@ -4,6 +4,17 @@
 @section('page_title', 'Projetos e Orçamentos')
 
 @section('content')
+@php
+    $mappedProjects = $projects->map(fn($p) => [
+        'id' => $p->id,
+        'status' => $p->status,
+        'totalValue' => (float) $p->total_value,
+        'remainingBalance' => (float) $p->remaining_balance,
+        'searchable' => strtolower($p->title . ' ' . $p->client->name . ' ' . strip_tags($p->description))
+    ]);
+@endphp
+
+
 <style>
     .wysiwyg-content ul {
         list-style-type: disc !important;
@@ -35,7 +46,7 @@
             <div>
                 <p class="text-sm font-semibold text-blue-100 uppercase tracking-wider">Total de Orçamentos</p>
                 <h3 class="text-3xl font-bold text-white mt-2">
-                    {{ $totalProjectsCount }}
+                    <span x-text="totalFilteredCount"></span>
                 </h3>
                 <span class="text-sm text-blue-100/90 font-medium block mt-1.5">
                     Projetos e orçamentos registrados
@@ -47,7 +58,7 @@
                 </svg>
             </div>
         </div>
-
+ 
         <!-- Valor Total Aprovado / Soma Selecionada (Card Verde/Roxo Dinâmico) -->
         <div 
             :class="selectionActive ? 'bg-violet-700 shadow-[0_0_20px_rgba(109,40,217,0.4)] border border-violet-500' : 'bg-emerald-600 border border-emerald-500'"
@@ -60,7 +71,7 @@
                     :class="selectionActive ? 'text-violet-100' : 'text-emerald-100'"
                 ></p>
                 <h3 class="text-2xl font-bold text-white mt-2 transition-all duration-300">
-                    <span x-text="selectionActive ? (privacyMode ? 'R$ ••••' : 'R$ ' + formatMoney(selectionSum)) : (privacyMode ? 'R$ ••••' : 'R$ ' + formatMoney({{ (float) $approvedRemainingBalance }}))"></span>
+                    <span x-text="selectionActive ? (privacyMode ? 'R$ ••••' : 'R$ ' + formatMoney(selectionSum)) : (privacyMode ? 'R$ ••••' : 'R$ ' + formatMoney(totalApprovedValue))"></span>
                 </h3>
                 <span 
                     x-text="selectionActive ? 'Soma das parcelas a receber dos itens selecionados' : 'Total restante a receber'"
@@ -80,7 +91,7 @@
                 >
                     Limpar
                 </button>
-
+ 
                 <div 
                     class="w-12 h-12 rounded-[5px] bg-white/20 text-white flex items-center justify-center shadow-sm transition-all duration-300"
                 >
@@ -93,13 +104,13 @@
                 </div>
             </div>
         </div>
-
+ 
         <!-- Propostas em Análise (Card Amarelo/Laranja) -->
         <div class="bg-amber-500 rounded-[5px] p-6 shadow-sm flex items-center justify-between hover:shadow-md transition-shadow duration-200 sm:col-span-2 lg:col-span-1">
             <div>
                 <p class="text-sm font-semibold text-amber-50 uppercase tracking-wider">Em Negociação</p>
                 <h3 class="text-3xl font-bold text-white mt-2">
-                    {{ $analyzingCount }}
+                    <span x-text="negotiatingCount"></span>
                 </h3>
                 <span class="text-sm text-amber-50/90 font-medium block mt-1.5 flex items-center gap-1">
                     <span class="w-2.5 h-2.5 rounded-full bg-white inline-block animate-pulse"></span>
@@ -127,11 +138,12 @@
                 </span>
                 <input type="text" 
                        x-model="searchQuery" 
+                       @input="currentPage = 1"
                        placeholder="Pesquise por título, cliente ou descrição..." 
                        class="w-full pl-10 pr-10 py-2.5 rounded-[5px] border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500 transition-all placeholder-slate-400">
                 <!-- Botão de Limpar Filtro -->
                 <button x-show="searchQuery" 
-                        @click="searchQuery = ''" 
+                        @click="searchQuery = ''; currentPage = 1;" 
                         class="absolute inset-y-0 right-0 flex items-center pr-3 text-slate-400 hover:text-slate-600"
                         x-cloak>
                     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -156,13 +168,32 @@
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path>
                 </svg>
             </button>
+
+            <!-- Botão Importar JSON -->
+            <button 
+                type="button"
+                @click="openImportModal = true; importRawJson = ''; importPreviewData = null; importError = '';"
+                class="flex items-center justify-center p-2.5 rounded-[5px] border bg-white border-slate-200 text-slate-500 hover:text-slate-700 hover:bg-slate-50 transition-all duration-200 focus:outline-none shrink-0"
+                title="Importar Orçamentos JSON"
+            >
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"></path>
+                </svg>
+            </button>
         </div>
 
         <!-- Filtro por Status via Tags -->
         <div class="flex flex-wrap gap-2 items-center pt-3 border-t border-slate-100">
             <span class="text-[11px] font-semibold text-slate-400 mr-2 uppercase tracking-wider hidden sm:inline">Filtrar por:</span>
             
-            <button type="button" @click="statusFilter = ''" 
+            <button type="button" @click="setStatusFilter('default')" 
+                :class="statusFilter === 'default' ? 'bg-slate-800 text-white border-slate-800' : 'bg-slate-100 text-slate-700 border-slate-300 hover:bg-slate-200'" 
+                class="w-8 h-8 sm:w-auto sm:h-auto p-0 sm:px-3.5 sm:py-1 rounded-full sm:rounded-[5px] text-[10px] font-semibold uppercase tracking-wider border transition-all duration-150 flex items-center justify-center gap-1.5"
+                title="Principais (Sem Rejeitados/Finalizados)">
+                <span class="hidden sm:inline">⭐ Principais</span>
+            </button>
+
+            <button type="button" @click="setStatusFilter('')" 
                 :class="statusFilter === '' ? 'bg-slate-800 text-white border-slate-800' : 'bg-slate-100 text-slate-700 border-slate-300 hover:bg-slate-200'" 
                 class="w-8 h-8 sm:w-auto sm:h-auto p-0 sm:px-3.5 sm:py-1 rounded-full sm:rounded-[5px] text-[10px] font-semibold uppercase tracking-wider border transition-all duration-150 flex items-center justify-center gap-1.5"
                 title="Todos">
@@ -172,7 +203,7 @@
                 <span class="hidden sm:inline">Todos</span>
             </button>
             
-            <button type="button" @click="statusFilter = 'rascunho'" 
+            <button type="button" @click="setStatusFilter('rascunho')" 
                 :class="statusFilter === 'rascunho' ? 'bg-slate-300 text-slate-900 border-slate-400 ring-2 ring-slate-200' : 'bg-slate-100 text-slate-700 border-slate-300 hover:bg-slate-200'" 
                 class="w-8 h-8 sm:w-auto sm:h-auto p-0 sm:px-2.5 sm:py-1 rounded-full sm:rounded-[5px] text-[10px] font-semibold uppercase tracking-wider border transition-all duration-150 flex items-center justify-center gap-1.5"
                 title="Rascunho">
@@ -180,7 +211,7 @@
                 <span class="hidden sm:inline">Rascunho</span>
             </button>
             
-            <button type="button" @click="statusFilter = 'analisando'" 
+            <button type="button" @click="setStatusFilter('analisando')" 
                 :class="statusFilter === 'analisando' ? 'bg-amber-600 text-white border-amber-600 ring-2 ring-amber-300' : 'bg-amber-100 text-amber-900 border-amber-300 hover:bg-amber-200'" 
                 class="w-8 h-8 sm:w-auto sm:h-auto p-0 sm:px-2.5 sm:py-1 rounded-full sm:rounded-[5px] text-[10px] font-semibold uppercase tracking-wider border transition-all duration-150 flex items-center justify-center gap-1.5"
                 title="Analisando">
@@ -188,7 +219,7 @@
                 <span class="hidden sm:inline">Analisando</span>
             </button>
             
-            <button type="button" @click="statusFilter = 'aprovado'" 
+            <button type="button" @click="setStatusFilter('aprovado')" 
                 :class="statusFilter === 'aprovado' ? 'bg-emerald-600 text-white border-emerald-600 ring-2 ring-emerald-300' : 'bg-emerald-100 text-emerald-900 border-emerald-300 hover:bg-emerald-200'" 
                 class="w-8 h-8 sm:w-auto sm:h-auto p-0 sm:px-2.5 sm:py-1 rounded-full sm:rounded-[5px] text-[10px] font-semibold uppercase tracking-wider border transition-all duration-150 flex items-center justify-center gap-1.5"
                 title="Aprovado">
@@ -196,7 +227,7 @@
                 <span class="hidden sm:inline">Aprovado</span>
             </button>
             
-            <button type="button" @click="statusFilter = 'rejeitado'" 
+            <button type="button" @click="setStatusFilter('rejeitado')" 
                 :class="statusFilter === 'rejeitado' ? 'bg-red-600 text-white border-red-600 ring-2 ring-red-300' : 'bg-red-100 text-red-900 border-red-300 hover:bg-red-200'" 
                 class="w-8 h-8 sm:w-auto sm:h-auto p-0 sm:px-2.5 sm:py-1 rounded-full sm:rounded-[5px] text-[10px] font-semibold uppercase tracking-wider border transition-all duration-150 flex items-center justify-center gap-1.5"
                 title="Rejeitado">
@@ -204,7 +235,7 @@
                 <span class="hidden sm:inline">Rejeitado</span>
             </button>
             
-            <button type="button" @click="statusFilter = 'quitado'" 
+            <button type="button" @click="setStatusFilter('quitado')" 
                 :class="statusFilter === 'quitado' ? 'bg-purple-600 text-white border-purple-600 ring-2 ring-purple-300' : 'bg-purple-100 text-purple-900 border-purple-300 hover:bg-purple-200'" 
                 class="w-8 h-8 sm:w-auto sm:h-auto p-0 sm:px-2.5 sm:py-1 rounded-full sm:rounded-[5px] text-[10px] font-semibold uppercase tracking-wider border transition-all duration-150 flex items-center justify-center gap-1.5"
                 title="Quitado">
@@ -212,7 +243,7 @@
                 <span class="hidden sm:inline">Quitado</span>
             </button>
             
-            <button type="button" @click="statusFilter = 'finalizado'" 
+            <button type="button" @click="setStatusFilter('finalizado')" 
                 :class="statusFilter === 'finalizado' ? 'bg-blue-600 text-white border-blue-600 ring-2 ring-blue-300' : 'bg-blue-100 text-blue-900 border-blue-300 hover:bg-blue-200'" 
                 class="w-8 h-8 sm:w-auto sm:h-auto p-0 sm:px-2.5 sm:py-1 rounded-full sm:rounded-[5px] text-[10px] font-semibold uppercase tracking-wider border transition-all duration-150 flex items-center justify-center gap-1.5"
                 title="Finalizado">
@@ -224,14 +255,14 @@
 
     <!-- Grid de Projetos -->
     <div class="space-y-4">
-        
         <!-- Grid de Cards -->
         <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 w-full">
             @forelse($projects as $project)
                 <div 
-                    x-show="shouldShow('{{ addslashes($project->title) }} {{ addslashes($project->client->name) }} {{ addslashes($project->description) }}', status)"
+                    data-search-text="{{ strtolower($project->title . ' ' . $project->client->name . ' ' . strip_tags($project->description)) }}"
+                    x-show="shouldShow($el, '{{ $project->status }}', statusFilter, searchQuery) && isProjectOnCurrentPage({{ $project->id }})"
                     x-transition
-                    class="w-full flex"
+                    class="project-card-wrapper w-full flex"
                 >
                     <div 
                         x-data="projectCard('{{ $project->id }}', '{{ $project->status }}', {{ (float) $project->total_value }}, {{ (float) $project->remaining_balance }}, {{ $project->payments->count() > 0 ? 'true' : 'false' }})"
@@ -461,6 +492,41 @@
             Nenhum orçamento atende aos critérios da sua pesquisa.
         </div>
 
+        <!-- Painel de Paginação Dinâmica (Sem Reload) -->
+        <div x-show="totalPages > 1" class="flex flex-col sm:flex-row items-center justify-between gap-4 border-t border-slate-100 dark:border-slate-800/60 pt-6 mt-4" x-cloak>
+            <div class="text-xs font-semibold text-slate-400 dark:text-slate-500 uppercase tracking-wider">
+                Mostrando <span class="text-slate-800 dark:text-slate-200" x-text="Math.min((currentPage - 1) * perPage + 1, totalFilteredCount)"></span> a 
+                <span class="text-slate-800 dark:text-slate-200" x-text="Math.min(currentPage * perPage, totalFilteredCount)"></span> de 
+                <span class="text-slate-800 dark:text-slate-200" x-text="totalFilteredCount"></span> orçamentos
+            </div>
+            
+            <div class="flex items-center gap-1.5">
+                <button type="button" @click="prevPage()" :disabled="currentPage === 1" 
+                    class="h-8 px-3 rounded-[5px] border border-slate-200 dark:border-slate-850 bg-white dark:bg-slate-900 text-slate-600 dark:text-slate-400 text-[10px] font-bold uppercase tracking-wider transition-colors hover:bg-slate-50 dark:hover:bg-slate-800 disabled:opacity-40 disabled:cursor-not-allowed">
+                    Anterior
+                </button>
+                
+                <template x-for="p in totalPagesArray" :key="p">
+                    <button type="button" 
+                        @click="p !== '...' ? currentPage = p : null" 
+                        :disabled="p === '...'"
+                        :class="{
+                            'bg-primary-500 text-white border-primary-500 shadow-sm shadow-primary-500/20': currentPage === p,
+                            'bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-300 border-slate-200 dark:border-slate-850 hover:bg-slate-50 dark:hover:bg-slate-800': currentPage !== p && p !== '...',
+                            'text-slate-400 dark:text-slate-650 border-transparent bg-transparent cursor-default select-none': p === '...'
+                        }" 
+                        class="w-8 h-8 rounded-[5px] border text-xs font-bold transition-all"
+                        x-text="p">
+                    </button>
+                </template>
+                
+                <button type="button" @click="nextPage()" :disabled="currentPage === totalPages" 
+                    class="h-8 px-3 rounded-[5px] border border-slate-200 dark:border-slate-850 bg-white dark:bg-slate-900 text-slate-600 dark:text-slate-400 text-[10px] font-bold uppercase tracking-wider transition-colors hover:bg-slate-50 dark:hover:bg-slate-800 disabled:opacity-40 disabled:cursor-not-allowed">
+                    Próxima
+                </button>
+            </div>
+        </div>
+
     </div>
 
     <!-- Botão Flutuante Redondo (FAB) -->
@@ -470,15 +536,279 @@
         </svg>
     </a>
 
+    <!-- Modal de Importação JSON -->
+    <template x-teleport="body">
+        <div x-show="openImportModal" 
+             class="fixed inset-0 top-0 left-0 w-screen h-screen flex items-center justify-center bg-slate-900/50 backdrop-blur-xs"
+             style="z-index: 9999999;"
+             x-transition.opacity
+             x-cloak>
+            <div class="bg-white border border-slate-200 shadow-2xl rounded-lg max-w-2xl w-full p-6 space-y-4 text-left select-none max-h-[85vh] overflow-y-auto" @click.away="if(!isImporting) openImportModal = false">
+                
+                <div class="flex items-center justify-between border-b border-slate-100 pb-3">
+                    <h3 class="font-bold text-slate-800 text-base uppercase tracking-tight flex items-center gap-2">
+                        <span>📥</span> Importar Orçamentos (Giro JSON)
+                    </h3>
+                    <button type="button" @click="openImportModal = false" class="text-slate-400 hover:text-slate-655 cursor-pointer">
+                        ✕
+                    </button>
+                </div>
+
+                <!-- Error Banner -->
+                <div x-show="importError" class="bg-rose-50 border border-rose-200 text-rose-800 p-3 rounded text-xs font-semibold leading-relaxed" x-cloak>
+                    <span x-text="importError"></span>
+                </div>
+
+                <!-- Drag/Upload Area when no data is parsed -->
+                <div x-show="!importPreviewData" class="space-y-4">
+                    <div class="border-2 border-dashed border-slate-220 rounded-lg p-8 text-center bg-slate-50/50 hover:bg-slate-50 transition-colors relative">
+                        <input type="file" @change="handleJsonFileSelect($event)" class="absolute inset-0 w-full h-full opacity-0 cursor-pointer" accept=".json">
+                        <span class="text-3xl block mb-2">📄</span>
+                        <span class="text-sm font-bold text-slate-700 block">Clique para selecionar o arquivo JSON</span>
+                        <span class="text-xs text-slate-400 block mt-1">Formatos suportados: Giro.orcamentos.v1</span>
+                    </div>
+                </div>
+
+                <!-- Preview Data Area -->
+                <div x-show="importPreviewData" class="space-y-4" x-cloak>
+                    <div class="bg-slate-50 border border-slate-200 rounded p-4 space-y-3">
+                        <h4 class="text-xs font-bold uppercase tracking-wider text-slate-400">Resumo da Importação (<span x-text="importPreviewData ? importPreviewData.length : 0"></span> item(ns))</h4>
+                        
+                        <div class="divide-y divide-slate-200 max-h-[40vh] overflow-y-auto space-y-3 pr-2">
+                            <template x-for="(item, idx) in importPreviewData" :key="idx">
+                                <div class="pt-3 first:pt-0 space-y-2">
+                                    <!-- Title & Value -->
+                                    <div class="flex justify-between items-start gap-3">
+                                        <span class="text-sm font-black text-slate-800 line-clamp-2" x-text="item.orcamento.titulo"></span>
+                                        <span class="text-sm font-black text-emerald-600 shrink-0">R$ <span x-text="formatMoney(item.orcamento.valor_total)"></span></span>
+                                    </div>
+
+                                    <!-- Description preview -->
+                                    <p class="text-xs text-slate-500 line-clamp-2" x-text="item.orcamento.descricao"></p>
+
+                                    <!-- Relationships & Warnings -->
+                                    <div class="grid grid-cols-2 sm:grid-cols-4 gap-2 text-[10px] uppercase font-bold text-slate-550 bg-white p-2 border border-slate-200/50 rounded">
+                                        <div>
+                                            <span class="text-slate-400 block font-semibold">Cliente</span>
+                                            <span class="text-slate-800 truncate block" x-text="item.cliente ? item.cliente.nome : 'Nenhum'"></span>
+                                        </div>
+                                        <div>
+                                            <span class="text-slate-400 block font-semibold">Autores</span>
+                                            <span class="text-slate-800 block" x-text="item.autores ? item.autores.length + ' autor(es)' : '0'"></span>
+                                        </div>
+                                        <div>
+                                            <span class="text-slate-400 block font-semibold">Pagamentos</span>
+                                            <span class="text-slate-800 block" x-text="item.pagamentos ? item.pagamentos.length + ' parc.' : '0'"></span>
+                                        </div>
+                                        <div>
+                                            <span class="text-slate-400 block font-semibold">Histórico</span>
+                                            <span class="text-slate-800 block" x-text="item.historico ? item.historico.length + ' reg.' : '0'"></span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </template>
+                        </div>
+                    </div>
+
+                    <!-- Warnings Banner about unsaved fields -->
+                    <div class="bg-amber-50 border border-amber-200 text-amber-900 p-3 rounded text-xs space-y-1">
+                        <span class="font-bold block uppercase tracking-wider text-[10px]">⚠️ Campos adicionais detectados</span>
+                        <p class="leading-relaxed font-semibold">Campos do arquivo como <code class="bg-amber-100/70 px-1 rounded">modelo_proposta_id</code>, <code class="bg-amber-100/70 px-1 rounded">qrcode_image</code>, <code class="bg-amber-100/70 px-1 rounded">keywords_extracted</code> e <code class="bg-amber-100/70 px-1 rounded">category_detected</code> serão ignorados graciosamente, pois não possuem suporte direto neste sistema.</p>
+                    </div>
+                </div>
+
+                <!-- Footer Buttons -->
+                <div class="flex justify-end gap-2 pt-3 border-t border-slate-100 select-none">
+                    <button type="button" 
+                            :disabled="isImporting"
+                            @click="openImportModal = false" 
+                            class="px-4 py-2 border border-slate-200 text-xs font-bold uppercase rounded-[5px] hover:bg-slate-100 transition-colors text-slate-600 disabled:opacity-50">
+                        Cancelar
+                    </button>
+                    <button type="button" 
+                            x-show="importPreviewData"
+                            :disabled="isImporting"
+                            @click="submitImport()" 
+                            class="bg-slate-900 hover:bg-slate-800 text-white font-bold text-xs uppercase tracking-wider px-6 py-2.5 rounded-[5px] transition-colors flex items-center gap-1.5 disabled:opacity-50 cursor-pointer shadow-sm">
+                        <span x-show="isImporting" class="w-3.5 h-3.5 border-2 border-white/30 border-t-white rounded-full animate-spin"></span>
+                        <span x-text="isImporting ? 'Importando...' : 'Confirmar Importação'"></span>
+                    </button>
+                </div>
+
+            </div>
+        </div>
+    </template>
+
 </div>
 
 <script>
     function projectList() {
         return {
             searchQuery: '',
-            statusFilter: '',
+            statusFilter: 'default',
             selectedProjects: [],
             privacyMode: localStorage.getItem('privacyMode') === 'true',
+            currentPage: 1,
+            perPage: 12,
+
+            setStatusFilter(filter) {
+                this.statusFilter = filter;
+                this.currentPage = 1;
+            },
+
+            get totalPages() {
+                return Math.ceil(this.totalFilteredCount / this.perPage) || 1;
+            },
+
+            get totalPagesArray() {
+                const total = this.totalPages;
+                const current = this.currentPage;
+                const delta = 1; // Show current page + 1 page on each side
+                const range = [];
+                
+                for (let i = Math.max(2, current - delta); i <= Math.min(total - 1, current + delta); i++) {
+                    range.push(i);
+                }
+                
+                if (current - delta > 2) {
+                    range.unshift('...');
+                }
+                range.unshift(1);
+                
+                if (current + delta < total - 1) {
+                    range.push('...');
+                }
+                if (total > 1) {
+                    range.push(total);
+                }
+                return range;
+            },
+
+            prevPage() {
+                if (this.currentPage > 1) {
+                    this.currentPage--;
+                    this.scrollToTop();
+                }
+            },
+
+            nextPage() {
+                if (this.currentPage < this.totalPages) {
+                    this.currentPage++;
+                    this.scrollToTop();
+                }
+            },
+
+            scrollToTop() {
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+            },
+
+            isProjectOnCurrentPage(projectId) {
+                const index = this.filteredProjects.findIndex(p => p.id === projectId);
+                if (index === -1) return false;
+                const start = (this.currentPage - 1) * this.perPage;
+                const end = start + this.perPage;
+                return index >= start && index < end;
+            },
+
+            projects: @json($mappedProjects),
+
+            get filteredProjects() {
+                return this.projects.filter(p => {
+                    if (this.statusFilter === 'default') {
+                        const defaults = ['rascunho', 'analisando', 'aprovado', 'quitado'];
+                        if (!defaults.includes(p.status)) return false;
+                    } else if (this.statusFilter && p.status !== this.statusFilter) {
+                        return false;
+                    }
+                    if (this.searchQuery) {
+                        const query = this.searchQuery.toLowerCase().trim();
+                        return p.searchable.includes(query) || p.status.toLowerCase().includes(query);
+                    }
+                    return true;
+                });
+            },
+
+            get totalFilteredCount() {
+                return this.filteredProjects.length;
+            },
+
+            get totalApprovedValue() {
+                return this.filteredProjects
+                    .filter(p => ['aprovado', 'finalizado'].includes(p.status))
+                    .reduce((acc, p) => acc + p.remainingBalance, 0);
+            },
+
+            get negotiatingCount() {
+                return this.filteredProjects.filter(p => p.status === 'analisando').length;
+            },
+            
+            // Import states
+            openImportModal: false,
+            importRawJson: '',
+            importPreviewData: null,
+            importError: '',
+            isImporting: false,
+
+            handleJsonFileSelect(event) {
+                const file = event.target.files[0];
+                if (!file) return;
+                
+                const reader = new FileReader();
+                reader.onload = (e) => {
+                    try {
+                        const rawData = e.target.result;
+                        const parsed = JSON.parse(rawData);
+                        
+                        if (!parsed || !parsed.format || !parsed.format.startsWith('giro.orcamentos')) {
+                            this.importError = "Formato de arquivo incompatível. Deve ser um export do Giro v1.";
+                            this.importPreviewData = null;
+                            return;
+                        }
+
+                        this.importRawJson = rawData;
+                        
+                        let preview = [];
+                        if (parsed.data && parsed.data.orcamento) {
+                            preview.push(parsed.data);
+                        } else if (parsed.data && Array.isArray(parsed.data)) {
+                            preview = parsed.data;
+                        }
+                        
+                        this.importPreviewData = preview;
+                        this.importError = "";
+                    } catch(err) {
+                        this.importError = "Erro ao processar JSON: " + err.message;
+                        this.importPreviewData = null;
+                    }
+                };
+                reader.readAsText(file);
+            },
+
+            async submitImport() {
+                if (!this.importRawJson) return;
+                this.isImporting = true;
+                try {
+                    const response = await fetch('{{ route("projects.import-json") }}', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'X-CSRF-TOKEN': '{{ csrf_token() }}',
+                            'Accept': 'application/json'
+                        },
+                        body: JSON.stringify({ json_data: this.importRawJson })
+                    });
+                    const result = await response.json();
+                    if (result.success) {
+                        window.location.reload();
+                    } else {
+                        this.importError = result.message || "Erro desconhecido na importação.";
+                    }
+                } catch (err) {
+                    this.importError = "Erro ao enviar dados: " + err.message;
+                } finally {
+                    this.isImporting = false;
+                }
+            },
             
             init() {
                 // Escuta cliques no documento para limpar seleções fora dos componentes
@@ -528,13 +858,19 @@
                 }
             },
 
-            shouldShow(searchText, cardStatus) {
-                if (this.statusFilter && cardStatus !== this.statusFilter) {
+            shouldShow(el, cardStatus) {
+                if (this.statusFilter === 'default') {
+                    const defaults = ['rascunho', 'analisando', 'aprovado', 'quitado'];
+                    if (!defaults.includes(cardStatus)) {
+                        return false;
+                    }
+                } else if (this.statusFilter && cardStatus !== this.statusFilter) {
                     return false;
                 }
                 if (this.searchQuery) {
                     const query = this.searchQuery.toLowerCase().trim();
-                    return searchText.toLowerCase().includes(query) || cardStatus.toLowerCase().includes(query);
+                    const searchText = el ? (el.dataset.searchText || '') : '';
+                    return searchText.includes(query) || cardStatus.toLowerCase().includes(query);
                 }
                 return true;
             },
@@ -630,6 +966,18 @@
                 }
             },
 
+            getDescriptionClass() {
+                switch (this.status) {
+                    case 'rascunho': return 'text-slate-500';
+                    case 'analisando': return 'text-amber-800/80';
+                    case 'aprovado': return 'text-emerald-800/80';
+                    case 'rejeitado': return 'text-red-800/80';
+                    case 'quitado': return 'text-purple-800/80';
+                    case 'finalizado': return 'text-blue-800/80';
+                    default: return 'text-slate-500';
+                }
+            },
+
             getBoxClass() {
                 if (this.isSelected) {
                     return 'bg-violet-100/20 border-violet-200/30';
@@ -696,6 +1044,7 @@
                     } else {
                         this.status = result.status;
                         this.hasPayments = result.has_payments || this.hasPayments;
+                        window.location.reload();
                     }
                 } catch (error) {
                     console.error(error);

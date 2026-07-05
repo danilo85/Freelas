@@ -45,6 +45,7 @@ Route::middleware(['auth', 'approved'])->prefix('freelas')->group(function () {
     Route::get('/projects', [ProjectController::class, 'index'])->name('projects.index');
     Route::get('/projects/create', [ProjectController::class, 'create'])->name('projects.create');
     Route::post('/projects', [ProjectController::class, 'store'])->name('projects.store');
+    Route::post('/projects/import-json', [ProjectController::class, 'importJson'])->name('projects.import-json');
     Route::get('/projects/{project}', [ProjectController::class, 'show'])->name('projects.show');
     Route::get('/projects/{project}/edit', [ProjectController::class, 'edit'])->name('projects.edit');
     Route::put('/projects/{project}', [ProjectController::class, 'update'])->name('projects.update');
@@ -88,6 +89,7 @@ Route::middleware(['auth', 'approved'])->prefix('freelas')->group(function () {
     Route::post('/finances/{transaction}/toggle-status', [\App\Http\Controllers\FinanceController::class, 'toggleStatus'])->name('finances.toggle-status');
     Route::get('/finances/{transaction}/download-attachment', [\App\Http\Controllers\FinanceController::class, 'downloadAttachment'])->name('finances.download-attachment');
     Route::post('/finances/credit-card/{creditCard}/pay-invoice', [\App\Http\Controllers\FinanceController::class, 'payInvoice'])->name('finances.pay-invoice');
+    Route::post('/finances/import-json', [\App\Http\Controllers\FinanceController::class, 'importJson'])->name('finances.import-json');
         
     // Perfil do Usuário
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');

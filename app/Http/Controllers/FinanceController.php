@@ -522,4 +522,192 @@ class FinanceController extends Controller
 
         return back()->with('success', 'Fatura do cartão de crédito marcada como paga!');
     }
+
+    /**
+     * Importa transações financeiras a partir do JSON Giro.
+     */
+    public function importJson(Request $request)
+    {
+        $request->validate([
+            'json_data' => 'required|string',
+        ]);
+
+        $decoded = json_decode($request->json_data, true);
+
+        if (!$decoded || !isset($decoded['format']) || !str_starts_with($decoded['format'], 'giro.transactions')) {
+            return response()->json([
+                'success' => false,
+                'message' => 'O formato do JSON não é compatível ou não é um export de transações do Giro válido.'
+            ], 422);
+        }
+
+        $items = [];
+        if (isset($decoded['data']['transaction'])) {
+            $items[] = $decoded['data'];
+        } elseif (isset($decoded['data']) && is_array($decoded['data'])) {
+            $items = $decoded['data'];
+        } else {
+            return response()->json([
+                'success' => false,
+                'message' => 'Não foi possível encontrar a estrutura de transações no JSON.'
+            ], 422);
+        }
+
+        $user = auth()->user();
+        $importedCount = 0;
+
+        \Illuminate\Support\Facades\DB::beginTransaction();
+
+        try {
+            // Track imported unique signatures to avoid duplicates
+            // Signature format: "description|amount|due_date"
+            $existingSignatures = \App\Models\Transaction::where('user_id', $user->id)
+                ->get()
+                ->map(function($t) {
+                    $dueDateStr = $t->due_date ? \Carbon\Carbon::parse($t->due_date)->toDateString() : '';
+                    return "{$t->description}|{$t->amount}|{$dueDateStr}";
+                })
+                ->toArray();
+
+            foreach ($items as $item) {
+                // Collect main transaction and related installments if they exist
+                $transactionsToProcess = [];
+                if (isset($item['transaction'])) {
+                    $transactionsToProcess[] = [
+                        'tx' => $item['transaction'],
+                        'bank' => $item['bank'] ?? null,
+                        'card' => $item['credit_card'] ?? null,
+                        'category' => $item['category'] ?? null
+                    ];
+                }
+
+                if (!empty($item['related_installments'])) {
+                    foreach ($item['related_installments'] as $inst) {
+                        $transactionsToProcess[] = [
+                            'tx' => $inst,
+                            'bank' => $item['bank'] ?? null,
+                            'card' => $item['credit_card'] ?? null,
+                            'category' => $item['category'] ?? null
+                        ];
+                    }
+                }
+
+                foreach ($transactionsToProcess as $txData) {
+                    $tx = $txData['tx'];
+                    
+                    // Map type: 'despesa' -> 'saida', 'receita' -> 'entrada'
+                    $type = ($tx['tipo'] === 'despesa') ? 'saida' : 'entrada';
+                    $amount = (float) $tx['valor'];
+                    $dueDate = $tx['data'];
+                    
+                    $signature = "{$tx['descricao']}|{$amount}|{$dueDate}";
+                    
+                    if (in_array($signature, $existingSignatures)) {
+                        continue; // Skip duplicate
+                    }
+
+                    // 1. Process Bank Account
+                    $bankAccountId = null;
+                    if ($txData['bank'] && isset($txData['bank']['nome'])) {
+                        $bankData = $txData['bank'];
+                        $bankAcc = \App\Models\BankAccount::where('user_id', $user->id)
+                            ->where('account_name', $bankData['nome'])
+                            ->first();
+                        
+                        if (!$bankAcc) {
+                            $bankAcc = \App\Models\BankAccount::create([
+                                'user_id' => $user->id,
+                                'bank_name' => $bankData['banco'] ?? $bankData['nome'],
+                                'account_name' => $bankData['nome'],
+                                'account_type' => $bankData['tipo_conta'] ?? 'Corrente',
+                                'person_type' => $bankData['titular_tipo'] ?? 'pf',
+                                'agency' => $bankData['agencia'] ?? null,
+                                'account_number' => $bankData['numero_conta'] ?? $bankData['conta'] ?? null,
+                                'initial_balance' => $bankData['saldo_inicial'] ?? 0.00,
+                            ]);
+                        }
+                        $bankAccountId = $bankAcc->id;
+                    }
+
+                    // 2. Process Credit Card
+                    $creditCardId = null;
+                    if ($txData['card'] && (isset($txData['card']['nome_cartao']) || isset($txData['card']['nome']))) {
+                        $cardData = $txData['card'];
+                        $cardName = $cardData['nome_cartao'] ?? $cardData['nome'];
+                        $cardObj = \App\Models\CreditCard::where('user_id', $user->id)
+                            ->where('card_name', $cardName)
+                            ->first();
+
+                        if (!$cardObj) {
+                            $cardObj = \App\Models\CreditCard::create([
+                                'user_id' => $user->id,
+                                'card_name' => $cardName,
+                                'bank_name' => $cardData['banco'] ?? $cardName ?? 'Nubank',
+                                'flag' => $cardData['bandeira'] ?? 'mastercard',
+                                'limit' => $cardData['limite_total'] ?? $cardData['limite'] ?? $cardData['limit'] ?? 0.00,
+                                'closing_day' => $cardData['data_fechamento'] ?? 10,
+                                'due_day' => $cardData['data_vencimento'] ?? 15,
+                            ]);
+                        }
+                        $creditCardId = $cardObj->id;
+                    }
+
+                    // 3. Process Category
+                    $categoryId = null;
+                    if ($txData['category'] && isset($txData['category']['nome'])) {
+                        $catData = $txData['category'];
+                        $category = \App\Models\TransactionCategory::where('user_id', $user->id)
+                            ->where('name', $catData['nome'])
+                            ->where('type', $type)
+                            ->first();
+
+                        if (!$category) {
+                            $category = \App\Models\TransactionCategory::create([
+                                'user_id' => $user->id,
+                                'name' => $catData['nome'],
+                                'type' => $type,
+                                'color' => $catData['cor'] ?? '#6B7280',
+                                'icon' => 'tag',
+                            ]);
+                        }
+                        $categoryId = $category->id;
+                    }
+
+                    // 4. Create Transaction
+                    \App\Models\Transaction::create([
+                        'user_id' => $user->id,
+                        'description' => $tx['descricao'],
+                        'category_id' => $categoryId,
+                        'bank_account_id' => $bankAccountId,
+                        'credit_card_id' => $creditCardId,
+                        'type' => $type,
+                        'amount' => $amount,
+                        'due_date' => $dueDate,
+                        'paid_at' => $tx['data_pagamento'] ?? null,
+                        'status' => $tx['status'] ?? 'pendente',
+                        'classification' => $tx['classification'] ?? 'PF',
+                    ]);
+
+                    $existingSignatures[] = $signature;
+                    $importedCount++;
+                }
+            }
+
+            \Illuminate\Support\Facades\DB::commit();
+
+            session()->flash('success', "Importação de finanças realizada com sucesso! {$importedCount} transações importadas.");
+
+            return response()->json([
+                'success' => true,
+                'message' => "Importação concluída! {$importedCount} transações importadas."
+            ]);
+
+        } catch (\Exception $e) {
+            \Illuminate\Support\Facades\DB::rollBack();
+            return response()->json([
+                'success' => false,
+                'message' => 'Erro durante a importação de transações: ' . $e->getMessage()
+            ], 500);
+        }
+    }
 }

@@ -171,8 +171,8 @@
                         </div>
                     </div>
 
-                    <!-- Lista de Projetos -->
-                    <div class="space-y-4">
+                    <!-- Lista de Projetos (Scrollable) -->
+                    <div class="max-h-[450px] overflow-y-auto pr-1.5 space-y-4">
                         @foreach($projects as $project)
                             <div class="border border-slate-100 hover:border-slate-200 p-4 rounded-[5px] flex flex-col md:flex-row md:items-center justify-between gap-4 transition-colors bg-white hover:shadow-sm">
                                 <div class="space-y-1">

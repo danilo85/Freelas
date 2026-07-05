@@ -333,4 +333,173 @@ class ProjectController extends Controller
 
         return redirect()->route('projects.index')->with('success', 'Orçamento excluído com sucesso!');
     }
+
+    /**
+     * Importa propostas a partir do JSON Giro.
+     */
+    public function importJson(Request $request)
+    {
+        $request->validate([
+            'json_data' => 'required|string',
+        ]);
+
+        $decoded = json_decode($request->json_data, true);
+
+        if (!$decoded || !isset($decoded['format']) || !str_starts_with($decoded['format'], 'giro.orcamentos')) {
+            return response()->json([
+                'success' => false,
+                'message' => 'O formato do JSON não é compatível ou não é um export do Giro válido.'
+            ], 422);
+        }
+
+        $items = [];
+        if (isset($decoded['data']['orcamento'])) {
+            $items[] = $decoded['data'];
+        } elseif (isset($decoded['data']) && is_array($decoded['data'])) {
+            $items = $decoded['data'];
+        } else {
+            return response()->json([
+                'success' => false,
+                'message' => 'Não foi possível encontrar a estrutura de orçamentos no JSON.'
+            ], 422);
+        }
+
+        $user = auth()->user();
+        $importedCount = 0;
+
+        \Illuminate\Support\Facades\DB::beginTransaction();
+
+        try {
+            foreach ($items as $item) {
+                if (!isset($item['orcamento'])) {
+                    continue;
+                }
+
+                $orcamento = $item['orcamento'];
+                $clientData = $item['cliente'] ?? null;
+                $authorsData = $item['autores'] ?? [];
+                $paymentsData = $item['pagamentos'] ?? [];
+                $historyData = $item['historico'] ?? [];
+
+                // 1. Process client
+                $clientId = null;
+                if ($clientData) {
+                    $clientEmail = (!empty($clientData['email'])) ? $clientData['email'] : 'cliente-sem-email-' . uniqid() . '@freela.com';
+                    $client = \App\Models\Client::where('email', $clientEmail)
+                        ->where('user_id', $user->id)
+                        ->first();
+                    if (!$client) {
+                        $client = \App\Models\Client::create([
+                            'user_id' => $user->id,
+                            'name' => $clientData['nome'],
+                            'email' => $clientEmail,
+                            'avatar' => null,
+                            'phone' => $clientData['telefone'] ?? $clientData['whatsapp'] ?? null,
+                            'registration_completed' => true
+                        ]);
+                    }
+                    $clientId = $client->id;
+                }
+
+                // 2. Create Project
+                $project = Project::create([
+                    'title' => $orcamento['titulo'],
+                    'description' => $orcamento['descricao'],
+                    'client_id' => $clientId,
+                    'status' => $orcamento['status'] ?? 'analisando',
+                    'total_value' => $orcamento['valor_total'],
+                    'term' => $orcamento['prazo_dias'],
+                    'budget_date' => $orcamento['data_orcamento'],
+                    'expiration_date' => $orcamento['data_validade'],
+                    'additional_info' => $orcamento['observacoes'],
+                ]);
+
+                // 3. Create Proposal Token Hash
+                Proposal::create([
+                    'project_id' => $project->id,
+                    'hash' => $orcamento['token_publico'] ?? bin2hex(random_bytes(16)),
+                    'status' => $project->status
+                ]);
+
+                // 4. Authors relationship
+                if (!empty($authorsData)) {
+                    $authorIds = [];
+                    foreach ($authorsData as $authorData) {
+                        $authorEmail = (!empty($authorData['email'])) ? $authorData['email'] : 'autor-importado-' . uniqid() . '@pendente.com';
+                        $author = \App\Models\Author::where('user_id', $user->id)
+                            ->where(function($query) use ($authorData, $authorEmail) {
+                                $query->where('email', $authorEmail)
+                                      ->orWhere('name', $authorData['nome']);
+                            })
+                            ->first();
+
+                        if (!$author) {
+                            $author = \App\Models\Author::create([
+                                'user_id' => $user->id,
+                                'name' => $authorData['nome'],
+                                'email' => $authorEmail,
+                                'avatar' => null,
+                                'phone' => $authorData['telefone'] ?? $authorData['whatsapp'] ?? null,
+                                'registration_completed' => true
+                            ]);
+                        }
+                        $authorIds[] = $author->id;
+                    }
+                    $project->authors()->sync($authorIds);
+                }
+
+                // 5. Payments
+                if (!empty($paymentsData)) {
+                    foreach ($paymentsData as $paymentData) {
+                        \App\Models\Payment::create([
+                            'project_id' => $project->id,
+                            'amount' => $paymentData['valor'],
+                            'paid_at' => $paymentData['data_pagamento'],
+                            'payment_method' => $paymentData['metodo'] ?? 'transferência',
+                            'observations' => $paymentData['observacoes'] ?? null
+                        ]);
+                    }
+                }
+
+                // 6. Histories
+                if (!empty($historyData)) {
+                    $project->histories()->delete();
+
+                    foreach ($historyData as $hist) {
+                        \App\Models\ProjectHistory::create([
+                            'project_id' => $project->id,
+                            'user_id' => $user->id,
+                            'action' => $hist['acao'],
+                            'title' => $project->title,
+                            'description' => $hist['descricao'],
+                            'total_value' => $project->total_value,
+                            'term' => $project->term,
+                            'budget_date' => $project->budget_date,
+                            'expiration_date' => $project->expiration_date,
+                            'status' => $project->status,
+                            'created_at' => $hist['created_at']
+                        ]);
+                    }
+                }
+
+                $importedCount++;
+            }
+
+            \Illuminate\Support\Facades\DB::commit();
+
+            session()->flash('success', "Importação realizada com sucesso! {$importedCount} orçamento(s) importado(s).");
+
+            return response()->json([
+                'success' => true,
+                'message' => "Importação realizada com sucesso! {$importedCount} orçamento(s) importado(s)."
+            ]);
+
+        } catch (\Exception $e) {
+            \Illuminate\Support\Facades\DB::rollBack();
+            return response()->json([
+                'success' => false,
+                'message' => 'Erro durante a importação: ' . $e->getMessage()
+            ], 500);
+        }
+    }
 }

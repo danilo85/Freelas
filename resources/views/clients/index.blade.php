@@ -4,6 +4,12 @@
 @section('page_title', 'Gerenciamento de Clientes')
 
 @section('content')
+@php
+    $mappedClients = $clients->map(fn($c) => [
+        'id' => $c->id,
+        'searchable' => strtolower($c->name . ' ' . $c->email . ' ' . $c->phone . ' ' . $c->document)
+    ]);
+@endphp
 
 <div x-data="clientList()" class="space-y-8">
     
@@ -79,11 +85,12 @@
             </span>
             <input type="text" 
                    x-model="searchQuery" 
+                   @input="currentPage = 1"
                    placeholder="Pesquise por nome, email, documento ou telefone..." 
                    class="w-full pl-10 pr-10 py-2.5 rounded-[5px] border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500 transition-all placeholder-slate-400">
             <!-- Botão de Limpar Filtro -->
             <button x-show="searchQuery" 
-                    @click="searchQuery = ''" 
+                    @click="searchQuery = ''; currentPage = 1;" 
                     class="absolute inset-y-0 right-0 flex items-center pr-3 text-slate-400 hover:text-slate-600"
                     x-cloak>
                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -100,7 +107,7 @@
         <!-- Grid de Cards -->
         <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 w-full">
             @forelse($clients as $client)
-                <div x-show="matchesSearch('{{ addslashes($client->name) }} {{ addslashes($client->email) }} {{ addslashes($client->phone) }} {{ addslashes($client->document) }}')" 
+                <div x-show="isClientOnCurrentPage({{ $client->id }})" 
                      x-transition
                      class="w-full flex"
                 >
@@ -199,10 +206,45 @@
         </div>
         
         <!-- Mensagem de Nenhum Resultado da Busca (Filtragem Alpine) -->
-        <div x-show="searchQuery !== '' && countVisibleCards() === 0" 
+        <div x-show="searchQuery !== '' && totalFilteredCount === 0" 
              class="border border-dashed border-slate-200 p-10 text-center text-slate-400 rounded-[5px]"
              x-cloak>
             Nenhum cliente atende aos critérios da sua pesquisa.
+        </div>
+
+        <!-- Painel de Paginação Dinâmica (Sem Reload) -->
+        <div x-show="totalPages > 1" class="flex flex-col sm:flex-row items-center justify-between gap-4 border-t border-slate-100 dark:border-slate-800/60 pt-6 mt-4" x-cloak>
+            <div class="text-xs font-semibold text-slate-400 dark:text-slate-500 uppercase tracking-wider">
+                Mostrando <span class="text-slate-800 dark:text-slate-200" x-text="Math.min((currentPage - 1) * perPage + 1, totalFilteredCount)"></span> a 
+                <span class="text-slate-800 dark:text-slate-200" x-text="Math.min(currentPage * perPage, totalFilteredCount)"></span> de 
+                <span class="text-slate-800 dark:text-slate-200" x-text="totalFilteredCount"></span> clientes
+            </div>
+            
+            <div class="flex items-center gap-1.5">
+                <button type="button" @click="prevPage()" :disabled="currentPage === 1" 
+                    class="h-8 px-3 rounded-[5px] border border-slate-200 dark:border-slate-850 bg-white dark:bg-slate-900 text-slate-600 dark:text-slate-400 text-[10px] font-bold uppercase tracking-wider transition-colors hover:bg-slate-50 dark:hover:bg-slate-800 disabled:opacity-40 disabled:cursor-not-allowed">
+                    Anterior
+                </button>
+                
+                <template x-for="p in totalPagesArray" :key="p">
+                    <button type="button" 
+                        @click="p !== '...' ? currentPage = p : null" 
+                        :disabled="p === '...'"
+                        :class="{
+                            'bg-primary-500 text-white border-primary-500 shadow-sm shadow-primary-500/20': currentPage === p,
+                            'bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-300 border-slate-200 dark:border-slate-850 hover:bg-slate-50 dark:hover:bg-slate-800': currentPage !== p && p !== '...',
+                            'text-slate-400 dark:text-slate-650 border-transparent bg-transparent cursor-default select-none': p === '...'
+                        }" 
+                        class="w-8 h-8 rounded-[5px] border text-xs font-bold transition-all"
+                        x-text="p">
+                    </button>
+                </template>
+                
+                <button type="button" @click="nextPage()" :disabled="currentPage === totalPages" 
+                    class="h-8 px-3 rounded-[5px] border border-slate-200 dark:border-slate-850 bg-white dark:bg-slate-900 text-slate-600 dark:text-slate-400 text-[10px] font-bold uppercase tracking-wider transition-colors hover:bg-slate-50 dark:hover:bg-slate-800 disabled:opacity-40 disabled:cursor-not-allowed">
+                    Próxima
+                </button>
+            </div>
         </div>
 
     </div>
@@ -220,22 +262,67 @@
     function clientList() {
         return {
             searchQuery: '',
-            
-            matchesSearch(text) {
-                if (!this.searchQuery) return true;
-                const query = this.searchQuery.toLowerCase().trim();
-                return text.toLowerCase().includes(query);
+            currentPage: 1,
+            perPage: 12,
+            clients: @json($mappedClients),
+
+            get totalFilteredCount() {
+                return this.filteredClients.length;
             },
 
-            countVisibleCards() {
-                let count = 0;
-                const cards = document.querySelectorAll('[x-show*="matchesSearch"]');
-                cards.forEach(card => {
-                    if (card.style.display !== 'none') {
-                        count++;
+            get filteredClients() {
+                return this.clients.filter(c => {
+                    if (this.searchQuery) {
+                        const query = this.searchQuery.toLowerCase().trim();
+                        return c.searchable.includes(query);
                     }
+                    return true;
                 });
-                return count;
+            },
+
+            get totalPages() {
+                return Math.ceil(this.totalFilteredCount / this.perPage) || 1;
+            },
+
+            get totalPagesArray() {
+                const total = this.totalPages;
+                const current = this.currentPage;
+                const delta = 1;
+                const range = [];
+                for (let i = Math.max(2, current - delta); i <= Math.min(total - 1, current + delta); i++) {
+                    range.push(i);
+                }
+                if (current - delta > 2) range.unshift('...');
+                range.unshift(1);
+                if (current + delta < total - 1) range.push('...');
+                if (total > 1) range.push(total);
+                return range;
+            },
+
+            prevPage() {
+                if (this.currentPage > 1) {
+                    this.currentPage--;
+                    this.scrollToTop();
+                }
+            },
+
+            nextPage() {
+                if (this.currentPage < this.totalPages) {
+                    this.currentPage++;
+                    this.scrollToTop();
+                }
+            },
+
+            scrollToTop() {
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+            },
+
+            isClientOnCurrentPage(clientId) {
+                const index = this.filteredClients.findIndex(c => c.id === clientId);
+                if (index === -1) return false;
+                const start = (this.currentPage - 1) * this.perPage;
+                const end = start + this.perPage;
+                return index >= start && index < end;
             }
         }
     }

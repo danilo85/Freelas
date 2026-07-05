@@ -19,6 +19,11 @@
             <a href="{{ route('finances.mei') }}" class="inline-flex items-center justify-center gap-1.5 px-3.5 py-2 bg-emerald-600 hover:bg-emerald-700 text-white text-sm font-semibold rounded-[5px] transition-colors shadow-sm w-full sm:w-auto">
                 🏢 Painel MEI / Faturamento
             </a>
+            <button type="button" 
+                    @click="openImportModal = true; importRawJson = ''; importPreviewData = null; importError = '';"
+                    class="inline-flex items-center justify-center gap-1.5 px-3.5 py-2 border border-slate-200 text-slate-650 hover:bg-slate-50 text-sm font-semibold rounded-[5px] transition-colors shadow-sm bg-white w-full sm:w-auto cursor-pointer">
+                📥 Importar JSON
+            </button>
         </div>
     </div>
 
@@ -642,6 +647,110 @@
         </div>
     </div>
 
+    <!-- Modal de Importação JSON de Finanças -->
+    <template x-teleport="body">
+        <div x-show="openImportModal" 
+             class="fixed inset-0 top-0 left-0 w-screen h-screen flex items-center justify-center bg-slate-900/50 backdrop-blur-xs"
+             style="z-index: 9999999;"
+             x-transition.opacity
+             x-cloak>
+            <div class="bg-white border border-slate-200 shadow-2xl rounded-lg max-w-2xl w-full p-6 space-y-4 text-left select-none max-h-[85vh] overflow-y-auto" @click.away="if(!isImporting) openImportModal = false">
+                
+                <div class="flex items-center justify-between border-b border-slate-100 pb-3">
+                    <h3 class="font-bold text-slate-800 text-base uppercase tracking-tight flex items-center gap-2">
+                        <span>📥</span> Importar Finanças (Giro JSON)
+                    </h3>
+                    <button type="button" @click="openImportModal = false" class="text-slate-400 hover:text-slate-655 cursor-pointer">
+                        ✕
+                    </button>
+                </div>
+
+                <!-- Error Banner -->
+                <div x-show="importError" class="bg-rose-50 border border-rose-200 text-rose-800 p-3 rounded text-xs font-semibold leading-relaxed" x-cloak>
+                    <span x-text="importError"></span>
+                </div>
+
+                <!-- Drag/Upload Area when no data is parsed -->
+                <div x-show="!importPreviewData" class="space-y-4">
+                    <div class="border-2 border-dashed border-slate-220 rounded-lg p-8 text-center bg-slate-50/50 hover:bg-slate-50 transition-colors relative">
+                        <input type="file" @change="handleJsonFileSelect($event)" class="absolute inset-0 w-full h-full opacity-0 cursor-pointer" accept=".json">
+                        <span class="text-3xl block mb-2">📊</span>
+                        <span class="text-sm font-bold text-slate-700 block">Clique para selecionar o arquivo JSON de Transações</span>
+                        <span class="text-xs text-slate-400 block mt-1">Formatos suportados: Giro.transactions.v1</span>
+                    </div>
+                </div>
+
+                <!-- Preview Data Area -->
+                <div x-show="importPreviewData" class="space-y-4" x-cloak>
+                    <div class="bg-slate-50 border border-slate-200 rounded p-4 space-y-3">
+                        <h4 class="text-xs font-bold uppercase tracking-wider text-slate-400">Resumo da Importação (<span x-text="importPreviewData ? importPreviewData.length : 0"></span> transação(ões) principal(is))</h4>
+                        
+                        <div class="divide-y divide-slate-200 max-h-[40vh] overflow-y-auto space-y-3 pr-2">
+                            <template x-for="(item, idx) in importPreviewData" :key="idx">
+                                <div class="pt-3 first:pt-0 space-y-2">
+                                    <!-- Description & Value -->
+                                    <div class="flex justify-between items-start gap-3">
+                                        <div class="space-y-0.5">
+                                            <span class="text-sm font-black text-slate-800" x-text="item.transaction.descricao"></span>
+                                            <span class="text-[9px] font-extrabold uppercase px-1.5 py-0.5 rounded block w-max"
+                                                  :class="item.transaction.tipo === 'despesa' ? 'bg-red-50 text-red-700 border border-red-200' : 'bg-emerald-50 text-emerald-700 border border-emerald-200'"
+                                                  x-text="item.transaction.tipo === 'despesa' ? 'Saída' : 'Entrada'"></span>
+                                        </div>
+                                        <span class="text-sm font-black shrink-0"
+                                              :class="item.transaction.tipo === 'despesa' ? 'text-red-600' : 'text-emerald-600'">
+                                            R$ <span x-text="formatMoney(item.transaction.valor)"></span>
+                                        </span>
+                                    </div>
+
+                                    <!-- Bank & Category row -->
+                                    <div class="grid grid-cols-3 gap-2 text-[10px] uppercase font-bold text-slate-550 bg-white p-2 border border-slate-200/50 rounded">
+                                        <div>
+                                            <span class="text-slate-400 block font-semibold">Conta / Banco</span>
+                                            <span class="text-slate-800 truncate block" x-text="item.bank ? item.bank.nome : 'Nenhum'"></span>
+                                        </div>
+                                        <div>
+                                            <span class="text-slate-400 block font-semibold">Categoria</span>
+                                            <span class="text-slate-800 truncate block" x-text="item.category ? item.category.nome : 'Geral'"></span>
+                                        </div>
+                                        <div>
+                                            <span class="text-slate-400 block font-semibold">Recorrências</span>
+                                            <span class="text-slate-800 block" x-text="item.related_installments ? '+' + item.related_installments.length + ' lançamentos' : 'Nenhuma'"></span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </template>
+                        </div>
+                    </div>
+
+                    <!-- Warnings Banner about unsaved fields -->
+                    <div class="bg-amber-50 border border-amber-200 text-amber-900 p-3 rounded text-xs space-y-1">
+                        <span class="font-bold block uppercase tracking-wider text-[10px]">⚠️ Notas de conversão</span>
+                        <p class="leading-relaxed font-semibold">IDs originais de bancos e categorias serão mapeados pelo nome correspondente. O sistema irá evitar duplicar transações idênticas (mesma descrição, valor e data de vencimento).</p>
+                    </div>
+                </div>
+
+                <!-- Footer Buttons -->
+                <div class="flex justify-end gap-2 pt-3 border-t border-slate-100 select-none">
+                    <button type="button" 
+                            :disabled="isImporting"
+                            @click="openImportModal = false" 
+                            class="px-4 py-2 border border-slate-200 text-xs font-bold uppercase rounded-[5px] hover:bg-slate-100 transition-colors text-slate-600 disabled:opacity-50">
+                        Cancelar
+                    </button>
+                    <button type="button" 
+                            x-show="importPreviewData"
+                            :disabled="isImporting"
+                            @click="submitImport()" 
+                            class="bg-slate-900 hover:bg-slate-800 text-white font-bold text-xs uppercase tracking-wider px-6 py-2.5 rounded-[5px] transition-colors flex items-center gap-1.5 disabled:opacity-50 cursor-pointer shadow-sm">
+                        <span x-show="isImporting" class="w-3.5 h-3.5 border-2 border-white/30 border-t-white rounded-full animate-spin"></span>
+                        <span x-text="isImporting ? 'Importando...' : 'Confirmar Importação'"></span>
+                    </button>
+                </div>
+
+            </div>
+        </div>
+    </template>
+
 </div>
 
 <script>
@@ -650,6 +759,74 @@
             selectedItems: [],
             selectedSum: 0.00,
             privacyMode: localStorage.getItem('privacyMode') === 'true',
+            
+            // Import states
+            openImportModal: false,
+            importRawJson: '',
+            importPreviewData: null,
+            importError: '',
+            isImporting: false,
+
+            handleJsonFileSelect(event) {
+                const file = event.target.files[0];
+                if (!file) return;
+                
+                const reader = new FileReader();
+                reader.onload = (e) => {
+                    try {
+                        const rawData = e.target.result;
+                        const parsed = JSON.parse(rawData);
+                        
+                        if (!parsed || !parsed.format || !parsed.format.startsWith('giro.transactions')) {
+                            this.importError = "Formato de arquivo incompatível. Deve ser um export de transações do Giro v1.";
+                            this.importPreviewData = null;
+                            return;
+                        }
+
+                        this.importRawJson = rawData;
+                        
+                        let preview = [];
+                        if (parsed.data && parsed.data.transaction) {
+                            preview.push(parsed.data);
+                        } else if (parsed.data && Array.isArray(parsed.data)) {
+                            preview = parsed.data;
+                        }
+                        
+                        this.importPreviewData = preview;
+                        this.importError = "";
+                    } catch(err) {
+                        this.importError = "Erro ao processar JSON: " + err.message;
+                        this.importPreviewData = null;
+                    }
+                };
+                reader.readAsText(file);
+            },
+
+            async submitImport() {
+                if (!this.importRawJson) return;
+                this.isImporting = true;
+                try {
+                    const response = await fetch('{{ route("finances.import-json") }}', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'X-CSRF-TOKEN': '{{ csrf_token() }}',
+                            'Accept': 'application/json'
+                        },
+                        body: JSON.stringify({ json_data: this.importRawJson })
+                    });
+                    const result = await response.json();
+                    if (result.success) {
+                        window.location.reload();
+                    } else {
+                        this.importError = result.message || "Erro desconhecido na importação.";
+                    }
+                } catch (err) {
+                    this.importError = "Erro ao enviar dados: " + err.message;
+                } finally {
+                    this.isImporting = false;
+                }
+            },
             
             togglePrivacyMode() {
                 this.privacyMode = !this.privacyMode;

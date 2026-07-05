@@ -306,6 +306,61 @@
       @touchstart.window="handleTouchStart($event)"
       @touchend.window="handleTouchEnd($event)">
 
+    <!-- Tela de Loading de Alta Performance Global -->
+    <div id="page-loader" class="fixed inset-0 bg-white dark:bg-slate-950 z-[9999] flex flex-col items-center justify-center transition-opacity duration-300">
+        <div class="flex flex-col items-center space-y-6">
+            <!-- Dollar Pulse Logo -->
+            <div class="relative flex items-center justify-center">
+                <div class="w-16 h-16 rounded-full border-[3px] border-primary-500 flex items-center justify-center animate-pulse shadow-[0_0_20px_rgba(34,197,94,0.15)]">
+                    <span class="text-3xl font-black text-primary-500">$</span>
+                </div>
+                <div class="absolute inset-0 w-16 h-16 rounded-full border-t-[3px] border-l-[3px] border-transparent border-t-primary-500 border-l-primary-500 animate-spin"></div>
+            </div>
+            
+            <!-- Logo Text -->
+            <div class="text-2xl font-black tracking-wide text-slate-800 dark:text-white flex items-center gap-1.5 select-none">
+                <span>Gestor</span>
+                <span class="text-primary-500">Freelas</span>
+            </div>
+            
+            <!-- Progress bar -->
+            <div class="w-48 h-1 bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden relative">
+                <div id="loader-progress" class="h-full bg-primary-500 w-0 transition-all duration-150 ease-out shadow-[0_0_8px_rgba(34,197,94,0.3)]"></div>
+            </div>
+            
+            <span class="text-slate-400 dark:text-slate-500 text-[10px] font-bold uppercase tracking-widest animate-pulse">Carregando...</span>
+        </div>
+    </div>
+
+    <script>
+        (function() {
+            const loader = document.getElementById('page-loader');
+            const progress = document.getElementById('loader-progress');
+            
+            let currentProgress = 0;
+            const interval = setInterval(() => {
+                if (currentProgress < 85) {
+                    currentProgress += Math.floor(Math.random() * 15) + 5;
+                    if (progress) progress.style.width = currentProgress + '%';
+                }
+            }, 50);
+
+            window.addEventListener('DOMContentLoaded', () => {
+                clearInterval(interval);
+                if (progress) progress.style.width = '100%';
+                
+                setTimeout(() => {
+                    if (loader) {
+                        loader.classList.add('opacity-0');
+                        loader.style.pointerEvents = 'none';
+                        setTimeout(() => {
+                            loader.remove();
+                        }, 400);
+                    }
+                }, 200);
+            });
+        })();
+    </script>
     <!-- Backdrop móvel para quando a Sidebar estiver aberta -->
     <div x-show="sidebarOpen" @click="sidebarOpen = false" class="fixed inset-0 bg-slate-900/40 z-30 md:hidden" x-transition x-cloak></div>
 
