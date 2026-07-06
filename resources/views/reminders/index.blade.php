@@ -76,7 +76,7 @@
     <!-- Keep note creator (Expands on click) -->
     <div class="flex justify-center select-none">
         <div class="w-full max-w-xl border rounded-lg shadow-sm hover:shadow-md transition-shadow duration-200 relative overflow-hidden"
-             :class="newColor"
+             :class="getNoteColorClass(newColor)"
              @click.away="closeCreator()">
             
             <!-- Image Header Preview inside Creator -->
@@ -264,7 +264,7 @@
         <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4"
              @dragover.prevent>
             <template x-for="(note, index) in notes.filter(n => n.is_pinned && matchesSearch(n))" :key="note.id">
-                <div :class="note.color" 
+                <div :class="getNoteColorClass(note.color)" 
                      class="border rounded-lg shadow-xs hover:shadow-md transition-all duration-200 relative group flex flex-col justify-between select-none cursor-pointer overflow-hidden min-h-[140px]"
                      draggable="true"
                      @dragstart="dragStart(note, $event)"
@@ -387,7 +387,7 @@
         <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4"
              @dragover.prevent>
             <template x-for="(note, index) in notes.filter(n => !n.is_pinned && matchesSearch(n))" :key="note.id">
-                <div :class="note.color" 
+                <div :class="getNoteColorClass(note.color)" 
                      class="border rounded-lg shadow-xs hover:shadow-md transition-all duration-200 relative group flex flex-col justify-between select-none cursor-pointer overflow-hidden min-h-[140px]"
                      draggable="true"
                      @dragstart="dragStart(note, $event)"
@@ -513,7 +513,7 @@
          style="z-index: 9999;"
          x-transition.opacity
          x-cloak>
-        <div :class="activeNote.color" 
+        <div :class="getNoteColorClass(activeNote.color)" 
              class="border border-slate-250 shadow-2xl rounded-lg max-w-lg w-full overflow-hidden text-left relative" 
              @click.away="closeEditModal()">
             
@@ -729,6 +729,33 @@
                     'image_path' => $r->image_path
                 ];
             })) !!},
+
+            getNoteColorClass(color) {
+                if (!color) return 'bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 text-slate-800 dark:text-slate-200';
+                
+                const colorMap = {
+                    'bg-white': 'bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 text-slate-850 dark:text-slate-200',
+                    'bg-[#f28b82]': 'bg-[#f28b82] dark:bg-[#5c2b29] border-[#f28b82] dark:border-[#5c2b29] text-slate-900 dark:text-slate-100',
+                    'bg-[#fbbc04]': 'bg-[#fbbc04] dark:bg-[#614a19] border-[#fbbc04] dark:border-[#614a19] text-slate-900 dark:text-slate-100',
+                    'bg-[#fff475]': 'bg-[#fff475] dark:bg-[#635d19] border-[#fff475] dark:border-[#635d19] text-slate-900 dark:text-slate-100',
+                    'bg-[#ccff90]': 'bg-[#ccff90] dark:bg-[#345920] border-[#ccff90] dark:border-[#345920] text-slate-900 dark:text-slate-100',
+                    'bg-[#a7ffeb]': 'bg-[#a7ffeb] dark:bg-[#16504b] border-[#a7ffeb] dark:border-[#16504b] text-slate-900 dark:text-slate-100',
+                    'bg-[#cbf0f8]': 'bg-[#cbf0f8] dark:bg-[#2d555e] border-[#cbf0f8] dark:border-[#2d555e] text-slate-900 dark:text-slate-100',
+                    'bg-[#aecbfa]': 'bg-[#aecbfa] dark:bg-[#1d3b53] border-[#aecbfa] dark:border-[#1d3b53] text-slate-900 dark:text-slate-100',
+                    'bg-[#d7aefb]': 'bg-[#d7aefb] dark:bg-[#42275e] border-[#d7aefb] dark:border-[#42275e] text-slate-900 dark:text-slate-100',
+                    'bg-[#fdcfe8]': 'bg-[#fdcfe8] dark:bg-[#5b2245] border-[#fdcfe8] dark:border-[#5b2245] text-slate-900 dark:text-slate-100',
+                    'bg-[#e6c9a8]': 'bg-[#e6c9a8] dark:bg-[#443727] border-[#e6c9a8] dark:border-[#443727] text-slate-900 dark:text-slate-100',
+                    'bg-[#e8eaed]': 'bg-[#e8eaed] dark:bg-[#3c4043] border-[#e8eaed] dark:border-[#3c4043] text-slate-900 dark:text-slate-100',
+                };
+
+                for (const key in colorMap) {
+                    if (color.indexOf(key) !== -1) {
+                        return colorMap[key];
+                    }
+                }
+                
+                return color;
+            },
 
             searchQuery: '',
             isCreating: false,

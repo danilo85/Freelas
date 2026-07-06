@@ -18,7 +18,7 @@
         @method('PUT')
 
         <!-- Foto de Perfil & Preferência de Tema -->
-        <div class="grid grid-cols-1 md:grid-cols-3 gap-6 items-start">
+        <div class="grid grid-cols-1 md:grid-cols-4 gap-6 items-start">
             
             <!-- Avatar Upload com Alpine.js + Drag and Drop -->
             <div class="flex flex-col items-center space-y-3">
@@ -54,6 +54,45 @@
                 <input type="file" name="avatar" x-ref="avatarInput" @change="previewAvatar" class="hidden" accept="image/*">
                 <p class="text-[10px] text-slate-400 text-center">Arraste e solte ou clique para enviar.<br>JPG, PNG, WEBP. Máx: 2MB</p>
                 @error('avatar')
+                    <p class="text-xs text-red-600 font-medium">{{ $message }}</p>
+                @enderror
+            </div>
+
+            <!-- Logo Upload com Alpine.js + Drag and Drop -->
+            <div class="flex flex-col items-center space-y-3">
+                <span class="text-xs font-semibold text-slate-400 uppercase tracking-wider">Logotipo Pessoal</span>
+                
+                <div class="relative group cursor-pointer select-none w-full" 
+                     @click="triggerLogoUpload()"
+                     @dragover.prevent="dragOverLogo = true"
+                     @dragleave.prevent="dragOverLogo = false"
+                     @drop.prevent="handleLogoDrop($event)">
+                    <!-- Retângulo de Imagem da Logo (mais apropriado para logos horizontais/quadrados) -->
+                    <div class="w-full h-32 rounded-[5px] border-2 border-dashed transition-colors duration-200 bg-slate-50 flex items-center justify-center relative p-2"
+                         :class="dragOverLogo ? 'border-primary-500 bg-slate-100 scale-102' : 'border-slate-200 hover:border-slate-350 bg-slate-50/50'">
+                        <template x-if="logoUrl">
+                            <img :src="logoUrl" class="max-w-full max-h-full object-contain">
+                        </template>
+                        <template x-if="!logoUrl">
+                            <div class="flex flex-col items-center gap-1 text-center">
+                                <span class="text-2xl text-slate-300">🖼️</span>
+                                <span class="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Upload Logotipo</span>
+                            </div>
+                        </template>
+
+                        <!-- Overlay Hover / Dragover -->
+                        <div class="absolute inset-0 bg-slate-900/40 opacity-0 group-hover:opacity-100 transition-opacity flex flex-col items-center justify-center text-white text-xs font-semibold rounded-[5px] p-2 text-center"
+                             :class="dragOverLogo ? 'opacity-100 bg-slate-900/60' : ''">
+                            <span x-show="!dragOverLogo">Alterar Logo</span>
+                            <span x-show="dragOverLogo" class="text-white animate-pulse">Solte aqui</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Input File Oculto -->
+                <input type="file" name="logo" x-ref="logoInput" @change="previewLogo" class="hidden" accept="image/*">
+                <p class="text-[10px] text-slate-400 text-center">Arraste e solte ou clique para enviar.<br>JPG, PNG, WEBP. Máx: 2MB</p>
+                @error('logo')
                     <p class="text-xs text-red-600 font-medium">{{ $message }}</p>
                 @enderror
             </div>
@@ -182,7 +221,9 @@
         return {
             selectedTheme: '{{ $user->theme_color }}',
             avatarUrl: '{{ $user->avatar ? asset("storage/" . $user->avatar) : "" }}',
+            logoUrl: '{{ $user->logo ? asset("storage/" . $user->logo) : "" }}',
             dragOver: false,
+            dragOverLogo: false,
 
             triggerUpload() {
                 this.$refs.avatarInput.click();
@@ -205,6 +246,31 @@
                         dataTransfer.items.add(file);
                         this.$refs.avatarInput.files = dataTransfer.files;
                         this.avatarUrl = URL.createObjectURL(file);
+                    }
+                }
+            },
+
+            triggerLogoUpload() {
+                this.$refs.logoInput.click();
+            },
+
+            previewLogo(event) {
+                const file = event.target.files[0];
+                if (file) {
+                    this.logoUrl = URL.createObjectURL(file);
+                }
+            },
+
+            handleLogoDrop(event) {
+                this.dragOverLogo = false;
+                const files = event.dataTransfer.files;
+                if (files && files.length > 0) {
+                    const file = files[0];
+                    if (file.type.startsWith('image/')) {
+                        const dataTransfer = new DataTransfer();
+                        dataTransfer.items.add(file);
+                        this.$refs.logoInput.files = dataTransfer.files;
+                        this.logoUrl = URL.createObjectURL(file);
                     }
                 }
             }

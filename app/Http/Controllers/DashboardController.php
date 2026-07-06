@@ -47,11 +47,42 @@ class DashboardController extends Controller
         ->with('client')
         ->get();
 
+        // 5. Contas a Vencer nos Próximos 7 Dias (Pendente)
+        $upcomingBills = Transaction::where('user_id', $userId)
+            ->where('status', 'pendente')
+            ->whereBetween('due_date', [Carbon::now()->toDateString(), Carbon::now()->addDays(7)->toDateString()])
+            ->with(['category'])
+            ->orderBy('due_date', 'asc')
+            ->get();
+
+        // 6. Gráfico por Categoria (Gastos Realizados + Previstos no Mês)
+        $categoryExpenses = Transaction::where('user_id', $userId)
+            ->where('type', 'saida')
+            ->whereBetween('due_date', [$startOfMonth->toDateString(), $endOfMonth->toDateString()])
+            ->selectRaw('category_id, SUM(amount) as total')
+            ->groupBy('category_id')
+            ->with('category')
+            ->get();
+
+        $categoryChartLabels = [];
+        $categoryChartData = [];
+        $categoryChartColors = [];
+
+        foreach ($categoryExpenses as $exp) {
+            $categoryChartLabels[] = $exp->category ? $exp->category->name : 'Sem Categoria';
+            $categoryChartData[] = (float) $exp->total;
+            $categoryChartColors[] = $exp->category ? ($exp->category->color ?: '#94a3b8') : '#94a3b8';
+        }
+
         return view('dashboard', compact(
             'currentMonthRevenue',
             'pendingProposalsValue',
             'activeProjectsCount',
-            'projects'
+            'projects',
+            'upcomingBills',
+            'categoryChartLabels',
+            'categoryChartData',
+            'categoryChartColors'
         ));
     }
 }

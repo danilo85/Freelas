@@ -66,4 +66,32 @@ class Transaction extends Model
     {
         return $this->belongsTo(Payment::class);
     }
+
+    /**
+     * Hooks para manter sincronizado com a tabela de pagamentos.
+     */
+    protected static function booted()
+    {
+        static::updated(function ($transaction) {
+            if ($transaction->payment_id && $transaction->isDirty(['amount', 'paid_at', 'bank_account_id'])) {
+                $payment = \App\Models\Payment::find($transaction->payment_id);
+                if ($payment) {
+                    $payment->updateQuietly([
+                        'amount' => $transaction->amount,
+                        'paid_at' => $transaction->paid_at,
+                        'bank_account_id' => $transaction->bank_account_id,
+                    ]);
+                }
+            }
+        });
+
+        static::deleted(function ($transaction) {
+            if ($transaction->payment_id) {
+                $payment = \App\Models\Payment::find($transaction->payment_id);
+                if ($payment) {
+                    $payment->delete();
+                }
+            }
+        });
+    }
 }

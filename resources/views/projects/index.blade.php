@@ -204,7 +204,7 @@
             </button>
             
             <button type="button" @click="setStatusFilter('rascunho')" 
-                :class="statusFilter === 'rascunho' ? 'bg-slate-300 text-slate-900 border-slate-400 ring-2 ring-slate-200' : 'bg-slate-100 text-slate-700 border-slate-300 hover:bg-slate-200'" 
+                :class="statusFilter === 'rascunho' ? 'bg-slate-300 dark:bg-slate-700 text-slate-900 dark:text-slate-100 border-slate-400 dark:border-slate-600 ring-2 ring-slate-200' : 'bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border-slate-300 dark:border-slate-700 hover:bg-slate-200 dark:hover:bg-slate-700/50'" 
                 class="w-8 h-8 sm:w-auto sm:h-auto p-0 sm:px-2.5 sm:py-1 rounded-full sm:rounded-[5px] text-[10px] font-semibold uppercase tracking-wider border transition-all duration-150 flex items-center justify-center gap-1.5"
                 title="Rascunho">
                 <span class="w-2.5 h-2.5 sm:w-1.5 sm:h-1.5 rounded-full bg-slate-400"></span>
@@ -212,7 +212,7 @@
             </button>
             
             <button type="button" @click="setStatusFilter('analisando')" 
-                :class="statusFilter === 'analisando' ? 'bg-amber-600 text-white border-amber-600 ring-2 ring-amber-300' : 'bg-amber-100 text-amber-900 border-amber-300 hover:bg-amber-200'" 
+                :class="statusFilter === 'analisando' ? 'bg-amber-600 text-white border-amber-600 ring-2 ring-amber-300' : 'bg-amber-100 dark:bg-amber-950/40 text-amber-900 dark:text-amber-300 border-amber-300 dark:border-amber-900/40 hover:bg-amber-200 dark:hover:bg-amber-900/30'" 
                 class="w-8 h-8 sm:w-auto sm:h-auto p-0 sm:px-2.5 sm:py-1 rounded-full sm:rounded-[5px] text-[10px] font-semibold uppercase tracking-wider border transition-all duration-150 flex items-center justify-center gap-1.5"
                 title="Analisando">
                 <span class="w-2.5 h-2.5 sm:w-1.5 sm:h-1.5 rounded-full" :class="statusFilter === 'analisando' ? 'bg-white' : 'bg-amber-500'"></span>
@@ -220,7 +220,7 @@
             </button>
             
             <button type="button" @click="setStatusFilter('aprovado')" 
-                :class="statusFilter === 'aprovado' ? 'bg-emerald-600 text-white border-emerald-600 ring-2 ring-emerald-300' : 'bg-emerald-100 text-emerald-900 border-emerald-300 hover:bg-emerald-200'" 
+                :class="statusFilter === 'aprovado' ? 'bg-emerald-600 text-white border-emerald-600 ring-2 ring-emerald-300' : 'bg-emerald-100 dark:bg-emerald-950/40 text-emerald-900 dark:text-emerald-300 border-emerald-300 dark:border-emerald-900/40 hover:bg-emerald-200 dark:hover:bg-emerald-900/30'" 
                 class="w-8 h-8 sm:w-auto sm:h-auto p-0 sm:px-2.5 sm:py-1 rounded-full sm:rounded-[5px] text-[10px] font-semibold uppercase tracking-wider border transition-all duration-150 flex items-center justify-center gap-1.5"
                 title="Aprovado">
                 <span class="w-2.5 h-2.5 sm:w-1.5 sm:h-1.5 rounded-full" :class="statusFilter === 'aprovado' ? 'bg-white' : 'bg-emerald-500'"></span>
@@ -228,7 +228,7 @@
             </button>
             
             <button type="button" @click="setStatusFilter('rejeitado')" 
-                :class="statusFilter === 'rejeitado' ? 'bg-red-600 text-white border-red-600 ring-2 ring-red-300' : 'bg-red-100 text-red-900 border-red-300 hover:bg-red-200'" 
+                :class="statusFilter === 'rejeitado' ? 'bg-red-600 text-white border-red-600 ring-2 ring-red-300' : 'bg-red-100 dark:bg-red-950/40 text-red-900 dark:text-red-300 border-red-300 dark:border-red-900/40 hover:bg-red-200 dark:hover:bg-red-900/30'" 
                 class="w-8 h-8 sm:w-auto sm:h-auto p-0 sm:px-2.5 sm:py-1 rounded-full sm:rounded-[5px] text-[10px] font-semibold uppercase tracking-wider border transition-all duration-150 flex items-center justify-center gap-1.5"
                 title="Rejeitado">
                 <span class="w-2.5 h-2.5 sm:w-1.5 sm:h-1.5 rounded-full" :class="statusFilter === 'rejeitado' ? 'bg-white' : 'bg-red-500'"></span>
@@ -236,7 +236,7 @@
             </button>
             
             <button type="button" @click="setStatusFilter('quitado')" 
-                :class="statusFilter === 'quitado' ? 'bg-purple-600 text-white border-purple-600 ring-2 ring-purple-300' : 'bg-purple-100 text-purple-900 border-purple-300 hover:bg-purple-200'" 
+                :class="statusFilter === 'quitado' ? 'bg-purple-600 text-white border-purple-600 ring-2 ring-purple-300' : 'bg-purple-100 dark:bg-purple-950/40 text-purple-900 dark:text-purple-300 border-purple-300 dark:border-purple-800/60 hover:bg-purple-200 dark:hover:bg-purple-900/40'" 
                 class="w-8 h-8 sm:w-auto sm:h-auto p-0 sm:px-2.5 sm:py-1 rounded-full sm:rounded-[5px] text-[10px] font-semibold uppercase tracking-wider border transition-all duration-150 flex items-center justify-center gap-1.5"
                 title="Quitado">
                 <span class="w-2.5 h-2.5 sm:w-1.5 sm:h-1.5 rounded-full" :class="statusFilter === 'quitado' ? 'bg-white' : 'bg-purple-500'"></span>
@@ -305,12 +305,12 @@
                                             @click.stop="openStatus = !openStatus"
                                             :disabled="updating"
                                             :class="{
-                                                'bg-slate-100 text-slate-700 border-slate-350': status === 'rascunho',
-                                                'bg-amber-100 text-amber-900 border-amber-300': status === 'analisando',
-                                                'bg-emerald-100 text-emerald-900 border-emerald-300': status === 'aprovado',
-                                                'bg-red-100 text-red-900 border-red-300': status === 'rejeitado',
-                                                'bg-purple-100 text-purple-900 border-purple-300': status === 'quitado',
-                                                'bg-blue-100 text-blue-900 border-blue-300': status === 'finalizado'
+                                                'bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border-slate-350 dark:border-slate-700': status === 'rascunho',
+                                                'bg-amber-100 dark:bg-amber-950/40 text-amber-900 dark:text-amber-300 border-amber-300 dark:border-amber-900/40': status === 'analisando',
+                                                'bg-emerald-100 dark:bg-emerald-950/40 text-emerald-900 dark:text-emerald-300 border-emerald-300 dark:border-emerald-900/40': status === 'aprovado',
+                                                'bg-red-100 dark:bg-red-950/40 text-red-900 dark:text-red-300 border-red-300 dark:border-red-900/40': status === 'rejeitado',
+                                                'bg-purple-100 dark:bg-purple-950/40 text-purple-900 dark:text-purple-300 border-purple-300 dark:border-purple-800/60': status === 'quitado',
+                                                'bg-blue-100 dark:bg-blue-950/40 text-blue-900 dark:text-blue-300 border-blue-300 dark:border-blue-900/40': status === 'finalizado'
                                             }" 
                                             class="inline-flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-wider pl-2.5 pr-7 py-1 rounded-[5px] border relative transition-colors duration-200 cursor-pointer focus:outline-none"
                                         >
@@ -934,77 +934,77 @@
 
             getCardClass() {
                 if (this.isSelected) {
-                    return 'bg-violet-50/30 border-violet-500 shadow-[0_0_20px_rgba(109,40,217,0.25)] ring-2 ring-violet-400/20';
+                    return 'bg-violet-50/30 dark:bg-violet-950/20 border-violet-500 shadow-[0_0_20px_rgba(109,40,217,0.25)] ring-2 ring-violet-400/20';
                 }
                 switch (this.status) {
                     case 'rascunho':
-                        return 'bg-slate-100/80 border-slate-300 hover:border-slate-400 hover:bg-slate-200/50';
+                        return 'bg-slate-100/80 dark:bg-slate-900/40 border-slate-300 dark:border-slate-800 hover:border-slate-400 dark:hover:border-slate-700 hover:bg-slate-200/50';
                     case 'analisando':
-                        return 'bg-amber-50/80 border-amber-300 hover:border-amber-400 hover:bg-amber-100/40';
+                        return 'bg-amber-50/80 dark:bg-amber-950/20 border-amber-300 dark:border-amber-900 hover:border-amber-400 dark:hover:border-amber-800 hover:bg-amber-100/40';
                     case 'aprovado':
-                        return 'bg-emerald-50/80 border-emerald-300 hover:border-emerald-400 hover:bg-emerald-100/40';
+                        return 'bg-emerald-50/80 dark:bg-emerald-950/20 border-emerald-300 dark:border-emerald-900 hover:border-emerald-400 dark:hover:border-emerald-800 hover:bg-emerald-100/40';
                     case 'rejeitado':
-                        return 'bg-red-50/80 border-red-300 hover:border-red-400 hover:bg-red-100/40';
+                        return 'bg-red-50/80 dark:bg-red-950/20 border-red-300 dark:border-red-900 hover:border-red-400 dark:hover:border-red-800 hover:bg-red-100/40';
                     case 'quitado':
-                        return 'bg-purple-50/80 border-purple-300 hover:border-purple-400 hover:bg-purple-100/40';
+                        return 'bg-purple-50/80 dark:bg-purple-950/20 border-purple-300 dark:border-purple-900 hover:border-purple-400 dark:hover:border-purple-800 hover:bg-purple-100/40';
                     case 'finalizado':
-                        return 'bg-blue-50/80 border-blue-300 hover:border-blue-400 hover:bg-blue-100/40';
+                        return 'bg-blue-50/80 dark:bg-blue-950/20 border-blue-300 dark:border-blue-900 hover:border-blue-400 dark:hover:border-blue-800 hover:bg-blue-100/40';
                     default:
-                        return 'bg-white border-slate-200 hover:border-slate-350';
+                        return 'bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 hover:border-slate-350 dark:hover:border-slate-700';
                 }
             },
 
             getTitleClass() {
                 switch (this.status) {
-                    case 'rascunho': return 'text-slate-900';
-                    case 'analisando': return 'text-amber-900';
-                    case 'aprovado': return 'text-emerald-950';
-                    case 'rejeitado': return 'text-red-950';
-                    case 'quitado': return 'text-purple-950';
-                    case 'finalizado': return 'text-blue-950';
-                    default: return 'text-slate-900';
+                    case 'rascunho': return 'text-slate-900 dark:text-slate-100';
+                    case 'analisando': return 'text-amber-900 dark:text-amber-300';
+                    case 'aprovado': return 'text-emerald-950 dark:text-emerald-300';
+                    case 'rejeitado': return 'text-red-950 dark:text-red-300';
+                    case 'quitado': return 'text-purple-950 dark:text-purple-300';
+                    case 'finalizado': return 'text-blue-950 dark:text-blue-300';
+                    default: return 'text-slate-900 dark:text-slate-100';
                 }
             },
 
             getDescriptionClass() {
                 switch (this.status) {
-                    case 'rascunho': return 'text-slate-500';
-                    case 'analisando': return 'text-amber-800/80';
-                    case 'aprovado': return 'text-emerald-800/80';
-                    case 'rejeitado': return 'text-red-800/80';
-                    case 'quitado': return 'text-purple-800/80';
-                    case 'finalizado': return 'text-blue-800/80';
-                    default: return 'text-slate-500';
+                    case 'rascunho': return 'text-slate-500 dark:text-slate-400';
+                    case 'analisando': return 'text-amber-800/80 dark:text-amber-400/80';
+                    case 'aprovado': return 'text-emerald-800/80 dark:text-emerald-400/80';
+                    case 'rejeitado': return 'text-red-800/80 dark:text-red-400/80';
+                    case 'quitado': return 'text-purple-800/80 dark:text-purple-400/80';
+                    case 'finalizado': return 'text-blue-800/80 dark:text-blue-400/80';
+                    default: return 'text-slate-500 dark:text-slate-400';
                 }
             },
 
             getBoxClass() {
                 if (this.isSelected) {
-                    return 'bg-violet-100/20 border-violet-200/30';
+                    return 'bg-violet-100/20 dark:bg-violet-900/20 border-violet-200/30 dark:border-violet-800/30';
                 }
                 switch (this.status) {
-                    case 'rascunho': return 'bg-slate-100/50 border-slate-200/50';
-                    case 'analisando': return 'bg-amber-100/30 border-amber-200/40';
-                    case 'aprovado': return 'bg-emerald-100/30 border-emerald-200/40';
-                    case 'rejeitado': return 'bg-red-100/30 border-red-200/40';
-                    case 'quitado': return 'bg-purple-100/30 border-purple-200/40';
-                    case 'finalizado': return 'bg-blue-100/30 border-blue-200/40';
-                    default: return 'bg-slate-50 border-slate-100';
+                    case 'rascunho': return 'bg-slate-100/50 dark:bg-slate-800/40 border-slate-200/50 dark:border-slate-700/50';
+                    case 'analisando': return 'bg-amber-100/30 dark:bg-amber-900/30 border-amber-200/40 dark:border-amber-800/40';
+                    case 'aprovado': return 'bg-emerald-100/30 dark:bg-emerald-900/30 border-emerald-200/40 dark:border-emerald-800/40';
+                    case 'rejeitado': return 'bg-red-100/30 dark:bg-red-900/30 border-red-200/40 dark:border-red-800/40';
+                    case 'quitado': return 'bg-purple-100/30 dark:bg-purple-900/30 border-purple-200/40 dark:border-purple-800/40';
+                    case 'finalizado': return 'bg-blue-100/30 dark:bg-blue-900/30 border-blue-200/40 dark:border-blue-800/40';
+                    default: return 'bg-slate-50 dark:bg-slate-800 border-slate-100 dark:border-slate-700';
                 }
             },
 
             getDividerClass() {
                 if (this.isSelected) {
-                    return 'border-violet-200/60';
+                    return 'border-violet-200/60 dark:border-violet-800/60';
                 }
                 switch (this.status) {
-                    case 'rascunho': return 'border-slate-200/60';
-                    case 'analisando': return 'border-amber-200/60';
-                    case 'aprovado': return 'border-emerald-200/60';
-                    case 'rejeitado': return 'border-red-200/60';
-                    case 'quitado': return 'border-purple-200/60';
-                    case 'finalizado': return 'border-blue-200/60';
-                    default: return 'border-slate-100';
+                    case 'rascunho': return 'border-slate-200/60 dark:border-slate-700/60';
+                    case 'analisando': return 'border-amber-200/60 dark:border-amber-800/60';
+                    case 'aprovado': return 'border-emerald-200/60 dark:border-emerald-800/60';
+                    case 'rejeitado': return 'border-red-200/60 dark:border-red-800/60';
+                    case 'quitado': return 'border-purple-200/60 dark:border-purple-800/60';
+                    case 'finalizado': return 'border-blue-200/60 dark:border-blue-800/60';
+                    default: return 'border-slate-100 dark:border-slate-750';
                 }
             },
 

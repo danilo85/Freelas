@@ -39,7 +39,7 @@
                     @drop.prevent="handleDrop($event)"
                     @click="$refs.fileInput.click()"
                     class="border-2 border-dashed rounded-[5px] p-8 text-center cursor-pointer transition-all duration-200 select-none flex flex-col items-center justify-center min-h-[220px]"
-                    :class="isDragging ? 'border-primary-500 bg-primary-50/10 ring-4 ring-primary-500/10 scale-[1.01]' : 'border-slate-200 hover:bg-slate-50/50'"
+                    :class="isDragging ? 'border-primary-500 bg-primary-50/10 dark:bg-primary-950/20 ring-4 ring-primary-500/10 dark:ring-primary-400/20 scale-[1.01]' : 'border-slate-200 dark:border-slate-800 hover:bg-slate-50/50 dark:hover:bg-slate-800/40'"
                 >
                     <span class="text-4xl mb-3">📁</span>
                     <h3 class="font-extrabold text-sm text-slate-700">Arraste seus arquivos para cá</h3>
@@ -57,23 +57,23 @@
 
                 <!-- Lista de arquivos selecionados -->
                 <template x-if="filesList.length > 0">
-                    <div class="space-y-2 border border-slate-150 rounded-[5px] p-4 bg-slate-50/50">
-                        <div class="flex items-center justify-between border-b border-slate-200 pb-2 mb-2">
+                    <div class="space-y-2 border border-slate-150 dark:border-slate-800 rounded-[5px] p-4 bg-slate-50/50 dark:bg-slate-800/40">
+                        <div class="flex items-center justify-between border-b border-slate-200 dark:border-slate-700 pb-2 mb-2">
                             <span class="text-xs font-black text-slate-500 uppercase tracking-wider">Lista de Arquivos</span>
-                            <span class="text-xs font-bold text-slate-650" :class="totalSize > 1024*1024*1024 ? 'text-red-600 font-black' : ''">
+                            <span class="text-xs font-bold text-slate-650 dark:text-slate-400" :class="totalSize > 1024*1024*1024 ? 'text-red-600 font-black' : ''">
                                 Tamanho Total: <span x-text="formatBytes(totalSize)"></span> / 1 GB
                             </span>
                         </div>
-                        <div class="max-h-[200px] overflow-y-auto divide-y divide-slate-100 pr-1.5">
+                        <div class="max-h-[200px] overflow-y-auto divide-y divide-slate-100 dark:divide-slate-800 pr-1.5">
                             <template x-for="(file, index) in filesList" :key="index">
                                 <div class="py-2.5 flex items-center justify-between text-xs gap-3">
                                     <div class="min-w-0 flex items-center gap-2">
                                         <span class="shrink-0 text-lg">📄</span>
-                                        <span class="font-bold text-slate-700 truncate" :title="file.name" x-text="file.name"></span>
+                                        <span class="font-bold text-slate-700 dark:text-slate-200 truncate" :title="file.name" x-text="file.name"></span>
                                     </div>
                                     <div class="flex items-center gap-3 shrink-0">
                                         <span class="text-slate-400 font-semibold" x-text="file.formattedSize"></span>
-                                        <button type="button" @click.stop="removeFile(index)" class="text-rose-600 hover:bg-rose-50 p-1 rounded-[5px] transition-colors" title="Remover">
+                                        <button type="button" @click.stop="removeFile(index)" class="text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/30 p-1 rounded-[5px] transition-colors" title="Remover">
                                             <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
                                             </svg>
@@ -86,12 +86,12 @@
                 </template>
 
                 <!-- Configurações do Lançamento -->
-                <div class="grid grid-cols-1 sm:grid-cols-2 gap-6 pt-4 border-t border-slate-100">
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-6 pt-4 border-t border-slate-100 dark:border-slate-800">
                     
                     <!-- Nome do Compartilhamento -->
                     <div class="space-y-1.5 sm:col-span-2">
-                        <label for="title" class="text-xs font-semibold text-slate-500 uppercase tracking-wider">Nome da Transferência / Título do Link</label>
-                        <input type="text" name="title" id="title" x-model="title" placeholder="Ex: Campanha Publicitária de Natal" class="w-full px-4 py-3 rounded-[5px] border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500 transition-all">
+                        <label for="title" class="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Nome da Transferência / Título do Link</label>
+                        <input type="text" name="title" id="title" x-model="title" placeholder="Ex: Campanha Publicitária de Natal" class="w-full px-4 py-3 rounded-[5px] border border-slate-200 dark:border-slate-800 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500 transition-all bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100">
                         <p class="text-[10px] text-slate-400">Pegará automaticamente o nome do primeiro arquivo caso não seja informado.</p>
                         @error('title')
                             <p class="text-xs text-red-600 font-medium">{{ $message }}</p>
@@ -101,10 +101,10 @@
                     <!-- Slider Dias de Expiração (1 a 30 dias) -->
                     <div class="space-y-2">
                         <div class="flex justify-between items-center">
-                            <label for="expires_days" class="text-xs font-semibold text-slate-500 uppercase tracking-wider">Prazo de Expiração</label>
-                            <span class="text-xs font-black text-primary-600 uppercase" x-text="expiresDays + (expiresDays == 1 ? ' Dia' : ' Dias')">7 Dias</span>
+                            <label for="expires_days" class="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Prazo de Expiração</label>
+                            <span class="text-xs font-black text-primary-600 dark:text-primary-400 uppercase" x-text="expiresDays + (expiresDays == 1 ? ' Dia' : ' Dias')">7 Dias</span>
                         </div>
-                        <input type="range" name="expires_days" id="expires_days" min="1" max="30" x-model="expiresDays" class="w-full h-2 bg-slate-100 rounded-lg appearance-none cursor-pointer accent-primary-500" />
+                        <input type="range" name="expires_days" id="expires_days" min="1" max="30" x-model="expiresDays" class="w-full h-2 bg-slate-100 dark:bg-slate-800 rounded-lg appearance-none cursor-pointer accent-primary-500" />
                         <p class="text-[10px] text-slate-400">O link deixará de funcionar automaticamente após o período selecionado.</p>
                         @error('expires_days')
                             <p class="text-xs text-red-600 font-medium">{{ $message }}</p>
@@ -113,8 +113,8 @@
 
                     <!-- Limite de Downloads -->
                     <div class="space-y-1.5">
-                        <label for="download_limit" class="text-xs font-semibold text-slate-500 uppercase tracking-wider">Limite de Downloads</label>
-                        <input type="number" name="download_limit" id="download_limit" placeholder="Ex: 5 (vazio para ilimitado)" class="w-full px-4 py-3 rounded-[5px] border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500 transition-all">
+                        <label for="download_limit" class="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Limite de Downloads</label>
+                        <input type="number" name="download_limit" id="download_limit" placeholder="Ex: 5 (vazio para ilimitado)" class="w-full px-4 py-3 rounded-[5px] border border-slate-200 dark:border-slate-800 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500 transition-all bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100">
                         <p class="text-[10px] text-slate-400">Deixe em branco se quiser permitir downloads ilimitados.</p>
                         @error('download_limit')
                             <p class="text-xs text-red-600 font-medium">{{ $message }}</p>
@@ -124,11 +124,11 @@
                     <!-- Senha de Acesso (Segurança) -->
                     <div class="space-y-1.5 sm:col-span-2">
                         <div class="flex items-center gap-2 mb-1">
-                            <input type="checkbox" id="has_password" x-model="hasPassword" class="rounded text-primary-600 border-slate-350 focus:ring-primary-500/20 w-4 h-4 cursor-pointer" />
-                            <label for="has_password" class="text-xs font-semibold text-slate-700 cursor-pointer select-none">Proteger link com Senha de Segurança</label>
+                            <input type="checkbox" name="has_password" value="1" id="has_password" x-model="hasPassword" class="rounded text-primary-600 border-slate-350 dark:border-slate-700 focus:ring-primary-500/20 w-4 h-4 cursor-pointer" />
+                            <label for="has_password" class="text-xs font-semibold text-slate-700 dark:text-slate-300 cursor-pointer select-none">Proteger link com Senha de Segurança</label>
                         </div>
                         <div x-show="hasPassword" x-transition>
-                            <input type="password" name="password" id="password" placeholder="Defina a senha de segurança..." class="w-full px-4 py-3 rounded-[5px] border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500 transition-all">
+                            <input type="password" name="password" id="password" placeholder="Defina a senha de segurança..." class="w-full px-4 py-3 rounded-[5px] border border-slate-200 dark:border-slate-800 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500 transition-all bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100">
                             <p class="text-[10px] text-slate-400 mt-1">Apenas as pessoas que possuírem essa senha conseguirão acessar e baixar os arquivos.</p>
                         </div>
                         @error('password')
@@ -209,14 +209,14 @@
          style="z-index: 99999;"
          x-transition.opacity
          x-cloak>
-        <div class="bg-white border border-slate-200 shadow-2xl rounded-lg max-w-sm w-full p-8 text-center space-y-6 select-none relative overflow-hidden">
+        <div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-2xl rounded-lg max-w-sm w-full p-8 text-center space-y-6 select-none relative overflow-hidden">
             <!-- Animated Background Glow -->
             <div class="absolute -right-16 -top-16 w-32 h-32 bg-blue-500/10 rounded-full blur-2xl"></div>
             <div class="absolute -left-16 -bottom-16 w-32 h-32 bg-primary-500/10 rounded-full blur-2xl"></div>
 
             <div class="space-y-2">
                 <span class="text-4xl animate-bounce inline-block">⚡</span>
-                <h3 class="font-outfit font-black text-slate-800 text-lg uppercase tracking-tight">Enviando Arquivos...</h3>
+                <h3 class="font-outfit font-black text-slate-800 dark:text-slate-100 text-lg uppercase tracking-tight">Enviando Arquivos...</h3>
                 <p class="text-xs text-slate-400">Por favor, não feche ou recarregue esta página.</p>
             </div>
 
@@ -224,15 +224,15 @@
             <div class="relative pt-1">
                 <div class="flex mb-2 items-center justify-between">
                     <div>
-                        <span class="text-[10px] font-black inline-block py-1 px-2.5 uppercase rounded-full text-blue-600 bg-blue-50 tracking-wider">
+                        <span class="text-[10px] font-black inline-block py-1 px-2.5 uppercase rounded-full text-blue-600 bg-blue-50 dark:bg-blue-950 dark:text-blue-300 tracking-wider">
                             Progresso
                         </span>
                     </div>
                     <div class="text-right">
-                        <span class="text-sm font-black text-blue-600" x-text="uploadProgress + '%'"></span>
+                        <span class="text-sm font-black text-blue-600 dark:text-blue-400" x-text="uploadProgress + '%'"></span>
                     </div>
                 </div>
-                <div class="overflow-hidden h-2.5 text-xs flex rounded-full bg-slate-100 border border-slate-150">
+                <div class="overflow-hidden h-2.5 text-xs flex rounded-full bg-slate-100 dark:bg-slate-800 border border-slate-150 dark:border-slate-700">
                     <div :style="'width: ' + uploadProgress + '%'" class="shadow-none flex flex-col text-center whitespace-nowrap text-white justify-center bg-gradient-to-r from-blue-500 to-indigo-600 transition-all duration-150 rounded-full"></div>
                 </div>
             </div>
@@ -351,6 +351,12 @@
 
                 const form = e.target;
                 const formData = new FormData(form);
+
+                // Garante que se o checkbox de senha não estiver ativo, a senha não seja enviada
+                if (!this.hasPassword) {
+                    formData.delete('password');
+                    formData.delete('has_password');
+                }
 
                 // Garante sincronização de arquivos no FormData
                 formData.delete('files[]');

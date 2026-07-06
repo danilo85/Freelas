@@ -122,7 +122,7 @@
             <button type="button" 
                     @click="filterStatus = ''" 
                     class="px-3.5 py-1.5 rounded-full text-xs font-bold transition-all cursor-pointer border uppercase tracking-wider focus:outline-none"
-                    :style="!filterStatus ? 'background-color: #0f172a; border-color: #0f172a; color: #ffffff;' : 'background-color: #f1f5f9; border-color: #e2e8f0; color: #475569;'">
+                    :class="!filterStatus ? 'bg-slate-900 dark:bg-slate-100 border-slate-900 dark:border-slate-100 text-white dark:text-slate-900' : 'bg-slate-100 dark:bg-slate-800 border-slate-200 dark:border-slate-750 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700/50'">
                 Todos
             </button>
 
@@ -130,7 +130,7 @@
             <button type="button" 
                     @click="filterStatus = 'ativo'" 
                     class="px-3.5 py-1.5 rounded-full text-xs font-bold transition-all cursor-pointer border uppercase tracking-wider focus:outline-none"
-                    :style="filterStatus === 'ativo' ? 'background-color: #10b981; border-color: #10b981; color: #ffffff;' : 'background-color: #ecfdf5; border-color: #d1fae5; color: #047857;'">
+                    :class="filterStatus === 'ativo' ? 'bg-emerald-600 border-emerald-600 text-white shadow-md shadow-emerald-600/10' : 'bg-emerald-50 dark:bg-emerald-950/40 border-emerald-200 dark:border-emerald-900/40 text-emerald-700 dark:text-emerald-300 hover:bg-emerald-100 dark:hover:bg-emerald-900/30'">
                 Ativos
             </button>
 
@@ -138,7 +138,7 @@
             <button type="button" 
                     @click="filterStatus = 'inativo'" 
                     class="px-3.5 py-1.5 rounded-full text-xs font-bold transition-all cursor-pointer border uppercase tracking-wider focus:outline-none"
-                    :style="filterStatus === 'inativo' ? 'background-color: #ef4444; border-color: #ef4444; color: #ffffff;' : 'background-color: #fef2f2; border-color: #fee2e2; color: #b91c1c;'">
+                    :class="filterStatus === 'inativo' ? 'bg-red-600 border-red-600 text-white shadow-md shadow-red-650/10' : 'bg-red-50 dark:bg-red-950/40 border-red-200 dark:border-red-900/40 text-red-700 dark:text-red-300 hover:bg-red-100 dark:hover:bg-red-900/30'">
                 Desativados
             </button>
 
@@ -146,7 +146,7 @@
             <button type="button" 
                     @click="filterStatus = 'expirado'" 
                     class="px-3.5 py-1.5 rounded-full text-xs font-bold transition-all cursor-pointer border uppercase tracking-wider focus:outline-none"
-                    :style="filterStatus === 'expirado' ? 'background-color: #f59e0b; border-color: #f59e0b; color: #ffffff;' : 'background-color: #fffbeb; border-color: #fef3c7; color: #b45309;'">
+                    :class="filterStatus === 'expirado' ? 'bg-amber-600 border-amber-600 text-white shadow-md shadow-amber-600/10' : 'bg-amber-50 dark:bg-amber-950/40 border-amber-200 dark:border-amber-900/40 text-amber-700 dark:text-amber-300 hover:bg-amber-100 dark:hover:bg-amber-900/30'">
                 Expirados
             </button>
         </div>
@@ -193,7 +193,7 @@
                         <span class="bg-slate-200 text-slate-700 text-[9px] font-black uppercase tracking-wider px-2 py-0.5 rounded-[5px]">Desativado</span>
                     @elseif($isExpired)
                         <span class="bg-rose-600 text-white text-[9px] font-black uppercase tracking-wider px-2 py-0.5 rounded-[5px] flex items-center gap-0.5">
-                            <span>⏳</span> Expilado
+                            <span>⏳</span> Expirado
                         </span>
                     @else
                         <span class="text-[9px] font-black uppercase tracking-wider px-2 py-0.5 rounded-[5px]
@@ -222,11 +222,11 @@
                     </div>
 
                     <!-- Lista Resumida de Arquivos -->
-                    <div class="bg-slate-50/70 border border-slate-100 p-2.5 rounded-[5px] space-y-1 text-xs text-slate-500">
-                        <span class="text-[10px] font-bold text-slate-400 uppercase tracking-wide block mb-1">Arquivos ({{ $share->items->count() }})</span>
+                    <div class="bg-slate-50/70 dark:bg-slate-800/40 border border-slate-100 dark:border-slate-800 p-2.5 rounded-[5px] space-y-1 text-xs text-slate-500 dark:text-slate-400">
+                        <span class="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wide block mb-1">Arquivos ({{ $share->items->count() }})</span>
                         @foreach($share->items->take(2) as $item)
                             <div class="flex items-center justify-between gap-2">
-                                <span class="truncate font-medium text-slate-700" title="{{ $item->filename }}">📄 {{ $item->filename }}</span>
+                                <span class="truncate font-medium text-slate-700 dark:text-slate-200" title="{{ $item->filename }}">📄 {{ $item->filename }}</span>
                                 <span class="shrink-0 text-slate-400 font-semibold">{{ app(\App\Http\Controllers\FileShareController::class)->formatBytes($item->file_size) }}</span>
                             </div>
                         @endforeach
@@ -360,7 +360,7 @@
                 <!-- Senha de Acesso (Segurança) -->
                 <div class="space-y-1.5">
                     <div class="flex items-center gap-2 mb-1">
-                        <input type="checkbox" id="edit_has_password" x-model="editHasPassword" class="rounded text-primary-600 border-slate-350 focus:ring-primary-500/20 w-4 h-4 cursor-pointer" />
+                        <input type="checkbox" name="has_password" value="1" id="edit_has_password" x-model="editHasPassword" class="rounded text-primary-600 border-slate-350 focus:ring-primary-500/20 w-4 h-4 cursor-pointer" />
                         <label for="edit_has_password" class="text-xs font-semibold text-slate-700 cursor-pointer select-none">Proteger link com Senha de Segurança</label>
                     </div>
                     <div x-show="editHasPassword" x-transition>

@@ -9,7 +9,7 @@ class ProposalController extends Controller
 {
     public function show($hash)
     {
-        $proposal = Proposal::with('project.client')->where('hash', $hash)->firstOrFail();
+        $proposal = Proposal::with('project.client.user')->where('hash', $hash)->firstOrFail();
         
         return view('proposals.show', compact('proposal'));
     }

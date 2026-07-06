@@ -85,12 +85,15 @@ class Payment extends Model
         });
 
         static::updated(function ($payment) {
-            $payment->transaction()->update([
-                'amount' => $payment->amount,
-                'paid_at' => $payment->paid_at,
-                'due_date' => $payment->paid_at,
-                'bank_account_id' => $payment->bank_account_id,
-            ]);
+            $transaction = $payment->transaction;
+            if ($transaction) {
+                $transaction->updateQuietly([
+                    'amount' => $payment->amount,
+                    'paid_at' => $payment->paid_at,
+                    'due_date' => $payment->paid_at,
+                    'bank_account_id' => $payment->bank_account_id,
+                ]);
+            }
         });
     }
 }

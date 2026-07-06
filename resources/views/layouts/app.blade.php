@@ -449,8 +449,11 @@
                     </svg>
                 </button>
                 <div x-show="open" class="pl-9 space-y-1" style="display: none;" :style="open ? 'display: block;' : 'display: none;'">
-                    <a href="{{ route('finances.index') }}" class="block py-2 px-3 text-xs font-semibold rounded-[5px] transition-colors {{ request()->routeIs('finances.*') || request()->routeIs('categories.*') ? 'text-white bg-slate-850' : 'text-slate-400 hover:text-white' }}">
+                    <a href="{{ route('finances.index') }}" class="block py-2 px-3 text-xs font-semibold rounded-[5px] transition-colors {{ (request()->routeIs('finances.*') && !request()->routeIs('finances.mei')) || request()->routeIs('categories.*') ? 'text-white bg-slate-850' : 'text-slate-400 hover:text-white' }}">
                         Controle Financeiro
+                    </a>
+                    <a href="{{ route('finances.mei') }}" class="block py-2 px-3 text-xs font-semibold rounded-[5px] transition-colors {{ request()->routeIs('finances.mei') ? 'text-white bg-slate-850' : 'text-slate-400 hover:text-white' }}">
+                        Faturamento & Impostos
                     </a>
                     <a href="{{ route('payments.index') }}" class="block py-2 px-3 text-xs font-semibold rounded-[5px] transition-colors {{ request()->routeIs('payments.*') ? 'text-white bg-slate-850' : 'text-slate-400 hover:text-white' }}">
                         Pagamentos

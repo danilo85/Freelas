@@ -86,6 +86,30 @@
 </head>
 <body class="font-sans antialiased h-screen overflow-hidden flex flex-col justify-between" x-data="proofingSystem({{ json_encode($annotations) }})">
 
+
+    <!-- Aviso de Monitor / Desktop Recomendado no Mobile -->
+    <div class="fixed inset-0 bg-slate-950/95 backdrop-blur-md flex flex-col items-center justify-center p-6 text-center select-none md:hidden" style="z-index: 99999999;">
+        <div class="max-w-xs space-y-6">
+            <div class="relative flex items-center justify-center mx-auto w-20 h-20 rounded-full bg-blue-500/10 border border-blue-500/25">
+                <span class="text-4xl animate-pulse">💻</span>
+            </div>
+            
+            <div class="space-y-2">
+                <h3 class="font-outfit font-black text-white text-base uppercase tracking-wider">Monitor Recomendado</h3>
+                <p class="text-slate-400 text-xs leading-relaxed">
+                    Esta ferramenta de revisão e marcações de prova foi projetada para telas de computador ou notebooks.
+                </p>
+                <p class="text-slate-500 text-[11px] leading-relaxed pt-1">
+                    Para a melhor visualização dos arquivos e anotações, por favor abra este link em um monitor ou PC.
+                </p>
+            </div>
+            
+            <button type="button" @click="$el.parentElement.parentElement.remove()" class="w-full py-2.5 bg-blue-600 hover:bg-blue-500 text-white rounded-[5px] text-xs font-bold uppercase tracking-wider transition-colors shadow-lg shadow-blue-500/20">
+                Prosseguir mesmo assim
+            </button>
+        </div>
+    </div>
+
     <!-- Premium Screen Loading Loader Overlay -->
     <div x-show="isInitialLoading" 
          class="fixed inset-0 bg-slate-900 flex flex-col items-center justify-center space-y-6"
@@ -130,12 +154,12 @@
 
         <div class="flex items-center gap-2">
             <!-- Botão Iniciar Tour / Ajuda -->
-            <button @click="startInteractiveTour()" class="text-blue-600 hover:text-blue-800 font-bold text-xs uppercase tracking-wider px-3 py-2 rounded-[5px] hover:bg-blue-50 flex items-center gap-1">
+            <button @click="startInteractiveTour()" class="text-blue-600 hover:text-blue-800 font-bold text-xs uppercase tracking-wider px-3 py-2 rounded-[5px] hover:bg-blue-50 items-center gap-1 hidden sm:flex">
                 🚀 Guia Rápido
             </button>
 
             <!-- Botão Atalhos de Teclado -->
-            <button @click="showShortcutGuide = true" class="text-slate-600 hover:text-slate-900 font-bold text-xs uppercase tracking-wider px-3 py-2 rounded-[5px] hover:bg-slate-100 flex items-center gap-1">
+            <button @click="showShortcutGuide = true" class="text-slate-600 hover:text-slate-900 font-bold text-xs uppercase tracking-wider px-3 py-2 rounded-[5px] hover:bg-slate-100 items-center gap-1 hidden sm:flex">
                 Atalhos
             </button>
 
@@ -161,12 +185,38 @@
         </div>
     </header>
 
+    <!-- Backdrop de Fundo para Sidebars do Mobile/Tablet -->
+    <div x-show="leftSidebarOpen || rightSidebarOpen" 
+         @click="leftSidebarOpen = false; rightSidebarOpen = false" 
+         class="fixed inset-0 bg-slate-950/40 z-40 md:hidden" 
+         x-transition x-cloak></div>
+
+    <!-- Botões Flutuantes de Navegação Mobile -->
+    <div class="fixed bottom-4 left-4 z-40 flex items-center md:hidden">
+        <button type="button" 
+                @click="leftSidebarOpen = !leftSidebarOpen; rightSidebarOpen = false" 
+                class="bg-slate-900 hover:bg-slate-800 text-white font-bold text-xs uppercase tracking-wider px-4 py-3 rounded-full shadow-lg flex items-center gap-1.5 border border-slate-700 select-none cursor-pointer">
+            <span x-text="leftSidebarOpen ? '✕' : '💬'"></span> 
+            <span x-text="leftSidebarOpen ? 'Fechar Ajustes' : 'Ajustes / Comentários'"></span>
+        </button>
+    </div>
+    
+    <div class="fixed bottom-4 right-4 z-40 flex items-center md:hidden">
+        <button type="button" 
+                @click="rightSidebarOpen = !rightSidebarOpen; leftSidebarOpen = false" 
+                class="bg-slate-900 hover:bg-slate-800 text-white font-bold text-xs uppercase tracking-wider px-4 py-3 rounded-full shadow-lg flex items-center gap-1.5 border border-slate-700 select-none cursor-pointer">
+            <span x-text="rightSidebarOpen ? '✕' : '📁'"></span> 
+            <span x-text="rightSidebarOpen ? 'Fechar Arquivos' : 'Arquivos'"></span>
+        </button>
+    </div>
+
     <!-- MAIN BODY: THREE COLUMNS WITH DIVIDERS -->
     <main class="flex-1 flex overflow-hidden h-[calc(100vh-4rem)]">
         
         <!-- COLUMN 1 (LEFT): ADJUSTMENTS LIST -->
         <aside id="aside-left" 
-               class="w-80 border-r border-slate-200 glassmorphism flex flex-col justify-between shrink-0 h-full overflow-hidden hidden lg:flex">
+               class="w-80 border-r border-slate-200 glassmorphism flex flex-col justify-between shrink-0 h-full overflow-hidden fixed md:static inset-y-0 left-0 bg-white z-45 transition-transform duration-300 md:translate-x-0"
+               :class="leftSidebarOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0'">
             
             <!-- Active File Info -->
             @if($activeFile)
@@ -302,10 +352,9 @@
                                 <span class="text-[9px] text-slate-400 font-bold block text-center mt-1">📎 Imagem de Referência</span>
                             </div>
 
-                            <!-- Data e Ações -->
-                            <div class="flex items-center justify-between mt-2.5 pt-2.5 border-t border-slate-100">
-                                <span class="text-[9px] text-slate-400 font-medium" x-text="formatDate(anno.created_at)"></span>
-                                <div class="flex items-center gap-1.5">
+                            <div class="flex flex-wrap items-center justify-between gap-2 mt-2.5 pt-2.5 border-t border-slate-100">
+                                <span class="text-[9px] text-slate-400 font-medium whitespace-nowrap" x-text="formatDate(anno.created_at)"></span>
+                                <div class="flex flex-wrap items-center gap-1">
                                     <!-- Editar -->
                                     <button type="button" @click.stop="editAnnotation(anno.id)" class="px-2 py-0.5 rounded-[3px] text-[8px] font-extrabold uppercase tracking-wide bg-blue-50 text-blue-600 border border-blue-200/60 hover:bg-blue-100/80 transition-all cursor-pointer">
                                         Editar
@@ -332,16 +381,16 @@
         </aside>
 
         <!-- Divider resizer 1 -->
-        <div class="resizer-bar-v hidden lg:block" id="resizer-left"></div>
+        <div class="resizer-bar-v hidden md:block" id="resizer-left"></div>
 
         <!-- COLUMN 2 (MIDDLE): VISUALIZER & DRAWING CANVAS -->
         <section id="middle-viewport" class="flex-1 flex flex-col justify-between overflow-hidden relative bg-slate-100 h-full" :class="isFullscreen ? 'fixed inset-0 z-50' : ''">
             
             <!-- Visualizer Toolbar -->
-            <div class="h-12 border-b border-slate-200 glassmorphism px-4 flex items-center justify-between z-20 shrink-0 select-none" id="tour-step-toolbar">
+            <div class="min-h-12 py-2.5 border-b border-slate-200 glassmorphism px-4 flex flex-wrap items-center justify-between z-20 shrink-0 select-none gap-y-2 gap-x-4" id="tour-step-toolbar">
                 
                 <!-- Tool Selector -->
-                <div class="flex items-center gap-1.5">
+                <div class="flex items-center gap-1.5 shrink-0">
                     <button @click="setTool('freehand')" 
                             class="p-2 rounded-[5px] transition-colors"
                             :class="activeTool === 'freehand' ? 'bg-blue-600 text-white' : 'text-slate-500 hover:text-slate-800 hover:bg-slate-100'"
@@ -370,10 +419,10 @@
 
                 <!-- Page Navigation -->
                 @if($activeFile && $activeFile->file_type === 'pdf')
-                    <div class="flex items-center gap-4 text-xs font-bold uppercase tracking-wider text-slate-700" id="tour-step-navigation">
+                    <div class="flex items-center gap-4 text-xs font-bold uppercase tracking-wider text-slate-700 shrink-0 whitespace-nowrap" id="tour-step-navigation">
                         
                         <!-- Toggle Página Simples / Dupla -->
-                        <div class="flex items-center gap-1 bg-slate-200 p-0.5 rounded-[5px] border border-slate-300">
+                        <div class="flex items-center gap-1 bg-slate-200 p-0.5 rounded-[5px] border border-slate-300 shrink-0">
                             <button @click="setPageMode('single')" 
                                     class="px-2 py-1 rounded-[3px] text-[10px]"
                                     :class="pageMode === 'single' ? 'bg-white text-slate-850 shadow-sm' : 'text-slate-500 hover:text-slate-800'">
@@ -386,15 +435,15 @@
                             </button>
                         </div>
 
-                        <div class="flex items-center gap-2">
+                        <div class="flex items-center gap-2 shrink-0 whitespace-nowrap">
                             <button @click="prevPage()" class="p-1.5 bg-slate-200 border border-slate-350 rounded hover:bg-slate-300 transition-colors" :disabled="currentPage <= 1">
                                 ◀
                             </button>
                             <template x-if="pageMode === 'single'">
-                                <span>Página <span x-text="currentPage">1</span> de <span x-text="numPages">1</span></span>
+                                <span class="whitespace-nowrap shrink-0">Página <span x-text="currentPage">1</span> de <span x-text="numPages">1</span></span>
                             </template>
                             <template x-if="pageMode === 'double'">
-                                <span>Pág. <span x-text="currentPage">1</span>-<span x-text="Math.min(numPages, currentPage + 1)">2</span> de <span x-text="numPages">1</span></span>
+                                <span class="whitespace-nowrap shrink-0">Pág. <span x-text="currentPage">1</span>-<span x-text="Math.min(numPages, currentPage + 1)">2</span> de <span x-text="numPages">1</span></span>
                             </template>
                             <button @click="nextPage()" class="p-1.5 bg-slate-200 border border-slate-350 rounded hover:bg-slate-300 transition-colors" :disabled="currentPage >= numPages || (pageMode === 'double' && currentPage + 1 >= numPages)">
                                 ▶
@@ -501,7 +550,7 @@
                 <div x-show="showCommentBox" 
                      id="draggable-dialog"
                      class="absolute bg-white border border-slate-255 shadow-2xl rounded-[5px] w-88 z-40 glassmorphism text-left overflow-hidden flex flex-col"
-                     :style="'top: ' + commentBoxY + 'px; left: ' + commentBoxX + 'px;'"
+                     :style="isMobile() ? 'position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); margin: 0; width: 90%; max-width: 350px;' : 'top: ' + commentBoxY + 'px; left: ' + commentBoxX + 'px;'"
                      x-transition
                      x-cloak>
                     
@@ -625,7 +674,8 @@
 
         <!-- COLUMN 3 (RIGHT): FILES TREE -->
         <aside id="aside-right" 
-               class="w-80 border-l border-slate-200 glassmorphism flex flex-col justify-between shrink-0 h-full overflow-hidden hidden md:flex"
+               class="w-80 border-l border-slate-200 glassmorphism flex flex-col justify-between shrink-0 h-full overflow-hidden fixed md:static inset-y-0 right-0 bg-white z-45 transition-transform duration-300 md:translate-x-0"
+               :class="rightSidebarOpen ? 'translate-x-0' : 'translate-x-full md:translate-x-0'"
                id="tour-step-files">
             <div class="p-4 border-b border-slate-200 bg-slate-50/50 shrink-0">
                 <span class="text-[9px] font-bold text-slate-400 uppercase tracking-widest block">Rodada #{{ $activeRound->round_number ?? '1' }}</span>
@@ -872,6 +922,12 @@
                 commentText: '',
                 currentPage: 1,
                 numPages: 1,
+                leftSidebarOpen: false,
+                rightSidebarOpen: false,
+
+                isMobile() {
+                    return window.innerWidth < 768;
+                },
                 
                 // Onboarding tour state parameters
                 showTour: false,
@@ -1462,7 +1518,7 @@
 
                         function resizeLeftAside(e) {
                             const newWidth = e.clientX;
-                            if (newWidth > 180 && newWidth < 450) {
+                            if (newWidth >= 285 && newWidth <= 500) {
                                 asideLeft.style.width = newWidth + 'px';
                             }
                         }
@@ -1482,7 +1538,7 @@
 
                         function resizeRightAside(e) {
                             const newWidth = window.innerWidth - e.clientX;
-                            if (newWidth > 180 && newWidth < 450) {
+                            if (newWidth >= 285 && newWidth <= 500) {
                                 asideRight.style.width = newWidth + 'px';
                             }
                         }

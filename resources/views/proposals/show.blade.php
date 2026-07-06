@@ -89,12 +89,18 @@
 
     <!-- Top Action Bar (Escondida na impressão) -->
     <div class="w-full max-w-4xl no-print mb-6 bg-white border border-slate-200 rounded-[5px] p-4 shadow-sm flex flex-col sm:flex-row items-center justify-between gap-4">
-        <div class="flex items-center gap-2">
-            <span class="w-3 h-3 rounded-full 
-                {{ $proposal->project->status === 'aprovado' || $proposal->project->status === 'quitado' || $proposal->project->status === 'finalizado' ? 'bg-emerald-500' : '' }}
-                {{ $proposal->project->status === 'rejeitado' ? 'bg-red-500' : '' }}
-                {{ $proposal->project->status === 'rascunho' || $proposal->project->status === 'analisando' ? 'bg-amber-500' : '' }}"></span>
-            <span class="text-sm font-bold text-slate-700">Status: {{ ucfirst($proposal->project->status) }}</span>
+        <div class="flex items-center gap-3">
+            @if($proposal->project->client->user->logo)
+                <img src="{{ asset('storage/' . $proposal->project->client->user->logo) }}" class="max-h-8 w-auto object-contain shrink-0" alt="Logo">
+                <span class="h-5 w-px bg-slate-200"></span>
+            @endif
+            <div class="flex items-center gap-2">
+                <span class="w-3 h-3 rounded-full 
+                    {{ $proposal->project->status === 'aprovado' || $proposal->project->status === 'quitado' || $proposal->project->status === 'finalizado' ? 'bg-emerald-500' : '' }}
+                    {{ $proposal->project->status === 'rejeitado' ? 'bg-red-500' : '' }}
+                    {{ $proposal->project->status === 'rascunho' || $proposal->project->status === 'analisando' ? 'bg-amber-500' : '' }}"></span>
+                <span class="text-sm font-bold text-slate-700">Status: {{ ucfirst($proposal->project->status) }}</span>
+            </div>
         </div>
         <div class="flex flex-wrap items-center gap-2">
             <!-- Imprimir -->
@@ -127,11 +133,17 @@
     <!-- Documento Comercial / Proposta (Área que será impressa) -->
     <div class="w-full max-w-4xl bg-white border border-slate-200 rounded-[5px] p-6 sm:p-8 space-y-6 shadow-md relative min-h-[500px] print-card">
         <!-- Cabeçalho da Proposta -->
-        <div class="flex items-center justify-between">
-            <h1 class="text-4xl sm:text-5xl font-bold text-slate-900 tracking-tight">PROPOSTA</h1>
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-100 pb-5">
+            <div class="flex items-center gap-4">
+                @if($proposal->project->client->user->logo)
+                    <img src="{{ asset('storage/' . $proposal->project->client->user->logo) }}" class="max-h-12 sm:max-h-16 w-auto object-contain shrink-0" alt="Logo">
+                    <span class="h-8 w-px bg-slate-200 hidden sm:block"></span>
+                @endif
+                <h1 class="text-3xl sm:text-4xl font-bold text-slate-900 tracking-tight">PROPOSTA</h1>
+            </div>
             
             <!-- Badge Circular com número da proposta -->
-            <div class="relative shrink-0">
+            <div class="relative shrink-0 self-end sm:self-auto">
                 <div class="w-11 h-11 rounded-full bg-[#1e293b] flex items-center justify-center text-white font-bold text-sm shadow-md">
                     <span>{{ $proposal->project->id }}</span>
                 </div>

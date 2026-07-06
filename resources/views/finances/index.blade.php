@@ -12,17 +12,28 @@
             <h1 class="text-2xl font-black text-slate-800">Controle Financeiro</h1>
             <p class="text-sm text-slate-500 font-medium mt-1">Gerencie suas receitas e despesas pessoais e de sua empresa de forma unificada.</p>
         </div>
-        <div class="grid grid-cols-2 sm:flex gap-2 w-full sm:w-auto no-print">
-            <a href="{{ route('finances.categories.index') }}" class="inline-flex items-center justify-center gap-1.5 px-3.5 py-2 border border-slate-200 text-slate-650 hover:bg-slate-50 text-sm font-semibold rounded-[5px] transition-colors shadow-sm bg-white w-full sm:w-auto">
-                📂 Categorias
+        <div class="flex items-center gap-2 no-print shrink-0">
+            <a href="{{ route('finances.categories.index') }}" 
+               title="Categorias" 
+               class="inline-flex items-center justify-center p-2.5 border border-slate-200 text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 rounded-[5px] transition-colors shadow-sm bg-white dark:bg-slate-900 focus:outline-none">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z"></path>
+                </svg>
             </a>
-            <a href="{{ route('finances.mei') }}" class="inline-flex items-center justify-center gap-1.5 px-3.5 py-2 bg-emerald-600 hover:bg-emerald-700 text-white text-sm font-semibold rounded-[5px] transition-colors shadow-sm w-full sm:w-auto">
-                🏢 Painel MEI / Faturamento
+            <a href="{{ route('finances.mei') }}" 
+               title="Painel MEI / Faturamento" 
+               class="inline-flex items-center justify-center p-2.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-[5px] transition-colors shadow-sm focus:outline-none">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path>
+                </svg>
             </a>
             <button type="button" 
                     @click="openImportModal = true; importRawJson = ''; importPreviewData = null; importError = '';"
-                    class="inline-flex items-center justify-center gap-1.5 px-3.5 py-2 border border-slate-200 text-slate-650 hover:bg-slate-50 text-sm font-semibold rounded-[5px] transition-colors shadow-sm bg-white w-full sm:w-auto cursor-pointer">
-                📥 Importar JSON
+                    title="Importar JSON"
+                    class="inline-flex items-center justify-center p-2.5 border border-slate-200 text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 rounded-[5px] transition-colors shadow-sm bg-white dark:bg-slate-900 focus:outline-none cursor-pointer">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"></path>
+                </svg>
             </button>
         </div>
     </div>

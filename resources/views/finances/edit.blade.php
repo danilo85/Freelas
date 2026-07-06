@@ -108,12 +108,12 @@
                 <label class="text-[11px] font-bold text-slate-400 uppercase tracking-wider block">Tipo de Pessoa (Classificação) *</label>
                 <div class="grid grid-cols-2 gap-2 mt-1">
                     <label class="border rounded-[5px] p-2.5 flex items-center justify-center gap-2 cursor-pointer text-xs font-bold transition-all"
-                           :class="classification === 'PJ' ? 'border-primary-500 bg-primary-50/20 text-primary-700 ring-2 ring-primary-500/10' : 'border-slate-200 hover:bg-slate-50 text-slate-650'">
+                           :class="classification === 'PJ' ? 'border-primary-500 bg-primary-50/20 text-primary-700 dark:text-primary-400 dark:bg-primary-950/20 ring-2 ring-primary-500/10 dark:ring-primary-400/20' : 'border-slate-200 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-800/50 text-slate-650 dark:text-slate-350'">
                         <input type="radio" name="classification" value="PJ" x-model="classification" class="hidden" />
                         🏢 Jurídica (PJ / MEI)
                     </label>
                     <label class="border rounded-[5px] p-2.5 flex items-center justify-center gap-2 cursor-pointer text-xs font-bold transition-all"
-                           :class="classification === 'PF' ? 'border-primary-500 bg-primary-50/20 text-primary-700 ring-2 ring-primary-500/10' : 'border-slate-200 hover:bg-slate-50 text-slate-650'">
+                           :class="classification === 'PF' ? 'border-primary-500 bg-primary-50/20 text-primary-700 dark:text-primary-400 dark:bg-primary-950/20 ring-2 ring-primary-500/10 dark:ring-primary-400/20' : 'border-slate-200 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-800/50 text-slate-650 dark:text-slate-350'">
                         <input type="radio" name="classification" value="PF" x-model="classification" class="hidden" />
                         👤 Física (PF)
                     </label>
@@ -143,12 +143,12 @@
                 <label class="text-[11px] font-bold text-slate-400 uppercase tracking-wider block">Pagar via *</label>
                 <div class="grid grid-cols-2 gap-2 mt-1">
                     <label class="border rounded-[5px] p-2.5 flex items-center justify-center gap-2 cursor-pointer text-xs font-bold transition-all"
-                           :class="destinationType === 'bank' ? 'border-primary-500 bg-primary-50/20 text-primary-700 ring-2 ring-primary-500/10' : 'border-slate-200 hover:bg-slate-50 text-slate-650'">
+                           :class="destinationType === 'bank' ? 'border-primary-500 bg-primary-50/20 text-primary-700 dark:text-primary-400 dark:bg-primary-950/20 ring-2 ring-primary-500/10 dark:ring-primary-400/20' : 'border-slate-200 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-800/50 text-slate-650 dark:text-slate-350'">
                         <input type="radio" name="destination_type" value="bank" x-model="destinationType" class="hidden" />
                         🏦 Conta Bancária
                     </label>
                     <label class="border rounded-[5px] p-2.5 flex items-center justify-center gap-2 cursor-pointer text-xs font-bold transition-all"
-                           :class="destinationType === 'card' ? 'border-primary-500 bg-primary-50/20 text-primary-700 ring-2 ring-primary-500/10' : 'border-slate-200 hover:bg-slate-50 text-slate-650'">
+                           :class="destinationType === 'card' ? 'border-primary-500 bg-primary-50/20 text-primary-700 dark:text-primary-400 dark:bg-primary-950/20 ring-2 ring-primary-500/10 dark:ring-primary-400/20' : 'border-slate-200 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-800/50 text-slate-650 dark:text-slate-350'">
                         <input type="radio" name="destination_type" value="card" x-model="destinationType" class="hidden" />
                         💳 Cartão de Crédito
                     </label>
@@ -195,12 +195,12 @@
                 <label class="text-[11px] font-bold text-slate-400 uppercase tracking-wider block">Status do Lançamento *</label>
                 <div class="grid grid-cols-2 gap-2 mt-1">
                     <label class="border rounded-[5px] p-2.5 flex items-center justify-center gap-2 cursor-pointer text-xs font-bold transition-all"
-                           :class="status === 'pago' ? 'border-primary-500 bg-primary-50/20 text-primary-700 ring-2 ring-primary-500/10' : 'border-slate-200 hover:bg-slate-50 text-slate-650'">
+                           :class="status === 'pago' ? 'border-primary-500 bg-primary-50/20 text-primary-700 dark:text-primary-400 dark:bg-primary-950/20 ring-2 ring-primary-500/10 dark:ring-primary-400/20' : 'border-slate-200 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-800/50 text-slate-650 dark:text-slate-350'">
                         <input type="radio" name="status" value="pago" x-model="status" class="hidden" />
                         <span x-text="type === 'entrada' ? '🟢 Recebido' : '🟢 Pago'"></span>
                     </label>
                     <label class="border rounded-[5px] p-2.5 flex items-center justify-center gap-2 cursor-pointer text-xs font-bold transition-all"
-                           :class="status === 'pendente' ? 'border-primary-500 bg-primary-50/20 text-primary-700 ring-2 ring-primary-500/10' : 'border-slate-200 hover:bg-slate-50 text-slate-650'">
+                           :class="status === 'pendente' ? 'border-primary-500 bg-primary-50/20 text-primary-700 dark:text-primary-400 dark:bg-primary-950/20 ring-2 ring-primary-500/10 dark:ring-primary-400/20' : 'border-slate-200 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-800/50 text-slate-650 dark:text-slate-350'">
                         <input type="radio" name="status" value="pendente" x-model="status" class="hidden" />
                         🟡 Pendente
                     </label>

@@ -124,7 +124,7 @@ class FileShareController extends Controller
             'description' => $request->description,
             'expires_at' => Carbon::now()->addDays((int) $request->expires_days)->endOfDay(),
             'download_limit' => $request->download_limit,
-            'password' => $request->password ? bcrypt($request->password) : null,
+            'password' => ($request->has('has_password') && $request->filled('password')) ? bcrypt($request->password) : null,
             'is_active' => true,
         ]);
 
@@ -172,8 +172,10 @@ class FileShareController extends Controller
             'download_limit' => $request->download_limit,
         ];
 
-        if ($request->has('password')) {
-            $updateData['password'] = $request->password ? bcrypt($request->password) : null;
+        if (!$request->has('has_password')) {
+            $updateData['password'] = null;
+        } elseif ($request->filled('password')) {
+            $updateData['password'] = bcrypt($request->password);
         }
 
         $share->update($updateData);

@@ -19,30 +19,42 @@ class MeiController extends Controller
         $year = (int) $request->input('year', Carbon::now()->year);
         $meiLimit = (float) $user->mei_limit;
 
-        // PJ Incomes (Faturamento PJ Pago) no ano selecionado
-        $pjIncomes = Transaction::where('user_id', $userId)
-            ->where('type', 'entrada')
-            ->where('classification', 'PJ')
+        // Todas as transações pagas/recebidas no ano selecionado
+        $transactions = Transaction::where('user_id', $userId)
             ->where('status', 'pago')
-            ->whereYear('due_date', $year)
-            ->orderBy('due_date', 'asc')
+            ->where(function($q) use ($year) {
+                $q->whereYear('paid_at', $year)
+                  ->orWhere(function($sub) use ($year) {
+                      $sub->whereNull('paid_at')->whereYear('due_date', $year);
+                  });
+            })
+            ->with('category')
             ->get();
 
-        // PJ Expenses no ano selecionado
-        $pjExpenses = Transaction::where('user_id', $userId)
-            ->where('type', 'saida')
-            ->where('classification', 'PJ')
-            ->where('status', 'pago')
-            ->whereYear('due_date', $year)
-            ->orderBy('due_date', 'asc')
-            ->get();
+        // Filtra transferências de lucros e transferências internas para não poluírem receitas e despesas
+        $transactions = $transactions->filter(function($t) {
+            if ($t->category) {
+                $catName = mb_strtolower($t->category->name);
+                return !in_array($catName, [
+                    'transferência de lucros', 
+                    'transferencia de lucros', 
+                    'transferência', 
+                    'transferencia', 
+                    'transferência interna', 
+                    'transferencia interna'
+                ]);
+            }
+            return true;
+        });
 
-        // Soma anual acumulada do faturamento
-        $annualFaturamento = (float) $pjIncomes->sum('amount');
-        $annualExpenses = (float) $pjExpenses->sum('amount');
+        // Totais Anuais Separados
+        $annualPjFaturamento = (float) $transactions->filter(fn($t) => $t->type === 'entrada' && $t->classification === 'PJ')->sum('amount');
+        $annualPfFaturamento = (float) $transactions->filter(fn($t) => $t->type === 'entrada' && $t->classification !== 'PJ')->sum('amount');
+        $annualPjExpenses = (float) $transactions->filter(fn($t) => $t->type === 'saida' && $t->classification === 'PJ')->sum('amount');
+        $annualPfExpenses = (float) $transactions->filter(fn($t) => $t->type === 'saida' && $t->classification !== 'PJ')->sum('amount');
 
-        // Percentual do termômetro
-        $percent = $meiLimit > 0 ? min(100, ($annualFaturamento / $meiLimit) * 100) : 0;
+        // Percentual do termômetro baseia-se apenas no faturamento PJ do MEI
+        $percent = $meiLimit > 0 ? min(100, ($annualPjFaturamento / $meiLimit) * 100) : 0;
 
         // Agrupamento por meses do ano selecionado (1 a 12)
         $monthsData = [];
@@ -52,27 +64,40 @@ class MeiController extends Controller
             9 => 'Setembro', 10 => 'Outubro', 11 => 'Novembro', 12 => 'Dezembro'
         ];
 
-        for ($m = 1; $m <= 12; $m++) {
-            $monthIncomes = $pjIncomes->filter(fn($t) => $t->due_date->month === $m);
-            $monthExpenses = $pjExpenses->filter(fn($t) => $t->due_date->month === $m);
+        $pjIncomesChart = [];
+        $pfIncomesChart = [];
+        $expensesChart = [];
 
-            $incomesSum = (float) $monthIncomes->sum('amount');
-            $expensesSum = (float) $monthExpenses->sum('amount');
+        for ($m = 1; $m <= 12; $m++) {
+            // Filtra transações do mês respectivo (pelo paid_at, senão due_date)
+            $monthTransactions = $transactions->filter(function($t) use ($m) {
+                $date = $t->paid_at ?: $t->due_date;
+                return $date->month === $m;
+            });
+
+            $pjIncomesSum = (float) $monthTransactions->filter(fn($t) => $t->type === 'entrada' && $t->classification === 'PJ')->sum('amount');
+            $pfIncomesSum = (float) $monthTransactions->filter(fn($t) => $t->type === 'entrada' && $t->classification !== 'PJ')->sum('amount');
+            
+            $pjExpensesSum = (float) $monthTransactions->filter(fn($t) => $t->type === 'saida' && $t->classification === 'PJ')->sum('amount');
+            $pfExpensesSum = (float) $monthTransactions->filter(fn($t) => $t->type === 'saida' && $t->classification !== 'PJ')->sum('amount');
+
+            $pjIncomesChart[] = $pjIncomesSum;
+            $pfIncomesChart[] = $pfIncomesSum;
+            $expensesChart[] = $pjExpensesSum + $pfExpensesSum;
 
             // Consolidação de arquivos/anexos (Notas Fiscais / Recibos)
             $attachments = [];
-            
-            // Junta todas as transações com anexo no mês
-            $allMonthTransactions = $monthIncomes->concat($monthExpenses);
-            foreach ($allMonthTransactions as $t) {
+            foreach ($monthTransactions as $t) {
                 if ($t->attachment_path) {
                     $attachments[] = [
                         'transaction_id' => $t->id,
                         'description' => $t->description,
                         'amount' => $t->amount,
                         'type' => $t->type,
-                        'date' => $t->due_date->format('d/m/Y'),
+                        'classification' => $t->classification === 'PJ' ? 'PJ' : 'PF',
+                        'date' => ($t->paid_at ?: $t->due_date)->format('d/m/Y'),
                         'filename' => basename($t->attachment_path),
+                        'attachment_path' => $t->attachment_path,
                         'download_url' => route('finances.download-attachment', $t->id)
                     ];
                 }
@@ -80,11 +105,11 @@ class MeiController extends Controller
 
             $monthsData[$m] = [
                 'name' => $monthsNames[$m],
-                'incomes_sum' => $incomesSum,
-                'expenses_sum' => $expensesSum,
-                'balance' => $incomesSum - $expensesSum,
-                'incomes' => $monthIncomes,
-                'expenses' => $monthExpenses,
+                'pj_incomes_sum' => $pjIncomesSum,
+                'pf_incomes_sum' => $pfIncomesSum,
+                'pj_expenses_sum' => $pjExpensesSum,
+                'pf_expenses_sum' => $pfExpensesSum,
+                'balance' => ($pjIncomesSum + $pfIncomesSum) - ($pjExpensesSum + $pfExpensesSum),
                 'attachments' => $attachments,
             ];
         }
@@ -92,10 +117,15 @@ class MeiController extends Controller
         return view('finances.mei', compact(
             'year',
             'meiLimit',
-            'annualFaturamento',
-            'annualExpenses',
+            'annualPjFaturamento',
+            'annualPfFaturamento',
+            'annualPjExpenses',
+            'annualPfExpenses',
             'percent',
-            'monthsData'
+            'monthsData',
+            'pjIncomesChart',
+            'pfIncomesChart',
+            'expensesChart'
         ));
     }
 

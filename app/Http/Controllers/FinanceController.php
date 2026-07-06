@@ -104,6 +104,33 @@ class FinanceController extends Controller
         // Categorias para o filtro
         $categories = TransactionCategory::forUser($userId)->get();
 
+        // 1. Contas a Vencer nos Próximos 7 Dias (Pendente)
+        $upcomingBills = Transaction::where('user_id', $userId)
+            ->where('status', 'pendente')
+            ->whereBetween('due_date', [Carbon::now()->toDateString(), Carbon::now()->addDays(7)->toDateString()])
+            ->with(['category'])
+            ->orderBy('due_date', 'asc')
+            ->get();
+
+        // 2. Gráfico por Categoria (Gastos Realizados + Previstos no Mês)
+        $categoryExpenses = Transaction::where('user_id', $userId)
+            ->where('type', 'saida')
+            ->whereBetween('due_date', [$startOfMonth->toDateString(), $endOfMonth->toDateString()])
+            ->selectRaw('category_id, SUM(amount) as total')
+            ->groupBy('category_id')
+            ->with('category')
+            ->get();
+
+        $categoryChartLabels = [];
+        $categoryChartData = [];
+        $categoryChartColors = [];
+
+        foreach ($categoryExpenses as $exp) {
+            $categoryChartLabels[] = $exp->category ? $exp->category->name : 'Sem Categoria';
+            $categoryChartData[] = (float) $exp->total;
+            $categoryChartColors[] = $exp->category ? ($exp->category->color ?: '#94a3b8') : '#94a3b8';
+        }
+
         return view('finances.index', compact(
             'commonTransactions',
             'cardGroups',
@@ -119,7 +146,11 @@ class FinanceController extends Controller
             'search',
             'classification',
             'status',
-            'categoryId'
+            'categoryId',
+            'upcomingBills',
+            'categoryChartLabels',
+            'categoryChartData',
+            'categoryChartColors'
         ));
     }
 
@@ -602,7 +633,24 @@ class FinanceController extends Controller
                     
                     $signature = "{$tx['descricao']}|{$amount}|{$dueDate}";
                     
-                    if (in_array($signature, $existingSignatures)) {
+                    // Verificação robusta de duplicados (mesmo valor, tipo, data e descrição igual ou contida)
+                    $duplicateExists = \App\Models\Transaction::where('user_id', $user->id)
+                        ->where('type', $type)
+                        ->where('amount', $amount)
+                        ->where(function($q) use ($dueDate) {
+                            $q->whereDate('due_date', $dueDate)
+                              ->orWhereDate('paid_at', $dueDate);
+                        })
+                        ->get()
+                        ->contains(function($existing) use ($tx) {
+                            $desc1 = mb_strtolower(trim($existing->description));
+                            $desc2 = mb_strtolower(trim($tx['descricao']));
+                            return $desc1 === $desc2 || 
+                                   str_contains($desc1, $desc2) || 
+                                   str_contains($desc2, $desc1);
+                        });
+
+                    if ($duplicateExists || in_array($signature, $existingSignatures)) {
                         continue; // Skip duplicate
                     }
 
@@ -709,5 +757,74 @@ class FinanceController extends Controller
                 'message' => 'Erro durante a importação de transações: ' . $e->getMessage()
             ], 500);
         }
+    }
+
+    /**
+     * Realiza uma transferência de lucros entre duas contas bancárias.
+     */
+    public function transfer(Request $request)
+    {
+        $validated = $request->validate([
+            'from_bank_account_id' => 'required|exists:bank_accounts,id',
+            'to_bank_account_id' => 'required|exists:bank_accounts,id|different:from_bank_account_id',
+            'amount' => 'required|numeric|min:0.01',
+            'date' => 'required|date',
+            'description' => 'nullable|string|max:255',
+        ]);
+
+        $userId = auth()->id();
+
+        // Garante que ambas as contas pertencem ao usuário autenticado
+        $fromAccount = \App\Models\BankAccount::where('user_id', $userId)->findOrFail($validated['from_bank_account_id']);
+        $toAccount = \App\Models\BankAccount::where('user_id', $userId)->findOrFail($validated['to_bank_account_id']);
+
+        $amount = (float) $validated['amount'];
+        $date = \Carbon\Carbon::parse($validated['date']);
+        $description = $validated['description'] ?: 'Transferência de Lucros';
+
+        // Encontra ou cria a categoria "Transferência de Lucros"
+        $category = \App\Models\TransactionCategory::firstOrCreate(
+            [
+                'user_id' => $userId,
+                'name' => 'Transferência de Lucros',
+            ],
+            [
+                'type' => 'saida',
+                'color' => '#3B82F6',
+                'icon' => 'switch-horizontal'
+            ]
+        );
+
+        \Illuminate\Support\Facades\DB::transaction(function () use ($userId, $fromAccount, $toAccount, $amount, $date, $description, $category) {
+            // Cria transação de saída na conta PJ (Origem)
+            Transaction::create([
+                'user_id' => $userId,
+                'bank_account_id' => $fromAccount->id,
+                'type' => 'saida',
+                'category_id' => $category->id,
+                'amount' => $amount,
+                'due_date' => $date,
+                'paid_at' => $date,
+                'status' => 'pago',
+                'description' => $description . " (Para: {$toAccount->account_name})",
+                'classification' => $fromAccount->person_type ?: 'PJ',
+            ]);
+
+            // Cria transação de entrada na conta PF (Destino)
+            Transaction::create([
+                'user_id' => $userId,
+                'bank_account_id' => $toAccount->id,
+                'type' => 'entrada',
+                'category_id' => $category->id,
+                'amount' => $amount,
+                'due_date' => $date,
+                'paid_at' => $date,
+                'status' => 'pago',
+                'description' => $description . " (De: {$fromAccount->account_name})",
+                'classification' => $toAccount->person_type ?: 'PF',
+            ]);
+        });
+
+        return redirect()->back()->with('success', 'Transferência de lucros realizada com sucesso!');
     }
 }

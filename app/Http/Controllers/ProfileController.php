@@ -25,6 +25,7 @@ class ProfileController extends Controller
             'phone' => 'nullable|string',
             'theme_color' => 'required|in:green,blue,purple,indigo,orange',
             'avatar' => 'nullable|image|mimes:jpeg,png,jpg,webp|max:2048',
+            'logo' => 'nullable|image|mimes:jpeg,png,jpg,webp|max:2048',
             'password' => 'nullable|string|min:8|confirmed',
         ]);
 
@@ -43,6 +44,18 @@ class ProfileController extends Controller
             // Salva o novo avatar
             $path = $request->file('avatar')->store('avatars', 'public');
             $user->avatar = $path;
+        }
+
+        // Upload de Logo
+        if ($request->hasFile('logo')) {
+            // Exclui a logo anterior se existir
+            if ($user->logo) {
+                Storage::disk('public')->delete($user->logo);
+            }
+
+            // Salva a nova logo
+            $path = $request->file('logo')->store('logos', 'public');
+            $user->logo = $path;
         }
 
         // Senha

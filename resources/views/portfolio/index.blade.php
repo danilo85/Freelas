@@ -108,11 +108,12 @@
             </span>
             <input type="text" 
                    x-model="searchQuery"
+                   @input="currentPage = 1"
                    placeholder="Buscar por título, descrição ou tecnologia..." 
                    class="w-full pl-9 pr-10 py-2.5 rounded-[5px] border border-slate-200 text-xs focus:outline-none focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500 transition-all placeholder-slate-400">
             <button type="button" 
                     x-show="searchQuery" 
-                    @click="searchQuery = ''" 
+                    @click="searchQuery = ''; currentPage = 1;" 
                     class="absolute inset-y-0 right-0 flex items-center pr-3 text-slate-400 hover:text-slate-655 cursor-pointer">
                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
@@ -128,7 +129,7 @@
                 
                 <!-- Todas Categorias -->
                 <button type="button" 
-                        @click="filterCategoryId = ''" 
+                        @click="setCategory('')" 
                         class="px-3 py-1 rounded-full text-[11px] font-bold transition-all cursor-pointer border uppercase tracking-wider focus:outline-none"
                         :style="!filterCategoryId ? 'background-color: #0f172a; border-color: #0f172a; color: #ffffff;' : 'background-color: #f1f5f9; border-color: #e2e8f0; color: #475569;'">
                     Todas
@@ -137,7 +138,7 @@
                 @foreach($categories as $cat)
                     <!-- Category specific button -->
                     <button type="button" 
-                            @click="filterCategoryId = '{{ $cat->id }}'" 
+                            @click="setCategory('{{ $cat->id }}')" 
                             class="px-3 py-1 rounded-full text-[11px] font-bold transition-all cursor-pointer border uppercase tracking-wider focus:outline-none"
                             :style="filterCategoryId == '{{ $cat->id }}' ? 'background-color: #2563eb; border-color: #2563eb; color: #ffffff;' : 'background-color: #eff6ff; border-color: #dbeafe; color: #1d4ed8;'">
                         {{ $cat->name }}
@@ -151,7 +152,7 @@
                 
                 <!-- Todos Status -->
                 <button type="button" 
-                        @click="filterStatus = ''" 
+                        @click="setStatus('')" 
                         class="px-3 py-1 rounded-full text-[11px] font-bold transition-all cursor-pointer border uppercase tracking-wider focus:outline-none"
                         :style="!filterStatus ? 'background-color: #0f172a; border-color: #0f172a; color: #ffffff;' : 'background-color: #f1f5f9; border-color: #e2e8f0; color: #475569;'">
                     Todos
@@ -159,7 +160,7 @@
 
                 <!-- Publicados -->
                 <button type="button" 
-                        @click="filterStatus = 'publicado'" 
+                        @click="setStatus('publicado')" 
                         class="px-3 py-1 rounded-full text-[11px] font-bold transition-all cursor-pointer border uppercase tracking-wider focus:outline-none"
                         :style="filterStatus === 'publicado' ? 'background-color: #10b981; border-color: #10b981; color: #ffffff;' : 'background-color: #ecfdf5; border-color: #d1fae5; color: #047857;'">
                     Publicados
@@ -167,7 +168,7 @@
 
                 <!-- Rascunhos -->
                 <button type="button" 
-                        @click="filterStatus = 'rascunho'" 
+                        @click="setStatus('rascunho')" 
                         class="px-3 py-1 rounded-full text-[11px] font-bold transition-all cursor-pointer border uppercase tracking-wider focus:outline-none"
                         :style="filterStatus === 'rascunho' ? 'background-color: #f59e0b; border-color: #f59e0b; color: #ffffff;' : 'background-color: #fffbeb; border-color: #fef3c7; color: #b45309;'">
                     Rascunhos
@@ -180,7 +181,7 @@
     <!-- Grid de Trabalhos -->
     <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
         @forelse($items as $item)
-            <div x-show="shouldShowItem('{{ addslashes($item->title) }}', '{{ addslashes(strip_tags($item->description)) }}', '{{ addslashes($item->technologies) }}', '{{ $item->category_id }}', '{{ $item->status }}')"
+            <div x-show="shouldShowItem('{{ addslashes($item->title) }}', '{{ addslashes(strip_tags($item->description)) }}', '{{ addslashes($item->technologies) }}', '{{ $item->category_id }}', '{{ $item->status }}') && isItemOnCurrentPage({{ $item->id }})"
                  class="bg-white border border-slate-200 rounded-[5px] overflow-hidden shadow-sm flex flex-col justify-between hover:shadow-md transition-shadow duration-200 relative group"
                  x-transition>
                 
@@ -336,12 +337,47 @@
     </div>
 
     <!-- Estado de Filtro Vazio (Client-side) -->
-    <div x-show="itemsList.filter(i => shouldShowItem(i.title, i.description, i.technologies, i.category_id, i.status)).length === 0 && itemsList.length > 0" 
+    <div x-show="totalFilteredCount === 0 && itemsList.length > 0" 
          class="text-center py-12 bg-white border border-slate-200 rounded-[5px] shadow-sm select-none" 
          x-cloak>
         <span class="text-5xl block">🔍</span>
         <h3 class="font-outfit font-black text-slate-800 text-md uppercase tracking-tight mt-4">Nenhum trabalho corresponde à busca</h3>
         <p class="text-xs text-slate-400 mt-1">Experimente limpar a sua busca ou trocar as tags selecionadas.</p>
+    </div>
+
+    <!-- Painel de Paginação Dinâmica (Sem Reload) -->
+    <div x-show="totalPages > 1" class="flex flex-col sm:flex-row items-center justify-between gap-4 border-t border-slate-100 dark:border-slate-800/60 pt-6 mt-4" x-cloak>
+        <div class="text-xs font-semibold text-slate-400 dark:text-slate-500 uppercase tracking-wider">
+            Mostrando <span class="text-slate-800 dark:text-slate-200" x-text="Math.min((currentPage - 1) * perPage + 1, totalFilteredCount)"></span> a 
+            <span class="text-slate-800 dark:text-slate-200" x-text="Math.min(currentPage * perPage, totalFilteredCount)"></span> de 
+            <span class="text-slate-800 dark:text-slate-200" x-text="totalFilteredCount"></span> trabalhos
+        </div>
+        
+        <div class="flex items-center gap-1.5">
+            <button type="button" @click="prevPage()" :disabled="currentPage === 1" 
+                class="h-8 px-3 rounded-[5px] border border-slate-200 dark:border-slate-850 bg-white dark:bg-slate-900 text-slate-600 dark:text-slate-400 text-[10px] font-bold uppercase tracking-wider transition-colors hover:bg-slate-50 dark:hover:bg-slate-800 disabled:opacity-40 disabled:cursor-not-allowed">
+                Anterior
+            </button>
+            
+            <template x-for="p in totalPagesArray" :key="p">
+                <button type="button" 
+                    @click="p !== '...' ? currentPage = p : null" 
+                    :disabled="p === '...'"
+                    :class="{
+                        'bg-primary-500 text-white border-primary-500 shadow-sm shadow-primary-500/20': currentPage === p,
+                        'bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-300 border-slate-200 dark:border-slate-850 hover:bg-slate-50 dark:hover:bg-slate-800': currentPage !== p && p !== '...',
+                        'text-slate-400 dark:text-slate-650 border-transparent bg-transparent cursor-default select-none': p === '...'
+                    }" 
+                    class="w-8 h-8 rounded-[5px] border text-xs font-bold transition-all"
+                    x-text="p">
+                </button>
+            </template>
+            
+            <button type="button" @click="nextPage()" :disabled="currentPage === totalPages" 
+                class="h-8 px-3 rounded-[5px] border border-slate-200 dark:border-slate-850 bg-white dark:bg-slate-900 text-slate-600 dark:text-slate-400 text-[10px] font-bold uppercase tracking-wider transition-colors hover:bg-slate-50 dark:hover:bg-slate-800 disabled:opacity-40 disabled:cursor-not-allowed">
+                Próxima
+            </button>
+        </div>
     </div>
 
     <!-- Botão Flutuante Redondo (FAB) -->
@@ -362,6 +398,73 @@
             searchQuery: '{{ request('search', '') }}',
             filterCategoryId: '{{ request('category_id', '') }}',
             filterStatus: '{{ request('status', '') }}',
+            currentPage: 1,
+            perPage: 12,
+
+            setCategory(id) {
+                this.filterCategoryId = id;
+                this.currentPage = 1;
+            },
+
+            setStatus(status) {
+                this.filterStatus = status;
+                this.currentPage = 1;
+            },
+
+            get totalFilteredCount() {
+                return this.filteredItems.length;
+            },
+
+            get filteredItems() {
+                return this.itemsList.filter(item => {
+                    return this.shouldShowItem(item.title, item.description, item.technologies, item.portfolio_category_id, item.status);
+                });
+            },
+
+            get totalPages() {
+                return Math.ceil(this.totalFilteredCount / this.perPage) || 1;
+            },
+
+            get totalPagesArray() {
+                const total = this.totalPages;
+                const current = this.currentPage;
+                const delta = 1;
+                const range = [];
+                for (let i = Math.max(2, current - delta); i <= Math.min(total - 1, current + delta); i++) {
+                    range.push(i);
+                }
+                if (current - delta > 2) range.unshift('...');
+                range.unshift(1);
+                if (current + delta < total - 1) range.push('...');
+                if (total > 1) range.push(total);
+                return range;
+            },
+
+            prevPage() {
+                if (this.currentPage > 1) {
+                    this.currentPage--;
+                    this.scrollToTop();
+                }
+            },
+
+            nextPage() {
+                if (this.currentPage < this.totalPages) {
+                    this.currentPage++;
+                    this.scrollToTop();
+                }
+            },
+
+            scrollToTop() {
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+            },
+
+            isItemOnCurrentPage(itemId) {
+                const index = this.filteredItems.findIndex(i => i.id === itemId);
+                if (index === -1) return false;
+                const start = (this.currentPage - 1) * this.perPage;
+                const end = start + this.perPage;
+                return index >= start && index < end;
+            },
 
             shouldShowItem(title, description, technologies, categoryId, status) {
                 if (this.filterCategoryId && categoryId != this.filterCategoryId) return false;

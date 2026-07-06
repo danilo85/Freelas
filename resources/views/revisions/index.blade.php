@@ -105,7 +105,7 @@
             <button type="button" 
                     @click="filterStatus = ''" 
                     class="px-3.5 py-1.5 rounded-full text-xs font-bold transition-all cursor-pointer border uppercase tracking-wider focus:outline-none"
-                    :style="!filterStatus ? 'background-color: #0f172a; border-color: #0f172a; color: #ffffff;' : 'background-color: #f1f5f9; border-color: #e2e8f0; color: #475569;'">
+                    :class="!filterStatus ? 'bg-slate-900 dark:bg-slate-100 border-slate-900 dark:border-slate-100 text-white dark:text-slate-900' : 'bg-slate-100 dark:bg-slate-800 border-slate-200 dark:border-slate-750 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700/50'">
                 Todos
             </button>
 
@@ -113,7 +113,7 @@
             <button type="button" 
                     @click="filterStatus = 'ativo'" 
                     class="px-3.5 py-1.5 rounded-full text-xs font-bold transition-all cursor-pointer border uppercase tracking-wider focus:outline-none"
-                    :style="filterStatus === 'ativo' ? 'background-color: #10b981; border-color: #10b981; color: #ffffff;' : 'background-color: #ecfdf5; border-color: #d1fae5; color: #047857;'">
+                    :class="filterStatus === 'ativo' ? 'bg-emerald-600 border-emerald-600 text-white shadow-md shadow-emerald-600/10' : 'bg-emerald-50 dark:bg-emerald-950/40 border-emerald-200 dark:border-emerald-900/40 text-emerald-700 dark:text-emerald-300 hover:bg-emerald-100 dark:hover:bg-emerald-900/30'">
                 Ativos
             </button>
 
@@ -121,7 +121,7 @@
             <button type="button" 
                     @click="filterStatus = 'arquivado'" 
                     class="px-3.5 py-1.5 rounded-full text-xs font-bold transition-all cursor-pointer border uppercase tracking-wider focus:outline-none"
-                    :style="filterStatus === 'arquivado' ? 'background-color: #f59e0b; border-color: #f59e0b; color: #ffffff;' : 'background-color: #fffbeb; border-color: #fef3c7; color: #b45309;'">
+                    :class="filterStatus === 'arquivado' ? 'bg-amber-600 border-amber-600 text-white shadow-md shadow-amber-600/10' : 'bg-amber-50 dark:bg-amber-950/40 border-amber-200 dark:border-amber-900/40 text-amber-700 dark:text-amber-300 hover:bg-amber-100 dark:hover:bg-amber-900/30'">
                 Arquivados
             </button>
         </div>

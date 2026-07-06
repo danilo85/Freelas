@@ -177,7 +177,7 @@
             <div class="bg-white border border-slate-200 rounded-[5px] p-6 shadow-sm space-y-4">
                 <h4 class="text-sm font-bold text-slate-800 border-b border-slate-100 pb-3 uppercase tracking-wider">Projetos / Orçamentos Vinculados</h4>
                 @if($projects->count() > 0)
-                    <div class="space-y-3">
+                    <div class="max-h-[450px] overflow-y-auto pr-1.5 space-y-3">
                         @foreach($projects as $proj)
                             <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-4 border border-slate-150 rounded-[5px] hover:border-slate-300 transition-colors">
                                 <div class="min-w-0">

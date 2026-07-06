@@ -90,6 +90,7 @@ Route::middleware(['auth', 'approved'])->prefix('freelas')->group(function () {
     Route::get('/finances/{transaction}/download-attachment', [\App\Http\Controllers\FinanceController::class, 'downloadAttachment'])->name('finances.download-attachment');
     Route::post('/finances/credit-card/{creditCard}/pay-invoice', [\App\Http\Controllers\FinanceController::class, 'payInvoice'])->name('finances.pay-invoice');
     Route::post('/finances/import-json', [\App\Http\Controllers\FinanceController::class, 'importJson'])->name('finances.import-json');
+    Route::post('/finances/transfer', [\App\Http\Controllers\FinanceController::class, 'transfer'])->name('finances.transfer');
         
     // Perfil do Usuário
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');

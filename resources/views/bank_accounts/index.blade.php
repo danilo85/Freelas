@@ -6,6 +6,95 @@
 @section('content')
 <div x-data="bankAccountList()" class="space-y-8">
 
+    <!-- Modal de Transferência de Lucros -->
+    <div x-show="openTransferModal" 
+         class="fixed inset-0 flex items-center justify-center bg-slate-950/75 backdrop-blur-md"
+         style="z-index: 99999;"
+         x-transition.opacity
+         x-cloak>
+        <div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-2xl rounded-lg max-w-md w-full mx-4 overflow-hidden flex flex-col relative"
+             @click.away="openTransferModal = false">
+            
+            <div class="p-5 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between shrink-0 bg-slate-50 dark:bg-slate-900/50">
+                <div>
+                    <h3 class="font-outfit font-black text-slate-800 dark:text-slate-100 text-sm uppercase tracking-tight">Transferência de Lucros</h3>
+                    <p class="text-[10px] text-slate-400 font-bold uppercase tracking-wider block mt-0.5">PJ para PF (Neutralidade Fiscal)</p>
+                </div>
+                <button type="button" @click="openTransferModal = false" class="text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 font-black text-sm p-1.5 shrink-0 cursor-pointer">✕</button>
+            </div>
+
+            <form action="{{ route('finances.transfer') }}" method="POST" class="p-5 space-y-4">
+                @csrf
+
+                <!-- Conta de Origem (PJ) -->
+                <div class="space-y-1">
+                    <label for="from_bank_account_id" class="text-[10px] font-bold text-slate-450 dark:text-slate-500 uppercase tracking-wider block font-semibold">Conta de Origem (PJ / Saída)</label>
+                    <select name="from_bank_account_id" id="from_bank_account_id" required class="w-full px-3 py-2 rounded-[5px] border border-slate-200 dark:border-slate-800 text-xs font-bold text-slate-750 dark:text-slate-200 bg-white dark:bg-slate-900 focus:outline-none">
+                        <option value="">Selecione a conta...</option>
+                        @foreach($bankAccounts as $acc)
+                            <option value="{{ $acc->id }}">
+                                [{{ strtoupper($acc->person_type) ?: 'PJ' }}] {{ $acc->bank_name }} - {{ $acc->account_name }}
+                            </option>
+                        @endforeach
+                    </select>
+                </div>
+
+                <!-- Conta de Destino (PF) -->
+                <div class="space-y-1">
+                    <label for="to_bank_account_id" class="text-[10px] font-bold text-slate-450 dark:text-slate-500 uppercase tracking-wider block font-semibold">Conta de Destino (PF / Entrada)</label>
+                    <select name="to_bank_account_id" id="to_bank_account_id" required class="w-full px-3 py-2 rounded-[5px] border border-slate-200 dark:border-slate-800 text-xs font-bold text-slate-750 dark:text-slate-200 bg-white dark:bg-slate-900 focus:outline-none">
+                        <option value="">Selecione a conta...</option>
+                        @foreach($bankAccounts as $acc)
+                            <option value="{{ $acc->id }}">
+                                [{{ strtoupper($acc->person_type) ?: 'PF' }}] {{ $acc->bank_name }} - {{ $acc->account_name }}
+                            </option>
+                        @endforeach
+                    </select>
+                </div>
+
+                <!-- Valor -->
+                <div class="space-y-1">
+                    <label for="amount" class="text-[10px] font-bold text-slate-450 dark:text-slate-500 uppercase tracking-wider block font-semibold">Valor da Transferência</label>
+                    <input type="number" name="amount" id="amount" step="0.01" min="0.01" placeholder="0,00" required class="w-full px-3 py-2 rounded-[5px] border border-slate-200 dark:border-slate-800 text-xs font-bold text-slate-750 dark:text-slate-200 bg-white dark:bg-slate-900 focus:outline-none" />
+                </div>
+
+                <!-- Data -->
+                <div class="space-y-1">
+                    <label for="date" class="text-[10px] font-bold text-slate-450 dark:text-slate-500 uppercase tracking-wider block font-semibold">Data da Transferência</label>
+                    <input type="date" name="date" id="date" value="{{ date('Y-m-d') }}" required class="w-full px-3 py-2 rounded-[5px] border border-slate-200 dark:border-slate-800 text-xs font-bold text-slate-750 dark:text-slate-200 bg-white dark:bg-slate-900 focus:outline-none" />
+                </div>
+
+                <!-- Descrição -->
+                <div class="space-y-1">
+                    <label for="description" class="text-[10px] font-bold text-slate-450 dark:text-slate-500 uppercase tracking-wider block font-semibold">Descrição (Opcional)</label>
+                    <input type="text" name="description" id="description" placeholder="Transferência de Lucros" class="w-full px-3 py-2 rounded-[5px] border border-slate-200 dark:border-slate-800 text-xs font-bold text-slate-750 dark:text-slate-200 bg-white dark:bg-slate-900 focus:outline-none" />
+                </div>
+
+                <div class="pt-2 flex justify-end gap-2">
+                    <button type="button" @click="openTransferModal = false" class="px-4 py-2 bg-slate-200 dark:bg-slate-800 hover:bg-slate-350 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 font-bold text-xs rounded-[5px] uppercase tracking-wider">Cancelar</button>
+                    <button type="submit" class="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs rounded-[5px] shadow transition-colors uppercase tracking-wider">Transferir</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Header da Página -->
+    <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+        <div>
+            <h1 class="text-2xl font-black text-slate-800 dark:text-slate-100 font-outfit">Minha Carteira</h1>
+            <p class="text-sm text-slate-500 dark:text-slate-400 font-medium">Gerencie suas contas bancárias, cartões de crédito e transferências.</p>
+        </div>
+        <div class="flex items-center gap-2">
+            <button 
+                type="button" 
+                @click="openTransferModal = true"
+                class="px-4 py-2.5 bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold rounded-[5px] uppercase tracking-wider transition-colors shadow-sm cursor-pointer flex items-center gap-1.5"
+            >
+                🔄 Transferir Lucros
+            </button>
+        </div>
+    </div>
+
     <!-- Top Cards (Resumo Financeiro da Carteira) -->
     <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
         
@@ -327,6 +416,7 @@
         return {
             activeTab: '{{ request('tab', 'accounts') }}',
             searchQuery: '',
+            openTransferModal: false,
             
             matchesSearch(text) {
                 if (!this.searchQuery) return true;

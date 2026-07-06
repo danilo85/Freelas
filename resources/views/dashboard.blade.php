@@ -69,6 +69,60 @@
         
     </div>
 
+    <!-- Widgets Financeiros Unificados -->
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+        
+        <!-- Widget: Distribuição de Despesas (Doughnut Chart) -->
+        <div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-[5px] p-6 shadow-sm hover:shadow-md transition-shadow flex flex-col justify-between min-h-[260px]">
+            <div>
+                <h3 class="text-sm font-black text-slate-850 dark:text-slate-100 uppercase tracking-wider">📊 Distribuição de Despesas</h3>
+                <p class="text-[10px] text-slate-400 font-bold uppercase tracking-wider block mt-0.5">Visão do mês corrente</p>
+            </div>
+            
+            <div class="relative w-full h-[180px] mt-4 flex items-center justify-center">
+                @if(count($categoryChartData) > 0)
+                    <canvas id="dashboardCategoryChart"></canvas>
+                @else
+                    <div class="text-xs text-slate-400 dark:text-slate-500 text-center py-10 border border-dashed border-slate-200 dark:border-slate-800 rounded-[5px] w-full bg-slate-50/30">
+                        Nenhuma despesa registrada neste mês.
+                    </div>
+                @endif
+            </div>
+        </div>
+
+        <!-- Widget: Contas a Vencer (Lembrete) -->
+        <div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-[5px] p-6 shadow-sm hover:shadow-md transition-shadow flex flex-col min-h-[260px]">
+            <div>
+                <h3 class="text-sm font-black text-slate-855 dark:text-slate-100 uppercase tracking-wider">⏳ Contas a Vencer (Próximos 7 dias)</h3>
+                <p class="text-[10px] text-slate-400 font-bold uppercase tracking-wider block mt-0.5">Lembretes automáticos</p>
+            </div>
+            
+            <div class="flex-1 mt-4 overflow-y-auto max-h-[180px] space-y-2.5 pr-1">
+                @forelse($upcomingBills as $bill)
+                    <div class="flex items-center justify-between p-3 bg-amber-50/40 dark:bg-amber-950/10 border border-amber-100 dark:border-amber-900/30 rounded-[5px] text-xs hover:bg-amber-50/60 dark:hover:bg-amber-950/20 transition-colors">
+                        <div class="min-w-0 flex-1 pr-3">
+                            <div class="flex items-center gap-1.5">
+                                <span class="text-xs shrink-0">{{ $bill->category->icon ?? '💸' }}</span>
+                                <span class="font-extrabold text-slate-800 dark:text-slate-200 truncate block" title="{{ $bill->description }}">
+                                    {{ $bill->description }}
+                                </span>
+                            </div>
+                            <span class="text-[9px] text-slate-400 font-bold block mt-1 uppercase tracking-wider">Vence em: {{ $bill->due_date->format('d/m/Y') }}</span>
+                        </div>
+                        <span class="font-bold text-rose-600 dark:text-rose-455 shrink-0 font-mono text-sm">R$ {{ number_format($bill->amount, 2, ',', '.') }}</span>
+                    </div>
+                @empty
+                    <div class="flex flex-col items-center justify-center flex-1 text-center py-10 border border-dashed border-slate-200 dark:border-slate-800 rounded-[5px] bg-slate-50/30">
+                        <span class="text-2xl mb-1">🎉</span>
+                        <h4 class="text-[11px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Tudo em dia!</h4>
+                        <p class="text-[10px] text-slate-400 max-w-[200px] mt-0.5">Nenhum vencimento pendente para os próximos 7 dias.</p>
+                    </div>
+                @endforelse
+            </div>
+        </div>
+
+    </div>
+
     <!-- Kanban Interativo (Alpine.js) -->
     <div x-data="kanbanBoard()" x-init="init()" class="space-y-6">
         
@@ -302,5 +356,44 @@
             }
         }
     }
+</script>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const catCanvas = document.getElementById('dashboardCategoryChart');
+        if (catCanvas) {
+            const ctx = catCanvas.getContext('2d');
+            const isDark = document.documentElement.classList.contains('dark');
+            const labelColor = isDark ? '#94a3b8' : '#475569';
+            
+            new Chart(ctx, {
+                type: 'doughnut',
+                data: {
+                    labels: @json($categoryChartLabels),
+                    datasets: [{
+                        data: @json($categoryChartData),
+                        backgroundColor: @json($categoryChartColors),
+                        borderWidth: 0
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            position: 'right',
+                            labels: {
+                                color: labelColor,
+                                boxWidth: 8,
+                                font: { size: 9, weight: 'bold' }
+                            }
+                        }
+                    },
+                    cutout: '65%'
+                }
+            });
+        }
+    });
 </script>
 @endsection
