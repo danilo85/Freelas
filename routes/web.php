@@ -29,6 +29,13 @@ Route::middleware('auth')->group(function () {
     // API de Status do Kanban
     Route::patch('/api/projects/{project}/status', [ProjectController::class, 'updateStatus'])
         ->name('projects.update-status');
+
+    // Kanban Dynamic Columns and Move API routes
+    Route::post('/api/kanban/columns', [DashboardController::class, 'storeColumn'])->name('kanban.columns.store');
+    Route::put('/api/kanban/columns/{column}', [DashboardController::class, 'updateColumn'])->name('kanban.columns.update');
+    Route::delete('/api/kanban/columns/{column}', [DashboardController::class, 'deleteColumn'])->name('kanban.columns.destroy');
+    Route::patch('/api/projects/{project}/kanban-move', [DashboardController::class, 'moveProject'])->name('projects.kanban-move');
+    Route::post('/api/kanban/columns/reorder', [DashboardController::class, 'moveColumnPosition'])->name('kanban.columns.reorder');
 });
 
 // Rota de Usuário Aguardando Aprovação

@@ -23,11 +23,17 @@ class Project extends Model
         'budget_date',
         'expiration_date',
         'additional_info',
+        'kanban_column_id',
     ];
 
     public function client(): BelongsTo
     {
         return $this->belongsTo(Client::class);
+    }
+
+    public function kanbanColumn(): BelongsTo
+    {
+        return $this->belongsTo(KanbanColumn::class, 'kanban_column_id');
     }
 
     public function proposals(): HasMany
