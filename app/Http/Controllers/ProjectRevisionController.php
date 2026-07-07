@@ -34,7 +34,7 @@ class ProjectRevisionController extends Controller
         }
 
         $revisions = $query->latest()->get();
-        $authors = Author::where('user_id', auth()->id())->get();
+        $authors = Author::where('user_id', auth()->id())->orderBy('name', 'asc')->get();
 
         // Calculate summary cards metrics
         $totalProjects = $revisions->count();
@@ -127,7 +127,9 @@ class ProjectRevisionController extends Controller
         // Get projects associated with this author through pivot
         $projects = Project::whereHas('authors', function ($q) use ($authorId) {
             $q->where('authors.id', $authorId);
-        })->get(['id', 'title', 'status']);
+        })
+        ->whereIn('status', ['aprovado', 'quitado'])
+        ->get(['id', 'title', 'status']);
 
         return response()->json($projects);
     }

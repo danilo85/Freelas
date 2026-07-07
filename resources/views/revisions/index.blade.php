@@ -311,6 +311,7 @@
     <!-- Modal de Criação (Alpine.js) -->
     <div x-show="showCreateModal" 
          class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm"
+         style="position: fixed !important; top: 0 !important; left: 0 !important; right: 0 !important; bottom: 0 !important; width: 100vw !important; height: 100vh !important; margin: 0 !important; z-index: 99999;"
          x-transition:enter="transition ease-out duration-300"
          x-transition:enter-start="opacity-0"
          x-transition:enter-end="opacity-100"
@@ -318,15 +319,15 @@
          x-transition:leave-start="opacity-100"
          x-transition:leave-end="opacity-0"
          x-cloak>
-         
+          
          <!-- Caixa do Modal -->
-         <div class="bg-white rounded-[5px] border border-slate-200 w-full max-w-lg shadow-2xl overflow-hidden"
+         <div class="bg-white dark:bg-slate-900 rounded-[5px] border border-slate-200 dark:border-slate-800 w-full max-w-lg shadow-2xl overflow-visible"
               @click.away="showCreateModal = false">
               
               <!-- Topo do Modal -->
-              <div class="px-6 py-4 bg-slate-50 border-b border-slate-200 flex items-center justify-between">
-                  <h4 class="font-outfit font-black text-slate-800 text-lg">Nova Revisão de Trabalho</h4>
-                  <button @click="showCreateModal = false" class="text-slate-400 hover:text-slate-600">
+              <div class="px-6 py-4 bg-slate-50 dark:bg-slate-900/50 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between">
+                  <h4 class="font-outfit font-black text-slate-800 dark:text-slate-100 text-lg">Nova Revisão de Trabalho</h4>
+                  <button type="button" @click="showCreateModal = false" class="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200">
                       <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M6 18L18 6M6 6l12 12"></path>
                       </svg>
@@ -337,19 +338,39 @@
               <form action="{{ route('revisoes.store') }}" method="POST" class="p-6 space-y-4">
                   @csrf
 
-                  <!-- Autocomplete/Select Autor -->
-                  <div class="space-y-1">
+                  <!-- Autocomplete Autor -->
+                  <div class="space-y-1 relative">
                       <label class="text-xs font-bold text-slate-500 uppercase tracking-wider block">Autor Creditado</label>
-                      <select name="author_id" 
-                              x-model="selectedAuthor" 
-                              @change="loadAuthorProjects()"
-                              required
-                              class="w-full px-4 py-2.5 rounded-[5px] border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500 transition-all bg-white">
-                          <option value="">Selecione o Autor...</option>
-                          @foreach($authors as $author)
-                              <option value="{{ $author->id }}">{{ $author->name }}</option>
-                          @endforeach
-                      </select>
+                      <input type="hidden" name="author_id" x-model="selectedAuthor" required>
+                      
+                      <div class="relative">
+                          <input type="text" 
+                                 x-model="authorSearch" 
+                                 @focus="showAuthorDropdown = true"
+                                 @input="showAuthorDropdown = true; selectedAuthor = ''; projects = []; selectedProject = '';"
+                                 placeholder="Digite o nome do autor para buscar..."
+                                 required
+                                 class="w-full px-4 py-2.5 rounded-[5px] border border-slate-200 dark:border-slate-800 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500 transition-all bg-white dark:bg-slate-900 dark:text-slate-100">
+                          
+                          <div x-show="selectedAuthor" class="absolute inset-y-0 right-3 flex items-center text-emerald-600">
+                              <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                              </svg>
+                          </div>
+                      </div>
+
+                      <!-- Lista suspensa de Autores -->
+                      <div x-show="showAuthorDropdown" 
+                           class="absolute z-50 w-full mt-1 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-[5px] shadow-lg max-h-48 overflow-y-auto"
+                           @click.away="showAuthorDropdown = false"
+                           x-cloak>
+                          <template x-for="author in filteredAuthors()" :key="author.id">
+                              <div @click="selectAuthor(author); showAuthorDropdown = false;" 
+                                   class="px-4 py-2 hover:bg-slate-100 dark:hover:bg-slate-800 cursor-pointer text-sm text-slate-700 dark:text-slate-200" 
+                                   x-text="author.name"></div>
+                          </template>
+                          <div x-show="filteredAuthors().length === 0" class="px-4 py-2 text-sm text-slate-400 dark:text-slate-500">Nenhum autor encontrado</div>
+                      </div>
                   </div>
 
                   <!-- Dropdown Trabalhos do Autor -->
@@ -357,7 +378,9 @@
                       <label class="text-xs font-bold text-slate-500 uppercase tracking-wider block">Trabalho/Projeto Vinculado</label>
                       <div class="relative">
                           <select name="project_id" 
-                                  class="w-full px-4 py-2.5 rounded-[5px] border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500 transition-all bg-white"
+                                  x-model="selectedProject"
+                                  @change="onProjectChange()"
+                                  class="w-full px-4 py-2.5 rounded-[5px] border border-slate-200 dark:border-slate-800 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500 transition-all bg-white dark:bg-slate-900 dark:text-slate-100"
                                   :disabled="loadingProjects">
                               <option value="">Projeto Avulso (Sem vinculo)</option>
                               <template x-for="project in projects" :key="project.id">
@@ -370,14 +393,15 @@
                       </div>
                   </div>
 
-                  <!-- Título da Revisão -->
-                  <div class="space-y-1">
+                  <!-- Título da Revisão (Visível apenas se for avulso/sem projeto) -->
+                  <div class="space-y-1" x-show="!selectedProject">
                       <label class="text-xs font-bold text-slate-500 uppercase tracking-wider block">Título da Revisão</label>
                       <input type="text" 
                              name="title" 
+                             x-model="revisionTitle"
                              placeholder="Ex: Diagramação Final - Livro Infantil" 
-                             required
-                             class="w-full px-4 py-2.5 rounded-[5px] border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500 transition-all">
+                             :required="!selectedProject"
+                             class="w-full px-4 py-2.5 rounded-[5px] border border-slate-200 dark:border-slate-800 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500 transition-all bg-white dark:bg-slate-900 dark:text-slate-100">
                   </div>
 
                   <!-- Subtítulo -->
@@ -386,7 +410,7 @@
                       <input type="text" 
                              name="subtitle" 
                              placeholder="Ex: Segunda versão enviada para revisão de texto" 
-                             class="w-full px-4 py-2.5 rounded-[5px] border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500 transition-all">
+                             class="w-full px-4 py-2.5 rounded-[5px] border border-slate-200 dark:border-slate-800 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500 transition-all bg-white dark:bg-slate-900 dark:text-slate-100">
                   </div>
 
                   <!-- Ações -->
@@ -409,8 +433,38 @@
         return {
             showCreateModal: false,
             selectedAuthor: '',
+            authorSearch: '',
+            showAuthorDropdown: false,
+            selectedProject: '',
+            revisionTitle: '',
             projects: [],
             loadingProjects: false,
+            authors: {!! json_encode($authors) !!},
+
+            filteredAuthors() {
+                if (!this.authorSearch) {
+                    return this.authors;
+                }
+                const q = this.authorSearch.toLowerCase();
+                return this.authors.filter(a => a.name.toLowerCase().includes(q));
+            },
+
+            selectAuthor(author) {
+                this.selectedAuthor = author.id;
+                this.authorSearch = author.name;
+                this.loadAuthorProjects();
+            },
+
+            onProjectChange() {
+                if (this.selectedProject) {
+                    const p = this.projects.find(proj => proj.id == this.selectedProject);
+                    if (p) {
+                        this.revisionTitle = p.title;
+                    }
+                } else {
+                    this.revisionTitle = '';
+                }
+            },
 
             // Filter states
             searchQuery: '{{ request('search', '') }}',
