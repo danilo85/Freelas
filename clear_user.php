@@ -78,7 +78,7 @@ try {
         DB::table('project_histories')->whereIn('project_id', $projectIds)->delete();
         DB::table('project_attachments')->whereIn('project_id', $projectIds)->delete();
         
-        DB::table('proposals')->whereIn('client_id', $clientIds)->delete();
+        DB::table('proposals')->whereIn('project_id', $projectIds)->delete();
         
         $paymentIds = DB::table('payments')->whereIn('project_id', $projectIds)->pluck('id');
         DB::table('payment_related_projects')->whereIn('payment_id', $paymentIds)->delete();
