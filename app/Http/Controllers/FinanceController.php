@@ -499,7 +499,7 @@ class FinanceController extends Controller
                     $t->delete();
                 });
 
-            return redirect()->route('finances.index')->with('success', 'Todas as parcelas/recorrências vinculadas foram excluídas.');
+            return redirect()->back()->with('success', 'Todas as parcelas/recorrências vinculadas foram excluídas.');
         }
 
         if ($finance->attachment_path && Storage::disk('local')->exists($finance->attachment_path)) {
@@ -507,7 +507,7 @@ class FinanceController extends Controller
         }
         $finance->delete();
 
-        return redirect()->route('finances.index')->with('success', 'Movimentação excluída com sucesso!');
+        return redirect()->back()->with('success', 'Movimentação excluída com sucesso!');
     }
 
     /**
@@ -552,6 +552,36 @@ class FinanceController extends Controller
             ]);
 
         return back()->with('success', 'Fatura do cartão de crédito marcada como paga!');
+    }
+
+    /**
+     * Marca todas as despesas da fatura de um cartão de crédito no mês/ano como pendentes.
+     */
+    public function unpayInvoice(Request $request, \App\Models\CreditCard $creditCard)
+    {
+        $userId = auth()->id();
+        abort_if($creditCard->user_id !== $userId, 403, 'Ação não autorizada.');
+
+        $request->validate([
+            'month' => 'required|integer|min:1|max:12',
+            'year' => 'required|integer',
+        ]);
+
+        $month = (int) $request->input('month');
+        $year = (int) $request->input('year');
+
+        Transaction::where('user_id', $userId)
+            ->where('credit_card_id', $creditCard->id)
+            ->where('type', 'saida')
+            ->where('status', 'pago')
+            ->whereMonth('due_date', $month)
+            ->whereYear('due_date', $year)
+            ->update([
+                'status' => 'pendente',
+                'paid_at' => null,
+            ]);
+
+        return back()->with('success', 'Fatura do cartão de crédito marcada como pendente!');
     }
 
     /**
@@ -826,5 +856,34 @@ class FinanceController extends Controller
         });
 
         return redirect()->back()->with('success', 'Transferência de lucros realizada com sucesso!');
+    }
+
+    /**
+     * Remove múltiplas transações.
+     */
+    public function batchDestroy(Request $request)
+    {
+        $userId = auth()->id();
+        $ids = $request->input('ids', []);
+
+        if (empty($ids)) {
+            return response()->json(['success' => false, 'message' => 'Nenhum item selecionado.'], 400);
+        }
+
+        $transactions = Transaction::where('user_id', $userId)
+            ->whereIn('id', $ids)
+            ->get();
+
+        foreach ($transactions as $t) {
+            if ($t->attachment_path && Storage::disk('local')->exists($t->attachment_path)) {
+                Storage::disk('local')->delete($t->attachment_path);
+            }
+            $t->delete();
+        }
+
+        return response()->json([
+            'success' => true,
+            'message' => count($transactions) . ' movimentação(ões) excluída(s) com sucesso!'
+        ]);
     }
 }

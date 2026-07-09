@@ -17,6 +17,7 @@ class MeiController extends Controller
         $user = auth()->user();
         
         $year = (int) $request->input('year', Carbon::now()->year);
+        $month = (int) $request->input('month', Carbon::now()->month);
         $meiLimit = (float) $user->mei_limit;
 
         // Todas as transações pagas/recebidas no ano selecionado
@@ -116,6 +117,7 @@ class MeiController extends Controller
 
         return view('finances.mei', compact(
             'year',
+            'month',
             'meiLimit',
             'annualPjFaturamento',
             'annualPfFaturamento',
@@ -150,5 +152,80 @@ class MeiController extends Controller
         ]);
 
         return redirect()->route('finances.mei')->with('success', 'Limite MEI atualizado com sucesso!');
+    }
+
+    /**
+     * Exporta transações consolidadas do MEI para o mês/ano selecionado em formato CSV.
+     */
+    public function exportCsv(Request $request)
+    {
+        $userId = auth()->id();
+        $month = (int) $request->input('month', Carbon::now()->month);
+        $year = (int) $request->input('year', Carbon::now()->year);
+
+        $transactions = Transaction::where('user_id', $userId)
+            ->where(function($q) use ($year, $month) {
+                $q->where(function($sub) use ($year, $month) {
+                    $sub->whereMonth('paid_at', $month)->whereYear('paid_at', $year);
+                })->orWhere(function($sub) use ($year, $month) {
+                    $sub->whereNull('paid_at')->whereMonth('due_date', $month)->whereYear('due_date', $year);
+                });
+            })
+            ->with('category')
+            ->orderBy('due_date', 'asc')
+            ->get();
+
+        // Filtra transferências de lucros e transferências internas
+        $transactions = $transactions->filter(function($t) {
+            if ($t->category) {
+                $catName = mb_strtolower($t->category->name);
+                return !in_array($catName, [
+                    'transferência de lucros', 
+                    'transferencia de lucros', 
+                    'transferência', 
+                    'transferencia', 
+                    'transferência interna', 
+                    'transferencia interna'
+                ]);
+            }
+            return true;
+        });
+
+        $filename = "faturamento_mei_{$year}_{$month}.csv";
+
+        $headers = [
+            "Content-type"        => "text/csv; charset=UTF-8",
+            "Content-Disposition" => "attachment; filename=$filename",
+            "Pragma"              => "no-cache",
+            "Cache-Control"       => "must-revalidate, post-check=0, pre-check=0",
+            "Expires"             => "0"
+        ];
+
+        $columns = ['Data', 'Descrição', 'Tipo', 'Classificação', 'Valor (R$)', 'Categoria', 'Status'];
+
+        $callback = function() use($transactions, $columns) {
+            $file = fopen('php://output', 'w');
+            
+            // UTF-8 BOM for Excel
+            fprintf($file, chr(0xEF).chr(0xBB).chr(0xBF));
+            
+            fputcsv($file, $columns, ';');
+
+            foreach ($transactions as $t) {
+                $row['Data'] = ($t->paid_at ?: $t->due_date)->format('d/m/Y');
+                $row['Descrição'] = $t->description;
+                $row['Tipo'] = $t->type === 'entrada' ? 'Receita' : 'Despesa';
+                $row['Classificação'] = $t->classification === 'PJ' ? 'PJ' : 'PF';
+                $row['Valor (R$)'] = number_format($t->amount, 2, ',', '');
+                $row['Categoria'] = $t->category ? $t->category->name : 'Sem Categoria';
+                $row['Status'] = $t->status === 'pago' ? 'Pago' : 'Pendente';
+
+                fputcsv($file, array_values($row), ';');
+            }
+
+            fclose($file);
+        };
+
+        return response()->stream($callback, 200, $headers);
     }
 }

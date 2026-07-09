@@ -422,7 +422,7 @@
                 </button>
                 <div x-show="open" class="pl-9 space-y-1" style="display: none;" :style="open ? 'display: block;' : 'display: none;'">
                     <a href="{{ route('projects.index') }}" class="block py-2 px-3 text-xs font-semibold rounded-[5px] transition-colors {{ request()->routeIs('projects.*') ? 'text-white bg-slate-850' : 'text-slate-400 hover:text-white' }}">
-                        Lista de Projetos
+                        Orçamentos
                     </a>
                     @if(auth()->check() && auth()->user()->isMaster())
                         <a href="{{ route('clients.index') }}" class="block py-2 px-3 text-xs font-semibold rounded-[5px] transition-colors {{ request()->routeIs('clients.*') ? 'text-white bg-slate-850' : 'text-slate-400 hover:text-white' }}">

@@ -10,20 +10,20 @@
     <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
         
         <!-- Faturamento do Mês -->
-        <div class="bg-white rounded-[5px] p-6 border border-slate-200 shadow-sm flex items-center justify-between">
+        <div class="bg-gradient-to-br from-emerald-500 to-teal-650 dark:from-emerald-650 dark:to-teal-800 text-white rounded-[5px] p-6 shadow-sm flex items-center justify-between">
             <div>
-                <p class="text-xs font-semibold text-slate-400 uppercase tracking-wider">Faturamento do Mês</p>
-                <h3 class="text-2xl font-bold text-slate-900 mt-2">
+                <p class="text-[10px] font-black text-emerald-100/90 uppercase tracking-widest">Faturamento do Mês</p>
+                <h3 class="text-3xl font-black mt-2 font-outfit tracking-tight drop-shadow-sm">
                     R$ {{ number_format($currentMonthRevenue, 2, ',', '.') }}
                 </h3>
-                <span class="text-xs text-green-600 font-medium flex items-center gap-1 mt-1.5">
-                    <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"></path>
+                <span class="text-xs font-bold flex items-center gap-1 mt-2 text-emerald-100/90">
+                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"></path>
                     </svg>
                     Recebidos (entradas)
                 </span>
             </div>
-            <div class="w-12 h-12 rounded-[5px] bg-green-50 text-green-600 flex items-center justify-center shadow-sm">
+            <div class="w-12 h-12 rounded-[5px] bg-white/15 text-white flex items-center justify-center shadow-inner">
                 <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
                 </svg>
@@ -31,17 +31,20 @@
         </div>
 
         <!-- Orçamentos Pendentes -->
-        <div class="bg-white rounded-[5px] p-6 border border-slate-200 shadow-sm flex items-center justify-between">
+        <div class="bg-gradient-to-br from-amber-500 to-orange-600 dark:from-amber-600 dark:to-orange-800 text-white rounded-[5px] p-6 shadow-sm flex items-center justify-between">
             <div>
-                <p class="text-xs font-semibold text-slate-400 uppercase tracking-wider">Orçamentos Pendentes</p>
-                <h3 class="text-2xl font-bold text-slate-900 mt-2">
+                <p class="text-[10px] font-black text-amber-100/90 uppercase tracking-widest">Orçamentos Pendentes</p>
+                <h3 class="text-3xl font-black mt-2 font-outfit tracking-tight drop-shadow-sm">
                     R$ {{ number_format($pendingProposalsValue, 2, ',', '.') }}
                 </h3>
-                <span class="text-xs text-slate-500 font-medium flex items-center gap-1 mt-1.5">
+                <span class="text-xs font-bold flex items-center gap-1.5 mt-2 text-amber-100/95">
+                    <svg class="w-3.5 h-3.5 animate-pulse" fill="currentColor" viewBox="0 0 20 20">
+                        <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clip-rule="evenodd"></path>
+                    </svg>
                     Aguardando retorno do cliente
                 </span>
             </div>
-            <div class="w-12 h-12 rounded-[5px] bg-amber-50 text-amber-600 flex items-center justify-center shadow-sm">
+            <div class="w-12 h-12 rounded-[5px] bg-white/15 text-white flex items-center justify-center shadow-inner">
                 <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
                 </svg>
@@ -49,18 +52,18 @@
         </div>
 
         <!-- Projetos Ativos -->
-        <div class="bg-white rounded-[5px] p-6 border border-slate-200 shadow-sm flex items-center justify-between sm:col-span-2 lg:col-span-1">
+        <div class="bg-gradient-to-br from-blue-600 to-indigo-700 dark:from-blue-700 dark:to-indigo-850 text-white rounded-[5px] p-6 shadow-sm flex items-center justify-between sm:col-span-2 lg:col-span-1">
             <div>
-                <p class="text-xs font-semibold text-slate-400 uppercase tracking-wider">Projetos Ativos</p>
-                <h3 class="text-2xl font-bold text-slate-900 mt-2">
+                <p class="text-[10px] font-black text-blue-105/90 uppercase tracking-widest">Projetos Ativos</p>
+                <h3 class="text-3xl font-black mt-2 font-outfit tracking-tight drop-shadow-sm">
                     {{ $activeProjectsCount }}
                 </h3>
-                <span class="text-xs text-green-600 font-medium flex items-center gap-1 mt-1.5">
-                    <span class="w-2.5 h-2.5 rounded-full bg-green-500 inline-block animate-pulse"></span>
-                    Em andamento
+                <span class="text-xs font-bold flex items-center gap-1.5 mt-2 text-blue-100/90">
+                    <span class="w-2.5 h-2.5 rounded-full bg-emerald-400 inline-block animate-pulse shadow-md"></span>
+                    Em andamento no sistema
                 </span>
             </div>
-            <div class="w-12 h-12 rounded-[5px] bg-blue-50 text-blue-600 flex items-center justify-center shadow-sm">
+            <div class="w-12 h-12 rounded-[5px] bg-white/15 text-white flex items-center justify-center shadow-inner">
                 <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4"></path>
                 </svg>
@@ -151,6 +154,26 @@
                     </span>
                 </button>
 
+                <!-- Navegador de Colunas (Scroll) -->
+                <div class="flex items-center gap-1 no-print">
+                    <button 
+                        type="button" 
+                        @click="document.getElementById('kanbanBoardContainer').scrollBy({ left: -340, behavior: 'smooth' })"
+                        class="px-2.5 py-2 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-800 font-black text-xs rounded-[5px] shadow-sm transition-colors cursor-pointer flex items-center justify-center focus:outline-none"
+                        title="Rolar para Esquerda"
+                    >
+                        ◀
+                    </button>
+                    <button 
+                        type="button" 
+                        @click="document.getElementById('kanbanBoardContainer').scrollBy({ left: 340, behavior: 'smooth' })"
+                        class="px-2.5 py-2 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-800 font-black text-xs rounded-[5px] shadow-sm transition-colors cursor-pointer flex items-center justify-center focus:outline-none"
+                        title="Rolar para Direita"
+                    >
+                        ▶
+                    </button>
+                </div>
+
                 <!-- Botão Adicionar Coluna -->
                 <button 
                     type="button" 
@@ -169,7 +192,7 @@
                 <!-- Colunas Dinâmicas -->
                 <template x-for="(col, colIndex) in columns" :key="col.id">
                     <div 
-                        class="w-[320px] rounded-[5px] p-4 flex flex-col min-h-[480px] bg-slate-50 dark:bg-slate-900/40 border border-slate-200/60 dark:border-slate-800 transition-colors"
+                        class="w-[320px] rounded-[5px] p-4 flex flex-col min-h-[380px] bg-slate-50 dark:bg-slate-900/40 border border-slate-200/60 dark:border-slate-800 transition-colors"
                         @dragover.prevent="dragOverColumn($event, col.id)"
                         @dragleave="dragLeaveColumn($event, col.id)"
                         @drop="dropCard($event, col.id)"
@@ -204,7 +227,7 @@
                         </div>
 
                         <!-- Area para Cards com altura fixa scrollable (Post-it style columns) -->
-                        <div class="space-y-2 flex-1 overflow-y-auto h-[480px] pr-1.5 scrollbar-thin scrollbar-thumb-slate-200 dark:scrollbar-thumb-slate-800">
+                        <div class="space-y-2 flex-1 overflow-y-auto h-[320px] pr-1.5 scrollbar-thin scrollbar-thumb-slate-200 dark:scrollbar-thumb-slate-800">
                             <template x-for="project in getProjectsByColumn(col.id)" :key="project.id">
                                 <div 
                                     class="rounded-[3px] p-3 border shadow-xs hover:shadow-md transition-all duration-200 relative select-none cursor-pointer"

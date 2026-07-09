@@ -53,6 +53,7 @@ Route::middleware(['auth', 'approved'])->prefix('freelas')->group(function () {
     Route::get('/projects/create', [ProjectController::class, 'create'])->name('projects.create');
     Route::post('/projects', [ProjectController::class, 'store'])->name('projects.store');
     Route::post('/projects/import-json', [ProjectController::class, 'importJson'])->name('projects.import-json');
+    Route::post('/projects/analyze-similarity', [ProjectController::class, 'analyzeSimilarity'])->name('projects.analyze-similarity');
     Route::get('/projects/{project}', [ProjectController::class, 'show'])->name('projects.show');
     Route::get('/projects/{project}/edit', [ProjectController::class, 'edit'])->name('projects.edit');
     Route::put('/projects/{project}', [ProjectController::class, 'update'])->name('projects.update');
@@ -80,6 +81,7 @@ Route::middleware(['auth', 'approved'])->prefix('freelas')->group(function () {
 
     // Controle Financeiro
     Route::get('/finances/mei', [\App\Http\Controllers\MeiController::class, 'index'])->name('finances.mei');
+    Route::get('/finances/mei/export-csv', [\App\Http\Controllers\MeiController::class, 'exportCsv'])->name('finances.mei.export-csv');
     Route::post('/finances/mei/limit', [\App\Http\Controllers\MeiController::class, 'updateLimit'])->name('finances.mei.limit');
     
     Route::resource('finances/categories', \App\Http\Controllers\CategoryController::class)->except(['show'])->names([
@@ -92,10 +94,12 @@ Route::middleware(['auth', 'approved'])->prefix('freelas')->group(function () {
     ]);
 
     Route::resource('finances', \App\Http\Controllers\FinanceController::class)->except(['show']);
+    Route::post('/finances/batch-destroy', [\App\Http\Controllers\FinanceController::class, 'batchDestroy'])->name('finances.batch-destroy');
     Route::post('/finances/{transaction}/duplicate', [\App\Http\Controllers\FinanceController::class, 'duplicate'])->name('finances.duplicate');
     Route::post('/finances/{transaction}/toggle-status', [\App\Http\Controllers\FinanceController::class, 'toggleStatus'])->name('finances.toggle-status');
     Route::get('/finances/{transaction}/download-attachment', [\App\Http\Controllers\FinanceController::class, 'downloadAttachment'])->name('finances.download-attachment');
     Route::post('/finances/credit-card/{creditCard}/pay-invoice', [\App\Http\Controllers\FinanceController::class, 'payInvoice'])->name('finances.pay-invoice');
+    Route::post('/finances/credit-card/{creditCard}/unpay-invoice', [\App\Http\Controllers\FinanceController::class, 'unpayInvoice'])->name('finances.unpay-invoice');
     Route::post('/finances/import-json', [\App\Http\Controllers\FinanceController::class, 'importJson'])->name('finances.import-json');
     Route::post('/finances/transfer', [\App\Http\Controllers\FinanceController::class, 'transfer'])->name('finances.transfer');
         

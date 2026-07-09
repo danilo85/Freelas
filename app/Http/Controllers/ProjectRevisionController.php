@@ -122,15 +122,22 @@ class ProjectRevisionController extends Controller
         return response()->json($authors);
     }
 
-    public function getProjectsByAuthor($authorId)
+    public function getProjectsByAuthor($author)
     {
-        // Get projects associated with this author through pivot
+        $authorId = $author instanceof \App\Models\Author ? $author->id : $author;
+
+        // Get projects associated with this author through pivot (ignora analisando e rejeitado)
         $projects = Project::whereHas('authors', function ($q) use ($authorId) {
             $q->where('authors.id', $authorId);
         })
-        ->whereIn('status', ['aprovado', 'quitado'])
+        ->whereNotIn('status', ['analisando', 'rejeitado'])
         ->get(['id', 'title', 'status']);
 
-        return response()->json($projects);
+        // Ordena para que os projetos 'aprovado' fiquem primeiro
+        $sortedProjects = $projects->sortBy(function ($project) {
+            return $project->status === 'aprovado' ? 0 : 1;
+        })->values();
+
+        return response()->json($sortedProjects);
     }
 }

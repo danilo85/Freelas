@@ -76,7 +76,9 @@
                     id="amount" 
                     required 
                     x-model="amount"
-                    @input="amount = formatMoney($event.target.value)"
+                    @input="handleAmountInput($event.target.value)"
+                    @blur="evaluateAmount()"
+                    @keydown.enter.prevent="evaluateAmount()"
                     placeholder="R$ 0,00"
                     class="w-full px-4 py-2.5 rounded-[5px] border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500 transition-all font-bold"
                     :class="type === 'entrada' ? 'text-emerald-600' : 'text-rose-600'"
@@ -106,6 +108,7 @@
                     name="category_id" 
                     id="category_id" 
                     required
+                    data-slimselect-initialized="true"
                     x-html="renderCategoriesOptions()"
                     class="w-full px-4 py-2.5 rounded-[5px] border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500 transition-all font-semibold text-slate-700"
                 >
@@ -378,8 +381,15 @@
             },
 
             get filteredCategories() {
-                const mappedType = this.type === 'entrada' ? 'receita' : 'despesa';
-                return this.categories.filter(c => c.type === mappedType || c.type === 'ambos');
+                const isEntrada = this.type === 'entrada';
+                return this.categories.filter(c => {
+                    if (c.type === 'ambos') return true;
+                    if (isEntrada) {
+                        return c.type === 'receita' || c.type === 'entrada';
+                    } else {
+                        return c.type === 'despesa' || c.type === 'saida';
+                    }
+                });
             },
 
             renderCategoriesOptions() {
@@ -413,6 +423,40 @@
                 let parts = number.split('.');
                 parts[0] = parts[0].replace(/\B(?=(\d{3})+(?!\d))/g, '.');
                 return 'R$ ' + parts.join(',');
+            },
+
+            handleAmountInput(val) {
+                if (/[+\-*/]/.test(val)) {
+                    this.amount = val;
+                } else {
+                    this.amount = this.formatMoney(val);
+                }
+            },
+
+            evaluateAmount() {
+                let expr = this.amount;
+                if (!expr) return;
+
+                expr = expr.replace(/R\$\s*/g, '');
+                
+                if (expr.includes(',')) {
+                    expr = expr.replace(/\./g, '');
+                    expr = expr.replace(/,/g, '.');
+                }
+
+                expr = expr.replace(/[^0-9. +\-*/()]/g, '');
+
+                try {
+                    if (/[0-9]/.test(expr)) {
+                        const result = new Function(`return (${expr})`)();
+                        if (typeof result === 'number' && !isNaN(result) && isFinite(result)) {
+                            const cents = Math.round(result * 100).toString();
+                            this.amount = this.formatMoney(cents);
+                        }
+                    }
+                } catch(e) {
+                    // Fail silently or keep the user typed expression
+                }
             },
 
             // File handlers

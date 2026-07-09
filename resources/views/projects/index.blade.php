@@ -493,16 +493,30 @@
         </div>
 
         <!-- Painel de Paginação Dinâmica (Sem Reload) -->
-        <div x-show="totalPages > 1" class="flex flex-col sm:flex-row items-center justify-between gap-4 border-t border-slate-100 dark:border-slate-800/60 pt-6 mt-4" x-cloak>
-            <div class="text-xs font-semibold text-slate-400 dark:text-slate-500 uppercase tracking-wider">
-                Mostrando <span class="text-slate-800 dark:text-slate-200" x-text="Math.min((currentPage - 1) * perPage + 1, totalFilteredCount)"></span> a 
-                <span class="text-slate-800 dark:text-slate-200" x-text="Math.min(currentPage * perPage, totalFilteredCount)"></span> de 
-                <span class="text-slate-800 dark:text-slate-200" x-text="totalFilteredCount"></span> orçamentos
+        <div x-show="totalFilteredCount > 0" class="flex flex-col sm:flex-row items-center justify-between gap-4 border-t border-slate-100 dark:border-slate-800/60 pt-6 mt-4" x-cloak>
+            <div class="flex flex-wrap items-center gap-4 text-xs font-semibold text-slate-400 dark:text-slate-500 uppercase tracking-wider">
+                <div>
+                    Mostrando <span class="text-slate-800 dark:text-slate-200" x-text="Math.min((currentPage - 1) * perPage + 1, totalFilteredCount)"></span> a 
+                    <span class="text-slate-800 dark:text-slate-200" x-text="Math.min(currentPage * perPage, totalFilteredCount)"></span> de 
+                    <span class="text-slate-800 dark:text-slate-200" x-text="totalFilteredCount"></span> orçamentos
+                </div>
+
+                <!-- Seletor de Itens por Página -->
+                <div class="flex items-center gap-1.5 no-print">
+                    <span>Exibir:</span>
+                    <select :value="perPage" @change="setPerPage($event.target.value)" class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded px-1.5 py-0.5 text-xs text-slate-700 dark:text-slate-350 focus:outline-none focus:ring-1 focus:ring-primary-500 cursor-pointer">
+                        <option value="6">6</option>
+                        <option value="12">12</option>
+                        <option value="24">24</option>
+                        <option value="48">48</option>
+                        <option value="96">96</option>
+                    </select>
+                </div>
             </div>
             
-            <div class="flex items-center gap-1.5">
+            <div class="flex items-center gap-1.5" x-show="totalPages > 1">
                 <button type="button" @click="prevPage()" :disabled="currentPage === 1" 
-                    class="h-8 px-3 rounded-[5px] border border-slate-200 dark:border-slate-850 bg-white dark:bg-slate-900 text-slate-600 dark:text-slate-400 text-[10px] font-bold uppercase tracking-wider transition-colors hover:bg-slate-50 dark:hover:bg-slate-800 disabled:opacity-40 disabled:cursor-not-allowed">
+                    class="h-8 px-3 rounded-[5px] border border-slate-200 dark:border-slate-855 bg-white dark:bg-slate-900 text-slate-600 dark:text-slate-400 text-[10px] font-bold uppercase tracking-wider transition-colors hover:bg-slate-50 dark:hover:bg-slate-800 disabled:opacity-40 disabled:cursor-not-allowed">
                     Anterior
                 </button>
                 
@@ -512,7 +526,7 @@
                         :disabled="p === '...'"
                         :class="{
                             'bg-primary-500 text-white border-primary-500 shadow-sm shadow-primary-500/20': currentPage === p,
-                            'bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-300 border-slate-200 dark:border-slate-850 hover:bg-slate-50 dark:hover:bg-slate-800': currentPage !== p && p !== '...',
+                            'bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-300 border-slate-200 dark:border-slate-855 hover:bg-slate-50 dark:hover:bg-slate-800': currentPage !== p && p !== '...',
                             'text-slate-400 dark:text-slate-650 border-transparent bg-transparent cursor-default select-none': p === '...'
                         }" 
                         class="w-8 h-8 rounded-[5px] border text-xs font-bold transition-all"
@@ -521,7 +535,7 @@
                 </template>
                 
                 <button type="button" @click="nextPage()" :disabled="currentPage === totalPages" 
-                    class="h-8 px-3 rounded-[5px] border border-slate-200 dark:border-slate-850 bg-white dark:bg-slate-900 text-slate-600 dark:text-slate-400 text-[10px] font-bold uppercase tracking-wider transition-colors hover:bg-slate-50 dark:hover:bg-slate-800 disabled:opacity-40 disabled:cursor-not-allowed">
+                    class="h-8 px-3 rounded-[5px] border border-slate-200 dark:border-slate-855 bg-white dark:bg-slate-900 text-slate-600 dark:text-slate-400 text-[10px] font-bold uppercase tracking-wider transition-colors hover:bg-slate-50 dark:hover:bg-slate-800 disabled:opacity-40 disabled:cursor-not-allowed">
                     Próxima
                 </button>
             </div>
@@ -649,7 +663,13 @@
             selectedProjects: [],
             privacyMode: localStorage.getItem('privacyMode') === 'true',
             currentPage: 1,
-            perPage: 12,
+            perPage: parseInt(localStorage.getItem('projectsPerPage')) || 12,
+
+            setPerPage(val) {
+                this.perPage = parseInt(val);
+                localStorage.setItem('projectsPerPage', val);
+                this.currentPage = 1;
+            },
 
             setStatusFilter(filter) {
                 this.statusFilter = filter;

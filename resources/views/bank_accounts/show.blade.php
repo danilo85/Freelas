@@ -86,54 +86,168 @@
         <h3 class="text-xs font-black text-slate-400 uppercase tracking-wider border-b border-slate-100 pb-2">Linha do Tempo de Lançamentos (Extrato)</h3>
 
         @if(count($transactions) > 0)
+            @php
+                $groupedTransactions = [];
+                $processedGroupCodes = [];
+
+                foreach($transactions as $t) {
+                    if ($t->group_code && $t->total_installments > 1) {
+                        if (!in_array($t->group_code, $processedGroupCodes)) {
+                            $processedGroupCodes[] = $t->group_code;
+                            $installments = $transactions->filter(fn($item) => $item->group_code === $t->group_code)->sortBy('installment_number');
+                            $groupedTransactions[] = [
+                                'type' => 'installment_group',
+                                'main' => $t,
+                                'installments' => $installments
+                            ];
+                        }
+                    } else {
+                        $groupedTransactions[] = [
+                            'type' => 'single',
+                            'main' => $t
+                        ];
+                    }
+                }
+            @endphp
             <div class="bg-white border border-slate-200 rounded-[5px] shadow-sm overflow-hidden divide-y divide-slate-100">
-                @foreach($transactions as $t)
-                    @php
-                        $isIncome = $t->type === 'entrada';
-                    @endphp
-                    <div class="p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-4 hover:bg-slate-50/50 transition-colors">
-                        <div class="flex items-center gap-3 min-w-0">
-                            <span class="w-10 h-10 rounded-[5px] bg-slate-50 border border-slate-100 flex items-center justify-center text-xl shrink-0">
-                                {{ $t->category->icon ?? '💰' }}
-                            </span>
-                            <div class="min-w-0 flex-1">
-                                <h4 class="font-bold text-sm text-slate-800 truncate" title="{{ $t->description }}">{{ $t->description }}</h4>
-                                <div class="flex flex-wrap items-center gap-1.5 text-[10px] text-slate-400 font-bold mt-0.5">
-                                    <span>{{ $t->due_date->format('d/m/Y') }}</span>
-                                    <span>•</span>
-                                    <span class="uppercase tracking-wider">{{ $t->category->name ?? 'Outros' }}</span>
-                                    <span>•</span>
-                                    <span class="uppercase tracking-wider px-1 bg-slate-100 rounded-sm">{{ $t->classification }}</span>
+                @foreach($groupedTransactions as $item)
+                    @if($item['type'] === 'installment_group')
+                        @php
+                            $t = $item['main'];
+                            $installments = $item['installments'];
+                        @endphp
+                        <div x-data="{ open: false }" class="divide-y divide-slate-100 no-print">
+                            <!-- Cabeçalho do Grupo Parcelado -->
+                            <div class="p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-4 hover:bg-slate-50/50 transition-colors cursor-pointer" @click="open = !open">
+                                <div class="flex items-center gap-3 min-w-0">
+                                    <span class="w-10 h-10 rounded-[5px] bg-indigo-50 dark:bg-indigo-950/20 border border-indigo-100 dark:border-indigo-900/40 text-indigo-650 dark:text-indigo-400 flex items-center justify-center text-xl shrink-0">
+                                        🔄
+                                    </span>
+                                    <div class="min-w-0 flex-1">
+                                        <div class="flex items-center gap-1.5">
+                                            <h4 class="font-extrabold text-sm text-slate-800 dark:text-slate-200 truncate" title="{{ $t->description }}">{{ $t->description }}</h4>
+                                            <span class="text-[9px] font-black uppercase px-1.5 py-0.5 rounded bg-indigo-50 dark:bg-indigo-950/40 text-indigo-700 dark:text-indigo-300 border border-indigo-100 dark:border-indigo-900/45">
+                                                {{ $installments->count() }}x Parcelas
+                                            </span>
+                                        </div>
+                                        <div class="flex flex-wrap items-center gap-1.5 text-[10px] text-slate-400 font-bold mt-0.5">
+                                            <span>Primeira em: {{ $installments->first()->due_date->format('d/m/Y') }}</span>
+                                            <span>•</span>
+                                            <span class="uppercase tracking-wider">{{ $t->category->name ?? 'Outros' }}</span>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="flex items-center justify-between sm:justify-end gap-6 shrink-0 w-full sm:w-auto border-t border-slate-100 sm:border-t-0 pt-2.5 sm:pt-0">
+                                    <div class="text-left sm:text-right">
+                                        <span class="font-black text-sm block {{ $t->type === 'entrada' ? 'text-emerald-600' : 'text-rose-600' }}">
+                                            {{ $t->type === 'entrada' ? '＋' : '－' }} Total: R$ {{ number_format($installments->sum('amount'), 2, ',', '.') }}
+                                        </span>
+                                        <span class="text-[9px] font-bold text-slate-400 block mt-0.5">
+                                            Clique para ver parcelas
+                                        </span>
+                                    </div>
+                                    <span class="text-slate-400 font-black text-xs transition-transform duration-200" :class="open ? 'rotate-180' : ''">▼</span>
+                                </div>
+                            </div>
+
+                            <!-- Lista Sub-parcelas -->
+                            <div x-show="open" x-collapse class="bg-slate-50/50 dark:bg-slate-950/20 border-t border-slate-100 dark:border-slate-850">
+                                @foreach($installments as $inst)
+                                    @php
+                                        $isInstIncome = $inst->type === 'entrada';
+                                    @endphp
+                                    <div class="p-3 pl-14 flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-100/50 dark:border-slate-850 hover:bg-slate-50 dark:hover:bg-slate-800/30 transition-colors">
+                                        <div class="flex items-center gap-3 min-w-0">
+                                            <span class="w-8 h-8 rounded-[5px] bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 flex items-center justify-center text-xs shrink-0 font-extrabold text-slate-500 dark:text-slate-400">
+                                                {{ $inst->installment_number }}/{{ $inst->total_installments }}
+                                            </span>
+                                            <div class="min-w-0 flex-1">
+                                                <h5 class="font-bold text-xs text-slate-700 dark:text-slate-200 truncate">Parcela {{ $inst->installment_number }} - {{ $inst->description }}</h5>
+                                                <div class="flex flex-wrap items-center gap-1.5 text-[9px] text-slate-400 font-bold mt-0.5">
+                                                    <span>Vence em: {{ $inst->due_date->format('d/m/Y') }}</span>
+                                                    <span>•</span>
+                                                    <span class="uppercase tracking-wider px-1 bg-white dark:bg-slate-900 rounded-sm border border-slate-150 dark:border-slate-800">{{ $inst->classification }}</span>
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        <div class="flex items-center justify-between sm:justify-end gap-5 shrink-0 w-full sm:w-auto">
+                                            <div class="text-left sm:text-right">
+                                                <span class="font-bold text-xs block {{ $isInstIncome ? 'text-emerald-600' : 'text-rose-600' }}">
+                                                    {{ $isInstIncome ? '＋' : '－' }} R$ {{ number_format($inst->amount, 2, ',', '.') }}
+                                                </span>
+                                                <span class="inline-block text-[8px] font-black uppercase tracking-wider px-1.5 py-0.5 rounded-[3px] mt-0.5 border
+                                                    {{ $inst->status === 'pago' ? 'bg-emerald-50 text-emerald-700 border-emerald-100' : 'bg-amber-50 text-amber-700 border-amber-100' }}">
+                                                    {{ $inst->status === 'pago' ? 'Pago' : 'Pendente' }}
+                                                </span>
+                                            </div>
+
+                                            <div class="flex items-center gap-1.5 no-print">
+                                                <form action="{{ route('finances.toggle-status', $inst->id) }}" method="POST" class="inline">
+                                                    @csrf
+                                                    <button type="submit" class="p-1 border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 hover:bg-slate-50 dark:hover:bg-slate-800 text-slate-400 hover:text-emerald-600 rounded-[5px] shadow-xs text-xs font-bold transition-all" title="Pagar/Pendente">
+                                                        ✓
+                                                    </button>
+                                                </form>
+                                                <a href="{{ route('finances.edit', $inst->id) }}" class="p-1 border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 hover:bg-slate-50 dark:hover:bg-slate-800 text-slate-400 hover:text-primary-600 rounded-[5px] shadow-xs transition-all" title="Editar">
+                                                    ✏️
+                                                </a>
+                                            </div>
+                                        </div>
+                                    </div>
+                                @endforeach
+                            </div>
+                        </div>
+                    @else
+                        @php
+                            $t = $item['main'];
+                            $isIncome = $t->type === 'entrada';
+                        @endphp
+                        <div class="p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-4 hover:bg-slate-50/50 transition-colors">
+                            <div class="flex items-center gap-3 min-w-0">
+                                <span class="w-10 h-10 rounded-[5px] bg-slate-50 dark:bg-slate-900/60 border border-slate-100 dark:border-slate-800 flex items-center justify-center text-xl shrink-0">
+                                    {{ $t->category->icon ?? '💰' }}
+                                </span>
+                                <div class="min-w-0 flex-1">
+                                    <h4 class="font-bold text-sm text-slate-800 dark:text-slate-200 truncate" title="{{ $t->description }}">{{ $t->description }}</h4>
+                                    <div class="flex flex-wrap items-center gap-1.5 text-[10px] text-slate-400 font-bold mt-0.5">
+                                        <span>{{ $t->due_date->format('d/m/Y') }}</span>
+                                        <span>•</span>
+                                        <span class="uppercase tracking-wider">{{ $t->category->name ?? 'Outros' }}</span>
+                                        <span>•</span>
+                                        <span class="uppercase tracking-wider px-1 bg-slate-100 dark:bg-slate-800 rounded-sm">{{ $t->classification }}</span>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="flex items-center justify-between sm:justify-end gap-6 shrink-0 w-full sm:w-auto border-t border-slate-100 dark:border-slate-800 sm:border-t-0 pt-2.5 sm:pt-0">
+                                <!-- Valor e Status -->
+                                <div class="text-left sm:text-right">
+                                    <span class="font-black text-sm block {{ $isIncome ? 'text-emerald-600' : 'text-rose-600' }}">
+                                        {{ $isIncome ? '＋' : '－' }} R$ {{ number_format($t->amount, 2, ',', '.') }}
+                                    </span>
+                                    <span class="inline-block text-[8px] font-black uppercase tracking-wider px-1.5 py-0.5 rounded-[3px] mt-0.5 border
+                                        {{ $t->status === 'pago' ? 'bg-emerald-50 text-emerald-700 border-emerald-100' : 'bg-amber-50 text-amber-700 border-amber-100' }}">
+                                        {{ $t->status === 'pago' ? 'Pago' : 'Pendente' }}
+                                    </span>
+                                </div>
+
+                                <!-- Ações Rápidas no extrato -->
+                                <div class="flex items-center gap-1.5 no-print">
+                                    <form action="{{ route('finances.toggle-status', $t->id) }}" method="POST" class="inline">
+                                        @csrf
+                                        <button type="submit" class="p-1 border border-slate-200 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-800 text-slate-400 hover:text-emerald-600 rounded-[5px] shadow-xs text-xs font-bold transition-all" title="Pagar/Pendente">
+                                            ✓
+                                        </button>
+                                    </form>
+                                    <a href="{{ route('finances.edit', $t->id) }}" class="p-1 border border-slate-200 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-800 text-slate-400 hover:text-primary-600 rounded-[5px] shadow-xs transition-all" title="Editar">
+                                        ✏️
+                                    </a>
                                 </div>
                             </div>
                         </div>
-
-                        <div class="flex items-center justify-between sm:justify-end gap-6 shrink-0 w-full sm:w-auto border-t border-slate-100 sm:border-t-0 pt-2.5 sm:pt-0">
-                            <!-- Valor e Status -->
-                            <div class="text-left sm:text-right">
-                                <span class="font-black text-sm block {{ $isIncome ? 'text-emerald-600' : 'text-rose-600' }}">
-                                    {{ $isIncome ? '＋' : '－' }} R$ {{ number_format($t->amount, 2, ',', '.') }}
-                                </span>
-                                <span class="inline-block text-[8px] font-black uppercase tracking-wider px-1.5 py-0.5 rounded-[3px] mt-0.5 border
-                                    {{ $t->status === 'pago' ? 'bg-emerald-50 text-emerald-700 border-emerald-100' : 'bg-amber-50 text-amber-700 border-amber-100' }}">
-                                    {{ $t->status === 'pago' ? 'Pago' : 'Pendente' }}
-                                </span>
-                            </div>
-
-                            <!-- Ações Rápidas no extrato -->
-                            <div class="flex items-center gap-1.5 no-print">
-                                <form action="{{ route('finances.toggle-status', $t->id) }}" method="POST" class="inline">
-                                    @csrf
-                                    <button type="submit" class="p-1 border border-slate-200 hover:bg-slate-50 text-slate-400 hover:text-emerald-600 rounded-[5px] shadow-xs text-xs font-bold transition-all" title="Pagar/Pendente">
-                                        ✓
-                                    </button>
-                                </form>
-                                <a href="{{ route('finances.edit', $t->id) }}" class="p-1 border border-slate-200 hover:bg-slate-50 text-slate-400 hover:text-primary-600 rounded-[5px] shadow-xs transition-all" title="Editar">
-                                    ✏️
-                                </a>
-                            </div>
-                        </div>
-                    </div>
+                    @endif
                 @endforeach
             </div>
         @else

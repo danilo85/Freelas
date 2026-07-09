@@ -415,6 +415,8 @@
                     <button @click="zoomOut()" class="p-2 text-slate-500 hover:text-slate-800 hover:bg-slate-100 rounded-[5px]" title="Diminuir Zoom">🔍-</button>
                     <span class="text-[10px] font-bold text-slate-500 min-w-[35px] text-center" x-text="Math.round(zoomScale * 100) + '%'">100%</span>
                     <button @click="zoomIn()" class="p-2 text-slate-500 hover:text-slate-800 hover:bg-slate-100 rounded-[5px]" title="Aumentar Zoom">🔍+</button>
+                    <button @click="zoomOriginal()" class="px-2 py-1 text-[10px] font-extrabold text-slate-500 hover:text-slate-800 hover:bg-slate-100 rounded-[5px] flex items-center gap-0.5" title="Largura Original (100%)">↔️ 100%</button>
+                    <button @click="zoomHeight()" class="px-2 py-1 text-[10px] font-extrabold text-slate-500 hover:text-slate-800 hover:bg-slate-100 rounded-[5px] flex items-center gap-0.5" title="Ajustar à Altura do Painel">↕️ Ajustar</button>
                 </div>
 
                 <!-- Page Navigation -->
@@ -422,7 +424,7 @@
                     <div class="flex items-center gap-4 text-xs font-bold uppercase tracking-wider text-slate-700 shrink-0 whitespace-nowrap" id="tour-step-navigation">
                         
                         <!-- Toggle Página Simples / Dupla -->
-                        <div class="flex items-center gap-1 bg-slate-200 p-0.5 rounded-[5px] border border-slate-300 shrink-0">
+                        <div x-show="numPages > 1" class="flex items-center gap-1 bg-slate-200 p-0.5 rounded-[5px] border border-slate-300 shrink-0">
                             <button @click="setPageMode('single')" 
                                     class="px-2 py-1 rounded-[3px] text-[10px]"
                                     :class="pageMode === 'single' ? 'bg-white text-slate-850 shadow-sm' : 'text-slate-500 hover:text-slate-800'">
@@ -659,6 +661,8 @@
                             <span class="px-3 py-1 text-[8px] font-extrabold uppercase text-slate-400 tracking-wider border-t border-slate-100">Visualização</span>
                             <button @click="zoomIn(); showContextMenu = false;" class="text-left px-3 py-2 text-xs font-bold text-slate-700 hover:bg-slate-50 border-t border-slate-100 flex items-center gap-2">🔍+ Aumentar Zoom</button>
                             <button @click="zoomOut(); showContextMenu = false;" class="text-left px-3 py-2 text-xs font-bold text-slate-700 hover:bg-slate-50 flex items-center gap-2">🔍- Diminuir Zoom</button>
+                            <button @click="zoomOriginal(); showContextMenu = false;" class="text-left px-3 py-2 text-xs font-bold text-slate-700 hover:bg-slate-50 flex items-center gap-2">↔️ Largura Original (100%)</button>
+                            <button @click="zoomHeight(); showContextMenu = false;" class="text-left px-3 py-2 text-xs font-bold text-slate-700 hover:bg-slate-50 flex items-center gap-2">↕️ Ajustar à Altura</button>
                             <button @click="toggleScrollLock(); showContextMenu = false;" class="text-left px-3 py-2 text-xs font-bold text-slate-700 hover:bg-slate-50 flex items-center gap-2" x-text="scrollLocked ? '🔓 Destravar Rolagem' : '🔒 Travar Rolagem'"></button>
                             <button @click="toggleFullscreen(); showContextMenu = false;" class="text-left px-3 py-2 text-xs font-bold text-slate-700 hover:bg-slate-50 flex items-center gap-2">🖥️ Tela Inteira</button>
                         </div>
@@ -853,6 +857,14 @@
                     <span class="text-slate-500 font-semibold">Mais Zoom / Menos Zoom</span>
                     <kbd class="bg-slate-100 border border-slate-300 px-2 py-1 rounded font-mono font-bold text-slate-800 text-[10px]">Ctrl + / Ctrl -</kbd>
                 </div>
+                <div class="flex items-center justify-between text-xs">
+                    <span class="text-slate-500 font-semibold">Largura Original (100%)</span>
+                    <kbd class="bg-slate-100 border border-slate-300 px-2 py-1 rounded font-mono font-bold text-slate-800 text-[10px]">Ctrl + 0</kbd>
+                </div>
+                <div class="flex items-center justify-between text-xs">
+                    <span class="text-slate-500 font-semibold">Ajustar à Altura</span>
+                    <kbd class="bg-slate-100 border border-slate-300 px-2 py-1 rounded font-mono font-bold text-slate-800 text-[10px]">Ctrl + 9</kbd>
+                </div>
             </div>
 
             <div class="flex justify-end pt-2">
@@ -1005,6 +1017,8 @@
                 // Page Layout View Mode
                 pageMode: localStorage.getItem('rev_page_mode') || 'single', // single, double
                 zoomScale: parseFloat(localStorage.getItem('rev_zoom_scale')) || 1.0,
+                pdfPageWidth: 0,
+                pdfPageHeight: 0,
 
                 // Right click context menu parameters
                 showContextMenu: false,
@@ -1039,7 +1053,7 @@
 
                 // Sidebar Redesign Options
                 activeTab: 'aberto', // aberto, resolvido
-                selectedAuthorId: localStorage.getItem('rev_selected_author_id') || '',
+                selectedAuthorId: (localStorage.getItem('rev_selected_author_id') && localStorage.getItem('rev_selected_author_id') !== 'undefined') ? localStorage.getItem('rev_selected_author_id') : '',
                 activeTool: localStorage.getItem('rev_active_tool') || 'freehand',
                 strokeColor: localStorage.getItem('rev_stroke_color') || '#f43f5e',
                 
@@ -1079,6 +1093,7 @@
                         // If image, fetch file bytes dynamically to show real loading percentage bar
                         const imageUrl = "{{ Storage::url($activeFile->file_path) }}";
                         this.loadImageWithProgress(imageUrl);
+                        this.pageMode = 'single';
                     @else
                         this.isInitialLoading = false;
                     @endif
@@ -1151,6 +1166,18 @@
                                 if (e.ctrlKey) {
                                     e.preventDefault();
                                     this.zoomOut();
+                                }
+                            }
+                            if (e.key === '0') {
+                                if (e.ctrlKey) {
+                                    e.preventDefault();
+                                    this.zoomOriginal();
+                                }
+                            }
+                            if (e.key === '9') {
+                                if (e.ctrlKey) {
+                                    e.preventDefault();
+                                    this.zoomHeight();
                                 }
                             }
                         }
@@ -1240,6 +1267,37 @@
                         this.renderPDFPage();
                         this.initCanvasSize();
                     }
+                },
+
+                zoomOriginal() {
+                    this.zoomScale = 1.0;
+                    localStorage.setItem('rev_zoom_scale', this.zoomScale);
+                    this.renderPDFPage();
+                    this.initCanvasSize();
+                },
+
+                zoomHeight() {
+                    const container = document.getElementById('visualizer-scroll-container');
+                    if (!container) return;
+                    const containerHeight = container.clientHeight - 64;
+
+                    let targetScale = 1.0;
+                    if (pdfDocInstance) {
+                        const multiplier = this.pageMode === 'single' ? 1.25 : 1.0;
+                        if (this.pdfPageHeight) {
+                            targetScale = containerHeight / (this.pdfPageHeight * multiplier);
+                        }
+                    } else {
+                        const img = document.getElementById('image-viewer');
+                        if (img && img.naturalHeight) {
+                            targetScale = containerHeight / img.naturalHeight;
+                        }
+                    }
+
+                    this.zoomScale = parseFloat(Math.max(0.5, Math.min(2.5, targetScale)).toFixed(2));
+                    localStorage.setItem('rev_zoom_scale', this.zoomScale);
+                    this.renderPDFPage();
+                    this.initCanvasSize();
                 },
 
                 setPageMode(mode) {
@@ -1372,12 +1430,39 @@
                         this.commentBoxX = clamp(posX, 20, this.canvas.width - 340);
                         this.commentBoxY = clamp(posY, 20, this.canvas.height - 350);
                         this.showCommentBox = true;
+                        this.adjustCommentBoxPosition();
                     } catch(e) {
                         console.error(e);
                         this.commentBoxX = 250;
                         this.commentBoxY = 150;
                         this.showCommentBox = true;
+                        this.adjustCommentBoxPosition();
                     }
+                },
+
+                adjustCommentBoxPosition() {
+                    if (this.isMobile()) return;
+                    setTimeout(() => {
+                        const container = document.getElementById('visualizer-scroll-container');
+                        const dialog = document.getElementById('draggable-dialog');
+                        if (!container || !dialog) return;
+
+                        const containerWidth = container.clientWidth;
+                        const containerHeight = container.clientHeight;
+                        const scrollLeft = container.scrollLeft;
+                        const scrollTop = container.scrollTop;
+
+                        const dialogWidth = dialog.offsetWidth || 352;
+                        const dialogHeight = dialog.offsetHeight || 500;
+
+                        const minX = scrollLeft + 10;
+                        const maxX = scrollLeft + containerWidth - dialogWidth - 10;
+                        this.commentBoxX = Math.max(minX, Math.min(maxX, this.commentBoxX));
+
+                        const minY = scrollTop + 10;
+                        const maxY = scrollTop + containerHeight - dialogHeight - 10;
+                        this.commentBoxY = Math.max(minY, Math.min(maxY, this.commentBoxY));
+                    }, 50);
                 },
 
                 // Draggable popup dialog boxes
@@ -1393,8 +1478,24 @@
                     if (!this.isDraggingBox) return;
                     const deltaX = e.clientX - this.mouseStartX;
                     const deltaY = e.clientY - this.mouseStartY;
-                    this.commentBoxX = this.boxStartX + deltaX;
-                    this.commentBoxY = this.boxStartY + deltaY;
+                    
+                    const container = document.getElementById('visualizer-scroll-container');
+                    const dialog = document.getElementById('draggable-dialog');
+                    if (container && dialog) {
+                        const dialogWidth = dialog.offsetWidth || 352;
+                        const dialogHeight = dialog.offsetHeight || 500;
+                        
+                        const minX = container.scrollLeft + 10;
+                        const maxX = container.scrollLeft + container.clientWidth - dialogWidth - 10;
+                        const minY = container.scrollTop + 10;
+                        const maxY = container.scrollTop + container.clientHeight - dialogHeight - 10;
+                        
+                        this.commentBoxX = Math.max(minX, Math.min(maxX, this.boxStartX + deltaX));
+                        this.commentBoxY = Math.max(minY, Math.min(maxY, this.boxStartY + deltaY));
+                    } else {
+                        this.commentBoxX = this.boxStartX + deltaX;
+                        this.commentBoxY = this.boxStartY + deltaY;
+                    }
                 },
 
                 stopDragBox() {
@@ -1585,6 +1686,9 @@
                         pdfDocInstance = pdf;
                         this.numPages = pdf.numPages;
                         this.loadPercentage = 100;
+                        if (this.numPages <= 1) {
+                            this.pageMode = 'single';
+                        }
                         setTimeout(() => {
                             this.isInitialLoading = false;
                         }, 300);
@@ -1667,6 +1771,8 @@
                     if (this.pageMode === 'single') {
                         pdfDocInstance.getPage(this.currentPage).then(page => {
                             const baseViewport = page.getViewport({ scale: 1.0 });
+                            this.pdfPageWidth = baseViewport.width;
+                            this.pdfPageHeight = baseViewport.height;
                             const wMM = Math.round(baseViewport.width * 25.4 / 72);
                             const hMM = Math.round(baseViewport.height * 25.4 / 72);
                             this.fileDimensions = `📐 ${wMM} x ${hMM} mm (${Math.round(baseViewport.width)}x${Math.round(baseViewport.height)} pt)`;
@@ -1703,6 +1809,8 @@
                         if (this.currentPage === 1) {
                             pdfDocInstance.getPage(1).then(page => {
                                 const baseViewport = page.getViewport({ scale: 1.0 });
+                                this.pdfPageWidth = baseViewport.width;
+                                this.pdfPageHeight = baseViewport.height;
                                 const wMM = Math.round(baseViewport.width * 25.4 / 72);
                                 const hMM = Math.round(baseViewport.height * 25.4 / 72);
                                 this.fileDimensions = `📐 ${wMM} x ${hMM} mm (${Math.round(baseViewport.width)}x${Math.round(baseViewport.height)} pt)`;
@@ -1736,6 +1844,8 @@
                         } else {
                             pdfDocInstance.getPage(this.currentPage).then(pageLeft => {
                                 const baseViewport = pageLeft.getViewport({ scale: 1.0 });
+                                this.pdfPageWidth = baseViewport.width;
+                                this.pdfPageHeight = baseViewport.height;
                                 const wMM = Math.round(baseViewport.width * 25.4 / 72);
                                 const hMM = Math.round(baseViewport.height * 25.4 / 72);
                                 this.fileDimensions = `📐 ${wMM} x ${hMM} mm (${Math.round(baseViewport.width)}x${Math.round(baseViewport.height)} pt)`;
@@ -1924,6 +2034,7 @@
                     this.editingAnnoId = null; 
 
                     this.showCommentBox = true;
+                    this.adjustCommentBoxPosition();
                 },
 
                 getCoords(e) {
@@ -2023,7 +2134,8 @@
                                 points: finalPoints || this.currentPoints,
                                 color: this.strokeColor,
                                 canvasWidth: finalCanvasWidth,
-                                canvasHeight: this.canvas.height
+                                canvasHeight: this.canvas.height,
+                                pageMode: this.pageMode
                             });
                         } else if (this.activeTool === 'rectangle' && (finalRect || this.tempRect)) {
                             drawingData = JSON.stringify({
@@ -2031,7 +2143,8 @@
                                 rect: finalRect || this.tempRect,
                                 color: this.strokeColor,
                                 canvasWidth: finalCanvasWidth,
-                                canvasHeight: this.canvas.height
+                                canvasHeight: this.canvas.height,
+                                pageMode: this.pageMode
                             });
                         }
                     }
@@ -2040,7 +2153,7 @@
                     formData.append('comment', commentHtml);
                     if (drawingData) formData.append('drawing_data', drawingData);
                     formData.append('page_number', targetPage);
-                    if (this.selectedAuthorId) formData.append('author_id', this.selectedAuthorId);
+                    if (this.selectedAuthorId && this.selectedAuthorId !== 'undefined') formData.append('author_id', this.selectedAuthorId);
 
                     const fileInput = document.getElementById('attachmentInput');
                     if (fileInput && fileInput.files[0]) {
@@ -2060,6 +2173,7 @@
                         const xhr = new XMLHttpRequest();
                         xhr.open('POST', url, true);
                         xhr.setRequestHeader('X-CSRF-TOKEN', csrfToken);
+                        xhr.setRequestHeader('Accept', 'application/json');
 
                         xhr.upload.addEventListener('progress', (e) => {
                             if (e.lengthComputable) {
@@ -2072,7 +2186,14 @@
                             this.uploadPercentage = 0;
                             
                             if (xhr.status >= 200 && xhr.status < 300) {
-                                const data = JSON.parse(xhr.responseText);
+                                let data;
+                                try {
+                                    data = JSON.parse(xhr.responseText);
+                                } catch(e) {
+                                    console.error('[DEBUG] O servidor retornou HTML em vez de JSON:', xhr.responseText);
+                                    this.triggerAlert('Erro no Servidor', 'O servidor retornou uma resposta inesperada. Abra o console do navegador para mais detalhes.', 'error');
+                                    return;
+                                }
                                 if (data.success) {
                                     if (this.editingAnnoId) {
                                         const index = this.annotationsList.findIndex(a => a.id === data.annotation.id);
@@ -2087,7 +2208,13 @@
                                     this.clearStrokes();
                                 }
                             } else {
-                                this.triggerAlert('Erro', 'Falha ao salvar. Tamanho do arquivo pode ter excedido os limites do servidor.', 'error');
+                                try {
+                                    const errData = JSON.parse(xhr.responseText);
+                                    const errMsg = errData.message || (errData.errors ? Object.values(errData.errors).flat().join(', ') : 'Erro desconhecido');
+                                    this.triggerAlert('Erro ao Salvar', errMsg, 'error');
+                                } catch(e) {
+                                    this.triggerAlert('Erro', 'Falha ao salvar. Código de status: ' + xhr.status, 'error');
+                                }
                             }
                         });
 
@@ -2149,7 +2276,7 @@
                             this.ctx.lineCap = 'round';
                             this.ctx.lineJoin = 'round';
 
-                            const isDoubleCanvas = parsed.canvasWidth > parsed.canvasHeight;
+                            const isDoubleCanvas = !parsed.pageMode && (parsed.canvasWidth > parsed.canvasHeight && this.numPages > 1);
                             
                             let scaleX;
                             let shiftX = 0;
@@ -2482,7 +2609,7 @@
                     const formData = new FormData();
                     formData.append('comment', commentHtml);
                     formData.append('page_number', 0); // 0 signifies general observation
-                    if (this.selectedAuthorId) formData.append('author_id', this.selectedAuthorId);
+                    if (this.selectedAuthorId && this.selectedAuthorId !== 'undefined') formData.append('author_id', this.selectedAuthorId);
 
                     const fileInput = this.$refs.genAttachInput;
                     if (fileInput && fileInput.files[0]) {

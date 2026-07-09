@@ -451,11 +451,37 @@ class ProjectController extends Controller
                 // 5. Payments
                 if (!empty($paymentsData)) {
                     foreach ($paymentsData as $paymentData) {
+                        $bankAccountId = null;
+                        if (!empty($paymentData['bank'])) {
+                            $bankData = $paymentData['bank'];
+                            $bankAccount = \App\Models\BankAccount::where('user_id', $user->id)
+                                ->where(function($query) use ($bankData) {
+                                    $query->where('account_name', $bankData['nome'] ?? '')
+                                          ->orWhere('bank_name', $bankData['banco'] ?? '');
+                                })
+                                ->first();
+                            
+                            if (!$bankAccount) {
+                                $bankAccount = \App\Models\BankAccount::create([
+                                    'user_id' => $user->id,
+                                    'bank_name' => $bankData['banco'] ?? 'Outro',
+                                    'account_name' => $bankData['nome'] ?? 'Conta Importada',
+                                    'account_type' => $bankData['tipo_conta'] ?? 'Conta Corrente',
+                                    'person_type' => $bankData['titular_tipo'] ?? 'pf',
+                                    'agency' => $bankData['agencia'] ?? null,
+                                    'account_number' => $bankData['numero_conta'] ?? null,
+                                    'initial_balance' => 0.00
+                                ]);
+                            }
+                            $bankAccountId = $bankAccount->id;
+                        }
+
                         \App\Models\Payment::create([
                             'project_id' => $project->id,
                             'amount' => $paymentData['valor'],
                             'paid_at' => $paymentData['data_pagamento'],
-                            'payment_method' => $paymentData['metodo'] ?? 'transferência',
+                            'payment_method' => $paymentData['metodo'] ?? $paymentData['forma_pagamento'] ?? 'transferência',
+                            'bank_account_id' => $bankAccountId,
                             'observations' => $paymentData['observacoes'] ?? null
                         ]);
                     }
@@ -501,5 +527,118 @@ class ProjectController extends Controller
                 'message' => 'Erro durante a importação: ' . $e->getMessage()
             ], 500);
         }
+    }
+
+    /**
+     * Analisa em tempo real a similaridade de um orçamento sendo criado com os anteriores.
+     */
+    public function analyzeSimilarity(Request $request)
+    {
+        $user = auth()->user();
+        $title = $request->input('title', '');
+        $description = strip_tags($request->input('description', ''));
+
+        if (empty($title) && empty($description)) {
+            return response()->json([
+                'success' => true,
+                'similar_projects' => [],
+                'avg_value' => 0,
+                'avg_term_days' => 0
+            ]);
+        }
+
+        // Busca orçamentos pertencentes a clientes deste usuário logado (Tenancy)
+        $projects = \App\Models\Project::whereHas('client', function($q) use ($user) {
+                $q->where('user_id', $user->id);
+            })
+            ->select('id', 'title', 'total_value', 'term', 'description')
+            ->get();
+
+        $scoredProjects = [];
+
+        // Limpa e extrai palavras chave para busca
+        $searchTerms = array_filter(explode(' ', strtolower(preg_replace('/[^\p{L}\p{N}\s]/u', '', $title . ' ' . $description))));
+        // Filtra palavras curtas e artigos comuns
+        $searchTerms = array_filter($searchTerms, fn($term) => strlen($term) > 2);
+
+        foreach ($projects as $project) {
+            $score = 0;
+            $projectText = strtolower(preg_replace('/[^\p{L}\p{N}\s]/u', '', $project->title . ' ' . strip_tags($project->description)));
+            
+            foreach ($searchTerms as $term) {
+                if (str_contains($projectText, $term)) {
+                    $score += 1;
+                }
+            }
+
+            // Bônus se houver correspondência exata do título
+            if (!empty($title) && str_contains(strtolower($project->title), strtolower($title))) {
+                $score += 5;
+            }
+
+            if ($score > 0) {
+                $scoredProjects[] = [
+                    'project' => $project,
+                    'score' => $score
+                ];
+            }
+        }
+
+        // Ordena por pontuação de relevância descrescente
+        usort($scoredProjects, fn($a, $b) => $b['score'] <=> $a['score']);
+
+        // Seleciona os 3 mais relevantes
+        $topSimilar = array_slice($scoredProjects, 0, 3);
+        $similarProjectsData = [];
+        $totalVal = 0;
+        $totalTermDays = 0;
+        $countTerms = 0;
+
+        foreach ($topSimilar as $item) {
+            $proj = $item['project'];
+            $similarProjectsData[] = [
+                'id' => $proj->id,
+                'title' => $proj->title,
+                'value' => (float) $proj->total_value,
+                'term' => $proj->term,
+                'score' => $item['score']
+            ];
+
+            $totalVal += (float) $proj->total_value;
+
+            $days = $this->parseTermToDays($proj->term);
+            if ($days > 0) {
+                $totalTermDays += $days;
+                $countTerms++;
+            }
+        }
+
+        $avgValue = count($similarProjectsData) > 0 ? $totalVal / count($similarProjectsData) : 0;
+        $avgTermDays = $countTerms > 0 ? round($totalTermDays / $countTerms) : 0;
+
+        return response()->json([
+            'success' => true,
+            'similar_projects' => $similarProjectsData,
+            'avg_value' => $avgValue,
+            'avg_term_days' => $avgTermDays
+        ]);
+    }
+
+    private function parseTermToDays($term)
+    {
+        $term = strtolower($term);
+        preg_match('/\d+/', $term, $matches);
+        if (empty($matches)) {
+            return 0;
+        }
+        $number = (int) $matches[0];
+
+        if (str_contains($term, 'mês') || str_contains($term, 'mes') || str_contains($term, 'meses')) {
+            return $number * 30;
+        }
+        if (str_contains($term, 'semana')) {
+            return $number * 7;
+        }
+        return $number;
     }
 }

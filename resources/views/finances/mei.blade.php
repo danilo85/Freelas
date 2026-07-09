@@ -4,6 +4,17 @@
 @section('page_title', 'Faturamento & Impostos')
 
 @section('content')
+@php
+    $months = [
+        1 => 'Janeiro', 2 => 'Fevereiro', 3 => 'Março', 4 => 'Abril',
+        5 => 'Maio', 6 => 'Junho', 7 => 'Julho', 8 => 'Agosto',
+        9 => 'Setembro', 10 => 'Outubro', 11 => 'Novembro', 12 => 'Dezembro'
+    ];
+    $currentDate = \Carbon\Carbon::createFromDate($year, $month, 1);
+    $prevMonth = $currentDate->copy()->subMonth();
+    $nextMonth = $currentDate->copy()->addMonth();
+    $today = \Carbon\Carbon::now();
+@endphp
 <div class="max-w-5xl mx-auto space-y-6" x-data="meiManager()">
 
     <!-- Floating Preview Modal -->
@@ -238,148 +249,140 @@
                 </div>
             </div>
         </div>
-
     </div>
 
-    <!-- Acordeão Mensal (Arquivos & Notas) -->
+    <!-- Card 3: Consolidação Mensal (Calendário e Documentos) -->
     <div class="space-y-4">
-        <h3 class="text-xs font-black text-slate-400 dark:text-slate-500 uppercase tracking-wider border-b border-slate-100 dark:border-slate-850 pb-2">Consolidação Mensal</h3>
-        
-        <div class="space-y-2">
-            @foreach($monthsData as $mNum => $m)
-                <div 
-                    x-data="{ open: false }" 
-                    class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-[5px] overflow-hidden shadow-sm"
-                >
-                    <!-- Header do Mês -->
-                    <button 
-                        type="button" 
-                        @click="open = !open" 
-                        class="w-full px-5 py-4 flex flex-col md:flex-row md:items-center justify-between text-left hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors gap-3"
+                <!-- Título e Exportar CSV -->
+                <div class="flex items-center justify-between border-b border-slate-100 dark:border-slate-850 pb-2">
+                    <h3 class="text-xs font-black text-slate-400 dark:text-slate-500 uppercase tracking-wider">Consolidação Mensal</h3>
+                    <a 
+                        href="{{ route('finances.mei.export-csv', ['month' => $month, 'year' => $year]) }}" 
+                        class="inline-flex items-center gap-1.5 px-3.5 py-2 bg-slate-800 hover:bg-slate-900 dark:bg-slate-700 dark:hover:bg-slate-655 text-white text-xs font-bold rounded-[5px] transition-colors shadow-sm uppercase tracking-wider"
+                        title="Exportar lançamentos do mês em formato CSV"
                     >
-                        <div class="flex items-center gap-4 flex-1">
-                            <!-- Nome do Mês -->
-                            <div class="w-24 shrink-0">
-                                <span class="font-extrabold text-sm text-slate-700 dark:text-slate-200 block">{{ $m['name'] }}</span>
-                            </div>
-                            
-                            <!-- Valores Resumo PJ / PF -->
-                            <div class="grid grid-cols-2 gap-2 sm:gap-4">
-                                <!-- Coluna PJ -->
-                                <div class="flex items-center gap-1">
-                                    <span class="text-[9px] font-black text-slate-400 dark:text-slate-500 uppercase">🏢 PJ:</span>
-                                    <span class="text-[11px] font-bold text-emerald-600 dark:text-emerald-400">R$ {{ number_format($m['pj_incomes_sum'], 2, ',', '.') }}</span>
-                                    <span class="text-[10px] text-slate-300">/</span>
-                                    <span class="text-[11px] font-bold text-rose-600 dark:text-rose-455">R$ {{ number_format($m['pj_expenses_sum'], 2, ',', '.') }}</span>
-                                </div>
-                                <!-- Coluna PF -->
-                                <div class="flex items-center gap-1">
-                                    <span class="text-[9px] font-black text-slate-400 dark:text-slate-500 uppercase">👤 PF:</span>
-                                    <span class="text-[11px] font-bold text-emerald-600 dark:text-emerald-400">R$ {{ number_format($m['pf_incomes_sum'], 2, ',', '.') }}</span>
-                                    <span class="text-[10px] text-slate-300">/</span>
-                                    <span class="text-[11px] font-bold text-rose-600 dark:text-rose-455">R$ {{ number_format($m['pf_expenses_sum'], 2, ',', '.') }}</span>
-                                </div>
-                            </div>
-                        </div>
+                        📥 Exportar CSV
+                    </a>
+                </div>
 
-                        <div class="flex items-center gap-3 justify-between md:justify-end shrink-0 w-full md:w-auto">
-                            @if(count($m['attachments']) > 0)
-                                <span class="bg-blue-50 dark:bg-blue-950/40 text-blue-800 dark:text-blue-300 text-[10px] font-bold px-2 py-0.5 rounded-[5px] border border-blue-100 dark:border-blue-900/60">
-                                    📎 {{ count($m['attachments']) }} Documentos
-                                </span>
-                            @endif
-                            <svg class="w-4 h-4 text-slate-400 transition-transform" :class="open ? 'rotate-180' : ''" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M19 9l-7 7-7-7"></path>
+                <!-- Month Navigator identical to finances index page -->
+                <div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-[5px] p-3 shadow-sm flex flex-col md:flex-row items-center justify-between gap-3 no-print">
+                    <div class="flex items-center justify-between w-full md:w-auto gap-3">
+                        <!-- Anterior -->
+                        <a href="{{ route('finances.mei', ['month' => $prevMonth->month, 'year' => $prevMonth->year]) }}" 
+                           class="inline-flex items-center justify-center gap-1.5 px-3.5 py-2 border border-slate-200 dark:border-slate-800 hover:border-slate-350 dark:hover:border-slate-700 text-slate-650 dark:text-slate-300 hover:text-slate-800 dark:hover:text-white hover:bg-slate-50 dark:hover:bg-slate-800/50 text-xs font-bold rounded-[5px] transition-all shadow-sm shrink-0 uppercase tracking-wider">
+                            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M15 19l-7-7 7-7"></path>
                             </svg>
-                        </div>
-                    </button>
+                            <span>Anterior</span>
+                        </a>
 
-                    <!-- Conteúdo Expandido -->
-                    <div x-show="open" class="border-t border-slate-150 dark:border-slate-800 p-5 bg-slate-50/50 dark:bg-slate-950/20 space-y-4" x-collapse x-cloak>
+                        <!-- Mês / Ano Selecionado -->
+                        <div class="text-sm font-extrabold text-slate-850 dark:text-slate-200 tracking-wider uppercase bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 px-6 py-2 rounded-[5px] shadow-inner text-center font-outfit min-w-[170px] sm:min-w-[210px] select-none flex-1 md:flex-none">
+                            {{ $months[$month] }} {{ $year }}
+                        </div>
+
+                        <!-- Próximo -->
+                        <a href="{{ route('finances.mei', ['month' => $nextMonth->month, 'year' => $nextMonth->year]) }}" 
+                           class="inline-flex items-center justify-center gap-1.5 px-3.5 py-2 border border-slate-200 dark:border-slate-800 hover:border-slate-355 dark:hover:border-slate-700 text-slate-650 dark:text-slate-300 hover:text-slate-800 dark:hover:text-white hover:bg-slate-50 dark:hover:bg-slate-800/50 text-xs font-bold rounded-[5px] transition-all shadow-sm shrink-0 uppercase tracking-wider">
+                            <span>Próximo</span>
+                            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M9 5l7 7-7 7"></path>
+                            </svg>
+                        </a>
+                    </div>
+                    
+                    <!-- Botão Hoje -->
+                    <a href="{{ route('finances.mei', ['month' => $today->month, 'year' => $today->year]) }}" 
+                       class="inline-flex items-center justify-center gap-1.5 px-4 py-2 bg-slate-800 hover:bg-slate-900 text-white text-xs font-bold rounded-[5px] transition-colors shadow-sm uppercase tracking-wider w-full md:w-auto text-center">
+                        Hoje
+                    </a>
+                </div>
+
+                <!-- Details Card for the Selected Month -->
+                @php
+                    $m = $monthsData[$month];
+                @endphp
+                <div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-[5px] shadow-sm p-5 space-y-4">
+                    
+                    <!-- Resumo Mensal Detalhado -->
+                    <div class="grid grid-cols-2 sm:grid-cols-3 gap-4 border-b border-slate-100 dark:border-slate-850 pb-4">
+                        <div>
+                            <span class="text-[9px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-wider block">Faturamento PJ Mensal</span>
+                            <strong class="text-sm font-bold text-emerald-600 dark:text-emerald-400">R$ {{ number_format($m['pj_incomes_sum'], 2, ',', '.') }}</strong>
+                        </div>
+                        <div>
+                            <span class="text-[9px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-wider block">Despesas PJ Mensais</span>
+                            <strong class="text-sm font-bold text-rose-600 dark:text-rose-455">R$ {{ number_format($m['pj_expenses_sum'], 2, ',', '.') }}</strong>
+                        </div>
+                        <div>
+                            <span class="text-[9px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-wider block">Resultado PJ do Mês</span>
+                            <strong class="text-sm font-bold {{ ($m['pj_incomes_sum'] - $m['pj_expenses_sum']) >= 0 ? 'text-emerald-600' : 'text-rose-600' }}">R$ {{ number_format($m['pj_incomes_sum'] - $m['pj_expenses_sum'], 2, ',', '.') }}</strong>
+                        </div>
+                        <div>
+                            <span class="text-[9px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-wider block">Receitas PF Mensais</span>
+                            <strong class="text-sm font-bold text-emerald-600 dark:text-emerald-400">R$ {{ number_format($m['pf_incomes_sum'], 2, ',', '.') }}</strong>
+                        </div>
+                        <div>
+                            <span class="text-[9px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-wider block">Despesas PF Mensais</span>
+                            <strong class="text-sm font-bold text-rose-600 dark:text-rose-455">R$ {{ number_format($m['pf_expenses_sum'], 2, ',', '.') }}</strong>
+                        </div>
+                        <div>
+                            <span class="text-[9px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-wider block">Resultado PF do Mês</span>
+                            <strong class="text-sm font-bold {{ ($m['pf_incomes_sum'] - $m['pf_expenses_sum']) >= 0 ? 'text-emerald-600' : 'text-rose-600' }}">R$ {{ number_format($m['pf_incomes_sum'] - $m['pf_expenses_sum'], 2, ',', '.') }}</strong>
+                        </div>
+                    </div>
+
+                    <!-- Lista de Arquivos Notas Fiscais -->
+                    <div class="space-y-2">
+                        <h4 class="text-[11px] font-black text-slate-450 dark:text-slate-500 uppercase tracking-wider block">Notas Fiscais & Recibos do Mês</h4>
                         
-                        <!-- Resumo Mensal Detalhado -->
-                        <div class="grid grid-cols-2 sm:grid-cols-3 gap-4 border-b border-slate-100 dark:border-slate-850 pb-4">
-                            <div>
-                                <span class="text-[9px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-wider block">Faturamento PJ Mensal</span>
-                                <strong class="text-sm font-bold text-emerald-600 dark:text-emerald-400">R$ {{ number_format($m['pj_incomes_sum'], 2, ',', '.') }}</strong>
-                            </div>
-                            <div>
-                                <span class="text-[9px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-wider block">Despesas PJ Mensais</span>
-                                <strong class="text-sm font-bold text-rose-600 dark:text-rose-455">R$ {{ number_format($m['pj_expenses_sum'], 2, ',', '.') }}</strong>
-                            </div>
-                            <div>
-                                <span class="text-[9px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-wider block">Resultado PJ do Mês</span>
-                                <strong class="text-sm font-bold {{ ($m['pj_incomes_sum'] - $m['pj_expenses_sum']) >= 0 ? 'text-emerald-600' : 'text-rose-600' }}">R$ {{ number_format($m['pj_incomes_sum'] - $m['pj_expenses_sum'], 2, ',', '.') }}</strong>
-                            </div>
-                            <div>
-                                <span class="text-[9px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-wider block">Receitas PF Mensais</span>
-                                <strong class="text-sm font-bold text-emerald-600 dark:text-emerald-400">R$ {{ number_format($m['pf_incomes_sum'], 2, ',', '.') }}</strong>
-                            </div>
-                            <div>
-                                <span class="text-[9px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-wider block">Despesas PF Mensais</span>
-                                <strong class="text-sm font-bold text-rose-600 dark:text-rose-455">R$ {{ number_format($m['pf_expenses_sum'], 2, ',', '.') }}</strong>
-                            </div>
-                            <div>
-                                <span class="text-[9px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-wider block">Resultado PF do Mês</span>
-                                <strong class="text-sm font-bold {{ ($m['pf_incomes_sum'] - $m['pf_expenses_sum']) >= 0 ? 'text-emerald-600' : 'text-rose-600' }}">R$ {{ number_format($m['pf_incomes_sum'] - $m['pf_expenses_sum'], 2, ',', '.') }}</strong>
-                            </div>
-                        </div>
-
-                        <!-- Lista de Arquivos Notas Fiscais -->
-                        <div class="space-y-2">
-                            <h4 class="text-[11px] font-black text-slate-450 dark:text-slate-500 uppercase tracking-wider block">Notas Fiscais & Recibos do Mês</h4>
-                            
-                            @if(count($m['attachments']) > 0)
-                                <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                                    @foreach($m['attachments'] as $doc)
-                                        <div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-850 p-3 rounded-[5px] flex items-center justify-between gap-3 shadow-xs">
-                                            <div class="min-w-0">
-                                                <div class="flex items-center gap-1.5">
-                                                    <span class="text-[9px] font-black uppercase px-1.5 py-0.5 rounded {{ $doc['classification'] === 'PJ' ? 'bg-primary-50 text-primary-700 dark:bg-primary-950/40 dark:text-primary-300' : 'bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-300' }}">
-                                                        {{ $doc['classification'] }}
-                                                    </span>
-                                                    <h5 class="font-bold text-xs text-slate-800 dark:text-slate-200 truncate" title="{{ $doc['description'] }}">{{ $doc['description'] }}</h5>
-                                                </div>
-                                                <p class="text-[10px] text-slate-400 font-bold block mt-1">
-                                                    {{ $doc['date'] }} • 
-                                                    <span class="{{ $doc['type'] === 'entrada' ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-600 dark:text-rose-455' }}">
-                                                        R$ {{ number_format($doc['amount'], 2, ',', '.') }}
-                                                    </span>
-                                                </p>
+                        @if(count($m['attachments']) > 0)
+                            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                                @foreach($m['attachments'] as $doc)
+                                    <div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-850 p-3 rounded-[5px] flex items-center justify-between gap-3 shadow-xs">
+                                        <div class="min-w-0">
+                                            <div class="flex items-center gap-1.5">
+                                                <span class="text-[9px] font-black uppercase px-1.5 py-0.5 rounded {{ $doc['classification'] === 'PJ' ? 'bg-primary-50 text-primary-700 dark:bg-primary-950/40 dark:text-primary-300' : 'bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-300' }}">
+                                                    {{ $doc['classification'] }}
+                                                </span>
+                                                <h5 class="font-bold text-xs text-slate-800 dark:text-slate-200 truncate" title="{{ $doc['description'] }}">{{ $doc['description'] }}</h5>
                                             </div>
-                                            
-                                            <div class="flex items-center gap-1.5 shrink-0">
-                                                <button 
-                                                    type="button"
-                                                    @click="openPreview({{ json_encode($doc) }})"
-                                                    class="px-2.5 py-1.5 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 font-bold text-[10px] rounded-[5px] transition-colors shadow-sm shrink-0 uppercase tracking-wider flex items-center gap-1 cursor-pointer"
-                                                >
-                                                    👁️ Ver
-                                                </button>
-                                                <a 
-                                                    href="{{ $doc['download_url'] }}" 
-                                                    class="px-2.5 py-1.5 bg-blue-600 hover:bg-blue-700 text-white font-bold text-[10px] rounded-[5px] transition-colors shadow-sm shrink-0 flex items-center gap-1 uppercase tracking-wider"
-                                                >
-                                                    Baixar
-                                                </a>
-                                            </div>
+                                            <p class="text-[10px] text-slate-400 font-bold block mt-1">
+                                                {{ $doc['date'] }} • 
+                                                <span class="{{ $doc['type'] === 'entrada' ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-600 dark:text-rose-455' }}">
+                                                    R$ {{ number_format($doc['amount'], 2, ',', '.') }}
+                                                </span>
+                                            </p>
                                         </div>
-                                    @endforeach
-                                </div>
-                            @else
-                                <div class="text-xs text-slate-455 border border-dashed border-slate-200 dark:border-slate-800 p-4 rounded-[5px] text-center bg-white dark:bg-slate-900 text-slate-400">
-                                    Nenhum comprovante ou nota fiscal anexada neste mês.
-                                </div>
-                            @endif
-                        </div>
-
+                                        
+                                        <div class="flex items-center gap-1.5 shrink-0">
+                                            <button 
+                                                type="button"
+                                                @click="openPreview({{ json_encode($doc) }})"
+                                                class="px-2.5 py-1.5 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 font-bold text-[10px] rounded-[5px] transition-colors shadow-sm shrink-0 uppercase tracking-wider flex items-center gap-1 cursor-pointer"
+                                            >
+                                                👁️ Ver
+                                            </button>
+                                            <a 
+                                                href="{{ $doc['download_url'] }}" 
+                                                class="px-2.5 py-1.5 bg-blue-600 hover:bg-blue-700 text-white font-bold text-[10px] rounded-[5px] transition-colors shadow-sm shrink-0 flex items-center gap-1 uppercase tracking-wider"
+                                            >
+                                                Baixar
+                                            </a>
+                                        </div>
+                                    </div>
+                                @endforeach
+                            </div>
+                        @else
+                            <div class="text-xs text-slate-455 border border-dashed border-slate-200 dark:border-slate-800 p-4 rounded-[5px] text-center bg-white dark:bg-slate-900 text-slate-400">
+                                Nenhum comprovante ou nota fiscal anexada neste mês.
+                            </div>
+                        @endif
                     </div>
                 </div>
-            @endforeach
-        </div>
-    </div>
+            </div>
 
-    <!-- Declaração Anual MEI & Carne Leão -->
     <div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-[5px] p-6 shadow-sm space-y-4">
         <div class="border-b border-slate-100 dark:border-slate-800 pb-2">
             <h3 class="text-sm font-black text-slate-800 dark:text-slate-100 uppercase tracking-wider">📋 Assistente de Declaração de Impostos (Ano Base: {{ $year }})</h3>

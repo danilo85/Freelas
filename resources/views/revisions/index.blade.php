@@ -339,15 +339,19 @@
                   @csrf
 
                   <!-- Autocomplete Autor -->
-                  <div class="space-y-1 relative">
+                  <div class="space-y-1 relative" @click.away="showAuthorDropdown = false">
                       <label class="text-xs font-bold text-slate-500 uppercase tracking-wider block">Autor Creditado</label>
                       <input type="hidden" name="author_id" x-model="selectedAuthor" required>
                       
                       <div class="relative">
                           <input type="text" 
                                  x-model="authorSearch" 
-                                 @focus="showAuthorDropdown = true"
-                                 @input="showAuthorDropdown = true; selectedAuthor = ''; projects = []; selectedProject = '';"
+                                 @focus="showAuthorDropdown = true; highlightedAuthorIndex = -1;"
+                                 @input="showAuthorDropdown = true; selectedAuthor = ''; projects = []; selectedProject = ''; projectSearch = ''; highlightedAuthorIndex = -1;"
+                                 @keydown.arrow-down.prevent="highlightNextAuthor()"
+                                 @keydown.arrow-up.prevent="highlightPrevAuthor()"
+                                 @keydown.enter.prevent="selectHighlightedAuthor()"
+                                 @keydown.escape="showAuthorDropdown = false"
                                  placeholder="Digite o nome do autor para buscar..."
                                  required
                                  class="w-full px-4 py-2.5 rounded-[5px] border border-slate-200 dark:border-slate-800 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500 transition-all bg-white dark:bg-slate-900 dark:text-slate-100">
@@ -362,11 +366,11 @@
                       <!-- Lista suspensa de Autores -->
                       <div x-show="showAuthorDropdown" 
                            class="absolute z-50 w-full mt-1 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-[5px] shadow-lg max-h-48 overflow-y-auto"
-                           @click.away="showAuthorDropdown = false"
                            x-cloak>
-                          <template x-for="author in filteredAuthors()" :key="author.id">
+                          <template x-for="(author, index) in filteredAuthors()" :key="author.id">
                               <div @click="selectAuthor(author); showAuthorDropdown = false;" 
                                    class="px-4 py-2 hover:bg-slate-100 dark:hover:bg-slate-800 cursor-pointer text-sm text-slate-700 dark:text-slate-200" 
+                                   :class="{'bg-slate-100 dark:bg-slate-800': highlightedAuthorIndex === index}"
                                    x-text="author.name"></div>
                           </template>
                           <div x-show="filteredAuthors().length === 0" class="px-4 py-2 text-sm text-slate-400 dark:text-slate-500">Nenhum autor encontrado</div>
@@ -374,22 +378,51 @@
                   </div>
 
                   <!-- Dropdown Trabalhos do Autor -->
-                  <div class="space-y-1" x-show="selectedAuthor">
+                  <div class="space-y-1 relative" x-show="selectedAuthor" @click.away="showProjectDropdown = false">
                       <label class="text-xs font-bold text-slate-500 uppercase tracking-wider block">Trabalho/Projeto Vinculado</label>
+                      <input type="hidden" name="project_id" x-model="selectedProject">
+                      
                       <div class="relative">
-                          <select name="project_id" 
-                                  x-model="selectedProject"
-                                  @change="onProjectChange()"
-                                  class="w-full px-4 py-2.5 rounded-[5px] border border-slate-200 dark:border-slate-800 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500 transition-all bg-white dark:bg-slate-900 dark:text-slate-100"
-                                  :disabled="loadingProjects">
-                              <option value="">Projeto Avulso (Sem vinculo)</option>
-                              <template x-for="project in projects" :key="project.id">
-                                  <option :value="project.id" x-text="project.title + ' (' + project.status + ')'"></option>
-                              </template>
-                          </select>
-                          <div x-show="loadingProjects" class="absolute inset-y-0 right-8 flex items-center">
+                          <input type="text" 
+                                 x-model="projectSearch" 
+                                 @focus="showProjectDropdown = true; highlightedProjectIndex = -1;"
+                                 @input="showProjectDropdown = true; selectedProject = ''; highlightedProjectIndex = -1;"
+                                 @keydown.arrow-down.prevent="highlightNextProject()"
+                                 @keydown.arrow-up.prevent="highlightPrevProject()"
+                                 @keydown.enter.prevent="selectHighlightedProject()"
+                                 @keydown.escape="showProjectDropdown = false"
+                                 placeholder="Selecione ou busque o trabalho/projeto..."
+                                 class="w-full px-4 py-2.5 rounded-[5px] border border-slate-200 dark:border-slate-800 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500 transition-all bg-white dark:bg-slate-900 dark:text-slate-100"
+                                 :disabled="loadingProjects">
+                          
+                          <div x-show="loadingProjects" class="absolute inset-y-0 right-3 flex items-center">
                               <span class="w-4 h-4 border-2 border-blue-500 border-t-transparent rounded-full animate-spin"></span>
                           </div>
+                          <div x-show="selectedProject && !loadingProjects" class="absolute inset-y-0 right-3 flex items-center text-emerald-600">
+                              <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                              </svg>
+                          </div>
+                      </div>
+
+                      <!-- Lista suspensa de Projetos -->
+                      <div x-show="showProjectDropdown" 
+                           class="absolute z-50 w-full mt-1 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-[5px] shadow-lg max-h-48 overflow-y-auto"
+                           x-cloak>
+                          <!-- Opção padrão -->
+                          <div @click="selectProject(null); showProjectDropdown = false;" 
+                               class="px-4 py-2 hover:bg-slate-100 dark:hover:bg-slate-800 cursor-pointer text-sm text-slate-500 font-semibold"
+                               :class="{'bg-slate-100 dark:bg-slate-800': highlightedProjectIndex === 0}">
+                               Projeto Avulso (Sem vinculo)
+                          </div>
+                          
+                          <template x-for="(p, index) in filteredProjects()" :key="p.id">
+                              <div @click="selectProject(p); showProjectDropdown = false;" 
+                                   class="px-4 py-2 hover:bg-slate-100 dark:hover:bg-slate-800 cursor-pointer text-sm text-slate-700 dark:text-slate-200" 
+                                   :class="{'bg-slate-100 dark:bg-slate-800': highlightedProjectIndex === (index + 1)}"
+                                   x-text="p.title + ' (' + p.status + ')'"></div>
+                          </template>
+                          <div x-show="filteredProjects().length === 0" class="px-4 py-2 text-sm text-slate-400 dark:text-slate-500">Nenhum projeto encontrado</div>
                       </div>
                   </div>
 
@@ -440,6 +473,10 @@
             projects: [],
             loadingProjects: false,
             authors: {!! json_encode($authors) !!},
+            showProjectDropdown: false,
+            projectSearch: '',
+            highlightedAuthorIndex: -1,
+            highlightedProjectIndex: -1,
 
             filteredAuthors() {
                 if (!this.authorSearch) {
@@ -452,6 +489,8 @@
             selectAuthor(author) {
                 this.selectedAuthor = author.id;
                 this.authorSearch = author.name;
+                this.selectedProject = '';
+                this.projectSearch = '';
                 this.loadAuthorProjects();
             },
 
@@ -464,6 +503,80 @@
                 } else {
                     this.revisionTitle = '';
                 }
+            },
+
+            filteredProjects() {
+                if (!this.projects) return [];
+                if (!this.projectSearch) {
+                    return this.projects;
+                }
+                const q = this.projectSearch.toLowerCase();
+                return this.projects.filter(p => p.title.toLowerCase().includes(q) || p.status.toLowerCase().includes(q));
+            },
+
+            selectProject(project) {
+                if (project) {
+                    this.selectedProject = project.id;
+                    this.projectSearch = `${project.title} (${project.status})`;
+                } else {
+                    this.selectedProject = '';
+                    this.projectSearch = 'Projeto Avulso (Sem vinculo)';
+                }
+                this.onProjectChange();
+            },
+
+            highlightNextAuthor() {
+                const count = this.filteredAuthors().length;
+                if (count > 0) {
+                    this.highlightedAuthorIndex = (this.highlightedAuthorIndex + 1) % count;
+                }
+            },
+
+            highlightPrevAuthor() {
+                const count = this.filteredAuthors().length;
+                if (count > 0) {
+                    this.highlightedAuthorIndex = (this.highlightedAuthorIndex - 1 + count) % count;
+                }
+            },
+
+            selectHighlightedAuthor() {
+                const list = this.filteredAuthors();
+                if (this.highlightedAuthorIndex >= 0 && this.highlightedAuthorIndex < list.length) {
+                    this.selectAuthor(list[this.highlightedAuthorIndex]);
+                    this.showAuthorDropdown = false;
+                }
+            },
+
+            highlightNextProject() {
+                const count = this.filteredProjects().length + 1;
+                if (count > 0) {
+                    this.highlightedProjectIndex = (this.highlightedProjectIndex + 1) % count;
+                }
+            },
+
+            highlightPrevProject() {
+                const count = this.filteredProjects().length + 1;
+                if (count > 0) {
+                    this.highlightedProjectIndex = (this.highlightedProjectIndex - 1 + count) % count;
+                }
+            },
+
+            selectHighlightedProject() {
+                if (this.highlightedProjectIndex === 0) {
+                    this.selectProject(null);
+                    this.showProjectDropdown = false;
+                } else {
+                    const list = this.filteredProjects();
+                    const index = this.highlightedProjectIndex - 1;
+                    if (index >= 0 && index < list.length) {
+                        this.selectProject(list[index]);
+                        this.showProjectDropdown = false;
+                    }
+                }
+            },
+
+            init() {
+                console.log('[DEBUG] init() do revisionsManager foi carregado!');
             },
 
             // Filter states
@@ -498,11 +611,15 @@
                 }
 
                 this.loadingProjects = true;
-                const url = `/utilidades/api/projetos-autor/${this.selectedAuthor}`;
+                const baseUrl = '{{ route('revisoes.api.projects', ['author' => '_AUTHOR_ID_']) }}';
+                const url = baseUrl.replace('_AUTHOR_ID_', this.selectedAuthor);
+
+                console.log('[DEBUG] Buscando projetos para o autor ID:', this.selectedAuthor, 'URL:', url);
 
                 fetch(url)
                     .then(response => response.json())
                     .then(data => {
+                        console.log('[DEBUG] Projetos carregados da API:', data);
                         this.projects = data;
                         this.loadingProjects = false;
                     })

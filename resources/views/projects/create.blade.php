@@ -520,6 +520,77 @@
             </div>
             
             <p class="text-[10px] text-slate-400 text-center">Este card simula o visual final do orçamento a ser impresso/gerado.</p>
+        
+            <!-- Assistente IA de Precificação e Prazos -->
+            <div class="bg-gradient-to-br from-indigo-50 to-slate-50 dark:from-slate-900 dark:to-slate-950 border border-indigo-100 dark:border-slate-800 rounded-[5px] p-5 shadow-sm space-y-4">
+                <div class="flex items-center justify-between border-b border-indigo-100/50 dark:border-slate-850 pb-2">
+                    <div>
+                        <h4 class="text-xs font-black text-indigo-700 dark:text-indigo-400 uppercase tracking-wider flex items-center gap-1.5">
+                            💡 Assistente de Copiloto
+                        </h4>
+                        <p class="text-[10px] text-slate-400 font-bold uppercase tracking-wider block mt-0.5">Sugestões de valores e prazos</p>
+                    </div>
+                    <!-- Spinner de Loading -->
+                    <div x-show="loadingSimilarity" class="flex items-center gap-1 text-[10px] text-indigo-600 dark:text-indigo-400 font-bold uppercase tracking-wider">
+                        <svg class="animate-spin h-3.5 w-3.5" fill="none" viewBox="0 0 24 24">
+                            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                        </svg>
+                        Analisando...
+                    </div>
+                </div>
+
+                <div class="space-y-3.5 text-xs">
+                    <!-- Sem dados -->
+                    <template x-if="similarProjects.length === 0 && !loadingSimilarity">
+                        <div class="text-slate-450 dark:text-slate-500 py-3 text-center bg-white dark:bg-slate-900 border border-dashed border-slate-200 dark:border-slate-800 p-4 rounded-[5px]">
+                            Digite o título ou conteúdo para que o assistente analise orçamentos antigos parecidos.
+                        </div>
+                    </template>
+
+                    <!-- Com dados -->
+                    <template x-if="similarProjects.length > 0">
+                        <div class="space-y-3">
+                            <div class="p-3 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-[5px] space-y-2">
+                                <span class="text-[10px] font-black text-indigo-650 dark:text-indigo-400 uppercase tracking-wider block">Métricas Sugeridas:</span>
+                                <div class="grid grid-cols-2 gap-2 text-xs">
+                                    <div class="space-y-0.5">
+                                        <span class="text-[9px] text-slate-400 font-bold uppercase tracking-wider block">Preço Médio</span>
+                                        <strong class="text-emerald-655 dark:text-emerald-450 font-black text-sm" x-text="'R$ ' + avgValue.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })"></strong>
+                                    </div>
+                                    <div class="space-y-0.5">
+                                        <span class="text-[9px] text-slate-400 font-bold uppercase tracking-wider block">Prazo Médio</span>
+                                        <strong class="text-slate-750 dark:text-slate-200 font-black text-sm" x-text="avgTermDays ? avgTermDays + ' dias' : 'Não estimado'"></strong>
+                                    </div>
+                                </div>
+                                
+                                <button type="button" @click="applySuggestions()" class="w-full mt-2 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white text-[10px] font-black rounded-[5px] uppercase tracking-wider transition-colors shadow-xs flex items-center justify-center gap-1 focus:outline-none cursor-pointer">
+                                    ✨ Aplicar Sugestões ao Form
+                                </button>
+                            </div>
+
+                            <!-- Listagem de Orçamentos Parecidos -->
+                            <div class="space-y-1.5">
+                                <span class="text-[10px] font-black text-slate-450 dark:text-slate-500 uppercase tracking-wider block">Orçamentos Parecidos Encontrados:</span>
+                                <div class="space-y-2 max-h-60 overflow-y-auto pr-1">
+                                    <template x-for="p in similarProjects" :key="p.id">
+                                        <a :href="'/freelas/projects/' + p.id" target="_blank" class="block p-2.5 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-[5px] hover:border-indigo-300 dark:hover:border-indigo-900 transition-all">
+                                            <div class="flex justify-between items-start gap-2">
+                                                <strong class="font-extrabold text-slate-750 dark:text-slate-200 truncate block text-[11px] max-w-[150px]" x-text="p.title"></strong>
+                                                <span class="text-[9px] font-black text-emerald-600 dark:text-emerald-400 shrink-0" x-text="'R$ ' + p.value.toLocaleString('pt-BR', { minimumFractionDigits: 2 })"></span>
+                                            </div>
+                                            <div class="flex justify-between text-[9px] text-slate-400 font-bold mt-1 uppercase">
+                                                <span x-text="'Prazo: ' + p.term"></span>
+                                                <span class="text-indigo-600 dark:text-indigo-400" x-text="'Relevância: ' + p.score"></span>
+                                            </div>
+                                        </a>
+                                    </template>
+                                </div>
+                            </div>
+                        </div>
+                    </template>
+                </div>
+            </div>
         </div>
 
     </div>
@@ -550,6 +621,13 @@
             status: 'rascunho',
             additionalInfo: '',
 
+            // Similarity AI Copilot
+            similarProjects: [],
+            avgValue: 0,
+            avgTermDays: 0,
+            loadingSimilarity: false,
+            similarityTimer: null,
+
             // Event Listeners das datas
             budgetDate: '{{ today()->format("Y-m-d") }}',
             expDate: '{{ today()->addDays(10)->format("Y-m-d") }}',
@@ -566,6 +644,10 @@
                     // Dispara evento para o segundo datepicker
                     window.dispatchEvent(new CustomEvent('update-expiration-date', { detail: newExp }));
                 });
+                
+                // Monitora mudanças no título e escopo para precificação inteligente
+                this.$watch('title', () => this.debounceSimilarity());
+                this.$watch('description', () => this.debounceSimilarity());
                 
                 window.addEventListener('expiration_date-changed', (e) => {
                     this.expDate = e.detail;
@@ -692,6 +774,55 @@
                 let parts = dateStr.split('-');
                 if (parts.length !== 3) return dateStr;
                 return `${parts[2]}/${parts[1]}/${parts[0]}`;
+            },
+
+            debounceSimilarity() {
+                clearTimeout(this.similarityTimer);
+                this.similarityTimer = setTimeout(() => {
+                    this.fetchSimilarity();
+                }, 600);
+            },
+
+            async fetchSimilarity() {
+                if (!this.title && !this.description) {
+                    this.similarProjects = [];
+                    this.avgValue = 0;
+                    this.avgTermDays = 0;
+                    return;
+                }
+                this.loadingSimilarity = true;
+                try {
+                    let response = await fetch('{{ route("projects.analyze-similarity") }}', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'X-CSRF-TOKEN': '{{ csrf_token() }}'
+                        },
+                        body: JSON.stringify({
+                            title: this.title,
+                            description: this.description
+                        })
+                    });
+                    let data = await response.json();
+                    if (data.success) {
+                        this.similarProjects = data.similar_projects;
+                        this.avgValue = data.avg_value;
+                        this.avgTermDays = data.avg_term_days;
+                    }
+                } catch (e) {
+                    console.error('Erro ao buscar similaridade:', e);
+                } finally {
+                    this.loadingSimilarity = false;
+                }
+            },
+
+            applySuggestions() {
+                if (this.avgValue > 0) {
+                    this.totalValue = 'R$ ' + this.avgValue.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+                }
+                if (this.avgTermDays > 0) {
+                    this.term = this.avgTermDays + ' dias úteis';
+                }
             },
 
             submitForm(event) {

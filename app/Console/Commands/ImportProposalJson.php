@@ -148,11 +148,37 @@ class ImportProposalJson extends Command
                 // 5. Payments
                 if (!empty($paymentsData)) {
                     foreach ($paymentsData as $paymentData) {
+                        $bankAccountId = null;
+                        if (!empty($paymentData['bank'])) {
+                            $bankData = $paymentData['bank'];
+                            $bankAccount = \App\Models\BankAccount::where('user_id', $user->id)
+                                ->where(function($query) use ($bankData) {
+                                    $query->where('account_name', $bankData['nome'] ?? '')
+                                          ->orWhere('bank_name', $bankData['banco'] ?? '');
+                                })
+                                ->first();
+                            
+                            if (!$bankAccount) {
+                                $bankAccount = \App\Models\BankAccount::create([
+                                    'user_id' => $user->id,
+                                    'bank_name' => $bankData['banco'] ?? 'Outro',
+                                    'account_name' => $bankData['nome'] ?? 'Conta Importada',
+                                    'account_type' => $bankData['tipo_conta'] ?? 'Conta Corrente',
+                                    'person_type' => $bankData['titular_tipo'] ?? 'pf',
+                                    'agency' => $bankData['agencia'] ?? null,
+                                    'account_number' => $bankData['numero_conta'] ?? null,
+                                    'initial_balance' => 0.00
+                                ]);
+                            }
+                            $bankAccountId = $bankAccount->id;
+                        }
+
                         Payment::create([
                             'project_id' => $project->id,
                             'amount' => $paymentData['valor'],
                             'paid_at' => $paymentData['data_pagamento'],
-                            'payment_method' => $paymentData['metodo'] ?? 'transferência',
+                            'payment_method' => $paymentData['metodo'] ?? $paymentData['forma_pagamento'] ?? 'transferência',
+                            'bank_account_id' => $bankAccountId,
                             'observations' => $paymentData['observacoes'] ?? null
                         ]);
                     }

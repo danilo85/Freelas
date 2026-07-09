@@ -65,43 +65,20 @@
         }
     @endphp
 
-    <div class="bg-white border border-slate-200 rounded-[5px] p-4 shadow-sm flex flex-col md:flex-row items-center justify-between gap-4">
-        
-        <!-- Botões de Navegação Rápida -->
-        <div class="flex items-center justify-between md:justify-start gap-3 w-full md:w-auto">
-            <a href="{{ route('finances.index', ['month' => $prevMonth->month, 'year' => $prevMonth->year, 'classification' => $classification, 'status' => $status, 'category_id' => $categoryId]) }}" class="inline-flex items-center justify-center gap-1.5 px-2.5 py-2 sm:px-3.5 sm:py-2 border border-slate-200 text-slate-650 hover:bg-slate-50 text-xs sm:text-sm font-semibold rounded-[5px] transition-colors shadow-sm shrink-0">
-                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M15 19l-7-7 7-7"></path>
-                </svg>
-                <span class="hidden sm:inline">Anterior</span>
-            </a>
-            <div class="text-base sm:text-lg font-black text-slate-800 tracking-tight text-center flex-1 md:flex-none">
-                {{ $months[$month] }} {{ $year }}
-            </div>
-            <a href="{{ route('finances.index', ['month' => $nextMonth->month, 'year' => $nextMonth->year, 'classification' => $classification, 'status' => $status, 'category_id' => $categoryId]) }}" class="inline-flex items-center justify-center gap-1.5 px-2.5 py-2 sm:px-3.5 sm:py-2 border border-slate-200 text-slate-650 hover:bg-slate-50 text-xs sm:text-sm font-semibold rounded-[5px] transition-colors shadow-sm shrink-0">
-                <span class="hidden sm:inline">Próximo</span>
-                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M9 5l7 7-7 7"></path>
-                </svg>
-            </a>
-        </div>
-
-        <!-- Filtros e Busca Rápida -->
-        <form method="GET" action="{{ route('finances.index') }}" class="grid grid-cols-2 sm:flex sm:flex-wrap items-center gap-2 w-full md:w-auto justify-end">
+    <!-- Card 1: Filtros de Lançamentos -->
+    <div class="bg-white border border-slate-200 rounded-[5px] p-4 shadow-sm">
+        <form method="GET" action="{{ route('finances.index') }}" class="flex flex-wrap items-center gap-3 w-full">
             <input type="hidden" name="month" value="{{ $month }}" />
             <input type="hidden" name="year" value="{{ $year }}" />
-            <input type="hidden" name="classification" value="{{ $classification }}" />
-            <input type="hidden" name="status" value="{{ $status }}" />
-            <input type="hidden" name="category_id" value="{{ $categoryId }}" />
-            
+
             <!-- Busca + Privacidade -->
-            <div class="flex items-center gap-2 col-span-2 sm:col-span-1 w-full sm:w-auto">
+            <div class="flex items-center gap-2 w-full sm:w-auto flex-1 sm:flex-initial min-w-[200px]">
                 <input 
                     type="text" 
                     name="search" 
                     value="{{ $search }}"
                     placeholder="Buscar descrição..." 
-                    class="bg-white border border-slate-200 text-slate-700 text-xs font-semibold rounded-[5px] px-3 py-2 focus:outline-none focus:border-slate-350 w-full sm:max-w-[150px] flex-1 sm:flex-initial"
+                    class="bg-white border border-slate-200 text-slate-700 text-xs font-semibold rounded-[5px] px-3 py-2 focus:outline-none focus:border-slate-350 w-full flex-1"
                 />
                 
                 <!-- Botão Modo Privacidade -->
@@ -123,7 +100,7 @@
             </div>
 
             <!-- Filtro Customizado: Classificação -->
-            <div x-data="{ open: false }" class="relative w-full sm:w-auto sm:inline-block text-left col-span-1">
+            <div x-data="{ open: false }" class="relative w-full sm:w-auto sm:inline-block text-left">
                 <button @click="open = !open" type="button" class="inline-flex items-center justify-between gap-1.5 bg-white border border-slate-200 text-slate-700 text-xs font-semibold rounded-[5px] px-3 py-2 hover:bg-slate-50 transition-colors w-full sm:min-w-[100px] text-left">
                     <span>{{ $selectedClassLabel }}</span>
                     <svg class="w-3.5 h-3.5 text-slate-400 transition-transform duration-200" :class="open ? 'rotate-180' : ''" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -138,7 +115,7 @@
             </div>
 
             <!-- Filtro Customizado: Status -->
-            <div x-data="{ open: false }" class="relative w-full sm:w-auto sm:inline-block text-left col-span-1">
+            <div x-data="{ open: false }" class="relative w-full sm:w-auto sm:inline-block text-left">
                 <button @click="open = !open" type="button" class="inline-flex items-center justify-between gap-1.5 bg-white border border-slate-200 text-slate-700 text-xs font-semibold rounded-[5px] px-3 py-2 hover:bg-slate-50 transition-colors w-full sm:min-w-[120px] text-left">
                     <span>{{ $selectedStatusLabel }}</span>
                     <svg class="w-3.5 h-3.5 text-slate-400 transition-transform duration-200" :class="open ? 'rotate-180' : ''" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -153,7 +130,7 @@
             </div>
 
             <!-- Filtro Customizado: Categoria -->
-            <div x-data="{ open: false }" class="relative w-full sm:w-auto sm:inline-block text-left col-span-1">
+            <div x-data="{ open: false }" class="relative w-full sm:w-auto sm:inline-block text-left">
                 <button @click="open = !open" type="button" class="inline-flex items-center justify-between gap-1.5 bg-white border border-slate-200 text-slate-700 text-xs font-semibold rounded-[5px] px-3 py-2 hover:bg-slate-50 transition-colors w-full sm:min-w-[140px] text-left">
                     <span>{!! $selectedCategoryName !!}</span>
                     <svg class="w-3.5 h-3.5 text-slate-400 transition-transform duration-200" :class="open ? 'rotate-180' : ''" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -170,11 +147,44 @@
                 </div>
             </div>
 
-            <a href="{{ route('finances.index', ['month' => $today->month, 'year' => $today->year]) }}" class="inline-flex items-center justify-center gap-1 px-3 py-2 bg-slate-800 hover:bg-slate-900 text-white text-xs font-semibold rounded-[5px] transition-colors shadow-sm w-full sm:w-auto col-span-1">
-                Hoje
-            </a>
+            <button type="submit" class="px-4 py-2 bg-primary-600 hover:bg-primary-700 text-white text-xs font-semibold rounded-[5px] transition-colors shadow-sm w-full sm:w-auto">
+                Buscar
+            </button>
         </form>
+    </div>
 
+    <!-- Card 2: Navegador de Meses -->
+    <div class="bg-white border border-slate-200 rounded-[5px] p-3 shadow-sm flex flex-col md:flex-row items-center justify-between gap-3 mt-3 no-print">
+        <div class="flex items-center justify-between w-full md:w-auto gap-3">
+            <!-- Anterior -->
+            <a href="{{ route('finances.index', ['month' => $prevMonth->month, 'year' => $prevMonth->year, 'classification' => $classification, 'status' => $status, 'category_id' => $categoryId]) }}" 
+               class="inline-flex items-center justify-center gap-1.5 px-3.5 py-2 border border-slate-200 hover:border-slate-350 text-slate-650 hover:text-slate-800 hover:bg-slate-50 text-xs font-bold rounded-[5px] transition-all shadow-sm shrink-0 uppercase tracking-wider">
+                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M15 19l-7-7 7-7"></path>
+                </svg>
+                <span>Anterior</span>
+            </a>
+
+            <!-- Mês / Ano Selecionado -->
+            <div class="text-sm font-extrabold text-slate-850 tracking-wider uppercase bg-slate-50 border border-slate-200 px-6 py-2 rounded-[5px] shadow-inner text-center font-outfit min-w-[170px] sm:min-w-[210px] select-none flex-1 md:flex-none">
+                {{ $months[$month] }} {{ $year }}
+            </div>
+
+            <!-- Próximo -->
+            <a href="{{ route('finances.index', ['month' => $nextMonth->month, 'year' => $nextMonth->year, 'classification' => $classification, 'status' => $status, 'category_id' => $categoryId]) }}" 
+               class="inline-flex items-center justify-center gap-1.5 px-3.5 py-2 border border-slate-200 hover:border-slate-355 text-slate-650 hover:text-slate-800 hover:bg-slate-50 text-xs font-bold rounded-[5px] transition-all shadow-sm shrink-0 uppercase tracking-wider">
+                <span>Próximo</span>
+                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M9 5l7 7-7 7"></path>
+                </svg>
+            </a>
+        </div>
+        
+        <!-- Botão Hoje -->
+        <a href="{{ route('finances.index', ['month' => $today->month, 'year' => $today->year, 'classification' => $classification, 'status' => $status, 'category_id' => $categoryId]) }}" 
+           class="inline-flex items-center justify-center gap-1.5 px-4 py-2 bg-slate-800 hover:bg-slate-900 text-white text-xs font-bold rounded-[5px] transition-colors shadow-sm uppercase tracking-wider w-full md:w-auto text-center">
+            Hoje
+        </a>
     </div>
 
     <!-- Cards de Resumo Financeiro (Previsto vs Realizado) -->
@@ -255,6 +265,7 @@
                     @php
                         $card = $group['card'];
                         $hasUnpaid = collect($group['transactions'])->contains(fn($t) => $t->status !== 'pago');
+                        $hasPaid = collect($group['transactions'])->contains(fn($t) => $t->status === 'pago');
                     @endphp
                     <div 
                         x-data="{ expanded: false }" 
@@ -339,73 +350,82 @@
                                     <div class="flex-1 overflow-y-auto py-4 space-y-2 pr-1.5 -mr-1.5 min-h-[180px] max-h-[50vh]">
                                         @foreach($group['transactions'] as $t)
                                             <div 
-                                                class="border p-2.5 rounded-[5px] space-y-2 text-xs relative flex flex-col justify-between cursor-pointer select-none transition-all duration-200 overflow-hidden"
+                                                id="modal-card-{{ $t->id }}"
+                                                class="border p-2 rounded-[5px] space-y-1 text-xs relative flex flex-col justify-between cursor-pointer select-none transition-all duration-200 overflow-hidden {{ $t->status === 'pago' ? 'bg-emerald-50/30 border-emerald-500/20' : 'bg-slate-50 border-slate-150 hover:bg-slate-100/70 hover:border-slate-250' }}"
                                                 :class="selectedItems.includes({{ $t->id }}) 
                                                     ? 'ring-2 ring-primary-500 border-primary-500 bg-primary-50/20 shadow-[0_0_15px_rgba(37,99,235,0.15)]' 
-                                                    : 'bg-slate-50 border-slate-150 hover:bg-slate-100/70 hover:border-slate-250'"
+                                                    : ''"
                                                 @dblclick="handleCardDblClick({{ $t->id }}, {{ $t->amount }}, $event)"
                                                 @click="handleCardClick({{ $t->id }}, {{ $t->amount }}, $event)"
                                             >
-                                                <!-- Stamp Carimbo Pago/Pendente no Modal -->
+                                                <!-- Stamp Carimbo Pago no Modal -->
                                                 <div id="modal-status-stamp-{{ $t->id }}" class="absolute right-12 top-1.5 rotate-[-12deg] pointer-events-none select-none z-10 opacity-30 transform scale-90" style="display: {{ $t->status === 'pago' ? 'block' : 'none' }}">
                                                     <div class="border-2 border-emerald-600/75 text-emerald-600/75 font-black text-[9px] px-2 py-0.5 rounded uppercase tracking-widest flex items-center gap-0.5">
                                                         <span>✓</span> <span>PAGO</span>
                                                     </div>
                                                 </div>
-                                                <div id="modal-status-stamp-pending-{{ $t->id }}" class="absolute right-12 top-1.5 rotate-[-12deg] pointer-events-none select-none z-10 opacity-25 transform scale-90" style="display: {{ $t->status === 'pago' ? 'none' : 'block' }}">
-                                                    <div class="border-2 border-amber-600/75 text-amber-600/75 font-black text-[8px] px-1.5 py-0.5 rounded uppercase tracking-widest flex items-center gap-0.5">
-                                                        <span>⏳</span> <span>PENDENTE</span>
-                                                    </div>
-                                                </div>
-                                                @php
-                                                    // keep PHP compiler happy
-                                                @endphp
 
                                                 <div class="flex justify-between items-start gap-2 z-20">
                                                     <div class="min-w-0">
-                                                        <div class="flex items-center gap-1.5">
-                                                            <span class="text-sm shrink-0">{{ $t->category->icon ?? '💳' }}</span>
-                                                            <h4 class="font-bold text-slate-800 truncate" title="{{ $t->description }}">{{ $t->description }}</h4>
+                                                        <div class="flex items-center gap-1">
+                                                            <span class="text-xs shrink-0">{{ $t->category->icon ?? '💳' }}</span>
+                                                            <h4 class="font-bold text-slate-800 text-[11px] truncate" title="{{ $t->description }}">{{ $t->description }}</h4>
                                                         </div>
-                                                        <p class="text-[10px] text-slate-400 font-bold mt-0.5">Vencimento: {{ $t->due_date->format('d/m/Y') }}</p>
+                                                        <p class="text-[9px] text-slate-400 font-bold mt-0.5">Vencimento: {{ $t->due_date->format('d/m/Y') }}</p>
                                                     </div>
                                                     <div class="text-right shrink-0">
-                                                        <span class="font-black text-rose-600 block" x-text="privacyMode ? 'R$ ••••' : 'R$ ' + formatMoney({{ (float) $t->amount }})">R$ {{ number_format($t->amount, 2, ',', '.') }}</span>
+                                                        <span class="font-black text-rose-600 text-[11px] block" x-text="privacyMode ? 'R$ ••••' : 'R$ ' + formatMoney({{ (float) $t->amount }})">R$ {{ number_format($t->amount, 2, ',', '.') }}</span>
                                                     </div>
                                                 </div>
 
                                                 <!-- Ações do Cartão Expandido -->
-                                                <div class="flex items-center justify-end gap-1 border-t border-slate-100 pt-2 mt-1.5 no-print">
+                                                <div class="flex items-center justify-end gap-1 border-t border-slate-100 pt-1 mt-1 no-print">
                                                     <!-- Checkbox de Soma -->
-                                                    <label class="mr-auto flex items-center cursor-pointer">
-                                                        <input type="checkbox" @change="toggleSelect({{ $t->id }}, {{ $t->amount }})" :checked="selectedItems.includes({{ $t->id }})" class="rounded text-primary-600 border-slate-350 focus:ring-primary-500/20 w-3.5 h-3.5" />
-                                                    </label>
+                                                    <div class="mr-auto relative flex items-center justify-center">
+                                                        <input type="checkbox" 
+                                                               @change="toggleSelect({{ $t->id }}, {{ $t->amount }})" 
+                                                               :checked="selectedItems.includes({{ $t->id }})" 
+                                                               id="check-expanded-{{ $t->id }}"
+                                                               class="sr-only cursor-pointer" />
+                                                        <label for="check-expanded-{{ $t->id }}" 
+                                                               class="w-4 h-4 flex items-center justify-center rounded-[4px] border transition-all cursor-pointer select-none"
+                                                               :class="selectedItems.includes({{ $t->id }}) ? 'bg-primary-600 border-primary-600 text-white shadow-sm shadow-primary-600/30 scale-105' : 'border-slate-300 hover:border-slate-400 text-transparent bg-white'">
+                                                            <svg class="w-2 h-2 stroke-current" fill="none" viewBox="0 0 24 24" stroke-width="4">
+                                                                <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7" />
+                                                            </svg>
+                                                        </label>
+                                                    </div>
 
                                                     <!-- Toggle Status -->
                                                     <form action="{{ route('finances.toggle-status', $t->id) }}" method="POST" class="inline" @submit.prevent="toggleTransactionStatus({{ $t->id }}, '{{ route('finances.toggle-status', $t->id) }}')">
                                                         @csrf
-                                                        <button type="submit" class="w-7 h-7 flex items-center justify-center bg-transparent text-emerald-600 hover:bg-emerald-50 rounded-[5px] transition-all border-0 shadow-none cursor-pointer" title="Alternar status Pago/Pendente">
-                                                            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                        <button 
+                                                            id="modal-toggle-btn-{{ $t->id }}"
+                                                            type="submit" 
+                                                            class="w-6 h-6 flex items-center justify-center bg-transparent rounded-[5px] transition-all border-0 shadow-none cursor-pointer {{ $t->status === 'pago' ? 'text-emerald-600 hover:bg-emerald-50' : 'text-slate-400 hover:bg-slate-100' }}" 
+                                                            title="Alternar status Pago/Pendente"
+                                                        >
+                                                            <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"></path>
                                                             </svg>
                                                         </button>
                                                     </form>
                                                     <!-- Editar -->
-                                                    <a href="{{ route('finances.edit', $t->id) }}" class="w-7 h-7 flex items-center justify-center bg-transparent text-primary-600 hover:bg-primary-50 rounded-[5px] transition-all border-0 shadow-none" title="Editar">
-                                                        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <a href="{{ route('finances.edit', $t->id) }}" class="w-6 h-6 flex items-center justify-center bg-transparent text-primary-600 hover:bg-primary-50 rounded-[5px] transition-all border-0 shadow-none" title="Editar">
+                                                        <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"></path>
                                                         </svg>
                                                     </a>
                                                     <!-- Excluir -->
                                                     @if($t->group_code)
-                                                        <button type="button" @click="confirmDelete('{{ $t->description }}', '{{ route('finances.destroy', $t->id) }}', true)" class="w-7 h-7 flex items-center justify-center bg-transparent text-red-600 hover:bg-red-55 rounded-[5px] transition-all border-0 shadow-none" title="Excluir">
-                                                            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                        <button type="button" @click="confirmDelete('{{ $t->description }}', '{{ route('finances.destroy', $t->id) }}', true)" class="w-6 h-6 flex items-center justify-center bg-transparent text-red-600 hover:bg-red-55 rounded-[5px] transition-all border-0 shadow-none" title="Excluir">
+                                                            <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
                                                             </svg>
                                                         </button>
                                                     @else
-                                                        <button type="button" @click="$dispatch('trigger-global-delete', { title: 'Excluir Lançamento', message: 'Tem certeza que deseja excluir o lançamento?', action: '{{ route('finances.destroy', $t->id) }}', highSecurity: false })" class="w-7 h-7 flex items-center justify-center bg-transparent text-red-600 hover:bg-red-55 rounded-[5px] transition-all border-0 shadow-none" title="Excluir">
-                                                            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                        <button type="button" @click="$dispatch('trigger-global-delete', { title: 'Excluir Lançamento', message: 'Tem certeza que deseja excluir o lançamento?', action: '{{ route('finances.destroy', $t->id) }}', highSecurity: false })" class="w-6 h-6 flex items-center justify-center bg-transparent text-red-600 hover:bg-red-55 rounded-[5px] transition-all border-0 shadow-none" title="Excluir">
+                                                            <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
                                                             </svg>
                                                         </button>
@@ -431,10 +451,16 @@
                                                         <span>✓</span> Pagar Fatura
                                                     </button>
                                                 </form>
-                                            @else
-                                                <span class="px-2.5 py-1.5 bg-emerald-50 border border-emerald-200 text-emerald-700 text-[9px] font-black rounded-[5px] uppercase tracking-wider">
-                                                    Fatura Paga ✓
-                                                </span>
+                                            @endif
+                                            @if($hasPaid)
+                                                <form action="{{ route('finances.unpay-invoice', $card->id) }}" method="POST" class="inline">
+                                                    @csrf
+                                                    <input type="hidden" name="month" value="{{ $month }}">
+                                                    <input type="hidden" name="year" value="{{ $year }}">
+                                                    <button type="submit" class="px-3.5 py-1.5 bg-amber-600 hover:bg-amber-700 text-white text-[10px] font-extrabold rounded-[5px] transition-colors uppercase tracking-wider flex items-center gap-1">
+                                                        <span>⏳</span> Voltar a Pendente
+                                                    </button>
+                                                </form>
                                             @endif
                                             <button type="button" @click="expanded = false" class="px-4 py-2 bg-slate-800 hover:bg-slate-900 text-white text-xs font-bold rounded-[5px] transition-colors uppercase tracking-wider">
                                                 Fechar
@@ -467,7 +493,7 @@
                         class="border rounded-[5px] p-4 shadow-sm hover:shadow-md transition-all duration-200 relative flex flex-col justify-between min-h-[140px] cursor-pointer select-none overflow-hidden"
                         :class="selectedItems.includes({{ $t->id }}) 
                             ? 'ring-2 ring-primary-500 border-primary-500 bg-primary-50/20 shadow-[0_0_15px_rgba(37,99,235,0.15)]' 
-                            : '{{ $isIncome ? 'bg-emerald-50/40 border-emerald-200 hover:border-emerald-300 hover:bg-emerald-50/60' : 'bg-rose-50/45 border-rose-200 hover:border-rose-300 hover:bg-rose-50/65' }}'"
+                            : '{{ $isIncome ? 'bg-emerald-50/80 border-emerald-300/80 hover:border-emerald-400 hover:bg-emerald-100/40' : 'bg-rose-50/85 border-rose-300/80 hover:border-rose-400 hover:bg-rose-100/45' }}'"
                         @dblclick="handleCardDblClick({{ $t->id }}, {{ $t->amount }}, $event)"
                         @click="handleCardClick({{ $t->id }}, {{ $t->amount }}, $event)"
                     >
@@ -475,11 +501,6 @@
                         <div id="status-stamp-{{ $t->id }}" class="absolute right-4 top-[40%] -translate-y-1/2 -rotate-12 pointer-events-none select-none z-10 opacity-30 transform scale-110" style="display: {{ $t->status === 'pago' ? 'block' : 'none' }}">
                             <div class="border-4 border-emerald-600/75 text-emerald-600/75 font-black text-xl px-3.5 py-1.5 rounded uppercase tracking-widest flex items-center gap-1">
                                 <span>✓</span> <span>PAGO</span>
-                            </div>
-                        </div>
-                        <div id="status-stamp-pending-{{ $t->id }}" class="absolute right-4 top-[40%] -translate-y-1/2 -rotate-12 pointer-events-none select-none z-10 opacity-25 transform scale-110" style="display: {{ $t->status === 'pago' ? 'none' : 'block' }}">
-                            <div class="border-4 border-amber-600/75 text-amber-600/75 font-black text-base px-3 py-1.5 rounded uppercase tracking-widest flex items-center gap-1">
-                                <span>⏳</span> <span>PENDENTE</span>
                             </div>
                         </div>
                         @php
@@ -491,12 +512,22 @@
                             
                             <!-- Checkbox + Informações Principais -->
                             <div class="flex items-start gap-3 min-w-0 z-20">
-                                <input 
-                                    type="checkbox" 
-                                    @change="toggleSelect({{ $t->id }}, {{ $t->amount }})"
-                                    :checked="selectedItems.includes({{ $t->id }})"
-                                    class="rounded text-primary-600 border-slate-350 focus:ring-primary-500/20 w-4 h-4 mt-0.5 shrink-0 cursor-pointer"
-                                />
+                                <div class="relative flex items-center justify-center mt-0.5 shrink-0">
+                                    <input 
+                                        type="checkbox" 
+                                        @change="toggleSelect({{ $t->id }}, {{ $t->amount }})"
+                                        :checked="selectedItems.includes({{ $t->id }})"
+                                        id="check-card-{{ $t->id }}"
+                                        class="sr-only cursor-pointer"
+                                    />
+                                    <label for="check-card-{{ $t->id }}" 
+                                           class="w-4.5 h-4.5 flex items-center justify-center rounded-[5px] border transition-all cursor-pointer select-none"
+                                           :class="selectedItems.includes({{ $t->id }}) ? 'bg-primary-600 border-primary-600 text-white shadow-sm shadow-primary-600/30 scale-105' : 'border-slate-300 hover:border-slate-400 text-transparent bg-white'">
+                                        <svg class="w-2.5 h-2.5 stroke-current" fill="none" viewBox="0 0 24 24" stroke-width="3.5">
+                                            <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7" />
+                                        </svg>
+                                    </label>
+                                </div>
                                 
                                 <div class="min-w-0">
                                     <div class="flex items-center gap-1.5 flex-wrap">
@@ -609,13 +640,22 @@
             <span class="text-[9px] uppercase tracking-wider text-slate-400 font-bold">Selecionados (<span x-text="selectedItems.length"></span>)</span>
             <span class="text-base font-black text-emerald-400" x-text="privacyMode ? 'R$ ••••' : 'R$ ' + formatMoney(selectedSum)"></span>
         </div>
-        <button 
-            type="button" 
-            @click="clearSelection()" 
-            class="px-3 py-1.5 bg-white/10 hover:bg-white/20 text-white text-[10px] uppercase font-bold rounded-[5px] transition-colors"
-        >
-            Desmarcar Todos
-        </button>
+        <div class="flex items-center gap-2">
+            <button 
+                type="button" 
+                @click="deleteSelected()" 
+                class="px-3 py-1.5 bg-rose-650 hover:bg-rose-700 text-white text-[10px] uppercase font-bold rounded-[5px] transition-colors"
+            >
+                Excluir
+            </button>
+            <button 
+                type="button" 
+                @click="clearSelection()" 
+                class="px-3 py-1.5 bg-white/10 hover:bg-white/20 text-white text-[10px] uppercase font-bold rounded-[5px] transition-colors"
+            >
+                Desmarcar
+            </button>
+        </div>
     </div>
 
     <!-- Botão Flutuante (FAB) para Criar Lançamento -->
@@ -654,6 +694,30 @@
                 <button type="button" @click="showDeleteModal = false" class="w-full py-2 bg-slate-100 hover:bg-slate-200 text-slate-650 text-xs font-bold rounded-[5px] transition-all">
                     Cancelar
                 </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal Tem certeza de Exclusão em Lote -->
+    <div x-show="showBatchDeleteModal" class="fixed inset-0 z-50 overflow-y-auto" x-cloak>
+        <div class="fixed inset-0 bg-slate-900/40 backdrop-blur-xs" @click="showBatchDeleteModal = false"></div>
+        <div class="flex min-h-full items-center justify-center p-4">
+            <div class="relative w-full max-w-md transform overflow-hidden rounded-[5px] bg-white p-6 shadow-xl transition-all border border-slate-200 space-y-4">
+                <div class="text-center space-y-2">
+                    <span class="text-rose-500 text-3xl block">⚠️</span>
+                    <h3 class="text-base font-bold text-slate-800">Excluir Lançamentos Selecionados</h3>
+                    <p class="text-xs text-slate-500 font-medium">Você está prestes a excluir <strong class="text-slate-850" x-text="selectedItems.length"></strong> lançamento(s) de forma definitiva. Essa ação não poderá ser desfeita.</p>
+                </div>
+
+                <div class="space-y-2 pt-2">
+                    <button type="button" @click="executeBatchDelete()" class="w-full py-2.5 bg-rose-600 hover:bg-rose-700 text-white text-xs font-bold rounded-[5px] transition-colors shadow-sm block text-center">
+                        Sim, excluir selecionados
+                    </button>
+                    
+                    <button type="button" @click="showBatchDeleteModal = false" class="w-full py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-650 text-xs font-bold rounded-[5px] transition-all">
+                        Cancelar
+                    </button>
+                </div>
             </div>
         </div>
     </div>
@@ -850,6 +914,7 @@
             
             // Delete modal for linked items
             showDeleteModal: false,
+            showBatchDeleteModal: false,
             deleteInfo: {
                 description: '',
                 action: ''
@@ -899,6 +964,37 @@
                 this.selectedSum = 0.00;
             },
 
+            deleteSelected() {
+                if (this.selectedItems.length === 0) return;
+                this.showBatchDeleteModal = true;
+            },
+
+            async executeBatchDelete() {
+                try {
+                    const csrfToken = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
+                    const response = await fetch('{{ route("finances.batch-destroy") }}', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'X-CSRF-TOKEN': csrfToken,
+                            'Accept': 'application/json',
+                            'X-Requested-With': 'XMLHttpRequest'
+                        },
+                        body: JSON.stringify({ ids: this.selectedItems })
+                    });
+                    const result = await response.json();
+                    if (result.success) {
+                        window.location.reload();
+                    } else {
+                        alert(result.message || "Erro ao excluir itens.");
+                    }
+                } catch(e) {
+                    alert("Erro ao enviar requisição de exclusão: " + e.message);
+                } finally {
+                    this.showBatchDeleteModal = false;
+                }
+            },
+
             confirmDelete(description, action, hasGroup) {
                 this.deleteInfo = {
                     description: description,
@@ -929,6 +1025,28 @@
                         const modalStampPending = document.getElementById('modal-status-stamp-pending-' + id);
                         if (modalStampPaid) modalStampPaid.style.display = data.status === 'pago' ? 'block' : 'none';
                         if (modalStampPending) modalStampPending.style.display = data.status === 'pago' ? 'none' : 'block';
+
+                        // Toggle classes for card element in list modal
+                        const cardEl = document.getElementById('modal-card-' + id);
+                        const toggleBtn = document.getElementById('modal-toggle-btn-' + id);
+                        if (cardEl) {
+                            if (data.status === 'pago') {
+                                cardEl.classList.remove('bg-slate-50', 'border-slate-150');
+                                cardEl.classList.add('bg-emerald-50/30', 'border-emerald-500/20');
+                            } else {
+                                cardEl.classList.remove('bg-emerald-50/30', 'border-emerald-500/20');
+                                cardEl.classList.add('bg-slate-50', 'border-slate-150');
+                            }
+                        }
+                        if (toggleBtn) {
+                            if (data.status === 'pago') {
+                                toggleBtn.classList.remove('text-slate-400', 'hover:bg-slate-100');
+                                toggleBtn.classList.add('text-emerald-600', 'hover:bg-emerald-50');
+                            } else {
+                                toggleBtn.classList.remove('text-emerald-600', 'hover:bg-emerald-50');
+                                toggleBtn.classList.add('text-slate-400', 'hover:bg-slate-100');
+                            }
+                        }
                     }
                 })
                 .catch(err => {
