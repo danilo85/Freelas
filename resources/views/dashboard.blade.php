@@ -10,7 +10,7 @@
     <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
         
         <!-- Faturamento do Mês -->
-        <div class="bg-gradient-to-br from-emerald-500 to-teal-650 dark:from-emerald-650 dark:to-teal-800 text-white rounded-[5px] p-6 shadow-sm flex items-center justify-between">
+        <div class="bg-gradient-to-br from-emerald-500 to-teal-600 dark:from-emerald-600 dark:to-teal-800 text-white rounded-[5px] p-6 shadow-sm flex items-center justify-between">
             <div>
                 <p class="text-[10px] font-black text-emerald-100/90 uppercase tracking-widest">Faturamento do Mês</p>
                 <h3 class="text-3xl font-black mt-2 font-outfit tracking-tight drop-shadow-sm">
@@ -52,9 +52,9 @@
         </div>
 
         <!-- Projetos Ativos -->
-        <div class="bg-gradient-to-br from-blue-600 to-indigo-700 dark:from-blue-700 dark:to-indigo-850 text-white rounded-[5px] p-6 shadow-sm flex items-center justify-between sm:col-span-2 lg:col-span-1">
+        <div class="bg-gradient-to-br from-blue-600 to-indigo-700 dark:from-blue-700 dark:to-indigo-800 text-white rounded-[5px] p-6 shadow-sm flex items-center justify-between sm:col-span-2 lg:col-span-1">
             <div>
-                <p class="text-[10px] font-black text-blue-105/90 uppercase tracking-widest">Projetos Ativos</p>
+                <p class="text-[10px] font-black text-blue-100/90 uppercase tracking-widest">Projetos Ativos</p>
                 <h3 class="text-3xl font-black mt-2 font-outfit tracking-tight drop-shadow-sm">
                     {{ $activeProjectsCount }}
                 </h3>
@@ -129,18 +129,18 @@
     <!-- Kanban Interativo (Alpine.js) -->
     <div x-data="kanbanBoard()" x-init="init()" class="space-y-6">
         
-        <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-            <div>
+        <div class="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
+            <div class="min-w-0 flex-1">
                 <h2 class="text-xl font-bold text-slate-900 dark:text-slate-100">Projetos & Fluxo de Trabalho</h2>
                 <p class="text-sm text-slate-400 dark:text-slate-500 mt-0.5">Visualize, movimente e configure colunas personalizadas para os seus projetos.</p>
             </div>
             
-            <div class="flex items-center gap-3 no-print shrink-0">
+            <div class="flex flex-wrap items-center gap-2 sm:gap-3 no-print w-full lg:w-auto shrink-0">
                 <!-- Botão Travar/Destravar -->
                 <button 
                     type="button" 
                     @click="toggleLock()" 
-                    class="px-3.5 py-2 border rounded-[5px] text-xs font-bold uppercase tracking-wider transition-all flex items-center gap-1.5 cursor-pointer shadow-sm focus:outline-none"
+                    class="px-3 py-2 sm:px-3.5 border rounded-[5px] text-[10px] sm:text-xs font-bold uppercase tracking-wider transition-all flex items-center gap-1.5 cursor-pointer shadow-sm focus:outline-none flex-1 sm:flex-initial justify-center"
                     :class="locked ? 'bg-rose-50 border-rose-200 text-rose-700 dark:bg-rose-950/20 dark:border-rose-900/30' : 'bg-emerald-50 border-emerald-200 text-emerald-700 dark:bg-emerald-950/20 dark:border-emerald-900/30'"
                 >
                     <span class="flex items-center gap-1.5">
@@ -150,16 +150,16 @@
                         <template x-if="!locked">
                             <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 11V7a4 4 0 118 0m-4 8v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2z"></path></svg>
                         </template>
-                        <span x-text="locked ? 'Painel Travado' : 'Movimentação Livre'"></span>
+                        <span x-text="locked ? 'Painel Travado' : 'Mover Livre'"></span>
                     </span>
                 </button>
-
+ 
                 <!-- Navegador de Colunas (Scroll) -->
                 <div class="flex items-center gap-1 no-print">
                     <button 
                         type="button" 
                         @click="document.getElementById('kanbanBoardContainer').scrollBy({ left: -340, behavior: 'smooth' })"
-                        class="px-2.5 py-2 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-800 font-black text-xs rounded-[5px] shadow-sm transition-colors cursor-pointer flex items-center justify-center focus:outline-none"
+                        class="px-3 py-2 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-800 font-black text-xs rounded-[5px] shadow-sm transition-colors cursor-pointer flex items-center justify-center focus:outline-none"
                         title="Rolar para Esquerda"
                     >
                         ◀
@@ -167,18 +167,18 @@
                     <button 
                         type="button" 
                         @click="document.getElementById('kanbanBoardContainer').scrollBy({ left: 340, behavior: 'smooth' })"
-                        class="px-2.5 py-2 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-800 font-black text-xs rounded-[5px] shadow-sm transition-colors cursor-pointer flex items-center justify-center focus:outline-none"
+                        class="px-3 py-2 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-800 font-black text-xs rounded-[5px] shadow-sm transition-colors cursor-pointer flex items-center justify-center focus:outline-none"
                         title="Rolar para Direita"
                     >
                         ▶
                     </button>
                 </div>
-
+ 
                 <!-- Botão Adicionar Coluna -->
                 <button 
                     type="button" 
                     @click="openAddColumnModal = true"
-                    class="px-3.5 py-2 bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold rounded-[5px] uppercase tracking-wider transition-colors shadow-sm cursor-pointer flex items-center gap-1 focus:outline-none"
+                    class="px-3 py-2 sm:px-3.5 bg-blue-600 hover:bg-blue-700 text-white text-[10px] sm:text-xs font-bold rounded-[5px] uppercase tracking-wider transition-colors shadow-sm cursor-pointer flex items-center gap-1 focus:outline-none flex-1 sm:flex-initial justify-center"
                 >
                     <span>+</span> Nova Coluna
                 </button>

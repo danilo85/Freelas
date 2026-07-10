@@ -154,26 +154,28 @@
     </div>
 
     <!-- Card 2: Navegador de Meses -->
-    <div class="bg-white border border-slate-200 rounded-[5px] p-3 shadow-sm flex flex-col md:flex-row items-center justify-between gap-3 mt-3 no-print">
-        <div class="flex items-center justify-between w-full md:w-auto gap-3">
+    <div class="bg-white border border-slate-200 rounded-[5px] p-3 shadow-sm flex flex-col sm:flex-row items-center justify-between gap-3 mt-3 no-print">
+        <div class="flex items-center justify-between w-full sm:w-auto gap-2 sm:gap-3">
             <!-- Anterior -->
             <a href="{{ route('finances.index', ['month' => $prevMonth->month, 'year' => $prevMonth->year, 'classification' => $classification, 'status' => $status, 'category_id' => $categoryId]) }}" 
-               class="inline-flex items-center justify-center gap-1.5 px-3.5 py-2 border border-slate-200 hover:border-slate-350 text-slate-650 hover:text-slate-800 hover:bg-slate-50 text-xs font-bold rounded-[5px] transition-all shadow-sm shrink-0 uppercase tracking-wider">
+               class="inline-flex items-center justify-center gap-1.5 px-3 py-2 sm:px-3.5 sm:py-2 border border-slate-200 hover:border-slate-350 text-slate-655 hover:text-slate-800 hover:bg-slate-50 text-xs font-bold rounded-[5px] transition-all shadow-sm shrink-0 uppercase tracking-wider"
+               title="Mês Anterior">
                 <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M15 19l-7-7 7-7"></path>
                 </svg>
-                <span>Anterior</span>
+                <span class="hidden lg:inline">Anterior</span>
             </a>
 
             <!-- Mês / Ano Selecionado -->
-            <div class="text-sm font-extrabold text-slate-850 tracking-wider uppercase bg-slate-50 border border-slate-200 px-6 py-2 rounded-[5px] shadow-inner text-center font-outfit min-w-[170px] sm:min-w-[210px] select-none flex-1 md:flex-none">
+            <div class="text-xs sm:text-sm font-extrabold text-slate-850 tracking-wider uppercase bg-slate-50 border border-slate-200 px-3 sm:px-6 py-2 rounded-[5px] shadow-inner text-center font-outfit min-w-[120px] sm:min-w-[210px] select-none flex-1 md:flex-none">
                 {{ $months[$month] }} {{ $year }}
             </div>
 
             <!-- Próximo -->
             <a href="{{ route('finances.index', ['month' => $nextMonth->month, 'year' => $nextMonth->year, 'classification' => $classification, 'status' => $status, 'category_id' => $categoryId]) }}" 
-               class="inline-flex items-center justify-center gap-1.5 px-3.5 py-2 border border-slate-200 hover:border-slate-355 text-slate-650 hover:text-slate-800 hover:bg-slate-50 text-xs font-bold rounded-[5px] transition-all shadow-sm shrink-0 uppercase tracking-wider">
-                <span>Próximo</span>
+               class="inline-flex items-center justify-center gap-1.5 px-3 py-2 sm:px-3.5 sm:py-2 border border-slate-200 hover:border-slate-355 text-slate-655 hover:text-slate-800 hover:bg-slate-50 text-xs font-bold rounded-[5px] transition-all shadow-sm shrink-0 uppercase tracking-wider"
+               title="Próximo Mês">
+                <span class="hidden lg:inline">Próximo</span>
                 <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M9 5l7 7-7 7"></path>
                 </svg>
@@ -182,7 +184,7 @@
         
         <!-- Botão Hoje -->
         <a href="{{ route('finances.index', ['month' => $today->month, 'year' => $today->year, 'classification' => $classification, 'status' => $status, 'category_id' => $categoryId]) }}" 
-           class="inline-flex items-center justify-center gap-1.5 px-4 py-2 bg-slate-800 hover:bg-slate-900 text-white text-xs font-bold rounded-[5px] transition-colors shadow-sm uppercase tracking-wider w-full md:w-auto text-center">
+           class="inline-flex items-center justify-center gap-1.5 px-4 py-2 bg-slate-800 hover:bg-slate-900 text-white text-xs font-bold rounded-[5px] transition-colors shadow-sm uppercase tracking-wider w-full sm:w-auto text-center shrink-0">
             Hoje
         </a>
     </div>

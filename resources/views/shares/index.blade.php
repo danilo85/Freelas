@@ -261,12 +261,12 @@
 
                 <!-- Ações e Rodapé -->
                 <div class="flex items-center gap-1 shrink-0 pt-2 no-print">
-                    <!-- Copiar Link Público -->
                     <button type="button" 
                             @click="copyShareLink('{{ route('public.share.show', $share->share_token) }}', $event)"
                             class="flex-1 text-center bg-slate-900 hover:bg-slate-800 text-white font-bold text-xs uppercase tracking-wider py-2.5 rounded-[5px] transition-all shadow-sm flex items-center justify-center gap-1"
+                            title="Copiar Link"
                     >
-                        <span>🔗</span> <span>Copiar Link</span>
+                        <span>🔗</span> <span class="inline md:hidden xl:inline">Copiar Link</span>
                     </button>
 
                     <!-- Toggle Ativo -->

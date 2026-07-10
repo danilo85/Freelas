@@ -81,7 +81,7 @@ class Project extends Model
 
     public function getRemainingBalanceAttribute(): float
     {
-        $paidSum = $this->payments()->sum('amount');
+        $paidSum = $this->payments->sum('amount');
         return max(0.00, (float) $this->total_value - (float) $paidSum);
     }
 

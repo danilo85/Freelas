@@ -518,6 +518,9 @@
                         <a href="{{ route('revisoes.assets.index') }}" class="block py-2 px-3 text-xs font-semibold rounded-[5px] transition-colors {{ request()->routeIs('revisoes.assets.*') ? 'text-white bg-slate-850' : 'text-slate-400 hover:text-white' }}">
                             Banco de Assets
                         </a>
+                        <a href="{{ route('revisoes.brand-guidelines.index') }}" class="block py-2 px-3 text-xs font-semibold rounded-[5px] transition-colors {{ request()->routeIs('revisoes.brand-guidelines.*') ? 'text-white bg-slate-850' : 'text-slate-400 hover:text-white' }}">
+                            Identidades Visuais
+                        </a>
                         <a href="{{ route('lembretes.index') }}" class="block py-2 px-3 text-xs font-semibold rounded-[5px] transition-colors {{ request()->routeIs('lembretes.*') ? 'text-white bg-slate-850' : 'text-slate-400 hover:text-white' }}">
                             Lembretes e Notas
                         </a>

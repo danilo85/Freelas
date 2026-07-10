@@ -177,6 +177,16 @@ Route::middleware(['auth', 'approved'])->prefix('freelas')->group(function () {
         Route::post('/utilidades/compartilhamento/{share}/toggle-active', [\App\Http\Controllers\FileShareController::class, 'toggleActive'])->name('revisoes.shares.toggle-active');
         Route::put('/utilidades/compartilhamento/{share}/settings', [\App\Http\Controllers\FileShareController::class, 'updateSettings'])->name('revisoes.shares.settings');
 
+        // Utilidades - Identidades Visuais
+        Route::get('/utilidades/identidades-visuais', [\App\Http\Controllers\BrandGuidelineController::class, 'index'])->name('revisoes.brand-guidelines.index');
+        Route::get('/utilidades/identidades-visuais/novo', [\App\Http\Controllers\BrandGuidelineController::class, 'create'])->name('revisoes.brand-guidelines.create');
+        Route::post('/utilidades/identidades-visuais', [\App\Http\Controllers\BrandGuidelineController::class, 'store'])->name('revisoes.brand-guidelines.store');
+        Route::get('/utilidades/identidades-visuais/{brandGuideline}/editar', [\App\Http\Controllers\BrandGuidelineController::class, 'edit'])->name('revisoes.brand-guidelines.edit');
+        Route::put('/utilidades/identidades-visuais/{brandGuideline}', [\App\Http\Controllers\BrandGuidelineController::class, 'update'])->name('revisoes.brand-guidelines.update');
+        Route::delete('/utilidades/identidades-visuais/{brandGuideline}', [\App\Http\Controllers\BrandGuidelineController::class, 'destroy'])->name('revisoes.brand-guidelines.destroy');
+        Route::post('/utilidades/identidades-visuais/{brandGuideline}/toggle-active', [\App\Http\Controllers\BrandGuidelineController::class, 'toggleActive'])->name('revisoes.brand-guidelines.toggle-active');
+        Route::get('/utilidades/identidades-visuais/{brandGuideline}/zip', [\App\Http\Controllers\BrandGuidelineController::class, 'downloadZip'])->name('revisoes.brand-guidelines.zip');
+
         // Utilidades - Banco de Assets
         Route::get('/utilidades/assets', [\App\Http\Controllers\AssetController::class, 'index'])->name('revisoes.assets.index');
         Route::post('/utilidades/assets', [\App\Http\Controllers\AssetController::class, 'store'])->name('revisoes.assets.store');
@@ -232,5 +242,8 @@ Route::post('/revisao/annotation/{annotation}/update', [\App\Http\Controllers\Pu
 Route::get('/revisao/file/{file}/download', [\App\Http\Controllers\PublicRevisionController::class, 'downloadFile'])->name('public.revisao.download.file');
 Route::get('/revisao/round/{round}/download-all', [\App\Http\Controllers\PublicRevisionController::class, 'downloadAllFiles'])->name('public.revisao.download.all');
 Route::get('/revisao/round/{round}/download-annotations', [\App\Http\Controllers\PublicRevisionController::class, 'downloadAnnotationsReport'])->name('public.revisao.download.report');
+
+// Rota pública de Identidade Visual
+Route::get('/brand/{token}', [\App\Http\Controllers\PublicBrandController::class, 'show'])->name('public.brand.show');
 
 
