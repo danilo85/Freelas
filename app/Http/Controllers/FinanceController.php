@@ -734,18 +734,60 @@ class FinanceController extends Controller
                     $categoryId = null;
                     if ($txData['category'] && isset($txData['category']['nome'])) {
                         $catData = $txData['category'];
+                        $mappedCategoryType = ($type === 'saida') ? 'despesa' : 'receita';
                         $category = \App\Models\TransactionCategory::where('user_id', $user->id)
                             ->where('name', $catData['nome'])
-                            ->where('type', $type)
+                            ->where('type', $mappedCategoryType)
                             ->first();
 
                         if (!$category) {
+                            $presetMap = [
+                                'smartphone' => '📱',
+                                'celular' => '📱',
+                                'phone' => '📞',
+                                'home' => '🏠',
+                                'casa' => '🏠',
+                                'work' => '💼',
+                                'maleta' => '💼',
+                                'money' => '💵',
+                                'dinheiro' => '💵',
+                                'shopping-cart' => '🛒',
+                                'carrinho' => '🛒',
+                                'food' => '🍔',
+                                'comida' => '🍔',
+                                'car' => '🚗',
+                                'carro' => '🚗',
+                                'credit-card' => '💳',
+                                'cartao' => '💳',
+                                'health' => '🏥',
+                                'saude' => '🏥',
+                                'education' => '📚',
+                                'educacao' => '📚',
+                                'leisure' => '🎮',
+                                'lazer' => '🎮',
+                                'gift' => '🎁',
+                                'presente' => '🎁',
+                                'tag' => '🏷️',
+                                'category' => '🏷️',
+                            ];
+                            
+                            $importedIcon = '🏷️';
+                            $possibleIcon = $catData['icon'] ?? $catData['icone'] ?? $catData['icone_url'] ?? null;
+                            if ($possibleIcon) {
+                                if (preg_match('/[\x{1F300}-\x{1F9FF}\x{2600}-\x{26FF}\x{2700}-\x{27BF}]/u', $possibleIcon) || mb_strlen(trim($possibleIcon)) <= 3) {
+                                    $importedIcon = trim($possibleIcon);
+                                } else {
+                                    $iconName = mb_strtolower(trim($possibleIcon));
+                                    $importedIcon = $presetMap[$iconName] ?? '🏷️';
+                                }
+                            }
+
                             $category = \App\Models\TransactionCategory::create([
                                 'user_id' => $user->id,
                                 'name' => $catData['nome'],
-                                'type' => $type,
+                                'type' => $mappedCategoryType,
                                 'color' => $catData['cor'] ?? '#6B7280',
-                                'icon' => 'tag',
+                                'icon' => $importedIcon,
                             ]);
                         }
                         $categoryId = $category->id;

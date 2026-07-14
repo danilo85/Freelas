@@ -254,11 +254,11 @@
     <!-- Card 3: Consolidação Mensal (Calendário e Documentos) -->
     <div class="space-y-4">
                 <!-- Título e Exportar CSV -->
-                <div class="flex items-center justify-between border-b border-slate-100 dark:border-slate-850 pb-2">
+                <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-100 dark:border-slate-850 pb-2">
                     <h3 class="text-xs font-black text-slate-400 dark:text-slate-500 uppercase tracking-wider">Consolidação Mensal</h3>
                     <a 
                         href="{{ route('finances.mei.export-csv', ['month' => $month, 'year' => $year]) }}" 
-                        class="inline-flex items-center gap-1.5 px-3.5 py-2 bg-slate-800 hover:bg-slate-900 dark:bg-slate-700 dark:hover:bg-slate-655 text-white text-xs font-bold rounded-[5px] transition-colors shadow-sm uppercase tracking-wider"
+                        class="inline-flex items-center justify-center gap-1.5 px-3.5 py-2 bg-slate-800 hover:bg-slate-900 dark:bg-slate-700 dark:hover:bg-slate-655 text-white text-xs font-bold rounded-[5px] transition-colors shadow-sm uppercase tracking-wider w-full sm:w-auto"
                         title="Exportar lançamentos do mês em formato CSV"
                     >
                         📥 Exportar CSV
@@ -267,25 +267,27 @@
 
                 <!-- Month Navigator identical to finances index page -->
                 <div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-[5px] p-3 shadow-sm flex flex-col md:flex-row items-center justify-between gap-3 no-print">
-                    <div class="flex items-center justify-between w-full md:w-auto gap-3">
+                    <div class="flex items-center justify-between w-full md:w-auto gap-2 sm:gap-3">
                         <!-- Anterior -->
                         <a href="{{ route('finances.mei', ['month' => $prevMonth->month, 'year' => $prevMonth->year]) }}" 
-                           class="inline-flex items-center justify-center gap-1.5 px-3.5 py-2 border border-slate-200 dark:border-slate-800 hover:border-slate-350 dark:hover:border-slate-700 text-slate-650 dark:text-slate-300 hover:text-slate-800 dark:hover:text-white hover:bg-slate-50 dark:hover:bg-slate-800/50 text-xs font-bold rounded-[5px] transition-all shadow-sm shrink-0 uppercase tracking-wider">
+                           class="inline-flex items-center justify-center gap-1.5 px-2.5 sm:px-3.5 py-2 border border-slate-200 dark:border-slate-800 hover:border-slate-350 dark:hover:border-slate-700 text-slate-650 dark:text-slate-300 hover:text-slate-800 dark:hover:text-white hover:bg-slate-50 dark:hover:bg-slate-800/50 text-xs font-bold rounded-[5px] transition-all shadow-sm shrink-0 uppercase tracking-wider"
+                           title="Mês Anterior">
                             <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M15 19l-7-7 7-7"></path>
                             </svg>
-                            <span>Anterior</span>
+                            <span class="hidden sm:inline">Anterior</span>
                         </a>
 
                         <!-- Mês / Ano Selecionado -->
-                        <div class="text-sm font-extrabold text-slate-850 dark:text-slate-200 tracking-wider uppercase bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 px-6 py-2 rounded-[5px] shadow-inner text-center font-outfit min-w-[170px] sm:min-w-[210px] select-none flex-1 md:flex-none">
+                        <div class="text-xs sm:text-sm font-extrabold text-slate-850 dark:text-slate-200 tracking-wider uppercase bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 px-3 sm:px-6 py-2 rounded-[5px] shadow-inner text-center font-outfit min-w-[120px] sm:min-w-[210px] select-none flex-1 md:flex-none">
                             {{ $months[$month] }} {{ $year }}
                         </div>
 
                         <!-- Próximo -->
                         <a href="{{ route('finances.mei', ['month' => $nextMonth->month, 'year' => $nextMonth->year]) }}" 
-                           class="inline-flex items-center justify-center gap-1.5 px-3.5 py-2 border border-slate-200 dark:border-slate-800 hover:border-slate-355 dark:hover:border-slate-700 text-slate-650 dark:text-slate-300 hover:text-slate-800 dark:hover:text-white hover:bg-slate-50 dark:hover:bg-slate-800/50 text-xs font-bold rounded-[5px] transition-all shadow-sm shrink-0 uppercase tracking-wider">
-                            <span>Próximo</span>
+                           class="inline-flex items-center justify-center gap-1.5 px-2.5 sm:px-3.5 py-2 border border-slate-200 dark:border-slate-800 hover:border-slate-355 dark:hover:border-slate-700 text-slate-650 dark:text-slate-300 hover:text-slate-800 dark:hover:text-white hover:bg-slate-50 dark:hover:bg-slate-800/50 text-xs font-bold rounded-[5px] transition-all shadow-sm shrink-0 uppercase tracking-wider"
+                           title="Próximo Mês">
+                            <span class="hidden sm:inline">Próximo</span>
                             <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M9 5l7 7-7 7"></path>
                             </svg>

@@ -111,12 +111,12 @@
                      x-transition
                      class="w-full flex"
                 >
-                    <div class="{{ in_array($client->id, $topClientIds) ? 'bg-gradient-to-br from-amber-50/40 to-yellow-50/10 dark:from-amber-950/25 dark:to-slate-900/40 border-amber-350 dark:border-amber-800/40 ring-1 ring-amber-300/30 dark:ring-amber-950/20 shadow-md' : (!$client->registration_completed ? 'bg-amber-50/25 border-amber-200' : 'bg-white border-slate-200') }} border p-5 rounded-[5px] shadow-sm flex flex-col justify-between space-y-4 hover:shadow-md transition-all duration-200 w-full relative overflow-hidden">
+                    <div class="{{ in_array($client->id, $topClientIds) ? 'bg-gradient-to-br from-amber-100/50 to-yellow-50/20 dark:from-amber-950/40 dark:to-slate-900/40 border-amber-400 dark:border-amber-700/60 ring-1 ring-amber-400/20 dark:ring-amber-950/30 shadow-md' : (!$client->registration_completed ? 'bg-amber-50/25 border-amber-200' : 'bg-white border-slate-200') }} border p-5 rounded-[5px] shadow-sm flex flex-col justify-between space-y-4 hover:shadow-md transition-all duration-200 w-full relative overflow-hidden">
                     
                     @if(in_array($client->id, $topClientIds))
                         <!-- Destaque Ouro -->
-                        <div class="absolute top-0 right-0 bg-amber-500 text-amber-950 text-[9px] font-black uppercase tracking-wider px-2.5 py-0.5 rounded-bl-[5px] flex items-center gap-1 shadow-sm">
-                            <span>★</span> <span>Principal</span>
+                        <div class="absolute top-0 right-0 bg-gradient-to-r from-amber-500 to-yellow-400 text-slate-950 text-[8px] font-black uppercase tracking-wider px-3 py-1 rounded-bl-[5px] flex items-center gap-1 shadow-md border-b border-l border-amber-600/30">
+                            <span class="text-[10px] text-amber-950">★</span> <span>Cliente Principal</span>
                         </div>
                     @endif
 

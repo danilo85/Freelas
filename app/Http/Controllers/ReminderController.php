@@ -259,4 +259,113 @@ class ReminderController extends Controller
 
         return redirect()->back()->with('success', 'Lembrete excluído com sucesso!');
     }
+
+    /**
+     * Get global notifications for the logged in user.
+     */
+    public function getGlobalNotifications(Request $request)
+    {
+        $userId = Auth::id();
+        
+        // 1. Get database notifications (Proposal approvals, file downloads)
+        $notifiedDbIds = session('notified_db_ids', []);
+        $dbNotifications = \App\Models\Notification::where('user_id', $userId)
+            ->whereNull('read_at')
+            ->whereNotIn('id', $notifiedDbIds)
+            ->orderBy('created_at', 'desc')
+            ->get();
+
+        // Save that we have notified the user about these DB IDs in this session
+        if ($dbNotifications->count() > 0) {
+            $notifiedDbIds = array_merge($notifiedDbIds, $dbNotifications->pluck('id')->toArray());
+            session(['notified_db_ids' => $notifiedDbIds]);
+        }
+
+        // 2. Get active reminders (whose remind_at is past and not archived, checked against session notifications)
+        $notifiedReminderIds = session('notified_reminder_ids', []);
+        $activeReminders = Reminder::where('user_id', $userId)
+            ->whereNotNull('remind_at')
+            ->where('remind_at', '<=', now())
+            ->where('is_archived', false)
+            ->whereNotIn('id', $notifiedReminderIds)
+            ->get();
+
+        // 3. Get pending outbound transactions (bills) near expiry (due date today or in next 3 days)
+        $notifiedBillIds = session('notified_bill_ids', []);
+        $expiringBills = \App\Models\Transaction::where('user_id', $userId)
+            ->where('type', 'saida')
+            ->where('status', 'pendente')
+            ->whereBetween('due_date', [now()->startOfDay(), now()->addDays(3)->endOfDay()])
+            ->whereNotIn('id', $notifiedBillIds)
+            ->get();
+
+        $notifications = [];
+
+        // Add db notifications
+        foreach ($dbNotifications as $dn) {
+            $notifications[] = [
+                'id' => 'db_' . $dn->id,
+                'db_id' => $dn->id,
+                'title' => $dn->title,
+                'content' => $dn->content,
+                'type' => $dn->type,
+                'badge' => $dn->type === 'proposal' ? '💼 Orçamento' : '📂 Compartilhamento'
+            ];
+        }
+
+        // Add reminders
+        foreach ($activeReminders as $r) {
+            $notifications[] = [
+                'id' => 'reminder_' . $r->id,
+                'reminder_id' => $r->id,
+                'title' => $r->title ?: 'Lembrete',
+                'content' => $r->content ?: 'Prazo ou alarme definido atingido.',
+                'type' => 'reminder',
+                'badge' => '⏰ Lembrete'
+            ];
+        }
+
+        // Add bills
+        foreach ($expiringBills as $b) {
+            $formattedDate = $b->due_date ? $b->due_date->format('d/m/Y') : '';
+            $notifications[] = [
+                'id' => 'bill_' . $b->id,
+                'bill_id' => $b->id,
+                'title' => 'Conta a Vencer',
+                'content' => "A conta '" . $b->description . "' de R$ " . number_format($b->amount, 2, ',', '.') . " vence em " . $formattedDate . ".",
+                'type' => 'bill',
+                'badge' => '💸 Financeiro'
+            ];
+        }
+
+        return response()->json($notifications);
+    }
+
+    /**
+     * Mark notification as read / dismissed.
+     */
+    public function markNotificationAsRead(Request $request, $id)
+    {
+        $userId = Auth::id();
+
+        if (str_starts_with($id, 'db_')) {
+            $dbId = substr($id, 3);
+            $dn = \App\Models\Notification::where('user_id', $userId)->find($dbId);
+            if ($dn) {
+                $dn->update(['read_at' => now()]);
+            }
+        } elseif (str_starts_with($id, 'reminder_')) {
+            $reminderId = (int) substr($id, 9);
+            $notifiedReminderIds = session('notified_reminder_ids', []);
+            $notifiedReminderIds[] = $reminderId;
+            session(['notified_reminder_ids' => $notifiedReminderIds]);
+        } elseif (str_starts_with($id, 'bill_')) {
+            $billId = (int) substr($id, 5);
+            $notifiedBillIds = session('notified_bill_ids', []);
+            $notifiedBillIds[] = $billId;
+            session(['notified_bill_ids' => $notifiedBillIds]);
+        }
+
+        return response()->json(['success' => true]);
+    }
 }

@@ -277,6 +277,14 @@ class FileShareController extends Controller
 
         $share->increment('download_count');
 
+        // Cria notificação de download para o gestor
+        \App\Models\Notification::create([
+            'user_id' => $share->user_id,
+            'title' => 'Arquivo Baixado',
+            'content' => "O arquivo '" . $item->filename . "' foi baixado do compartilhamento '" . $share->title . "'.",
+            'type' => 'share'
+        ]);
+
         return response()->download($path, $item->filename);
     }
 
@@ -314,6 +322,14 @@ class FileShareController extends Controller
         }
 
         $share->increment('download_count');
+
+        // Cria notificação de download do ZIP para o gestor
+        \App\Models\Notification::create([
+            'user_id' => $share->user_id,
+            'title' => 'Arquivos Baixados (ZIP)',
+            'content' => "Todos os arquivos do compartilhamento '" . $share->title . "' foram baixados em formato ZIP.",
+            'type' => 'share'
+        ]);
 
         $downloadName = Str::slug($share->title) . '-arquivos.zip';
         return response()->download($zipFile, $downloadName)->deleteFileAfterSend(true);

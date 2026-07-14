@@ -60,6 +60,7 @@ Route::middleware(['auth', 'approved'])->prefix('freelas')->group(function () {
     Route::delete('/projects/{project}', [ProjectController::class, 'destroy'])->name('projects.destroy');
 
     // Anexos / Documentos dos Projetos
+    Route::post('/projects/{project}/proposal/custom-link', [ProjectController::class, 'updateProposalCustomLink'])->name('projects.proposal.custom-link');
     Route::post('/projects/{project}/attachments', [ProjectAttachmentController::class, 'store'])->name('projects.attachments.store');
     Route::delete('/attachments/{attachment}', [ProjectAttachmentController::class, 'destroy'])->name('projects.attachments.destroy');
     Route::get('/attachments/{attachment}/download', [ProjectAttachmentController::class, 'download'])->name('projects.attachments.download');
@@ -205,6 +206,16 @@ Route::middleware(['auth', 'approved'])->prefix('freelas')->group(function () {
         Route::post('/utilidades/lembretes/{reminder}/color', [\App\Http\Controllers\ReminderController::class, 'updateColor'])->name('lembretes.color');
         Route::post('/utilidades/lembretes/{reminder}/archive', [\App\Http\Controllers\ReminderController::class, 'toggleArchive'])->name('lembretes.archive');
         Route::post('/utilidades/lembretes/reorder', [\App\Http\Controllers\ReminderController::class, 'reorder'])->name('lembretes.reorder');
+
+        // Utilidades - Notificações Globais
+        Route::get('/utilidades/notifications', [\App\Http\Controllers\ReminderController::class, 'getGlobalNotifications'])->name('lembretes.notifications');
+        Route::post('/utilidades/notifications/{id}/read', [\App\Http\Controllers\ReminderController::class, 'markNotificationAsRead'])->name('lembretes.notifications.read');
+
+        // Histórico de Notificações
+        Route::get('/utilidades/notificacoes', [\App\Http\Controllers\NotificationController::class, 'index'])->name('notifications.index');
+        Route::post('/utilidades/notificacoes/lidas', [\App\Http\Controllers\NotificationController::class, 'markAllAsRead'])->name('notifications.read-all');
+        Route::delete('/utilidades/notificacoes/limpar', [\App\Http\Controllers\NotificationController::class, 'destroyAll'])->name('notifications.destroy-all');
+        Route::delete('/utilidades/notificacoes/{notification}', [\App\Http\Controllers\NotificationController::class, 'destroy'])->name('notifications.destroy');
     });
 });
 
@@ -213,6 +224,13 @@ Route::prefix('proposal/{hash}')->name('proposal.')->group(function () {
     Route::get('/', [ProposalController::class, 'show'])->name('show');
     Route::post('/approve', [ProposalController::class, 'approve'])->name('approve');
     Route::post('/reject', [ProposalController::class, 'reject'])->name('reject');
+});
+
+// Rotas públicas retrocompatíveis com o formato antigo de orçamentos (/orcamento/hash)
+Route::prefix('orcamento/{hash}')->name('orcamento.')->group(function () {
+    Route::get('/', [ProposalController::class, 'show'])->name('show_legacy');
+    Route::post('/approve', [ProposalController::class, 'approve'])->name('approve_legacy');
+    Route::post('/reject', [ProposalController::class, 'reject'])->name('reject_legacy');
 });
 
 // Rota pública de extrato para o cliente final

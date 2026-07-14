@@ -6,22 +6,6 @@
 @section('content')
 <div id="pjax-container" class="space-y-6" x-data="keepNotesManager()">
 
-    <!-- Floating Reminder Alerts Stack -->
-    <div class="fixed top-4 right-4 z-[99999] space-y-2 w-80 select-none pointer-events-none">
-        <template x-for="alert in activeAlerts" :key="alert.id">
-            <div class="bg-slate-900 border border-slate-700 text-white rounded-lg p-4 shadow-2xl flex items-start justify-between gap-3 pointer-events-auto">
-                <div class="flex-1 min-w-0">
-                    <span class="text-[10px] font-bold text-amber-400 block uppercase tracking-wider">⏰ Lembrete Ativo</span>
-                    <h4 class="text-sm font-black mt-1 text-white truncate" x-text="alert.title || 'Sem título'"></h4>
-                    <p class="text-xs text-slate-300 mt-1 line-clamp-3 leading-relaxed" x-text="alert.content || 'Alvo atingido!'"></p>
-                    <button type="button" @click="deactivateReminder(alert.id)" class="text-[10px] bg-slate-800 text-amber-400 hover:bg-slate-700 font-extrabold px-2.5 py-1 rounded mt-2.5 border border-slate-700 pointer-events-auto block transition-colors cursor-pointer select-none">
-                        Desativar Alarme
-                    </button>
-                </div>
-                <button type="button" @click="dismissAlert(alert.id)" class="text-slate-400 hover:text-white font-black text-sm shrink-0 cursor-pointer">✕</button>
-            </div>
-        </template>
-    </div>
 
     <!-- Header Section -->
     <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 select-none">

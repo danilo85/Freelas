@@ -30,6 +30,16 @@
         </button>
     </div>
 
+    @if ($errors->any())
+        <div class="bg-rose-50 border border-rose-200 text-rose-700 px-4 py-3 rounded-[5px] text-xs font-semibold">
+            <ul class="list-disc list-inside space-y-1">
+                @foreach ($errors->all() as $error)
+                    <li>{{ $error }}</li>
+                @endforeach
+            </ul>
+        </div>
+    @endif
+
     <!-- Grid de Categorias -->
     <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
         @foreach($categories as $category)
@@ -53,25 +63,19 @@
                     </div>
                 </div>
 
-                <div class="flex items-center gap-1.5 shrink-0 no-print">
-                    @if($isSystem)
-                        <span class="text-[9px] font-bold text-slate-400 bg-slate-100 px-2 py-1 rounded-[5px] uppercase tracking-wider" title="Esta categoria é padrão do sistema e não pode ser editada.">
-                            Padrão
-                        </span>
-                    @else
-                        <!-- Editar -->
-                        <button type="button" @click="openEditModal({{ json_encode($category) }})" class="p-1.5 text-slate-400 hover:text-primary-600 hover:bg-slate-50 rounded-[5px] transition-colors" title="Editar">
-                            <svg class="w-4.5 h-4.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"></path>
-                            </svg>
-                        </button>
-                        <!-- Excluir -->
-                        <button type="button" @click="$dispatch('trigger-global-delete', { title: 'Excluir Categoria', message: 'Tem certeza que deseja excluir a categoria <strong class=\'text-slate-800\'>{{ $category->name }}</strong>?<br><span class=\'text-sm text-red-500 mt-1.5 block bg-red-50/50 p-2.5 rounded-[5px] border border-red-100\'>Aviso: Transações vinculadas a esta categoria não serão perdidas, mas perderão a referência de vínculo com a categoria.</span>', action: '{{ route('finances.categories.destroy', $category->id) }}', highSecurity: false })" class="p-1.5 text-slate-400 hover:text-rose-600 hover:bg-slate-50 rounded-[5px] transition-colors" title="Excluir">
-                            <svg class="w-4.5 h-4.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
-                            </svg>
-                        </button>
-                    @endif
+                <div class="flex items-center gap-1 shrink-0 no-print">
+                    <!-- Editar -->
+                    <button type="button" @click="openEditModal({ id: {{ $category->id }}, name: '{{ addslashes($category->name) }}', type: '{{ $category->type }}', icon: '{{ addslashes($category->icon) }}' })" class="w-8 h-8 flex items-center justify-center bg-transparent text-primary-600 hover:bg-primary-50 rounded-[5px] transition-all border-0 shadow-none cursor-pointer" title="Editar">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"></path>
+                        </svg>
+                    </button>
+                    <!-- Excluir -->
+                    <button type="button" @click="confirmDelete({ id: {{ $category->id }}, name: '{{ addslashes($category->name) }}' }, '{{ route('finances.categories.destroy', $category->id) }}')" class="w-8 h-8 flex items-center justify-center bg-transparent text-red-650 hover:bg-red-50 rounded-[5px] transition-all border-0 shadow-none cursor-pointer" title="Excluir Categoria">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
+                        </svg>
+                    </button>
                 </div>
             </div>
         @endforeach
@@ -98,9 +102,7 @@
                 <!-- Form -->
                 <form :action="formAction" method="POST" class="space-y-4">
                     @csrf
-                    <template x-if="isEdit">
-                        @method('PUT')
-                    </template>
+                    <input type="hidden" name="_method" :value="isEdit ? 'PUT' : 'POST'">
 
                     <!-- Nome -->
                     <div class="space-y-1">
@@ -123,12 +125,13 @@
                             name="type" 
                             id="type" 
                             required 
-                            x-model="form.type"
+                            :value="form.type"
+                            @change="form.type = $event.target.value"
                             class="w-full px-4 py-2.5 rounded-[5px] border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500 transition-all font-semibold text-slate-700"
                         >
-                            <option value="receita">Receita</option>
-                            <option value="despesa">Despesa</option>
-                            <option value="ambos">Ambos (Receita e Despesa)</option>
+                            <option value="receita" :selected="form.type === 'receita'">Receita</option>
+                            <option value="despesa" :selected="form.type === 'despesa'">Despesa</option>
+                            <option value="ambos" :selected="form.type === 'ambos'">Ambos (Receita e Despesa)</option>
                         </select>
                     </div>
 
@@ -198,7 +201,7 @@
 
             openEditModal(category) {
                 this.isEdit = true;
-                this.formAction = `/finances/categories/${category.id}`;
+                this.formAction = '{{ route("finances.categories.index") }}' + '/' + category.id;
                 this.form = {
                     id: category.id,
                     name: category.name,
@@ -206,6 +209,15 @@
                     icon: category.icon
                 };
                 this.showModal = true;
+            },
+
+            confirmDelete(category, destroyRoute) {
+                this.$dispatch('trigger-global-delete', {
+                    title: 'Excluir Categoria',
+                    message: `Tem certeza que deseja excluir a categoria <strong class="text-slate-800">${category.name}</strong>?<br><span class="text-xs text-red-500 mt-1.5 block bg-red-50/50 p-2.5 rounded-[5px] border border-red-100">Aviso: Transações vinculadas a esta categoria não serão perdidas, mas perderão a referência de vínculo com a categoria.</span>`,
+                    action: destroyRoute,
+                    highSecurity: false
+                });
             }
         };
     }

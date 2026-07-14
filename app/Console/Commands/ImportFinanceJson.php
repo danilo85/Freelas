@@ -162,16 +162,17 @@ class ImportFinanceJson extends Command
                     $categoryId = null;
                     if ($txData['category'] && isset($txData['category']['nome'])) {
                         $catData = $txData['category'];
+                        $mappedCategoryType = ($type === 'saida') ? 'despesa' : 'receita';
                         $category = TransactionCategory::where('user_id', $user->id)
                             ->where('name', $catData['nome'])
-                            ->where('type', $type)
+                            ->where('type', $mappedCategoryType)
                             ->first();
 
                         if (!$category) {
                             $category = TransactionCategory::create([
                                 'user_id' => $user->id,
                                 'name' => $catData['nome'],
-                                'type' => $type,
+                                'type' => $mappedCategoryType,
                                 'color' => $catData['cor'] ?? '#6B7280',
                                 'icon' => 'tag',
                             ]);

@@ -624,6 +624,52 @@ class ProjectController extends Controller
         ]);
     }
 
+    public function updateProposalCustomLink(Request $request, Project $project)
+    {
+        abort_if($project->client->user_id !== auth()->id(), 403, 'Ação não autorizada.');
+
+        $validated = $request->validate([
+            'custom_hash' => 'nullable|string|max:255',
+        ]);
+
+        $customHash = $validated['custom_hash'] ? trim($validated['custom_hash']) : null;
+        if ($customHash) {
+            // Se for uma URL completa ou contiver barras, extrai apenas o último fragmento
+            if (filter_var($customHash, FILTER_VALIDATE_URL) || str_contains($customHash, '/')) {
+                $parts = explode('/', rtrim($customHash, '/'));
+                $customHash = end($parts);
+            }
+            // Limpa query string se houver
+            if (str_contains($customHash, '?')) {
+                $parts = explode('?', $customHash);
+                $customHash = $parts[0];
+            }
+            $customHash = trim($customHash);
+        }
+
+        // Validação de unicidade manual do token
+        if ($customHash) {
+            $proposalId = $project->proposals()->value('id') ?? 0;
+            $exists = \App\Models\Proposal::where('custom_hash', $customHash)
+                ->where('id', '!=', $proposalId)
+                ->exists();
+            if ($exists) {
+                return redirect()->back()->withErrors(['custom_hash' => 'Este token/link já está em uso por outro orçamento.']);
+            }
+        }
+
+        $proposal = $project->proposals()->firstOrCreate(
+            ['project_id' => $project->id],
+            ['status' => 'pendente']
+        );
+
+        $proposal->update([
+            'custom_hash' => $customHash
+        ]);
+
+        return redirect()->back()->with('success', 'Link de compartilhamento personalizado atualizado com sucesso!');
+    }
+
     private function parseTermToDays($term)
     {
         $term = strtolower($term);

@@ -24,6 +24,7 @@ class ProfileController extends Controller
             'email' => 'required|string|email|max:255|unique:users,email,' . $user->id,
             'phone' => 'nullable|string',
             'theme_color' => 'required|in:green,blue,purple,indigo,orange',
+            'sidebar_color' => 'required|in:dark,zinc,teal,navy,purple',
             'avatar' => 'nullable|image|mimes:jpeg,png,jpg,webp|max:2048',
             'logo' => 'nullable|image|mimes:jpeg,png,jpg,webp|max:2048',
             'password' => 'nullable|string|min:8|confirmed',
@@ -33,6 +34,7 @@ class ProfileController extends Controller
         $user->email = $validated['email'];
         $user->phone = $validated['phone'];
         $user->theme_color = $validated['theme_color'];
+        $user->sidebar_color = $validated['sidebar_color'];
 
         // Upload de Avatar
         if ($request->hasFile('avatar')) {

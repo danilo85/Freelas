@@ -324,31 +324,96 @@
                 </div>
             </div>
 
-            <!-- Divisor -->
-            <div class="border-t border-slate-100"></div>
-
-            <!-- Link de Compartilhamento -->
-            <div class="space-y-3" x-data="{ copied: false, shareUrl: '{{ route('proposal.show', $proposal->hash) }}' }">
-                <span class="text-sm font-bold text-slate-400 uppercase tracking-wider block">Link de Compartilhamento</span>
+            <!-- Links de Compartilhamento -->
+            <div class="space-y-4 font-semibold text-slate-700" x-data="{ 
+                copiedSys: false, 
+                sysUrl: '{{ route('proposal.show', $proposal->hash) }}',
+                copiedCust: false,
+                custUrl: '{{ $proposal->custom_hash ? route('proposal.show', $proposal->custom_hash) : '' }}',
+                showCustomForm: false,
+                customSlug: '{{ $proposal->custom_hash }}'
+            }">
+                <span class="text-sm font-bold text-slate-400 uppercase tracking-wider block">Links de Compartilhamento</span>
                 
-                <div class="relative">
-                    <input type="text" readonly :value="shareUrl" class="w-full text-sm text-slate-600 bg-slate-50 border border-slate-200 rounded-[5px] py-2 px-3 pr-10 focus:outline-none focus:ring-0">
-                    <button type="button" @click="navigator.clipboard.writeText(shareUrl); copied = true; setTimeout(() => copied = false, 2000)" class="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600" title="Copiar Link">
-                        <svg x-show="!copied" class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 012-2h2a2 2 0 012 2m0 0h2a2 2 0 012 2v3m2 4H10m0 0l3-3m-3 3l3 3"></path>
-                        </svg>
-                        <svg x-show="copied" x-cloak class="w-5 h-5 text-emerald-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
-                        </svg>
-                    </button>
+                @if ($errors->has('custom_hash'))
+                    <div class="bg-rose-50 border border-rose-200 text-rose-700 px-3 py-2 rounded-[5px] text-xs font-bold">
+                        {{ $errors->first('custom_hash') }}
+                    </div>
+                @endif
+
+                <!-- Link do Sistema -->
+                <div class="space-y-2">
+                    <label class="text-[10px] font-bold text-slate-450 uppercase tracking-wider block">Link do Sistema (Automático)</label>
+                    <div class="relative">
+                        <input type="text" readonly :value="sysUrl" class="w-full text-xs text-slate-500 bg-slate-50 border border-slate-200 rounded-[5px] py-2 px-3 pr-10 focus:outline-none focus:ring-0">
+                        <button type="button" @click="navigator.clipboard.writeText(sysUrl); copiedSys = true; setTimeout(() => copiedSys = false, 2000)" class="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600" title="Copiar Link">
+                            <svg x-show="!copiedSys" class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 012-2h2a2 2 0 012 2m0 0h2a2 2 0 012 2v3m2 4H10m0 0l3-3m-3 3l3 3"></path>
+                            </svg>
+                            <svg x-show="copiedSys" x-cloak class="w-4 h-4 text-emerald-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+                            </svg>
+                        </button>
+                    </div>
                 </div>
 
-                <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                    <button type="button" @click="navigator.clipboard.writeText(shareUrl); copied = true; setTimeout(() => copied = false, 2000)" class="flex items-center justify-center gap-1.5 py-2.5 px-3 bg-primary-600 hover:bg-primary-700 text-white text-sm font-semibold rounded-[5px] transition-colors shadow-sm">
-                        <span x-text="copied ? 'Copiado!' : 'Copiar Link'"></span>
+                <!-- Link Personalizado -->
+                <div class="space-y-2 border-t border-slate-100 pt-3">
+                    <div class="flex items-center justify-between">
+                        <label class="text-[10px] font-bold text-slate-455 uppercase tracking-wider block">Link Personalizado (Manual)</label>
+                        @if($proposal->custom_hash)
+                            <button type="button" @click="showCustomForm = !showCustomForm" class="text-xs font-bold text-primary-600 hover:underline">Alterar Link</button>
+                        @endif
+                    </div>
+
+                    @if($proposal->custom_hash)
+                        <div x-show="!showCustomForm" class="relative">
+                            <input type="text" readonly :value="custUrl" class="w-full text-xs text-slate-700 bg-emerald-50/10 border border-emerald-200 rounded-[5px] py-2 px-3 pr-10 focus:outline-none focus:ring-0 font-semibold">
+                            <button type="button" @click="navigator.clipboard.writeText(custUrl); copiedCust = true; setTimeout(() => copiedCust = false, 2000)" class="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600" title="Copiar Link">
+                                <svg x-show="!copiedCust" class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 012-2h2a2 2 0 012 2m0 0h2a2 2 0 012 2v3m2 4H10m0 0l3-3m-3 3l3 3"></path>
+                                </svg>
+                                <svg x-show="copiedCust" x-cloak class="w-4 h-4 text-emerald-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+                                </svg>
+                            </button>
+                        </div>
+                    @endif
+
+                    <div x-show="showCustomForm || !{{ $proposal->custom_hash ? 'true' : 'false' }}" class="bg-slate-50 border border-slate-200 rounded-[5px] p-3.5 space-y-3.5">
+                        <form action="{{ route('projects.proposal.custom-link', $project->id) }}" method="POST" class="space-y-3">
+                            @csrf
+                            <p class="text-xs text-slate-500 font-medium leading-relaxed">
+                                Cole a <strong>URL antiga inteira</strong> ou apenas o <strong>token final</strong>. O sistema extrairá e redirecionará automaticamente:
+                            </p>
+                            <input 
+                                type="text" 
+                                name="custom_hash" 
+                                x-model="customSlug" 
+                                placeholder="Cole a URL antiga inteira ou o token aqui..." 
+                                class="w-full text-xs bg-white border border-slate-250 rounded-[5px] px-3 py-2 focus:outline-none focus:ring-1 focus:ring-primary-500 focus:border-primary-500 font-semibold text-slate-700"
+                            >
+                            <div class="flex justify-end gap-2">
+                                @if($proposal->custom_hash)
+                                    <button type="button" @click="showCustomForm = false" class="px-3.5 py-1.5 rounded-[5px] border border-slate-200 text-xs font-bold text-slate-500 bg-white hover:bg-slate-50 transition-colors">
+                                        Cancelar
+                                    </button>
+                                @endif
+                                <button type="submit" class="px-4 py-1.5 rounded-[5px] bg-primary-600 hover:bg-primary-700 text-white text-xs font-bold shadow-sm transition-all">
+                                    Confirmar Link
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+
+                <!-- Botões de Ação Geral -->
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-2.5 pt-1">
+                    <button type="button" @click="navigator.clipboard.writeText(custUrl ? custUrl : sysUrl); copiedSys = true; setTimeout(() => copiedSys = false, 2000)" class="flex items-center justify-center gap-2 py-2.5 px-4 bg-primary-600 hover:bg-primary-700 text-white text-sm font-bold rounded-[5px] transition-colors shadow-sm">
+                        <span x-text="copiedSys ? 'Copiado!' : 'Copiar Link Ativo'"></span>
                     </button>
-                    <a :href="shareUrl" target="_blank" class="flex items-center justify-center gap-1.5 py-2.5 px-3 bg-slate-800 hover:bg-slate-900 text-white text-sm font-semibold rounded-[5px] transition-colors shadow-sm">
-                        Abrir Link
+                    <a :href="custUrl ? custUrl : sysUrl" target="_blank" class="flex items-center justify-center gap-2 py-2.5 px-4 bg-slate-800 hover:bg-slate-900 text-white text-sm font-bold rounded-[5px] transition-colors shadow-sm">
+                        Abrir Link Ativo
                     </a>
                 </div>
             </div>

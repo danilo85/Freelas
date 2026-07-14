@@ -49,8 +49,10 @@ class CategoryController extends Controller
      */
     public function update(Request $request, TransactionCategory $category)
     {
-        // Garante que só edita categoria própria (nunca as do sistema/outros usuários)
-        abort_if($category->user_id !== auth()->id(), 403, 'Ação não autorizada.');
+        // Garante que só edita se for categoria própria ou padrão do sistema (user_id é null)
+        abort_if(!is_null($category->user_id) && $category->user_id !== auth()->id(), 403, 'Ação não autorizada.');
+
+        \Log::info('Category Update Request ID ' . $category->id . ':', $request->all());
 
         $validated = $request->validate([
             'name' => 'required|string|max:255',
@@ -72,8 +74,8 @@ class CategoryController extends Controller
      */
     public function destroy(TransactionCategory $category)
     {
-        // Garante que só remove categoria própria
-        abort_if($category->user_id !== auth()->id(), 403, 'Ação não autorizada.');
+        // Garante que só remove se for categoria própria ou padrão do sistema
+        abort_if(!is_null($category->user_id) && $category->user_id !== auth()->id(), 403, 'Ação não autorizada.');
 
         $category->delete();
 

@@ -13,6 +13,7 @@ class Proposal extends Model
     protected $fillable = [
         'project_id',
         'hash',
+        'custom_hash',
         'status',
     ];
 

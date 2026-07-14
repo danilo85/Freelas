@@ -137,7 +137,7 @@
         
         <div class="border border-slate-200 rounded-[5px] overflow-hidden">
             <!-- Dias da Semana Header -->
-            <div class="grid grid-cols-7 bg-slate-50 border-b border-slate-200 text-center py-3 text-xs font-bold text-slate-500 uppercase tracking-wider">
+            <div class="grid grid-cols-7 bg-slate-50 border-b border-slate-200 text-center py-2 sm:py-3 text-[10px] sm:text-xs font-bold text-slate-500 uppercase tracking-wider">
                 <div>Dom</div>
                 <div>Seg</div>
                 <div>Ter</div>
@@ -153,23 +153,31 @@
                     @php
                         $isToday = $cell['is_current_month'] && $cell['date'] === $today->toDateString();
                     @endphp
-                    <div class="min-h-[110px] p-2.5 flex flex-col justify-between transition-all hover:bg-slate-50/50 relative
+                    <div class="min-h-[60px] sm:min-h-[110px] p-1 sm:p-2.5 flex flex-col justify-between transition-all hover:bg-slate-50/50 relative
                         {{ $cell['payments_sum'] > 0 ? 'bg-emerald-50/40 border border-emerald-200/80 shadow-[inset_0_0_10px_rgba(16,185,129,0.06),_0_0_8px_rgba(16,185,129,0.15)] z-10' : ($cell['is_current_month'] ? 'bg-white' : 'bg-slate-50/30 text-slate-400') }}
                         {{ $isToday ? 'ring-2 ring-primary-500 ring-inset' : '' }}">
                         
                         <!-- Dia número -->
                         <div class="flex items-center justify-between">
-                            <span class="text-sm font-bold {{ $cell['is_current_month'] ? ($isToday ? 'text-primary-600' : 'text-slate-700') : 'text-slate-400' }}">
+                            <span class="text-xs sm:text-sm font-bold {{ $cell['is_current_month'] ? ($isToday ? 'text-primary-600' : 'text-slate-700') : 'text-slate-400' }}">
                                 {{ $cell['day'] }}
                             </span>
                             @if($isToday)
-                                <span class="w-1.5 h-1.5 rounded-full bg-primary-500" title="Hoje"></span>
+                                <span class="w-1 h-1 sm:w-1.5 sm:h-1.5 rounded-full bg-primary-500" title="Hoje"></span>
                             @endif
                         </div>
 
                         <!-- Dados do pagamento -->
                         @if($cell['payments_sum'] > 0)
-                            <div class="space-y-1 mt-auto">
+                            <!-- Mobile Badge Indicator -->
+                            <div class="flex md:hidden justify-center items-center mt-auto pb-1">
+                                <span class="inline-flex items-center justify-center w-4 h-4 rounded-full bg-emerald-600 text-white text-[9px] font-black shadow-sm" title="{{ $cell['payments_count'] }} pagamento(s) - R$ {{ number_format($cell['payments_sum'], 2, ',', '.') }}">
+                                    {{ $cell['payments_count'] }}
+                                </span>
+                            </div>
+
+                            <!-- Desktop Detailed Info -->
+                            <div class="hidden md:block space-y-1 mt-auto">
                                 <!-- Badge Valor Total -->
                                 <div class="bg-emerald-50 border border-emerald-150 text-emerald-800 text-[11px] md:text-xs font-black px-1.5 py-0.5 rounded-[5px] truncate text-center" title="Faturamento do dia">
                                     R$ {{ number_format($cell['payments_sum'], 2, ',', '.') }}

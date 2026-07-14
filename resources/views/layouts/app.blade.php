@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>@yield('title', 'Admin Gestor de Freelas')</title>
     <meta name="csrf-token" content="{{ csrf_token() }}">
+    <link rel="icon" type="image/png" href="{{ asset('storage/freela/freela-03.png') }}">
     
     <!-- Google Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -309,18 +310,30 @@
     <!-- Tela de Loading de Alta Performance Global -->
     <div id="page-loader" class="fixed inset-0 bg-white dark:bg-slate-950 z-[9999] flex flex-col items-center justify-center transition-opacity duration-300">
         <div class="flex flex-col items-center space-y-6">
-            <!-- Dollar Pulse Logo -->
+            <!-- Preloader Animated Logo -->
             <div class="relative flex items-center justify-center">
-                <div class="w-16 h-16 rounded-full border-[3px] border-primary-500 flex items-center justify-center animate-pulse shadow-[0_0_20px_rgba(34,197,94,0.15)]">
-                    <span class="text-3xl font-black text-primary-500">$</span>
-                </div>
-                <div class="absolute inset-0 w-16 h-16 rounded-full border-t-[3px] border-l-[3px] border-transparent border-t-primary-500 border-l-primary-500 animate-spin"></div>
-            </div>
-            
-            <!-- Logo Text -->
-            <div class="text-2xl font-black tracking-wide text-slate-800 dark:text-white flex items-center gap-1.5 select-none">
-                <span>Gestor</span>
-                <span class="text-primary-500">Freelas</span>
+                <svg id="loader-logo" class="w-20 h-20" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1000 1000">
+                  <style>
+                    #loader-logo .p1 { animation: assemble-p1 1.4s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
+                    #loader-logo .p2 { animation: assemble-p2 1.4s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
+                    #loader-logo .p3 { animation: assemble-p3 1.4s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
+                    @keyframes assemble-p1 {
+                        0% { transform: translate(70px, -70px); opacity: 0; }
+                        100% { transform: translate(0, 0); opacity: 1; }
+                    }
+                    @keyframes assemble-p2 {
+                        0% { transform: translate(-60px, -60px); opacity: 0; }
+                        100% { transform: translate(0, 0); opacity: 1; }
+                    }
+                    @keyframes assemble-p3 {
+                        0% { transform: translate(-80px, 80px); opacity: 0; }
+                        100% { transform: translate(0, 0); opacity: 1; }
+                    }
+                  </style>
+                  <path class="p1" d="M845.889,62.031c-.002,119.208-96.63,215.838-215.84,215.84-42.225,0-168.9,0-168.9,0-48.59-.18-88.42,38.539-91.016,85.611-.516,5.078-.009,240.167-.181,245.677-14.655,16.179-23.579,37.636-23.579,61.179,10.799,119.487-73.309,229.027-192.261,240.943V306.294c0-134.909,109.353-244.263,244.262-244.263h447.515Z" fill="#024e4b"/>
+                  <path class="p2" d="M370.133,363.482c-.516,5.078-.009,240.167-.181,245.677-14.655,16.179-23.579,37.636-23.579,61.179,10.799,119.487-73.309,229.027-192.261,240.943v-404.891c38.543-81.874,120.399-139.371,216.022-142.908Z" fill="#024442"/>
+                  <path class="p3" d="M154.117,937.969h0v-295.821c0-139.966,113.465-253.432,253.432-253.432h311.293c0,119.206-96.635,215.84-215.84,215.84h-15.472c-64.933,0-117.572,52.639-117.572,117.572h0c0,119.206-96.635,215.841-215.84,215.841Z" fill="#01a87e"/>
+                </svg>
             </div>
             
             <!-- Progress bar -->
@@ -365,17 +378,26 @@
     <div x-show="sidebarOpen" @click="sidebarOpen = false" class="fixed inset-0 bg-slate-900/40 z-30 md:hidden" x-transition x-cloak></div>
 
     <!-- Sidebar (Drawer no mobile, estática no desktop) -->
-    <aside class="fixed inset-y-0 left-0 z-40 w-64 bg-slate-900 dark:bg-slate-950 text-slate-100 flex flex-col border-r border-slate-800 dark:border-slate-900 transform -translate-x-full transition-transform duration-300 ease-in-out md:sticky md:top-0 md:h-screen md:translate-x-0 md:flex"
+    @php
+        $sidebarBg = 'bg-slate-900';
+        if(auth()->check()) {
+            switch(auth()->user()->sidebar_color) {
+                case 'zinc': $sidebarBg = 'bg-zinc-950'; break;
+                case 'teal': $sidebarBg = 'bg-[#012d2b]'; break;
+                case 'navy': $sidebarBg = 'bg-[#0b1329]'; break;
+                case 'purple': $sidebarBg = 'bg-[#1e152a]'; break;
+                default: $sidebarBg = 'bg-slate-900'; break;
+            }
+        }
+    @endphp
+    <aside class="fixed inset-y-0 left-0 z-40 w-64 {{ $sidebarBg }} dark:bg-slate-950 text-slate-100 flex flex-col border-r border-slate-800 dark:border-slate-900 transform -translate-x-full transition-transform duration-300 ease-in-out md:sticky md:top-0 md:h-screen md:translate-x-0 md:flex"
            :class="sidebarOpen ? 'translate-x-0' : '-translate-x-full'">
         
         <!-- Logo -->
         <div class="h-16 flex items-center px-6 border-b border-slate-800 dark:border-slate-900 justify-between">
-            <span class="text-xl font-bold tracking-tight text-white flex items-center gap-2">
-                <svg class="w-6 h-6 text-primary-500" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-                </svg>
-                Gestor<span class="text-primary-500">Freelas</span>
-            </span>
+            <a href="{{ route('dashboard') }}" class="flex items-center w-full pr-4">
+                <img src="{{ asset('storage/freela/freela_1.svg') }}" class="w-full h-auto max-h-10 object-contain" alt="Gestor Freelas">
+            </a>
             <!-- Botão de Fechar Sidebar (Apenas Mobile) -->
             <button @click="sidebarOpen = false" class="text-slate-400 hover:text-white md:hidden">
                 <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -523,6 +545,9 @@
                         </a>
                         <a href="{{ route('lembretes.index') }}" class="block py-2 px-3 text-xs font-semibold rounded-[5px] transition-colors {{ request()->routeIs('lembretes.*') ? 'text-white bg-slate-850' : 'text-slate-400 hover:text-white' }}">
                             Lembretes e Notas
+                        </a>
+                        <a href="{{ route('notifications.index') }}" class="block py-2 px-3 text-xs font-semibold rounded-[5px] transition-colors {{ request()->routeIs('notifications.*') ? 'text-white bg-slate-850' : 'text-slate-400 hover:text-white' }}">
+                            Notificações
                         </a>
                     </div>
                 </div>
@@ -1090,6 +1115,101 @@
                 }
             });
         });
+    </script>
+
+    <!-- Global Notifications Stack -->
+    <div x-data="globalNotificationStackManager()" class="fixed top-4 right-4 z-[999999] space-y-2.5 w-80 select-none pointer-events-none">
+        <template x-for="alert in activeNotifications" :key="alert.id">
+            <div class="bg-slate-900 border border-slate-700 text-white rounded-lg p-4 shadow-2xl flex items-start justify-between gap-3 pointer-events-auto transition-all duration-300">
+                <a :href="'{{ route('notifications.index') }}'" @click="dismissNotification(alert.id)" class="flex-1 min-w-0 flex items-start gap-1 cursor-pointer block select-none">
+                    <div class="flex-1 min-w-0">
+                        <span class="text-[10px] font-black text-amber-400 block uppercase tracking-widest" x-text="alert.badge"></span>
+                        <h4 class="text-xs font-black mt-1 text-white truncate" x-text="alert.title"></h4>
+                        <p class="text-xs text-slate-300 mt-1 line-clamp-3 leading-relaxed" x-text="alert.content"></p>
+                    </div>
+                </a>
+                <button type="button" @click="dismissNotification(alert.id)" class="text-slate-400 hover:text-white font-black text-xs shrink-0 cursor-pointer">✕</button>
+            </div>
+        </template>
+    </div>
+
+    <script>
+        function globalNotificationStackManager() {
+            return {
+                activeNotifications: [],
+                checkInterval: null,
+                
+                init() {
+                    // Fetch notifications immediately, then every 12 seconds
+                    this.fetchNotifications();
+                    this.checkInterval = setInterval(() => {
+                        this.fetchNotifications();
+                    }, 12000);
+                },
+
+                async fetchNotifications() {
+                    try {
+                        const res = await fetch('{{ route('lembretes.notifications') }}');
+                        if (res.ok) {
+                            const data = await res.json();
+                            let hasNew = false;
+                            
+                            // Remove notifications that are no longer active
+                            this.activeNotifications = this.activeNotifications.filter(an => {
+                                return data.some(item => item.id === an.id);
+                            });
+
+                            // Add new notifications
+                            data.forEach(item => {
+                                const exists = this.activeNotifications.some(an => an.id === item.id);
+                                if (!exists) {
+                                    this.activeNotifications.push(item);
+                                    hasNew = true;
+                                }
+                            });
+
+                            if (hasNew) {
+                                this.playChime();
+                            }
+                        }
+                    } catch (e) {
+                        console.warn('Error fetching system notifications:', e);
+                    }
+                },
+
+                async dismissNotification(id) {
+                    this.activeNotifications = this.activeNotifications.filter(an => an.id !== id);
+                    try {
+                        await fetch(`/utilidades/notifications/${id}/read`, {
+                            method: 'POST',
+                            headers: {
+                                'X-CSRF-TOKEN': '{{ csrf_token() }}',
+                                'Content-Type': 'application/json'
+                            }
+                        });
+                    } catch (e) {
+                        console.warn('Error marking notification as read:', e);
+                    }
+                },
+
+                playChime() {
+                    try {
+                        const ctx = new (window.AudioContext || window.webkitAudioContext)();
+                        const osc = ctx.createOscillator();
+                        const gain = ctx.createGain();
+                        osc.connect(gain);
+                        gain.connect(ctx.destination);
+                        osc.type = 'sine';
+                        osc.frequency.setValueAtTime(587.33, ctx.currentTime);
+                        gain.gain.setValueAtTime(0.08, ctx.currentTime);
+                        osc.start();
+                        osc.stop(ctx.currentTime + 0.3);
+                    } catch (e) {
+                        // Browser prevents audio before user interaction
+                    }
+                }
+            };
+        }
     </script>
 </body>
 </html>
