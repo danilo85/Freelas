@@ -342,8 +342,7 @@ class MeiController extends Controller
             if ($paymentIds->isNotEmpty()) {
                 \App\Models\Payment::whereIn('id', $paymentIds)
                     ->update([
-                        'invoice_path' => null,
-                        'attachment_path' => null
+                        'invoice_path' => null
                     ]);
             }
 
@@ -397,8 +396,7 @@ class MeiController extends Controller
                     if ($paymentIds->isNotEmpty()) {
                         \App\Models\Payment::whereIn('id', $paymentIds)
                             ->update([
-                                'invoice_path' => $newPath,
-                                'attachment_path' => $newPath
+                                'invoice_path' => $newPath
                             ]);
                     }
 
