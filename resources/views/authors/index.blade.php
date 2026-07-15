@@ -73,6 +73,115 @@
 
     </div>
 
+    @if(!empty($suggestedDuplicates) && count($suggestedDuplicates) > 0)
+    <!-- Perfis Duplicados de Autores Sugeridos -->
+    <div class="bg-gradient-to-r from-amber-500/10 to-yellow-500/5 border border-amber-300 dark:border-amber-800/80 rounded-[5px] p-6 space-y-4 shadow-sm" x-data="{ showDuplicates: true }" x-show="showDuplicates" x-cloak>
+        <div class="flex items-center justify-between border-b border-amber-200/50 dark:border-amber-800/30 pb-3">
+            <div class="flex items-center gap-2.5">
+                <span class="text-xl">⚠️</span>
+                <div>
+                    <h3 class="text-xs font-black text-amber-850 dark:text-amber-300 uppercase tracking-wider font-outfit">Perfis de Autores Duplicados Detectados</h3>
+                    <p class="text-[11px] text-amber-700 dark:text-amber-400 font-medium">Encontramos autores cadastrados com nomes idênticos. Escolha qual manter como perfil principal e mescle os outros.</p>
+                </div>
+            </div>
+        </div>
+        
+        <div class="space-y-4">
+            @foreach($suggestedDuplicates as $name => $group)
+                <div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-4 rounded-[5px] space-y-3">
+                    <div class="flex items-center justify-between border-b border-slate-100 dark:border-slate-850 pb-2">
+                        <h4 class="text-xs font-bold text-slate-800 dark:text-slate-200">Nome do Autor: <span class="text-primary-600 font-black">{{ $name }}</span></h4>
+                        <span class="text-[9px] font-black uppercase tracking-wider px-2 py-0.5 rounded bg-amber-50 text-amber-750 dark:bg-amber-955/30 dark:text-amber-300">
+                            {{ count($group) }} Perfis Duplicados
+                        </span>
+                    </div>
+
+                    <form action="{{ route('authors.merge') }}" method="POST" class="space-y-3">
+                        @csrf
+                        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+                            @foreach($group as $index => $item)
+                                <div class="border border-slate-200 dark:border-slate-800 rounded-[5px] p-3 flex flex-col justify-between space-y-3 bg-slate-50 dark:bg-slate-950/40 relative">
+                                    <div class="flex items-start gap-2.5">
+                                        <div class="pt-0.5">
+                                            <input 
+                                                type="radio" 
+                                                name="main_author_id" 
+                                                value="{{ $item->id }}" 
+                                                {{ $index === 0 ? 'checked' : '' }}
+                                                required
+                                                class="rounded-full border-slate-350 text-primary-600 focus:ring-primary-500/20 w-4 h-4 cursor-pointer"
+                                                id="main_author_{{ $item->id }}"
+                                            >
+                                        </div>
+                                        <label for="main_author_{{ $item->id }}" class="text-xs font-semibold text-slate-650 dark:text-slate-300 cursor-pointer select-none">
+                                            <span class="block text-slate-850 dark:text-white font-bold">Perfil #{{ $item->id }}</span>
+                                            <span class="block text-[10px] text-slate-400 font-medium truncate max-w-[200px]" title="{{ $item->email }}">{{ $item->email ?? 'Sem email' }}</span>
+                                            <span class="block text-[10px] text-slate-400 font-medium">{{ $item->phone ?? 'Sem telefone' }}</span>
+                                        </label>
+                                    </div>
+                                    <div class="flex justify-between items-center text-[10px] border-t border-slate-150 dark:border-slate-850 pt-2 font-bold text-slate-450">
+                                        <span>Projetos: {{ $item->projects_count }}</span>
+                                        <span class="text-amber-600 dark:text-amber-400 uppercase tracking-wider text-[8px] font-black">Selecionar Principal</span>
+                                    </div>
+                                    
+                                    <!-- Inputs ocultos para os duplicados -->
+                                    <input type="hidden" name="duplicate_author_ids[]" value="{{ $item->id }}">
+                                </div>
+                            @endforeach
+                        </div>
+                        <div class="flex justify-end pt-1">
+                            <button type="submit" class="inline-flex items-center justify-center gap-1.5 px-4 py-2 bg-amber-600 hover:bg-amber-700 text-white text-xs font-bold rounded-[5px] transition-colors shadow-sm uppercase tracking-wider font-outfit">
+                                Mesclar Perfis no Principal
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            @endforeach
+        </div>
+    </div>
+    @endif
+
+    <!-- Bloco de Mesclagem Manual de Autores -->
+    <div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-[5px] p-5 shadow-sm space-y-4" x-data="{ showManual: false }">
+        <button type="button" @click="showManual = !showManual" class="w-full flex items-center justify-between text-xs font-black text-slate-400 dark:text-slate-500 uppercase tracking-wider font-outfit">
+            <span>⚙️ Ferramenta de Mesclagem Manual de Autores (Curadoria)</span>
+            <span x-text="showManual ? 'Recolher [-]' : 'Expandir [+]'">Expandir [+]</span>
+        </button>
+        
+        <div x-show="showManual" x-transition class="space-y-4 border-t border-slate-100 dark:border-slate-850 pt-4" x-cloak>
+            <p class="text-xs text-slate-400 font-medium">Use esta ferramenta para mesclar dois perfis de autores/coautores da base. Os orçamentos/trabalhos e revisões vinculadas ao perfil duplicado serão migrados para o perfil principal selecionado, e o duplicado será removido.</p>
+            
+            <form action="{{ route('authors.merge') }}" method="POST" class="space-y-4">
+                @csrf
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div class="space-y-1.5">
+                        <label for="main_author_id" class="text-[10px] font-bold text-slate-455 uppercase tracking-wider block font-outfit">Perfil Principal (Destino - Será Mantido):</label>
+                        <select name="main_author_id" required class="w-full text-xs bg-white dark:bg-slate-955 border border-slate-200 dark:border-slate-800 rounded-[5px] px-3 py-2.5 focus:outline-none focus:ring-1 focus:ring-primary-500 font-semibold text-slate-700 dark:text-slate-200">
+                            <option value="">-- Selecione o Perfil Principal --</option>
+                            @foreach($authors as $a)
+                                <option value="{{ $a->id }}">{{ $a->name }} (ID: {{ $a->id }} - {{ $a->email ?? 'sem email' }})</option>
+                            @endforeach
+                        </select>
+                    </div>
+                    <div class="space-y-1.5">
+                        <label class="text-[10px] font-bold text-slate-455 uppercase tracking-wider block font-outfit">Perfil Duplicado (Origem - Será Excluído após migração):</label>
+                        <select name="duplicate_author_ids[]" required class="w-full text-xs bg-white dark:bg-slate-955 border border-slate-200 dark:border-slate-800 rounded-[5px] px-3 py-2.5 focus:outline-none focus:ring-1 focus:ring-primary-500 font-semibold text-slate-700 dark:text-slate-200">
+                            <option value="">-- Selecione o Perfil para Mesclar --</option>
+                            @foreach($authors as $a)
+                                <option value="{{ $a->id }}">{{ $a->name }} (ID: {{ $a->id }} - {{ $a->email ?? 'sem email' }})</option>
+                            @endforeach
+                        </select>
+                    </div>
+                </div>
+                <div class="flex justify-end">
+                    <button type="submit" class="inline-flex items-center justify-center gap-1.5 px-4 py-2 bg-amber-600 hover:bg-amber-700 text-white text-xs font-bold rounded-[5px] transition-all shadow-sm uppercase tracking-wider font-outfit">
+                        Mesclar Perfis Manualmente
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
     <!-- Filtro e Ações -->
     <div class="flex flex-col sm:flex-row gap-4 items-center justify-between bg-white border border-slate-200 p-4 rounded-[5px] shadow-sm">
         

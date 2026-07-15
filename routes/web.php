@@ -84,6 +84,7 @@ Route::middleware(['auth', 'approved'])->prefix('freelas')->group(function () {
     Route::get('/finances/mei', [\App\Http\Controllers\MeiController::class, 'index'])->name('finances.mei');
     Route::get('/finances/mei/export-csv', [\App\Http\Controllers\MeiController::class, 'exportCsv'])->name('finances.mei.export-csv');
     Route::post('/finances/mei/limit', [\App\Http\Controllers\MeiController::class, 'updateLimit'])->name('finances.mei.limit');
+    Route::post('/finances/mei/upload-invoice', [\App\Http\Controllers\MeiController::class, 'uploadInvoice'])->name('finances.mei.upload-invoice');
     
     Route::resource('finances/categories', \App\Http\Controllers\CategoryController::class)->except(['show'])->names([
         'index' => 'finances.categories.index',
@@ -121,6 +122,7 @@ Route::middleware(['auth', 'approved'])->prefix('freelas')->group(function () {
         Route::get('/clients/{client}/edit', [ClientController::class, 'edit'])->name('clients.edit');
         Route::put('/clients/{client}', [ClientController::class, 'update'])->name('clients.update');
         Route::delete('/clients/{client}', [ClientController::class, 'destroy'])->name('clients.destroy');
+        Route::post('/clients/merge', [ClientController::class, 'merge'])->name('clients.merge');
             
         // Autores do usuário logado (Tenancy)
         Route::get('/authors', [AuthorController::class, 'index'])->name('authors.index');
@@ -130,6 +132,7 @@ Route::middleware(['auth', 'approved'])->prefix('freelas')->group(function () {
         Route::get('/authors/{author}/edit', [AuthorController::class, 'edit'])->name('authors.edit');
         Route::put('/authors/{author}', [AuthorController::class, 'update'])->name('authors.update');
         Route::delete('/authors/{author}', [AuthorController::class, 'destroy'])->name('authors.destroy');
+        Route::post('/authors/merge', [AuthorController::class, 'merge'])->name('authors.merge');
             
         // Portfólio do usuário logado (Tenancy)
         Route::get('/portfolio/pipeline', [PortfolioController::class, 'pipeline'])->name('portfolio.pipeline');

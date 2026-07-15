@@ -115,6 +115,13 @@ class MeiController extends Controller
             ];
         }
 
+        $allPayments = \App\Models\Payment::whereHas('project.client', function ($q) use ($userId) {
+            $q->where('user_id', $userId);
+        })
+        ->with('project')
+        ->orderBy('paid_at', 'desc')
+        ->get();
+
         return view('finances.mei', compact(
             'year',
             'month',
@@ -127,7 +134,8 @@ class MeiController extends Controller
             'monthsData',
             'pjIncomesChart',
             'pfIncomesChart',
-            'expensesChart'
+            'expensesChart',
+            'allPayments'
         ));
     }
 
@@ -152,6 +160,62 @@ class MeiController extends Controller
         ]);
 
         return redirect()->route('finances.mei')->with('success', 'Limite MEI atualizado com sucesso!');
+    }
+
+    /**
+     * Faz upload de nota/recibo direto a partir do dashboard MEI vinculado a um pagamento.
+     */
+    public function uploadInvoice(Request $request)
+    {
+        $userId = auth()->id();
+        $validated = $request->validate([
+            'payment_ids' => 'required|array',
+            'payment_ids.*' => 'exists:payments,id',
+            'invoice' => 'required|file|max:10240', // 10MB
+        ]);
+
+        $path = $request->file('invoice')->store('invoices', 'local');
+        $updatedCount = 0;
+        $firstPaymentDate = null;
+
+        foreach ($validated['payment_ids'] as $paymentId) {
+            $payment = \App\Models\Payment::with('project.client')->findOrFail($paymentId);
+            abort_if($payment->project->client->user_id !== $userId, 403, 'Ação não autorizada.');
+
+            if (!$firstPaymentDate) {
+                $firstPaymentDate = \Carbon\Carbon::parse($payment->paid_at);
+            }
+
+            // Remove arquivo anterior se houver e não for compartilhado com outros
+            if ($payment->invoice_path && \Illuminate\Support\Facades\Storage::disk('local')->exists($payment->invoice_path)) {
+                $isShared = \App\Models\Payment::where('id', '!=', $payment->id)
+                    ->where('invoice_path', $payment->invoice_path)
+                    ->exists();
+                if (!$isShared) {
+                    \Illuminate\Support\Facades\Storage::disk('local')->delete($payment->invoice_path);
+                }
+            }
+
+            $payment->update([
+                'invoice_path' => $path
+            ]);
+
+            // Sincroniza com a transação correspondente (para aparecer no dashboard MEI)
+            if ($payment->transaction) {
+                $payment->transaction->updateQuietly([
+                    'attachment_path' => $path
+                ]);
+            }
+
+            $updatedCount++;
+        }
+
+        $redirectDate = $firstPaymentDate ?: \Carbon\Carbon::now();
+
+        return redirect()->route('finances.mei', [
+            'month' => $redirectDate->month,
+            'year' => $redirectDate->year
+        ])->with('success', 'Nota Fiscal / Recibo anexado com sucesso a ' . $updatedCount . ' parcelas/pagamentos!');
     }
 
     /**

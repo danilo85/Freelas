@@ -81,6 +81,7 @@ class Payment extends Model
                 'bank_account_id' => $payment->bank_account_id,
                 'category_id' => $categoryId,
                 'classification' => 'PJ',
+                'attachment_path' => $payment->invoice_path,
             ]);
         });
 
@@ -92,6 +93,7 @@ class Payment extends Model
                     'paid_at' => $payment->paid_at,
                     'due_date' => $payment->paid_at,
                     'bank_account_id' => $payment->bank_account_id,
+                    'attachment_path' => $payment->invoice_path,
                 ]);
             }
         });

@@ -148,10 +148,11 @@ class PaymentController extends Controller
             return $proj->remaining_balance > 0.005;
         });
 
-        // Todos os projetos ativos para o select de vinculação secundária de Notas Fiscais
+        // Todos os projetos ativos para o select de vinculação secundária de Notas Fiscais (somente aprovados, quitados e finalizados)
         $allProjects = Project::whereHas('client', function ($q) use ($userId) {
             $q->where('user_id', $userId);
         })
+        ->whereIn('status', ['aprovado', 'quitado', 'finalizado'])
         ->orderBy('title')
         ->get();
 
@@ -328,6 +329,8 @@ class PaymentController extends Controller
         // Tenancy Check
         abort_if($payment->project->client->user_id !== auth()->id(), 403, 'Ação não autorizada.');
 
+        $paidAtDate = Carbon::parse($payment->paid_at);
+
         // Remove arquivo físico
         if ($payment->invoice_path && Storage::disk('local')->exists($payment->invoice_path)) {
             Storage::disk('local')->delete($payment->invoice_path);
@@ -343,7 +346,10 @@ class PaymentController extends Controller
             $project->update(['status' => 'aprovado']);
         }
 
-        return redirect()->route('payments.index')->with('success', 'Pagamento excluído com sucesso!');
+        return redirect()->route('payments.index', [
+            'month' => $paidAtDate->month,
+            'year' => $paidAtDate->year,
+        ])->with('success', 'Pagamento excluído com sucesso!');
     }
 
     /**
@@ -363,10 +369,11 @@ class PaymentController extends Controller
         ->orderBy('title')
         ->get();
 
-        // Todos os projetos ativos para o select de vinculação secundária
+        // Todos os projetos ativos para o select de vinculação secundária (somente aprovados, quitados e finalizados)
         $allProjects = Project::whereHas('client', function ($q) use ($userId) {
             $q->where('user_id', $userId);
         })
+        ->whereIn('status', ['aprovado', 'quitado', 'finalizado'])
         ->orderBy('title')
         ->get();
 
@@ -503,6 +510,11 @@ class PaymentController extends Controller
             }
         }
 
-        return redirect()->route('payments.index')->with('success', 'Pagamento atualizado com sucesso!');
+        $paidAtDate = Carbon::parse($payment->paid_at);
+
+        return redirect()->route('payments.index', [
+            'month' => $paidAtDate->month,
+            'year' => $paidAtDate->year,
+        ])->with('success', 'Pagamento atualizado com sucesso!');
     }
 }

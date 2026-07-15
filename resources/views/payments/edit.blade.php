@@ -244,12 +244,34 @@
             <span class="text-xs font-bold text-slate-400 uppercase tracking-wider block">Orçamentos Adicionais Contemplados (Opcional)</span>
             <p class="text-xs text-slate-500 font-medium -mt-1">Selecione outros orçamentos que também estão contemplados por este pagamento ou nota fiscal.</p>
             
+            <div class="relative">
+                <input 
+                    type="text" 
+                    x-model="searchQuery" 
+                    placeholder="Pesquise por orçamento ou cliente..." 
+                    class="w-full pl-9 pr-4 py-2.5 text-xs border border-slate-200 rounded-[5px] focus:outline-none focus:ring-1 focus:ring-primary-500 focus:border-primary-500 font-semibold text-slate-700 bg-white"
+                >
+                <div class="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400">
+                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
+                    </svg>
+                </div>
+            </div>
+
+            @php
+                $statusColorMap = [
+                    'aprovado' => 'bg-emerald-50/70 border-emerald-250 text-emerald-950 hover:bg-emerald-100/70',
+                    'quitado' => 'bg-purple-50/70 border-purple-250 text-purple-950 hover:bg-purple-100/70',
+                    'finalizado' => 'bg-blue-50/70 border-blue-250 text-blue-950 hover:bg-blue-100/70',
+                ];
+            @endphp
+
             <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 max-h-48 overflow-y-auto p-2 bg-slate-50 border border-slate-200 rounded-[5px]">
                 @foreach($allProjects as $proj)
                     <label 
-                        x-show="selectedProjectId != '{{ $proj->id }}'" 
+                        x-show="selectedProjectId != '{{ $proj->id }}' && ('{{ strtolower(addslashes($proj->title)) }}'.includes(searchQuery.toLowerCase()) || '{{ strtolower(addslashes($proj->client->name)) }}'.includes(searchQuery.toLowerCase()))" 
                         x-cloak 
-                        class="flex items-center gap-3 p-2.5 bg-white border border-slate-150 rounded-[5px] cursor-pointer hover:bg-slate-50 transition-colors text-xs font-semibold text-slate-700"
+                        class="flex items-center gap-3 p-2.5 border rounded-[5px] cursor-pointer transition-all text-xs font-bold {{ $statusColorMap[$proj->status] ?? 'bg-white border-slate-150 text-slate-700 hover:bg-slate-50' }}"
                     >
                         <input 
                             type="checkbox" 
@@ -258,7 +280,7 @@
                             {{ in_array($proj->id, $relatedProjectIds) ? 'checked' : '' }}
                             class="rounded border-slate-350 text-primary-600 focus:ring-primary-500/20 w-4 h-4"
                         />
-                        <span class="truncate">{{ $proj->title }} ({{ $proj->client->name }})</span>
+                        <span class="truncate flex-1">{{ $proj->title }} <span class="opacity-60 text-[10px] font-medium block sm:inline sm:ml-1">({{ $proj->client->name }})</span></span>
                     </label>
                 @endforeach
             </div>
@@ -493,6 +515,7 @@
         return {
             selectedProjectId: '{{ old('project_id', $payment->project_id) }}',
             amount: '{{ old('amount', 'R$ ' . number_format($payment->amount, 2, ',', '.')) }}',
+            searchQuery: '',
             projectBalances: {!! json_encode($projectBalances) !!},
             
             // File upload state

@@ -52,12 +52,30 @@ class ClientController extends Controller
             return strcmp($a->name, $b->name);
         })->values();
         
+        // 4. Detecção de clientes duplicados por nome
+        $duplicates = Client::where('user_id', $userId)
+            ->select('name', \DB::raw('count(*) as count'))
+            ->groupBy('name')
+            ->having('count', '>', 1)
+            ->pluck('name');
+        
+        $suggestedDuplicates = [];
+        if ($duplicates->count() > 0) {
+            $suggestedDuplicates = Client::where('user_id', $userId)
+                ->whereIn('name', $duplicates)
+                ->withCount('projects')
+                ->orderBy('name')
+                ->get()
+                ->groupBy('name');
+        }
+
         return view('clients.index', compact(
             'clients',
             'totalClientsCount',
             'clientsWithActiveProjectsCount',
             'newClientsCount',
-            'topClientIds'
+            'topClientIds',
+            'suggestedDuplicates'
         ));
     }
 
@@ -215,5 +233,55 @@ class ClientController extends Controller
             'totalRemaining',
             'estimatesCount'
         ));
+    }
+
+    /**
+     * Mescla perfis de clientes curados/selecionados pelo usuário.
+     */
+    public function merge(Request $request)
+    {
+        $userId = auth()->id();
+        $validated = $request->validate([
+            'main_client_id' => 'required|exists:clients,id',
+            'duplicate_client_ids' => 'required|array',
+            'duplicate_client_ids.*' => 'exists:clients,id',
+        ]);
+
+        $mainClient = Client::where('user_id', $userId)->findOrFail($validated['main_client_id']);
+
+        $mergedNames = [];
+        foreach ($validated['duplicate_client_ids'] as $dupId) {
+            if ($dupId == $mainClient->id) continue;
+            
+            $dupClient = Client::where('user_id', $userId)->findOrFail($dupId);
+            $mergedNames[] = $dupClient->name;
+
+            // Move todos os projetos do cliente duplicado para o cliente principal
+            \App\Models\Project::where('client_id', $dupClient->id)->update([
+                'client_id' => $mainClient->id
+            ]);
+
+            // Se o cliente principal não possuir telefone/documento e o duplicado sim, podemos copiar
+            if (empty($mainClient->phone) && !empty($dupClient->phone)) {
+                $mainClient->phone = $dupClient->phone;
+            }
+            if (empty($mainClient->document) && !empty($dupClient->document)) {
+                $mainClient->document = $dupClient->document;
+            }
+            if (empty($mainClient->email) && !empty($dupClient->email)) {
+                $mainClient->email = $dupClient->email;
+            }
+
+            // Exclui o avatar do duplicado se houver antes de apagar o registro
+            if ($dupClient->avatar && Storage::disk('public')->exists($dupClient->avatar)) {
+                Storage::disk('public')->delete($dupClient->avatar);
+            }
+
+            $dupClient->delete();
+        }
+
+        $mainClient->save();
+
+        return redirect()->route('clients.index')->with('success', 'Perfis de clientes mesclados com sucesso! Os orçamentos/trabalhos associados foram todos unificados no perfil principal.');
     }
 }

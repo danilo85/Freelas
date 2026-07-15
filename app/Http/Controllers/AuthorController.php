@@ -66,12 +66,30 @@ class AuthorController extends Controller
             return strcmp($a->name, $b->name);
         })->values();
         
+        // 4. Detecção de autores duplicados por nome
+        $duplicates = Author::where('user_id', $userId)
+            ->select('name', \DB::raw('count(*) as count'))
+            ->groupBy('name')
+            ->having('count', '>', 1)
+            ->pluck('name');
+        
+        $suggestedDuplicates = [];
+        if ($duplicates->count() > 0) {
+            $suggestedDuplicates = Author::where('user_id', $userId)
+                ->whereIn('name', $duplicates)
+                ->withCount('projects')
+                ->orderBy('name')
+                ->get()
+                ->groupBy('name');
+        }
+
         return view('authors.index', compact(
             'authors',
             'totalAuthorsCount',
             'authorsWithBioCount',
             'newAuthorsCount',
-            'topAuthorIds'
+            'topAuthorIds',
+            'suggestedDuplicates'
         ));
     }
 
@@ -229,5 +247,62 @@ class AuthorController extends Controller
         $author->delete();
 
         return redirect()->route('authors.index')->with('success', 'Autor excluído com sucesso!');
+    }
+
+    /**
+     * Mescla perfis de autores curados/selecionados pelo usuário.
+     */
+    public function merge(Request $request)
+    {
+        $userId = auth()->id();
+        $validated = $request->validate([
+            'main_author_id' => 'required|exists:authors,id',
+            'duplicate_author_ids' => 'required|array',
+            'duplicate_author_ids.*' => 'exists:authors,id',
+        ]);
+
+        $mainAuthor = Author::where('user_id', $userId)->findOrFail($validated['main_author_id']);
+
+        $mergedNames = [];
+        foreach ($validated['duplicate_author_ids'] as $dupId) {
+            if ($dupId == $mainAuthor->id) continue;
+            
+            $dupAuthor = Author::where('user_id', $userId)->findOrFail($dupId);
+            $mergedNames[] = $dupAuthor->name;
+
+            // Transfere o relacionamento muitos-para-muitos com Projetos/Orçamentos
+            $projectIds = $dupAuthor->projects()->pluck('projects.id')->toArray();
+            $mainAuthor->projects()->syncWithoutDetaching($projectIds);
+
+            // Transfere todas as revisões associadas
+            \App\Models\ProjectRevision::where('author_id', $dupAuthor->id)->update([
+                'author_id' => $mainAuthor->id
+            ]);
+
+            // Se o autor principal não tiver bio, telefone, documento ou email e o duplicado sim, mesclamos
+            if (empty($mainAuthor->phone) && !empty($dupAuthor->phone)) {
+                $mainAuthor->phone = $dupAuthor->phone;
+            }
+            if (empty($mainAuthor->document) && !empty($dupAuthor->document)) {
+                $mainAuthor->document = $dupAuthor->document;
+            }
+            if (empty($mainAuthor->email) && !empty($dupAuthor->email)) {
+                $mainAuthor->email = $dupAuthor->email;
+            }
+            if (empty($mainAuthor->bio) && !empty($dupAuthor->bio)) {
+                $mainAuthor->bio = $dupAuthor->bio;
+            }
+
+            // Exclui o avatar do duplicado se houver antes de apagar o registro
+            if ($dupAuthor->avatar && Storage::disk('public')->exists($dupAuthor->avatar)) {
+                Storage::disk('public')->delete($dupAuthor->avatar);
+            }
+
+            $dupAuthor->delete();
+        }
+
+        $mainAuthor->save();
+
+        return redirect()->route('authors.index')->with('success', 'Perfis de autores mesclados com sucesso! Os trabalhos e revisões foram unificados no perfil principal.');
     }
 }

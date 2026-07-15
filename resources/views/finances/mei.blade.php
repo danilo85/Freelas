@@ -15,7 +15,7 @@
     $nextMonth = $currentDate->copy()->addMonth();
     $today = \Carbon\Carbon::now();
 @endphp
-<div class="max-w-5xl mx-auto space-y-6" x-data="meiManager()">
+<div class="max-w-5xl mx-auto space-y-6" x-data="meiManager()" id="mei-content-wrapper">
 
     <!-- Floating Preview Modal -->
     <div x-show="showPreviewModal" 
@@ -107,7 +107,7 @@
     <div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-[5px] p-6 shadow-sm">
         <h3 class="text-xs font-black text-slate-850 dark:text-slate-100 uppercase tracking-wider mb-4">Evolução Mensal de Faturamento & Despesas</h3>
         <div class="relative w-full h-[280px]">
-            <canvas id="monthlyEvolutionChart"></canvas>
+            <canvas id="monthlyEvolutionChart" data-pj="{{ json_encode($pjIncomesChart) }}" data-pf="{{ json_encode($pfIncomesChart) }}" data-expenses="{{ json_encode($expensesChart) }}"></canvas>
         </div>
     </div>
 
@@ -253,7 +253,6 @@
 
     <!-- Card 3: Consolidação Mensal (Calendário e Documentos) -->
     <div class="space-y-4">
-                <!-- Título e Exportar CSV -->
                 <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-100 dark:border-slate-850 pb-2">
                     <h3 class="text-xs font-black text-slate-400 dark:text-slate-500 uppercase tracking-wider">Consolidação Mensal</h3>
                     <a 
@@ -269,36 +268,64 @@
                 <div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-[5px] p-3 shadow-sm flex flex-col md:flex-row items-center justify-between gap-3 no-print">
                     <div class="flex items-center justify-between w-full md:w-auto gap-2 sm:gap-3">
                         <!-- Anterior -->
-                        <a href="{{ route('finances.mei', ['month' => $prevMonth->month, 'year' => $prevMonth->year]) }}" 
+                        <button type="button" @click="navigateTo({{ $prevMonth->month }}, {{ $prevMonth->year }})" 
                            class="inline-flex items-center justify-center gap-1.5 px-2.5 sm:px-3.5 py-2 border border-slate-200 dark:border-slate-800 hover:border-slate-350 dark:hover:border-slate-700 text-slate-650 dark:text-slate-300 hover:text-slate-800 dark:hover:text-white hover:bg-slate-50 dark:hover:bg-slate-800/50 text-xs font-bold rounded-[5px] transition-all shadow-sm shrink-0 uppercase tracking-wider"
                            title="Mês Anterior">
                             <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M15 19l-7-7 7-7"></path>
                             </svg>
                             <span class="hidden sm:inline">Anterior</span>
-                        </a>
+                        </button>
 
                         <!-- Mês / Ano Selecionado -->
-                        <div class="text-xs sm:text-sm font-extrabold text-slate-850 dark:text-slate-200 tracking-wider uppercase bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 px-3 sm:px-6 py-2 rounded-[5px] shadow-inner text-center font-outfit min-w-[120px] sm:min-w-[210px] select-none flex-1 md:flex-none">
-                            {{ $months[$month] }} {{ $year }}
+                        <div class="relative flex items-center justify-center gap-2 text-xs sm:text-sm font-extrabold text-slate-850 dark:text-slate-200 tracking-wider uppercase bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 px-3 sm:px-6 py-2 rounded-[5px] shadow-inner text-center font-outfit min-w-[120px] sm:min-w-[210px] select-none flex-1 md:flex-none"
+                             x-data="{ showPicker: false, pickerMonth: {{ $month }}, pickerYear: {{ $year }} }">
+                            <span>{{ $months[$month] }} {{ $year }}</span>
+                            
+                            <!-- Ícone para ir direto -->
+                            <button type="button" @click="showPicker = !showPicker" class="text-slate-450 hover:text-slate-750 dark:hover:text-slate-200 transition-colors p-1" title="Ir para Mês/Ano Específico">
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
+                                </svg>
+                            </button>
+
+                            <!-- Painel do Seletor -->
+                            <div x-show="showPicker" @click.away="showPicker = false" class="absolute top-full left-1/2 -translate-x-1/2 mt-1.5 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-xl rounded-[5px] p-3 z-50 text-slate-800 dark:text-slate-200 w-64 space-y-3" x-cloak x-transition>
+                                <span class="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider block text-left">Escolha o Período</span>
+                                <div class="grid grid-cols-2 gap-2">
+                                    <select x-model="pickerMonth" class="bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 text-xs font-semibold px-2 py-1.5 rounded-[5px] focus:outline-none focus:ring-1 focus:ring-primary-500 text-slate-850 dark:text-slate-200">
+                                        @foreach($months as $mNum => $mName)
+                                            <option value="{{ $mNum }}" {{ $month == $mNum ? 'selected' : '' }}>{{ $mName }}</option>
+                                        @endforeach
+                                    </select>
+                                    <select x-model="pickerYear" class="bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 text-xs font-semibold px-2 py-1.5 rounded-[5px] focus:outline-none focus:ring-1 focus:ring-primary-500 text-slate-850 dark:text-slate-200">
+                                        @for($y = date('Y') - 4; $y <= date('Y') + 4; $y++)
+                                            <option value="{{ $y }}" {{ $year == $y ? 'selected' : '' }}>{{ $y }}</option>
+                                        @endfor
+                                    </select>
+                                </div>
+                                <button type="button" @click="navigateTo(pickerMonth, pickerYear); showPicker = false;" class="w-full py-1.5 bg-primary-600 hover:bg-primary-700 text-white text-xs font-bold rounded-[5px] transition-colors shadow-sm uppercase tracking-wider">
+                                    Ir para o Período
+                                </button>
+                            </div>
                         </div>
 
                         <!-- Próximo -->
-                        <a href="{{ route('finances.mei', ['month' => $nextMonth->month, 'year' => $nextMonth->year]) }}" 
+                        <button type="button" @click="navigateTo({{ $nextMonth->month }}, {{ $nextMonth->year }})" 
                            class="inline-flex items-center justify-center gap-1.5 px-2.5 sm:px-3.5 py-2 border border-slate-200 dark:border-slate-800 hover:border-slate-355 dark:hover:border-slate-700 text-slate-650 dark:text-slate-300 hover:text-slate-800 dark:hover:text-white hover:bg-slate-50 dark:hover:bg-slate-800/50 text-xs font-bold rounded-[5px] transition-all shadow-sm shrink-0 uppercase tracking-wider"
                            title="Próximo Mês">
                             <span class="hidden sm:inline">Próximo</span>
                             <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M9 5l7 7-7 7"></path>
                             </svg>
-                        </a>
+                        </button>
                     </div>
                     
                     <!-- Botão Hoje -->
-                    <a href="{{ route('finances.mei', ['month' => $today->month, 'year' => $today->year]) }}" 
+                    <button type="button" @click="navigateTo({{ $today->month }}, {{ $today->year }})" 
                        class="inline-flex items-center justify-center gap-1.5 px-4 py-2 bg-slate-800 hover:bg-slate-900 text-white text-xs font-bold rounded-[5px] transition-colors shadow-sm uppercase tracking-wider w-full md:w-auto text-center">
                         Hoje
-                    </a>
+                    </button>
                 </div>
 
                 <!-- Details Card for the Selected Month -->
@@ -342,7 +369,7 @@
                         @if(count($m['attachments']) > 0)
                             <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
                                 @foreach($m['attachments'] as $doc)
-                                    <div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-850 p-3 rounded-[5px] flex items-center justify-between gap-3 shadow-xs">
+                                    <div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-855 p-3 rounded-[5px] flex items-center justify-between gap-3 shadow-xs">
                                         <div class="min-w-0">
                                             <div class="flex items-center gap-1.5">
                                                 <span class="text-[9px] font-black uppercase px-1.5 py-0.5 rounded {{ $doc['classification'] === 'PJ' ? 'bg-primary-50 text-primary-700 dark:bg-primary-950/40 dark:text-primary-300' : 'bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-300' }}">
@@ -381,6 +408,62 @@
                                 Nenhum comprovante ou nota fiscal anexada neste mês.
                             </div>
                         @endif
+                    </div>
+
+                    <!-- Divisor -->
+                    <div class="border-t border-slate-100 dark:border-slate-850 my-4"></div>
+
+                    <!-- Enviar Nota Fiscal / Recibo -->
+                    <div class="space-y-3 bg-slate-50 dark:bg-slate-950/20 border border-slate-200 dark:border-slate-800 p-4 rounded-[5px]">
+                        <h4 class="text-[11px] font-black text-slate-450 dark:text-slate-500 uppercase tracking-wider block">Anexar Nota Fiscal / Recibo a um Trabalho</h4>
+                        <p class="text-xs text-slate-400 font-medium">Esta função permite associar PDFs, XMLs ou Imagens de notas fiscais diretamente a parcelas de pagamentos de qualquer mês.</p>
+                        
+                        <form action="{{ route('finances.mei.upload-invoice') }}" method="POST" enctype="multipart/form-data" class="space-y-3" x-data="{ paySearch: '' }">
+                            @csrf
+                            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                <div class="space-y-2">
+                                    <label class="text-[10px] font-bold text-slate-455 uppercase tracking-wider block font-outfit">Selecione os Trabalhos / Parcelas:</label>
+                                    
+                                    <!-- Busca rápida de parcelas -->
+                                    <input 
+                                        type="text" 
+                                        x-model="paySearch" 
+                                        placeholder="Filtrar parcelas..." 
+                                        class="w-full text-xs bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-[5px] px-3 py-1.5 focus:outline-none focus:ring-1 focus:ring-primary-500 font-semibold text-slate-700 dark:text-slate-200"
+                                    >
+
+                                    <!-- Lista de Checkboxes de Pagamentos -->
+                                    <div class="border border-slate-200 dark:border-slate-800 rounded-[5px] p-2 bg-white dark:bg-slate-950 max-h-40 overflow-y-auto space-y-1.5">
+                                        @foreach($allPayments as $p)
+                                            <label 
+                                                x-show="'{{ strtolower(addslashes($p->project->title)) }}'.includes(paySearch.toLowerCase()) || '{{ strtolower(addslashes(number_format($p->amount, 2, ',', '.'))) }}'.includes(paySearch.toLowerCase())"
+                                                class="flex items-start gap-2.5 p-2 bg-slate-50 dark:bg-slate-900 border border-slate-150 dark:border-slate-850 rounded-[5px] cursor-pointer hover:bg-slate-100 dark:hover:bg-slate-800/80 transition-all text-xs font-semibold text-slate-750 dark:text-slate-200"
+                                            >
+                                                <input 
+                                                    type="checkbox" 
+                                                    name="payment_ids[]" 
+                                                    value="{{ $p->id }}"
+                                                    class="rounded border-slate-350 text-primary-600 focus:ring-primary-500/20 w-4 h-4 mt-0.5"
+                                                />
+                                                <span class="leading-tight">
+                                                    <strong>{{ $p->project->title }}</strong><br>
+                                                    <span class="text-[10px] text-slate-400 font-medium">R$ {{ number_format($p->amount, 2, ',', '.') }} • Pago em: {{ $p->paid_at->format('d/m/Y') }}</span>
+                                                </span>
+                                            </label>
+                                        @endforeach
+                                    </div>
+                                </div>
+                                <div class="space-y-1.5">
+                                    <label class="text-[10px] font-bold text-slate-455 uppercase tracking-wider block font-outfit">Arquivo da Nota / Recibo:</label>
+                                    <input type="file" name="invoice" required class="w-full text-xs text-slate-500 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-[5px] px-3 py-2.5 focus:outline-none file:mr-4 file:py-1 file:px-3 file:rounded file:border-0 file:text-xs file:font-semibold file:bg-primary-50 file:text-primary-700 hover:file:bg-primary-100">
+                                </div>
+                            </div>
+                            <div class="flex justify-end pt-1">
+                                <button type="submit" class="inline-flex items-center justify-center gap-1.5 px-4 py-2 bg-primary-600 hover:bg-primary-700 text-white text-xs font-bold rounded-[5px] transition-all shadow-sm uppercase tracking-wider font-outfit">
+                                    Anexar Comprovante
+                                </button>
+                            </div>
+                        </form>
                     </div>
                 </div>
             </div>
@@ -439,20 +522,31 @@
 
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script>
-    document.addEventListener('DOMContentLoaded', function() {
-        const ctx = document.getElementById('monthlyEvolutionChart').getContext('2d');
+    window.initMonthlyChart = function() {
+        const canvas = document.getElementById('monthlyEvolutionChart');
+        if (!canvas) return;
+
+        if (window.monthlyChart) {
+            window.monthlyChart.destroy();
+        }
+
+        const ctx = canvas.getContext('2d');
         const isDark = document.documentElement.classList.contains('dark');
         const gridColor = isDark ? '#1e293b' : '#f1f5f9';
         const labelColor = isDark ? '#94a3b8' : '#64748b';
 
-        new Chart(ctx, {
+        const pjData = JSON.parse(canvas.getAttribute('data-pj') || '[]');
+        const pfData = JSON.parse(canvas.getAttribute('data-pf') || '[]');
+        const expensesData = JSON.parse(canvas.getAttribute('data-expenses') || '[]');
+
+        window.monthlyChart = new Chart(ctx, {
             type: 'line',
             data: {
                 labels: ['Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun', 'Jul', 'Ago', 'Set', 'Out', 'Nov', 'Dez'],
                 datasets: [
                     {
                         label: 'Faturamento PJ',
-                        data: @json($pjIncomesChart),
+                        data: pjData,
                         borderColor: '#10b981',
                         backgroundColor: 'rgba(16, 185, 129, 0.08)',
                         borderWidth: 2.5,
@@ -461,7 +555,7 @@
                     },
                     {
                         label: 'Receitas PF',
-                        data: @json($pfIncomesChart),
+                        data: pfData,
                         borderColor: '#3b82f6',
                         backgroundColor: 'rgba(59, 130, 246, 0.08)',
                         borderWidth: 2.5,
@@ -470,7 +564,7 @@
                     },
                     {
                         label: 'Despesas Gerais',
-                        data: @json($expensesChart),
+                        data: expensesData,
                         borderColor: '#ef4444',
                         backgroundColor: 'rgba(239, 68, 68, 0.05)',
                         borderWidth: 2.5,
@@ -503,7 +597,9 @@
                 }
             }
         });
-    });
+    };
+
+    document.addEventListener('DOMContentLoaded', window.initMonthlyChart);
 
     function meiManager() {
         return {
@@ -514,6 +610,31 @@
             previewDocType: '',
             previewDownloadUrl: '',
             
+            async navigateTo(month, year) {
+                const url = new URL(window.location.href);
+                url.searchParams.set('month', month);
+                url.searchParams.set('year', year);
+                window.history.pushState({ month, year }, '', url.toString());
+
+                try {
+                    const response = await fetch(url.toString());
+                    const html = await response.text();
+                    const parser = new DOMParser();
+                    const doc = parser.parseFromString(html, 'text/html');
+
+                    const target = document.getElementById('mei-content-wrapper');
+                    const source = doc.getElementById('mei-content-wrapper');
+                    if (target && source) {
+                        target.innerHTML = source.innerHTML;
+                    }
+
+                    // Re-init chart and scroll smoothly
+                    window.initMonthlyChart();
+                } catch (e) {
+                    console.error('Erro na navegação:', e);
+                }
+            },
+
             formatMoney(value) {
                 if (!value) return 'R$ 0,00';
                 let clean = value.replace(/\D/g, '');
