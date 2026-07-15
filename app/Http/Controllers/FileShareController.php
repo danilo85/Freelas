@@ -269,7 +269,7 @@ class FileShareController extends Controller
         }
 
         $item = $share->items()->findOrFail($itemId);
-        $path = storage_path('app/public/' . $item->file_path);
+        $path = \Illuminate\Support\Facades\Storage::disk('public')->path($item->file_path);
 
         if (!file_exists($path)) {
             abort(404, 'Arquivo não encontrado no servidor.');
@@ -323,7 +323,7 @@ class FileShareController extends Controller
 
         if ($zip->open($zipFile, \ZipArchive::CREATE | \ZipArchive::OVERWRITE) === true) {
             foreach ($share->items as $item) {
-                $path = storage_path('app/public/' . $item->file_path);
+                $path = \Illuminate\Support\Facades\Storage::disk('public')->path($item->file_path);
                 if (file_exists($path)) {
                     $zip->addFile($path, $item->filename);
                 }
