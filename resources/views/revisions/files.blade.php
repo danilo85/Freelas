@@ -202,15 +202,11 @@
                                             @endif
 
                                             <!-- Deletar Arquivo -->
-                                            <form action="{{ route('revisoes.files.destroy', $file->id) }}" method="POST" onsubmit="return confirm('Deseja realmente excluir este arquivo? Esta ação apagará todas as anotações do cliente feitas nele.')" class="inline">
-                                                @csrf
-                                                @method('DELETE')
-                                                <button type="submit" class="border border-slate-200 text-rose-500 hover:bg-rose-50 p-2 rounded-[5px] transition-all" title="Excluir Arquivo">
-                                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
-                                                    </svg>
-                                                </button>
-                                            </form>
+                                            <button type="button" @click="confirmDelete('{{ addslashes($file->filename) }}', '{{ route('revisoes.files.destroy', $file->id) }}')" class="border border-slate-200 text-rose-500 hover:bg-rose-50 p-2 rounded-[5px] transition-all cursor-pointer" title="Excluir Arquivo">
+                                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
+                                                </svg>
+                                            </button>
                                         </div>
 
                                     </div>
@@ -226,12 +222,55 @@
 
     </div>
 
+    <!-- Deletion Confirmation Modal -->
+    <div x-show="showDeleteModal" 
+         class="fixed inset-0 flex items-center justify-center bg-slate-950/75 backdrop-blur-md"
+         style="z-index: 99999; margin: 0 !important;"
+         x-transition.opacity
+         x-cloak>
+        <div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-2xl rounded-lg max-w-sm w-full p-6 text-center space-y-4 select-none relative"
+             @click.away="showDeleteModal = false">
+            <div class="w-12 h-12 rounded-full bg-red-50 dark:bg-red-950/40 text-red-650 flex items-center justify-center text-xl mx-auto">
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
+                </svg>
+            </div>
+            <div class="space-y-1">
+                <h3 class="font-outfit font-black text-slate-850 dark:text-slate-100 text-sm uppercase tracking-tight">Excluir Arquivo?</h3>
+                <p class="text-[10px] text-slate-400 font-bold uppercase tracking-wider block truncate max-w-xs mx-auto" x-text="deleteFileName"></p>
+            </div>
+            <p class="text-xs text-slate-500 leading-relaxed">
+                Deseja realmente excluir este arquivo? Esta ação apagará permanentemente todas as anotações e revisões do cliente feitas nele.
+            </p>
+            <div class="flex justify-center gap-2 pt-2">
+                <button type="button" @click="showDeleteModal = false" class="px-4 py-2 border border-slate-200 text-slate-700 dark:text-slate-350 hover:bg-slate-50 dark:hover:bg-slate-800 text-xs font-bold rounded-[5px] uppercase tracking-wider cursor-pointer">
+                    Cancelar
+                </button>
+                <form :action="deleteActionUrl" method="POST" class="inline">
+                    @csrf
+                    @method('DELETE')
+                    <button type="submit" class="px-4 py-2 bg-red-600 hover:bg-red-700 text-white text-xs font-bold rounded-[5px] shadow-sm uppercase tracking-wider cursor-pointer">
+                        Sim, Excluir
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+
 </div>
 
 <script>
     function fileManager() {
         return {
-            // file manager state helper
+            showDeleteModal: false,
+            deleteFileName: '',
+            deleteActionUrl: '',
+            
+            confirmDelete(fileName, actionUrl) {
+                this.deleteFileName = fileName;
+                this.deleteActionUrl = actionUrl;
+                this.showDeleteModal = true;
+            }
         }
     }
 
