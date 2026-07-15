@@ -70,6 +70,82 @@
         </div>
     </div>
 
+    <!-- Deletion Confirmation Modal -->
+    <div x-show="showDeleteModal" 
+         class="fixed inset-0 flex items-center justify-center bg-slate-950/75 backdrop-blur-md"
+         style="z-index: 99999; margin: 0 !important;"
+         x-transition.opacity
+         x-cloak>
+        <div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-2xl rounded-lg max-w-sm w-full p-6 text-center space-y-4 select-none relative"
+             @click.away="showDeleteModal = false">
+            <div class="w-12 h-12 rounded-full bg-red-50 dark:bg-red-950 text-red-600 dark:text-red-400 flex items-center justify-center text-xl mx-auto">
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
+                </svg>
+            </div>
+            <div class="space-y-1">
+                <h3 class="font-outfit font-black text-slate-800 dark:text-slate-100 text-sm uppercase tracking-tight">Excluir Nota / Recibo?</h3>
+                <p class="text-[10px] text-slate-400 font-bold uppercase tracking-wider block" x-text="deleteFileName"></p>
+            </div>
+            <p class="text-xs text-slate-500 leading-relaxed">
+                Tem certeza de que deseja deletar e desvincular este anexo de todos os trabalhos relacionados? Esta ação é definitiva.
+            </p>
+            <div class="flex justify-center gap-2 pt-2">
+                <button type="button" @click="showDeleteModal = false" class="px-4 py-2 border border-slate-200 text-slate-700 dark:text-slate-350 hover:bg-slate-50 dark:hover:bg-slate-800 text-xs font-bold rounded-[5px] uppercase tracking-wider cursor-pointer">
+                    Cancelar
+                </button>
+                <form action="{{ route('finances.mei.delete-invoice') }}" method="POST" class="inline">
+                    @csrf
+                    <input type="hidden" name="transaction_id" :value="deleteTransId">
+                    <button type="submit" class="px-4 py-2 bg-red-600 hover:bg-red-700 text-white text-xs font-bold rounded-[5px] shadow-sm uppercase tracking-wider cursor-pointer">
+                        Sim, Excluir
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Replace Invoice Modal -->
+    <div x-show="showReplaceModal" 
+         class="fixed inset-0 flex items-center justify-center bg-slate-950/75 backdrop-blur-md"
+         style="z-index: 99999; margin: 0 !important;"
+         x-transition.opacity
+         x-cloak>
+        <div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-2xl rounded-lg max-w-md w-full p-6 space-y-4 select-none relative"
+             @click.away="showReplaceModal = false">
+            <div class="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-3">
+                <div>
+                    <h3 class="font-outfit font-black text-slate-800 dark:text-slate-100 text-sm uppercase tracking-tight">Substituir Nota / Recibo</h3>
+                    <p class="text-[9px] text-slate-400 font-bold uppercase tracking-wider block mt-0.5" x-text="'Substituindo: ' + replaceFileName"></p>
+                </div>
+                <button type="button" @click="showReplaceModal = false" class="text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 font-black text-sm p-1 cursor-pointer">✕</button>
+            </div>
+            
+            <form action="{{ route('finances.mei.replace-invoice') }}" method="POST" enctype="multipart/form-data" class="space-y-4">
+                @csrf
+                <input type="hidden" name="transaction_id" :value="replaceTransId">
+                
+                <p class="text-xs text-slate-500 leading-relaxed">
+                    O novo arquivo enviado substituirá o arquivo atual em <strong>todos os trabalhos contemplados</strong> por este mesmo comprovante de faturamento.
+                </p>
+                
+                <div class="space-y-1.5">
+                    <label class="text-[10px] font-bold text-slate-455 uppercase tracking-wider block font-outfit">Selecione o Novo Arquivo:</label>
+                    <input type="file" name="invoice" required class="w-full text-xs text-slate-500 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-[5px] px-3 py-2.5 focus:outline-none file:mr-4 file:py-1 file:px-3 file:rounded file:border-0 file:text-xs file:font-semibold file:bg-primary-50 file:text-primary-700 hover:file:bg-primary-100">
+                </div>
+
+                <div class="flex justify-end gap-2 pt-2 border-t border-slate-100 dark:border-slate-800">
+                    <button type="button" @click="showReplaceModal = false" class="px-4 py-2 border border-slate-200 text-slate-700 dark:text-slate-350 hover:bg-slate-50 dark:hover:bg-slate-800 text-xs font-bold rounded-[5px] uppercase tracking-wider cursor-pointer">
+                        Cancelar
+                    </button>
+                    <button type="submit" class="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold rounded-[5px] shadow-sm uppercase tracking-wider cursor-pointer">
+                        Salvar e Substituir
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
     <!-- Link de Voltar -->
     <div class="flex items-center justify-between no-print">
         <a href="{{ route('finances.index') }}" class="flex items-center gap-2 text-slate-500 hover:text-slate-300 text-sm font-medium transition-colors">
@@ -369,14 +445,15 @@
                         @if(count($m['attachments']) > 0)
                             <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
                                 @foreach($m['attachments'] as $doc)
-                                    <div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-855 p-3 rounded-[5px] flex flex-col justify-between gap-3 shadow-xs">
-                                        <div class="flex items-start justify-between gap-3 w-full">
+                                    <div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-855 p-3.5 rounded-[5px] flex flex-col justify-between gap-3 shadow-xs">
+                                        <!-- Top Row: Badges, Title, Date and Action Buttons -->
+                                        <div class="flex flex-col lg:flex-row lg:items-start justify-between gap-3 w-full border-b border-slate-100 dark:border-slate-800/60 pb-3">
                                             <div class="min-w-0 flex-1">
                                                 <div class="flex items-center gap-1.5 flex-wrap">
                                                     <span class="text-[9px] font-black uppercase px-1.5 py-0.5 rounded {{ $doc['classification'] === 'PJ' ? 'bg-primary-50 text-primary-700 dark:bg-primary-950/40 dark:text-primary-300' : 'bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-300' }}">
                                                         {{ $doc['classification'] }}
                                                     </span>
-                                                    <h5 class="font-bold text-xs text-slate-850 dark:text-slate-200 truncate max-w-[180px] sm:max-w-[220px]" title="{{ $doc['filename'] }}">{{ $doc['filename'] }}</h5>
+                                                    <h5 class="font-extrabold text-xs text-slate-850 dark:text-slate-200 truncate max-w-[280px] sm:max-w-xs" title="{{ $doc['filename'] }}">{{ $doc['filename'] }}</h5>
                                                 </div>
                                                 <p class="text-[10px] text-slate-400 font-bold block mt-1">
                                                     {{ $doc['date'] }} • Total: 
@@ -386,20 +463,42 @@
                                                 </p>
                                             </div>
 
-                                            <div class="flex items-center gap-1.5 shrink-0">
+                                            <div class="flex items-center gap-1.5 shrink-0 flex-wrap lg:flex-nowrap">
                                                 <button 
                                                     type="button"
                                                     @click="openPreview({{ json_encode($doc) }})"
-                                                    class="px-2.5 py-1.5 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 font-bold text-[10px] rounded-[5px] transition-colors shadow-sm shrink-0 uppercase tracking-wider flex items-center gap-1 cursor-pointer"
+                                                    class="px-2.5 py-1.5 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 font-bold text-[10px] rounded-[5px] transition-colors shadow-xs shrink-0 uppercase tracking-wider flex items-center gap-1 cursor-pointer"
+                                                    title="Visualizar anexo"
                                                 >
                                                     👁️ Ver
                                                 </button>
                                                 <a 
                                                     href="{{ $doc['download_url'] }}" 
-                                                    class="px-2.5 py-1.5 bg-blue-600 hover:bg-blue-700 text-white font-bold text-[10px] rounded-[5px] transition-colors shadow-sm shrink-0 flex items-center gap-1 uppercase tracking-wider"
+                                                    class="px-2.5 py-1.5 bg-blue-600 hover:bg-blue-700 text-white font-bold text-[10px] rounded-[5px] transition-colors shadow-xs shrink-0 flex items-center gap-1 uppercase tracking-wider"
+                                                    title="Baixar anexo"
                                                 >
                                                     Baixar
                                                 </a>
+                                                <button 
+                                                    type="button"
+                                                    @click="openReplace({{ $doc['transaction_id'] }}, '{{ addslashes($doc['filename']) }}')"
+                                                    class="px-2.5 py-1.5 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 font-bold text-[10px] rounded-[5px] transition-colors border border-slate-200 dark:border-slate-800 shadow-xs shrink-0 uppercase tracking-wider cursor-pointer"
+                                                    title="Substituir nota/comprovante"
+                                                >
+                                                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"></path>
+                                                    </svg>
+                                                </button>
+                                                <button 
+                                                    type="button"
+                                                    @click="confirmDelete({{ $doc['transaction_id'] }}, '{{ addslashes($doc['filename']) }}')"
+                                                    class="px-2.5 py-1.5 bg-red-50 hover:bg-red-100 text-red-650 hover:text-red-750 font-bold text-[10px] rounded-[5px] transition-colors border border-red-200 shadow-xs shrink-0 uppercase tracking-wider cursor-pointer"
+                                                    title="Remover anexo de todos os trabalhos"
+                                                >
+                                                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
+                                                    </svg>
+                                                </button>
                                             </div>
                                         </div>
 
@@ -622,6 +721,28 @@
             previewDocName: '',
             previewDocType: '',
             previewDownloadUrl: '',
+
+            // Deletion Modal
+            showDeleteModal: false,
+            deleteTransId: null,
+            deleteFileName: '',
+
+            // Replace Modal
+            showReplaceModal: false,
+            replaceTransId: null,
+            replaceFileName: '',
+
+            confirmDelete(transactionId, filename) {
+                this.deleteTransId = transactionId;
+                this.deleteFileName = filename;
+                this.showDeleteModal = true;
+            },
+
+            openReplace(transactionId, filename) {
+                this.replaceTransId = transactionId;
+                this.replaceFileName = filename;
+                this.showReplaceModal = true;
+            },
             
             async navigateTo(month, year) {
                 const url = new URL(window.location.href);

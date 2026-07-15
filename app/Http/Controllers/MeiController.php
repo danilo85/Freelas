@@ -310,4 +310,105 @@ class MeiController extends Controller
 
         return response()->stream($callback, 200, $headers);
     }
+
+    /**
+     * Remove a nota fiscal/comprovante físico e limpa a relação em todos os trabalhos associados.
+     */
+    public function deleteInvoice(Request $request)
+    {
+        $request->validate([
+            'transaction_id' => 'required|integer',
+        ]);
+
+        $userId = auth()->id();
+        $transaction = \App\Models\Transaction::where('user_id', $userId)
+            ->findOrFail($request->transaction_id);
+
+        $path = $transaction->attachment_path;
+
+        if ($path) {
+            // 1. Remove de todas as transações do usuário que compartilham esse anexo
+            \App\Models\Transaction::where('user_id', $userId)
+                ->where('attachment_path', $path)
+                ->update(['attachment_path' => null]);
+
+            // 2. Remove de todos os pagamentos (através dos projetos dos clientes do usuário) que usam essa nota
+            $paymentIds = \App\Models\Payment::whereHas('project.client', function ($q) use ($userId) {
+                $q->where('user_id', $userId);
+            })
+            ->where('invoice_path', $path)
+            ->pluck('id');
+
+            if ($paymentIds->isNotEmpty()) {
+                \App\Models\Payment::whereIn('id', $paymentIds)
+                    ->update([
+                        'invoice_path' => null,
+                        'attachment_path' => null
+                    ]);
+            }
+
+            // 3. Deleta o arquivo físico
+            if (\Illuminate\Support\Facades\Storage::disk('local')->exists($path)) {
+                \Illuminate\Support\Facades\Storage::disk('local')->delete($path);
+            }
+        }
+
+        return redirect()->back()->with('success', 'Nota fiscal/comprovante removido com sucesso.');
+    }
+
+    /**
+     * Substitui o comprovante físico de todas as transações que continham o comprovante anterior.
+     */
+    public function replaceInvoice(Request $request)
+    {
+        $request->validate([
+            'transaction_id' => 'required|integer',
+            'invoice' => 'required|file|max:10240', // Max 10MB
+        ]);
+
+        $userId = auth()->id();
+        $transaction = \App\Models\Transaction::where('user_id', $userId)
+            ->findOrFail($request->transaction_id);
+
+        $oldPath = $transaction->attachment_path;
+
+        if ($request->hasFile('invoice') && $request->file('invoice')->isValid()) {
+            // Salva o novo arquivo
+            $newPath = $request->file('invoice')->store('invoices', 'local');
+
+            if ($newPath) {
+                // 1. Atualiza todas as transações que tinham o antigo anexo
+                if ($oldPath) {
+                    \App\Models\Transaction::where('user_id', $userId)
+                        ->where('attachment_path', $oldPath)
+                        ->update(['attachment_path' => $newPath]);
+
+                    // 2. Atualiza todos os pagamentos correspondentes
+                    $paymentIds = \App\Models\Payment::whereHas('project.client', function ($q) use ($userId) {
+                        $q->where('user_id', $userId);
+                    })
+                    ->where('invoice_path', $oldPath)
+                    ->pluck('id');
+
+                    if ($paymentIds->isNotEmpty()) {
+                        \App\Models\Payment::whereIn('id', $paymentIds)
+                            ->update([
+                                'invoice_path' => $newPath,
+                                'attachment_path' => $newPath
+                            ]);
+                    }
+
+                    // 3. Deleta o arquivo antigo
+                    if (\Illuminate\Support\Facades\Storage::disk('local')->exists($oldPath)) {
+                        \Illuminate\Support\Facades\Storage::disk('local')->delete($oldPath);
+                    }
+                } else {
+                    // Caso a transação original não tivesse um anexo
+                    $transaction->update(['attachment_path' => $newPath]);
+                }
+            }
+        }
+
+        return redirect()->back()->with('success', 'Nota fiscal/comprovante substituído com sucesso.');
+    }
 }

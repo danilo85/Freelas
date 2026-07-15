@@ -85,6 +85,8 @@ Route::middleware(['auth', 'approved'])->prefix('freelas')->group(function () {
     Route::get('/finances/mei/export-csv', [\App\Http\Controllers\MeiController::class, 'exportCsv'])->name('finances.mei.export-csv');
     Route::post('/finances/mei/limit', [\App\Http\Controllers\MeiController::class, 'updateLimit'])->name('finances.mei.limit');
     Route::post('/finances/mei/upload-invoice', [\App\Http\Controllers\MeiController::class, 'uploadInvoice'])->name('finances.mei.upload-invoice');
+    Route::post('/finances/mei/delete-invoice', [\App\Http\Controllers\MeiController::class, 'deleteInvoice'])->name('finances.mei.delete-invoice');
+    Route::post('/finances/mei/replace-invoice', [\App\Http\Controllers\MeiController::class, 'replaceInvoice'])->name('finances.mei.replace-invoice');
     
     Route::resource('finances/categories', \App\Http\Controllers\CategoryController::class)->except(['show'])->names([
         'index' => 'finances.categories.index',
