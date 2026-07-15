@@ -270,13 +270,4 @@ Route::get('/revisao/round/{round}/download-annotations', [\App\Http\Controllers
 // Rota pública de Identidade Visual
 Route::get('/brand/{token}', [\App\Http\Controllers\PublicBrandController::class, 'show'])->name('public.brand.show');
 
-// Rota temporária para limpar cache na Hostinger
-Route::get('/clear-production-cache-temp', function() {
-    \Illuminate\Support\Facades\Artisan::call('route:clear');
-    \Illuminate\Support\Facades\Artisan::call('config:clear');
-    \Illuminate\Support\Facades\Artisan::call('view:clear');
-    \Illuminate\Support\Facades\Artisan::call('cache:clear');
-    return 'Caches limpos com sucesso na Hostinger!';
-});
-
 
