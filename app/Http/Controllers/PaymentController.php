@@ -319,6 +319,7 @@ class PaymentController extends Controller
             abort(404, 'Nenhum caminho de nota fiscal cadastrado.');
         }
 
+        $path = str_replace('\\', '/', $path);
         $cleanPath = ltrim($path, '/');
         $disks = ['local', 'public'];
         $pathVariations = [

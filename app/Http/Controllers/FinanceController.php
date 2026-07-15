@@ -517,11 +517,16 @@ class FinanceController extends Controller
     {
         abort_if($transaction->user_id !== auth()->id(), 403, 'Ação não autorizada.');
 
-        if (!$transaction->attachment_path || !Storage::disk('local')->exists($transaction->attachment_path)) {
+        $path = $transaction->attachment_path;
+        if ($path) {
+            $path = str_replace('\\', '/', $path);
+        }
+
+        if (!$path || !Storage::disk('local')->exists($path)) {
             abort(404, 'Anexo não encontrado.');
         }
 
-        return Storage::disk('local')->download($transaction->attachment_path, basename($transaction->attachment_path));
+        return Storage::disk('local')->download($path, basename($path));
     }
 
     /**
@@ -531,16 +536,21 @@ class FinanceController extends Controller
     {
         abort_if($transaction->user_id !== auth()->id(), 403, 'Ação não autorizada.');
 
-        if (!$transaction->attachment_path || !Storage::disk('local')->exists($transaction->attachment_path)) {
+        $path = $transaction->attachment_path;
+        if ($path) {
+            $path = str_replace('\\', '/', $path);
+        }
+
+        if (!$path || !Storage::disk('local')->exists($path)) {
             abort(404, 'Anexo não encontrado.');
         }
 
-        $path = Storage::disk('local')->path($transaction->attachment_path);
-        $mimeType = Storage::disk('local')->mimeType($transaction->attachment_path);
+        $fullPath = Storage::disk('local')->path($path);
+        $mimeType = Storage::disk('local')->mimeType($path);
 
-        return response()->file($path, [
+        return response()->file($fullPath, [
             'Content-Type' => $mimeType,
-            'Content-Disposition' => 'inline; filename="' . basename($path) . '"'
+            'Content-Disposition' => 'inline; filename="' . basename($fullPath) . '"'
         ]);
     }
 
