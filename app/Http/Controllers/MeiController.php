@@ -347,9 +347,13 @@ class MeiController extends Controller
                     ]);
             }
 
-            // 3. Deleta o arquivo físico
-            if (\Illuminate\Support\Facades\Storage::disk('local')->exists($path)) {
-                \Illuminate\Support\Facades\Storage::disk('local')->delete($path);
+            // 3. Deleta o arquivo físico com segurança
+            try {
+                if (\Illuminate\Support\Facades\Storage::disk('local')->exists($path)) {
+                    \Illuminate\Support\Facades\Storage::disk('local')->delete($path);
+                }
+            } catch (\Exception $e) {
+                \Illuminate\Support\Facades\Log::error('Erro ao deletar arquivo no MEI: ' . $e->getMessage());
             }
         }
 
@@ -398,9 +402,13 @@ class MeiController extends Controller
                             ]);
                     }
 
-                    // 3. Deleta o arquivo antigo
-                    if (\Illuminate\Support\Facades\Storage::disk('local')->exists($oldPath)) {
-                        \Illuminate\Support\Facades\Storage::disk('local')->delete($oldPath);
+                    // 3. Deleta o arquivo antigo com segurança
+                    try {
+                        if (\Illuminate\Support\Facades\Storage::disk('local')->exists($oldPath)) {
+                            \Illuminate\Support\Facades\Storage::disk('local')->delete($oldPath);
+                        }
+                    } catch (\Exception $e) {
+                        \Illuminate\Support\Facades\Log::error('Erro ao deletar arquivo antigo substituído no MEI: ' . $e->getMessage());
                     }
                 } else {
                     // Caso a transação original não tivesse um anexo
