@@ -275,15 +275,25 @@ class FileShareController extends Controller
             abort(404, 'Arquivo não encontrado no servidor.');
         }
 
-        $share->increment('download_count');
+        // Evita múltiplas notificações e incrementos em downloads multi-thread no intervalo de 15 segundos
+        $recent = \App\Models\Notification::where('user_id', $share->user_id)
+            ->where('type', 'share')
+            ->where('title', 'Arquivo Baixado')
+            ->where('content', "O arquivo '" . $item->filename . "' foi baixado do compartilhamento '" . $share->title . "'.")
+            ->where('created_at', '>=', now()->subSeconds(15))
+            ->exists();
 
-        // Cria notificação de download para o gestor
-        \App\Models\Notification::create([
-            'user_id' => $share->user_id,
-            'title' => 'Arquivo Baixado',
-            'content' => "O arquivo '" . $item->filename . "' foi baixado do compartilhamento '" . $share->title . "'.",
-            'type' => 'share'
-        ]);
+        if (!$recent) {
+            $share->increment('download_count');
+
+            // Cria notificação de download para o gestor
+            \App\Models\Notification::create([
+                'user_id' => $share->user_id,
+                'title' => 'Arquivo Baixado',
+                'content' => "O arquivo '" . $item->filename . "' foi baixado do compartilhamento '" . $share->title . "'.",
+                'type' => 'share'
+            ]);
+        }
 
         return response()->download($path, $item->filename);
     }
@@ -321,15 +331,25 @@ class FileShareController extends Controller
             $zip->close();
         }
 
-        $share->increment('download_count');
+        // Evita múltiplas notificações e incrementos no intervalo de 15 segundos
+        $recentZip = \App\Models\Notification::where('user_id', $share->user_id)
+            ->where('type', 'share')
+            ->where('title', 'Arquivos Baixados (ZIP)')
+            ->where('content', "Todos os arquivos do compartilhamento '" . $share->title . "' foram baixados em formato ZIP.")
+            ->where('created_at', '>=', now()->subSeconds(15))
+            ->exists();
 
-        // Cria notificação de download do ZIP para o gestor
-        \App\Models\Notification::create([
-            'user_id' => $share->user_id,
-            'title' => 'Arquivos Baixados (ZIP)',
-            'content' => "Todos os arquivos do compartilhamento '" . $share->title . "' foram baixados em formato ZIP.",
-            'type' => 'share'
-        ]);
+        if (!$recentZip) {
+            $share->increment('download_count');
+
+            // Cria notificação de download do ZIP para o gestor
+            \App\Models\Notification::create([
+                'user_id' => $share->user_id,
+                'title' => 'Arquivos Baixados (ZIP)',
+                'content' => "Todos os arquivos do compartilhamento '" . $share->title . "' foram baixados em formato ZIP.",
+                'type' => 'share'
+            ]);
+        }
 
         $downloadName = Str::slug($share->title) . '-arquivos.zip';
         return response()->download($zipFile, $downloadName)->deleteFileAfterSend(true);

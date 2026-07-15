@@ -13,17 +13,26 @@
             <p class="text-sm text-slate-500 font-medium mt-1">Veja todas as atualizações de propostas, compartilhamentos de arquivos, financeiros e lembretes.</p>
         </div>
         
-        <div class="flex items-center gap-2 w-full md:w-auto">
+        <div class="flex items-center gap-2">
             @if($notifications->count() > 0)
-                <form action="{{ route('notifications.read-all') }}" method="POST" class="flex-1 md:flex-initial">
+                <form action="{{ route('notifications.read-all') }}" method="POST">
                     @csrf
-                    <button type="submit" class="w-full inline-flex items-center justify-center gap-1.5 px-3 py-2.5 bg-white border border-slate-200 text-slate-700 hover:bg-slate-50 text-[10px] sm:text-xs font-bold rounded-[5px] transition-colors shadow-sm uppercase tracking-wider cursor-pointer">
-                        ✔️ Marcar Lidas
+                    <button type="submit" 
+                            class="w-10 h-10 inline-flex items-center justify-center bg-white border border-slate-200 text-slate-600 hover:text-primary-600 hover:bg-slate-50 rounded-[5px] transition-all shadow-sm cursor-pointer" 
+                            title="Marcar todas como lidas">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"></path>
+                        </svg>
                     </button>
                 </form>
 
-                <button type="button" @click="showClearModal = true" class="flex-1 md:flex-initial w-full inline-flex items-center justify-center gap-1.5 px-3 py-2.5 bg-red-50 hover:bg-red-100 text-red-700 text-[10px] sm:text-xs font-bold rounded-[5px] transition-colors border border-red-200 shadow-sm uppercase tracking-wider cursor-pointer">
-                    🗑️ Limpar Histórico
+                <button type="button" 
+                        @click="showClearModal = true" 
+                        class="w-10 h-10 inline-flex items-center justify-center bg-red-50 hover:bg-red-100 text-red-650 hover:text-red-750 border border-red-200 rounded-[5px] transition-all shadow-sm cursor-pointer" 
+                        title="Limpar histórico de notificações">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
+                    </svg>
                 </button>
             @endif
         </div>
@@ -118,7 +127,7 @@
          x-transition:leave="transition ease-in duration-200"
          x-transition:leave-start="opacity-100"
          x-transition:leave-end="opacity-0"
-         style="display: none;">
+         style="display: none; margin: 0 !important;">
         
         <div @click.away="showClearModal = false" 
              class="bg-white border border-slate-200 rounded-[5px] max-w-sm w-full p-6 shadow-2xl space-y-4 transform transition-all"
@@ -153,7 +162,7 @@
                     @csrf
                     @method('DELETE')
                     <button type="submit" 
-                            class="px-4 py-2 bg-red-650 hover:bg-red-700 text-white text-xs font-bold rounded-[5px] transition-colors shadow-sm uppercase tracking-wider cursor-pointer">
+                            class="px-4 py-2 bg-red-600 hover:bg-red-700 text-white text-xs font-bold rounded-[5px] transition-colors shadow-sm uppercase tracking-wider cursor-pointer">
                         Sim, Limpar tudo
                     </button>
                 </form>

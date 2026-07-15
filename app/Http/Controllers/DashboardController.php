@@ -24,20 +24,23 @@ class DashboardController extends Controller
         ->whereBetween('paid_at', [$startOfMonth, $endOfMonth])
         ->sum('amount');
 
-        // 2. Valor total dos projetos (pertencentes a clientes do usuário logado) que possuem proposta pendente
+        // 2. Valor total dos projetos (pertencentes a clientes do usuário logado) que possuem proposta em análise ou pendente
         $pendingProposalsValue = Project::whereHas('client', function ($q) use ($userId) {
             $q->where('user_id', $userId);
         })
-        ->whereHas('proposals', function ($query) {
-            $query->where('status', 'pendente');
+        ->where(function($query) {
+            $query->where('status', 'analisando')
+                  ->orWhereHas('proposals', function ($q) {
+                      $q->whereIn('status', ['pendente', 'analisando']);
+                  });
         })
         ->sum('total_value');
 
-        // 3. Quantidade de projetos com status "em andamento" (pertencentes a clientes do usuário logado)
+        // 3. Quantidade de projetos ativos (aprovados ou quitados) do usuário logado
         $activeProjectsCount = Project::whereHas('client', function ($q) use ($userId) {
             $q->where('user_id', $userId);
         })
-        ->where('status', 'em andamento')
+        ->whereIn('status', ['aprovado', 'quitado'])
         ->count();
 
         // Kanban Columns

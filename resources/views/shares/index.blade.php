@@ -324,7 +324,7 @@
     <!-- Modal de Configurações do Compartilhamento -->
     <div x-show="settingsModalOpen" 
          class="fixed inset-0 flex items-center justify-center bg-slate-900/40 backdrop-blur-sm"
-         style="z-index: 9999;"
+         style="z-index: 9999; margin: 0 !important;"
          x-transition.opacity
          x-cloak>
         <div class="bg-white border border-slate-250 shadow-2xl rounded-lg max-w-md w-full p-6 space-y-4 text-left select-none" @click.away="settingsModalOpen = false">

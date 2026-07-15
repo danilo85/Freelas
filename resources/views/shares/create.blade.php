@@ -206,7 +206,7 @@
     <!-- Modal de Progresso de Upload Premium -->
     <div x-show="isUploading" 
          class="fixed inset-0 flex items-center justify-center bg-slate-950/75 backdrop-blur-md"
-         style="z-index: 99999;"
+         style="z-index: 99999; margin: 0 !important;"
          x-transition.opacity
          x-cloak>
         <div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-2xl rounded-lg max-w-sm w-full p-8 text-center space-y-6 select-none relative overflow-hidden">

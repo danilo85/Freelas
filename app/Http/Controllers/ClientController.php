@@ -28,10 +28,10 @@ class ClientController extends Controller
         // 1. Total de Clientes
         $totalClientsCount = $clients->count();
 
-        // 2. Clientes com Projetos Ativos ("em andamento")
+        // 2. Clientes com Projetos Ativos (Status: aprovado, quitado)
         $clientsWithActiveProjectsCount = auth()->user()->clients()
             ->whereHas('projects', function ($q) {
-                $q->where('status', 'em andamento');
+                $q->whereIn('status', ['aprovado', 'quitado']);
             })->count();
 
         // 3. Novos Clientes (cadastrados nos últimos 30 dias)
