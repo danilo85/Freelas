@@ -75,29 +75,6 @@ Route::middleware(['auth', 'approved'])->prefix('freelas')->group(function () {
     Route::delete('/payments/{payment}', [PaymentController::class, 'destroy'])->name('payments.destroy');
     Route::get('/payments/{payment}/download-invoice', [PaymentController::class, 'downloadInvoice'])->name('payments.download-invoice');
 
-    // Debugging route for Payment Files on Hostinger
-    Route::get('/debug-payment/{id}', function($id) {
-        $payment = \App\Models\Payment::find($id);
-        if (!$payment) {
-            return 'Payment ' . $id . ' not found in database!';
-        }
-        $transaction = $payment->transaction;
-        $invoice_path = $payment->invoice_path;
-        $attachment_path = $transaction ? $transaction->attachment_path : 'No transaction';
-        $invoice_exists = $invoice_path ? (\Illuminate\Support\Facades\Storage::disk('local')->exists($invoice_path) ? 'Yes' : 'No') : 'Path is null';
-        $attachment_exists = ($transaction && $transaction->attachment_path) ? (\Illuminate\Support\Facades\Storage::disk('local')->exists($transaction->attachment_path) ? 'Yes' : 'No') : 'Path is null';
-        return [
-            'payment_id' => $payment->id,
-            'payment_invoice_path' => $invoice_path,
-            'payment_invoice_file_exists' => $invoice_exists,
-            'transaction_id' => $transaction ? $transaction->id : null,
-            'transaction_attachment_path' => $attachment_path,
-            'transaction_attachment_file_exists' => $attachment_exists,
-            'local_disk_root' => config('filesystems.disks.local.root'),
-            'resolved_invoice_full_path' => $invoice_path ? \Illuminate\Support\Facades\Storage::disk('local')->path($invoice_path) : null,
-        ];
-    });
-
     // Contas Bancárias e Cartões de Crédito (Carteira)
     Route::resource('bank-accounts', \App\Http\Controllers\BankAccountController::class);
     Route::put('/bank-accounts/{bank_account}/balance', [\App\Http\Controllers\BankAccountController::class, 'updateBalance'])->name('bank-accounts.update-balance');

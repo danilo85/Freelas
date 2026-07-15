@@ -319,6 +319,21 @@ class PaymentController extends Controller
             $path = str_replace('\\', '/', $path);
         }
 
+        // Fallback auto-recuperativo: se o arquivo do pagamento não existir fisicamente,
+        // tenta carregar o arquivo da transação correspondente (MEI)
+        if (!$path || !Storage::disk('local')->exists($path)) {
+            $transaction = $payment->transaction;
+            if ($transaction && $transaction->attachment_path) {
+                $fallbackPath = str_replace('\\', '/', $transaction->attachment_path);
+                if (Storage::disk('local')->exists($fallbackPath)) {
+                    $path = $fallbackPath;
+                    
+                    // Atualiza silenciosamente no banco para corrigir a dessincronização passada
+                    $payment->updateQuietly(['invoice_path' => $fallbackPath]);
+                }
+            }
+        }
+
         if (!$path || !Storage::disk('local')->exists($path)) {
             abort(404, 'Nota fiscal não encontrada no servidor.');
         }
