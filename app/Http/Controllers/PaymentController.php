@@ -314,11 +314,31 @@ class PaymentController extends Controller
         // Tenancy Check
         abort_if($payment->project->client->user_id !== auth()->id(), 403, 'Ação não autorizada.');
 
-        if (!$payment->invoice_path || !Storage::disk('local')->exists($payment->invoice_path)) {
-            abort(404, 'Nota fiscal não encontrada no servidor.');
+        $path = $payment->invoice_path;
+        if (!$path) {
+            abort(404, 'Nenhum caminho de nota fiscal cadastrado.');
         }
 
-        return Storage::disk('local')->download($payment->invoice_path, basename($payment->invoice_path));
+        $cleanPath = ltrim($path, '/');
+        $disks = ['local', 'public'];
+        $pathVariations = [
+            $path,
+            $cleanPath,
+            str_replace('public/', '', $cleanPath),
+            str_replace('storage/', '', $cleanPath),
+            'invoices/' . basename($cleanPath),
+            basename($cleanPath)
+        ];
+
+        foreach ($disks as $disk) {
+            foreach ($pathVariations as $var) {
+                if (Storage::disk($disk)->exists($var)) {
+                    return Storage::disk($disk)->download($var, basename($var));
+                }
+            }
+        }
+
+        abort(404, 'Nota fiscal não encontrada no servidor (Discos local/public).');
     }
 
     /**
@@ -331,9 +351,29 @@ class PaymentController extends Controller
 
         $paidAtDate = Carbon::parse($payment->paid_at);
 
-        // Remove arquivo físico
-        if ($payment->invoice_path && Storage::disk('local')->exists($payment->invoice_path)) {
-            Storage::disk('local')->delete($payment->invoice_path);
+        // Remove arquivo físico de forma ultra tolerante
+        if ($payment->invoice_path) {
+            try {
+                $path = $payment->invoice_path;
+                $cleanPath = ltrim($path, '/');
+                $pathVariations = [
+                    $path,
+                    $cleanPath,
+                    str_replace('public/', '', $cleanPath),
+                    str_replace('storage/', '', $cleanPath),
+                    'invoices/' . basename($cleanPath),
+                    basename($cleanPath)
+                ];
+                foreach (['local', 'public'] as $disk) {
+                    foreach ($pathVariations as $var) {
+                        if (Storage::disk($disk)->exists($var)) {
+                            Storage::disk($disk)->delete($var);
+                        }
+                    }
+                }
+            } catch (\Exception $e) {
+                \Illuminate\Support\Facades\Log::error('Erro ao deletar anexo do pagamento no destroy: ' . $e->getMessage());
+            }
         }
 
         $project = $payment->project;
