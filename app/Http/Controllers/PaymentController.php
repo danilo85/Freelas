@@ -315,31 +315,15 @@ class PaymentController extends Controller
         abort_if($payment->project->client->user_id !== auth()->id(), 403, 'Ação não autorizada.');
 
         $path = $payment->invoice_path;
-        if (!$path) {
-            abort(404, 'Nenhum caminho de nota fiscal cadastrado.');
+        if ($path) {
+            $path = str_replace('\\', '/', $path);
         }
 
-        $path = str_replace('\\', '/', $path);
-        $cleanPath = ltrim($path, '/');
-        $disks = ['local', 'public'];
-        $pathVariations = [
-            $path,
-            $cleanPath,
-            str_replace('public/', '', $cleanPath),
-            str_replace('storage/', '', $cleanPath),
-            'invoices/' . basename($cleanPath),
-            basename($cleanPath)
-        ];
-
-        foreach ($disks as $disk) {
-            foreach ($pathVariations as $var) {
-                if (Storage::disk($disk)->exists($var)) {
-                    return Storage::disk($disk)->download($var, basename($var));
-                }
-            }
+        if (!$path || !Storage::disk('local')->exists($path)) {
+            abort(404, 'Nota fiscal não encontrada no servidor.');
         }
 
-        abort(404, 'Nota fiscal não encontrada no servidor (Discos local/public).');
+        return Storage::disk('local')->download($path, basename($path));
     }
 
     /**
