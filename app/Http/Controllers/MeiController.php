@@ -86,11 +86,21 @@ class MeiController extends Controller
             $pfIncomesChart[] = $pfIncomesSum;
             $expensesChart[] = $pjExpensesSum + $pfExpensesSum;
 
-            // Consolidação de arquivos/anexos (Notas Fiscais / Recibos)
             $attachments = [];
             foreach ($monthTransactions as $t) {
                 if ($t->attachment_path) {
-                    $attachments[] = [
+                    $path = $t->attachment_path;
+                    
+                    if (isset($attachments[$path])) {
+                        $attachments[$path]['projects'][] = [
+                            'description' => $t->description,
+                            'amount' => $t->amount,
+                        ];
+                        $attachments[$path]['amount'] += $t->amount;
+                        continue;
+                    }
+                    
+                    $attachments[$path] = [
                         'transaction_id' => $t->id,
                         'description' => $t->description,
                         'amount' => $t->amount,
@@ -99,10 +109,18 @@ class MeiController extends Controller
                         'date' => ($t->paid_at ?: $t->due_date)->format('d/m/Y'),
                         'filename' => basename($t->attachment_path),
                         'attachment_path' => $t->attachment_path,
-                        'download_url' => route('finances.download-attachment', $t->id)
+                        'download_url' => route('finances.download-attachment', $t->id),
+                        'preview_url' => route('finances.preview-attachment', $t->id),
+                        'projects' => [
+                            [
+                                'description' => $t->description,
+                                'amount' => $t->amount,
+                            ]
+                        ]
                     ];
                 }
             }
+            $attachments = array_values($attachments);
 
             $monthsData[$m] = [
                 'name' => $monthsNames[$m],

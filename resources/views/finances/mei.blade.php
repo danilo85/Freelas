@@ -369,36 +369,49 @@
                         @if(count($m['attachments']) > 0)
                             <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
                                 @foreach($m['attachments'] as $doc)
-                                    <div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-855 p-3 rounded-[5px] flex items-center justify-between gap-3 shadow-xs">
-                                        <div class="min-w-0">
-                                            <div class="flex items-center gap-1.5">
-                                                <span class="text-[9px] font-black uppercase px-1.5 py-0.5 rounded {{ $doc['classification'] === 'PJ' ? 'bg-primary-50 text-primary-700 dark:bg-primary-950/40 dark:text-primary-300' : 'bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-300' }}">
-                                                    {{ $doc['classification'] }}
-                                                </span>
-                                                <h5 class="font-bold text-xs text-slate-800 dark:text-slate-200 truncate" title="{{ $doc['description'] }}">{{ $doc['description'] }}</h5>
+                                    <div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-855 p-3 rounded-[5px] flex flex-col justify-between gap-3 shadow-xs">
+                                        <div class="flex items-start justify-between gap-3 w-full">
+                                            <div class="min-w-0 flex-1">
+                                                <div class="flex items-center gap-1.5 flex-wrap">
+                                                    <span class="text-[9px] font-black uppercase px-1.5 py-0.5 rounded {{ $doc['classification'] === 'PJ' ? 'bg-primary-50 text-primary-700 dark:bg-primary-950/40 dark:text-primary-300' : 'bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-300' }}">
+                                                        {{ $doc['classification'] }}
+                                                    </span>
+                                                    <h5 class="font-bold text-xs text-slate-850 dark:text-slate-200 truncate max-w-[180px] sm:max-w-[220px]" title="{{ $doc['filename'] }}">{{ $doc['filename'] }}</h5>
+                                                </div>
+                                                <p class="text-[10px] text-slate-400 font-bold block mt-1">
+                                                    {{ $doc['date'] }} • Total: 
+                                                    <span class="{{ $doc['type'] === 'entrada' ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-600 dark:text-rose-455' }}">
+                                                        R$ {{ number_format($doc['amount'], 2, ',', '.') }}
+                                                    </span>
+                                                </p>
                                             </div>
-                                            <p class="text-[10px] text-slate-400 font-bold block mt-1">
-                                                {{ $doc['date'] }} • 
-                                                <span class="{{ $doc['type'] === 'entrada' ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-600 dark:text-rose-455' }}">
-                                                    R$ {{ number_format($doc['amount'], 2, ',', '.') }}
-                                                </span>
-                                            </p>
+
+                                            <div class="flex items-center gap-1.5 shrink-0">
+                                                <button 
+                                                    type="button"
+                                                    @click="openPreview({{ json_encode($doc) }})"
+                                                    class="px-2.5 py-1.5 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 font-bold text-[10px] rounded-[5px] transition-colors shadow-sm shrink-0 uppercase tracking-wider flex items-center gap-1 cursor-pointer"
+                                                >
+                                                    👁️ Ver
+                                                </button>
+                                                <a 
+                                                    href="{{ $doc['download_url'] }}" 
+                                                    class="px-2.5 py-1.5 bg-blue-600 hover:bg-blue-700 text-white font-bold text-[10px] rounded-[5px] transition-colors shadow-sm shrink-0 flex items-center gap-1 uppercase tracking-wider"
+                                                >
+                                                    Baixar
+                                                </a>
+                                            </div>
                                         </div>
-                                        
-                                        <div class="flex items-center gap-1.5 shrink-0">
-                                            <button 
-                                                type="button"
-                                                @click="openPreview({{ json_encode($doc) }})"
-                                                class="px-2.5 py-1.5 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 font-bold text-[10px] rounded-[5px] transition-colors shadow-sm shrink-0 uppercase tracking-wider flex items-center gap-1 cursor-pointer"
-                                            >
-                                                👁️ Ver
-                                            </button>
-                                            <a 
-                                                href="{{ $doc['download_url'] }}" 
-                                                class="px-2.5 py-1.5 bg-blue-600 hover:bg-blue-700 text-white font-bold text-[10px] rounded-[5px] transition-colors shadow-sm shrink-0 flex items-center gap-1 uppercase tracking-wider"
-                                            >
-                                                Baixar
-                                            </a>
+
+                                        <!-- Lista de Trabalhos Vinculados -->
+                                        <div class="w-full bg-slate-50/50 dark:bg-slate-950/20 border border-slate-100 dark:border-slate-850 p-2 rounded-[3px] space-y-1 text-[9px] font-bold text-slate-500 dark:text-slate-400">
+                                            <span class="text-[8px] font-black uppercase text-slate-400 block tracking-wider mb-1">Trabalhos Contemplados:</span>
+                                            @foreach($doc['projects'] as $relProj)
+                                                <div class="flex items-center justify-between gap-2 border-t border-slate-100/50 dark:border-slate-850/50 pt-1 first:border-t-0 first:pt-0">
+                                                    <span class="truncate pr-1 text-slate-700 dark:text-slate-300" title="{{ $relProj['description'] }}">• {{ str_replace('Recebimento: ', '', $relProj['description']) }}</span>
+                                                    <span class="shrink-0 text-slate-500 font-mono">R$ {{ number_format($relProj['amount'], 2, ',', '.') }}</span>
+                                                </div>
+                                            @endforeach
                                         </div>
                                     </div>
                                 @endforeach
@@ -645,7 +658,7 @@
             },
 
             openPreview(doc) {
-                this.previewDocUrl = '/storage/' + doc.attachment_path;
+                this.previewDocUrl = doc.preview_url;
                 this.previewDownloadUrl = doc.download_url;
                 this.previewDocName = doc.description;
                 const ext = doc.filename.split('.').pop().toLowerCase();

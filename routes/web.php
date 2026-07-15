@@ -100,6 +100,7 @@ Route::middleware(['auth', 'approved'])->prefix('freelas')->group(function () {
     Route::post('/finances/{transaction}/duplicate', [\App\Http\Controllers\FinanceController::class, 'duplicate'])->name('finances.duplicate');
     Route::post('/finances/{transaction}/toggle-status', [\App\Http\Controllers\FinanceController::class, 'toggleStatus'])->name('finances.toggle-status');
     Route::get('/finances/{transaction}/download-attachment', [\App\Http\Controllers\FinanceController::class, 'downloadAttachment'])->name('finances.download-attachment');
+    Route::get('/finances/{transaction}/preview-attachment', [\App\Http\Controllers\FinanceController::class, 'previewAttachment'])->name('finances.preview-attachment');
     Route::post('/finances/credit-card/{creditCard}/pay-invoice', [\App\Http\Controllers\FinanceController::class, 'payInvoice'])->name('finances.pay-invoice');
     Route::post('/finances/credit-card/{creditCard}/unpay-invoice', [\App\Http\Controllers\FinanceController::class, 'unpayInvoice'])->name('finances.unpay-invoice');
     Route::post('/finances/import-json', [\App\Http\Controllers\FinanceController::class, 'importJson'])->name('finances.import-json');

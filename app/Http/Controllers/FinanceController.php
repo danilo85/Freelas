@@ -525,6 +525,26 @@ class FinanceController extends Controller
     }
 
     /**
+     * Exibe o anexo de forma inline no navegador (para pre-visualizações em iframes).
+     */
+    public function previewAttachment(Transaction $transaction)
+    {
+        abort_if($transaction->user_id !== auth()->id(), 403, 'Ação não autorizada.');
+
+        if (!$transaction->attachment_path || !Storage::disk('local')->exists($transaction->attachment_path)) {
+            abort(404, 'Anexo não encontrado.');
+        }
+
+        $path = Storage::disk('local')->path($transaction->attachment_path);
+        $mimeType = Storage::disk('local')->mimeType($transaction->attachment_path);
+
+        return response()->file($path, [
+            'Content-Type' => $mimeType,
+            'Content-Disposition' => 'inline; filename="' . basename($path) . '"'
+        ]);
+    }
+
+    /**
      * Marca todas as despesas pendentes da fatura de um cartão de crédito no mês/ano como pagas.
      */
     public function payInvoice(Request $request, \App\Models\CreditCard $creditCard)
