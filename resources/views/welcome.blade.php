@@ -6,7 +6,7 @@
     <meta name="csrf-token" content="{{ csrf_token() }}">
 
     <title>{{ $settings->site_title }}</title>
-    <link rel="icon" type="image/png" href="{{ asset('storage/favicon_site.png') }}">
+    <link rel="icon" type="image/png" href="{{ asset('favicon_site.png') }}">
 
     <!-- Google Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -232,7 +232,7 @@
         $whatsappNumber = str_starts_with($cleanPhone, '55') ? $cleanPhone : '55' . $cleanPhone;
 
         $getSvg = function($filename, $class = 'w-5 h-5 fill-current') {
-            $path = storage_path('app/public/' . $filename);
+            $path = public_path($filename);
             if (file_exists($path)) {
                 $svg = file_get_contents($path);
                 $svg = preg_replace('/<\?xml.*?\?>/s', '', $svg);
