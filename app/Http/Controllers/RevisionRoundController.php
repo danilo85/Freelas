@@ -124,4 +124,42 @@ class RevisionRoundController extends Controller
 
         return redirect()->back()->with('success', 'Arquivo excluído com sucesso.');
     }
+
+    public function replaceFile(Request $request, $fileId)
+    {
+        $request->validate([
+            'file' => 'required|file|max:20480', // limit 20MB
+        ]);
+
+        $file = RevisionFile::whereHas('revisionRound.projectRevision', function ($q) {
+            $q->where('user_id', auth()->id());
+        })->findOrFail($fileId);
+
+        if ($request->hasFile('file')) {
+            $uploadedFile = $request->file('file');
+            $filename = $uploadedFile->getClientOriginalName();
+            $extension = strtolower($uploadedFile->getClientOriginalExtension());
+            $size = $uploadedFile->getSize();
+
+            // Physical deletion of old file
+            if (Storage::disk('public')->exists($file->file_path)) {
+                Storage::disk('public')->delete($file->file_path);
+            }
+
+            // Store new file
+            $path = $uploadedFile->store("revisions/round_{$file->revision_round_id}", 'public');
+
+            // Update details
+            $file->update([
+                'filename' => $filename,
+                'file_path' => $path,
+                'file_type' => $extension,
+                'file_size' => $size,
+            ]);
+
+            return redirect()->back()->with('success', 'Arquivo substituído com sucesso.');
+        }
+
+        return redirect()->back()->with('error', 'Nenhum arquivo enviado.');
+    }
 }

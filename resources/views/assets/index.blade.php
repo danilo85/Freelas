@@ -296,14 +296,20 @@
                             <pre class="line-clamp-5">{{ $asset->code_snippet }}</pre>
                         </div>
 
-                    <!-- ARQUIVO DIVERSO -->
+                    <!-- VIDEO E OUTROS ARQUIVOS -->
                     @else
-                        <div class="text-center p-4">
-                            <span class="text-4xl">📁</span>
-                            <span class="text-[10px] font-black text-slate-400 uppercase tracking-widest block mt-2">
-                                {{ strtoupper(pathinfo($asset->file_path, PATHINFO_EXTENSION)) ?: 'ARQUIVO' }}
-                            </span>
-                        </div>
+                        @if(in_array(strtolower(pathinfo($asset->file_path, PATHINFO_EXTENSION)), ['mp4', 'webm', 'mov', 'ogg']))
+                            <video class="w-full h-full object-cover cursor-pointer" muted playsinline loop onmouseover="this.play()" onmouseout="this.pause()">
+                                <source src="{{ asset('storage/' . $asset->file_path) }}">
+                            </video>
+                        @else
+                            <div class="text-center p-4">
+                                <span class="text-4xl">📁</span>
+                                <span class="text-[10px] font-black text-slate-400 uppercase tracking-widest block mt-2">
+                                    {{ strtoupper(pathinfo($asset->file_path, PATHINFO_EXTENSION)) ?: 'ARQUIVO' }}
+                                </span>
+                            </div>
+                        @endif
                     @endif
                 </div>
 
@@ -430,7 +436,7 @@
                 </div>
             @endif
 
-            <form action="{{ route('revisoes.assets.store') }}" method="POST" enctype="multipart/form-data" class="space-y-4 pt-2">
+            <form action="{{ route('revisoes.assets.store') }}" method="POST" enctype="multipart/form-data" class="space-y-4 pt-2" @submit.prevent="submitCreateForm($event)">
                 @csrf
                 <input type="hidden" name="upload_type" x-bind:value="uploadType" />
 
@@ -493,12 +499,24 @@
                     </div>
                 </div>
 
+                <!-- Progress Bar -->
+                <div x-show="isUploading" x-cloak class="space-y-1.5 pt-2">
+                    <div class="flex justify-between items-center text-[10px] font-bold text-primary-600">
+                        <span class="uppercase tracking-wider">Enviando Asset...</span>
+                        <span x-text="uploadPercentage + '%'"></span>
+                    </div>
+                    <div class="w-full bg-slate-100 h-2 rounded-full overflow-hidden">
+                        <div class="bg-primary-600 h-2 rounded-full transition-all duration-150" :style="'width: ' + uploadPercentage + '%'"></div>
+                    </div>
+                </div>
+
                 <div class="flex justify-end gap-2 pt-2 border-t border-slate-100">
-                    <button type="button" @click="createModalOpen = false" class="px-4 py-2 border border-slate-200 text-xs font-bold uppercase rounded-[5px] hover:bg-slate-100 transition-colors text-slate-600">
+                    <button type="button" @click="createModalOpen = false" :disabled="isUploading" class="px-4 py-2 border border-slate-200 text-xs font-bold uppercase rounded-[5px] hover:bg-slate-100 transition-colors text-slate-600 disabled:opacity-50 disabled:cursor-not-allowed">
                         Cancelar
                     </button>
-                    <button type="submit" class="bg-slate-900 hover:bg-slate-800 text-white font-bold text-xs uppercase tracking-wider px-6 py-2.5 rounded-[5px] transition-colors">
-                        Salvar Asset
+                    <button type="submit" :disabled="isUploading" class="bg-slate-900 hover:bg-slate-800 text-white font-bold text-xs uppercase tracking-wider px-6 py-2.5 rounded-[5px] transition-colors disabled:bg-slate-350 disabled:cursor-not-allowed">
+                        <span x-show="!isUploading">Salvar Asset</span>
+                        <span x-show="isUploading">Enviando...</span>
                     </button>
                 </div>
 
@@ -589,6 +607,53 @@
             editModalOpen: false,
             uploadType: '{{ old('upload_type', 'file') }}',
             editAssetData: {},
+
+            // Upload progress states
+            isUploading: false,
+            uploadPercentage: 0,
+
+            submitCreateForm(e) {
+                const form = e.target;
+                const formData = new FormData(form);
+                
+                this.isUploading = true;
+                this.uploadPercentage = 0;
+
+                const xhr = new XMLHttpRequest();
+                xhr.open('POST', form.action, true);
+                
+                // Track upload progress
+                xhr.upload.addEventListener('progress', (event) => {
+                    if (event.lengthComputable) {
+                        this.uploadPercentage = Math.round((event.loaded / event.total) * 100);
+                    }
+                });
+
+                // Load completed
+                xhr.onload = () => {
+                    this.isUploading = false;
+                    this.uploadPercentage = 0;
+
+                    if (xhr.status >= 200 && xhr.status < 300) {
+                        window.location.reload();
+                    } else {
+                        try {
+                            const errData = JSON.parse(xhr.responseText);
+                            alert(errData.message || 'Erro ao fazer upload do arquivo.');
+                        } catch(err) {
+                            alert('Erro ao processar o upload do arquivo.');
+                        }
+                    }
+                };
+
+                xhr.onerror = () => {
+                    this.isUploading = false;
+                    this.uploadPercentage = 0;
+                    alert('Houve um erro de conexão ao realizar o upload.');
+                };
+
+                xhr.send(formData);
+            },
 
             assetsList: @json($assets),
             searchQuery: '{{ request('search', '') }}',

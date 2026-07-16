@@ -201,6 +201,17 @@
                                                 </span>
                                             @endif
 
+                                            <!-- Substituir Arquivo -->
+                                            <form action="{{ route('revisoes.files.replace', $file->id) }}" method="POST" enctype="multipart/form-data" class="inline">
+                                                @csrf
+                                                <input type="file" name="file" class="hidden" onchange="this.form.submit()">
+                                                <button type="button" onclick="this.previousElementSibling.click()" class="border border-slate-200 text-blue-500 hover:bg-blue-50 p-2 rounded-[5px] transition-all cursor-pointer" title="Substituir Arquivo">
+                                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16V4m0 0L3 8m4-4l4 4m6 0v12m0 0l4-4m-4 4l-4-4" />
+                                                    </svg>
+                                                </button>
+                                            </form>
+
                                             <!-- Deletar Arquivo -->
                                             <button type="button" @click="confirmDelete('{{ addslashes($file->filename) }}', '{{ route('revisoes.files.destroy', $file->id) }}')" class="border border-slate-200 text-rose-500 hover:bg-rose-50 p-2 rounded-[5px] transition-all cursor-pointer" title="Excluir Arquivo">
                                                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
