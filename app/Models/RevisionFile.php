@@ -22,6 +22,6 @@ class RevisionFile extends Model
 
     public function annotations()
     {
-        return $this->hasMany(RevisionAnnotation::class);
+        return $this->hasMany(RevisionAnnotation::class)->orderBy('page_number', 'asc')->orderBy('created_at', 'asc');
     }
 }

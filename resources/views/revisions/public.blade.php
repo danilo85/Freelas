@@ -1079,7 +1079,17 @@
                 allMarkups: [],
                 tempRect: null,
 
+                sortAnnotations() {
+                    this.annotationsList.sort((a, b) => {
+                        const pageA = Number(a.page_number) || 0;
+                        const pageB = Number(b.page_number) || 0;
+                        if (pageA !== pageB) return pageA - pageB;
+                        return new Date(a.created_at || a.id) - new Date(b.created_at || b.id);
+                    });
+                },
+
                 init() {
+                    this.sortAnnotations();
                     this.canvas = document.getElementById('markup-canvas');
                     if (this.canvas) {
                         this.ctx = this.canvas.getContext('2d');
@@ -2201,9 +2211,11 @@
                                         if (index !== -1) {
                                             this.annotationsList[index] = data.annotation;
                                         }
+                                        this.sortAnnotations();
                                         this.editingAnnoId = null;
                                     } else {
                                         this.annotationsList.push(data.annotation);
+                                        this.sortAnnotations();
                                     }
                                     this.showCommentBox = false;
                                     this.clearStrokes();
@@ -2642,6 +2654,7 @@
                                 const data = JSON.parse(xhr.responseText);
                                 if (data.success) {
                                     this.annotationsList.push(data.annotation);
+                                    this.sortAnnotations();
                                     
                                     // Reset General Observation input variables
                                     this.generalCommentText = '';

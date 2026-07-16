@@ -33,7 +33,7 @@ class PublicRevisionController extends Controller
         }
 
         $annotations = $activeFile 
-            ? $activeFile->annotations()->with('author')->orderBy('created_at', 'asc')->get() 
+            ? $activeFile->annotations()->with('author')->orderBy('page_number', 'asc')->orderBy('created_at', 'asc')->get() 
             : collect();
 
         // Get authors list for select box
