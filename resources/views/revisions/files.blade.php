@@ -202,15 +202,14 @@
                                             @endif
 
                                             <!-- Substituir Arquivo -->
-                                            <form action="{{ route('revisoes.files.replace', $file->id) }}" method="POST" enctype="multipart/form-data" class="inline">
-                                                @csrf
-                                                <input type="file" name="file" class="hidden" onchange="this.form.submit()">
-                                                <button type="button" onclick="this.previousElementSibling.click()" class="border border-slate-200 text-blue-500 hover:bg-blue-50 p-2 rounded-[5px] transition-all cursor-pointer" title="Substituir Arquivo">
+                                            <div class="inline-block">
+                                                <input type="file" name="file" class="hidden" @change="replaceFile($event, '{{ route('revisoes.files.replace', $file->id) }}', '{{ addslashes($file->filename) }}')" x-ref="replaceInput{{ $file->id }}">
+                                                <button type="button" @click="$refs.replaceInput{{ $file->id }}.click()" class="border border-slate-200 text-blue-500 hover:bg-blue-50 p-2 rounded-[5px] transition-all cursor-pointer" title="Substituir Arquivo">
                                                     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16V4m0 0L3 8m4-4l4 4m6 0v12m0 0l4-4m-4 4l-4-4" />
                                                     </svg>
                                                 </button>
-                                            </form>
+                                            </div>
 
                                             <!-- Deletar Arquivo -->
                                             <button type="button" @click="confirmDelete('{{ addslashes($file->filename) }}', '{{ route('revisoes.files.destroy', $file->id) }}')" class="border border-slate-200 text-rose-500 hover:bg-rose-50 p-2 rounded-[5px] transition-all cursor-pointer" title="Excluir Arquivo">
@@ -268,6 +267,29 @@
         </div>
     </div>
 
+    <!-- Replacement Progress Modal -->
+    <div x-show="isReplacing" 
+         class="fixed inset-0 flex items-center justify-center bg-slate-950/75 backdrop-blur-md"
+         style="z-index: 99999; margin: 0 !important;"
+         x-transition.opacity
+         x-cloak>
+        <div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-2xl rounded-lg max-w-sm w-full p-6 text-center space-y-4 select-none relative">
+            <div class="w-12 h-12 rounded-full bg-blue-50 dark:bg-blue-950/40 text-blue-650 flex items-center justify-center text-xl mx-auto animate-bounce">
+                🔄
+            </div>
+            <div class="space-y-1">
+                <h3 class="font-outfit font-black text-slate-850 dark:text-slate-100 text-sm uppercase tracking-tight">Substituindo Arquivo...</h3>
+                <p class="text-[10px] text-slate-400 font-bold uppercase tracking-wider block truncate max-w-xs mx-auto" x-text="replaceFileName"></p>
+            </div>
+            <div class="space-y-2">
+                <div class="w-full bg-slate-100 dark:bg-slate-800 h-2 rounded-full overflow-hidden">
+                    <div class="bg-blue-600 h-2 rounded-full transition-all duration-150" :style="'width: ' + replacePercentage + '%'"></div>
+                </div>
+                <div class="text-xs font-bold text-blue-600 dark:text-blue-450" x-text="replacePercentage + '%'"></div>
+            </div>
+        </div>
+    </div>
+
 </div>
 
 <script>
@@ -277,10 +299,60 @@
             deleteFileName: '',
             deleteActionUrl: '',
             
+            // Replacement progress states
+            isReplacing: false,
+            replacePercentage: 0,
+            replaceFileName: '',
+            
             confirmDelete(fileName, actionUrl) {
                 this.deleteFileName = fileName;
                 this.deleteActionUrl = actionUrl;
                 this.showDeleteModal = true;
+            },
+
+            replaceFile(e, actionUrl, fileName) {
+                const file = e.target.files[0];
+                if (!file) return;
+
+                this.replaceFileName = fileName;
+                this.isReplacing = true;
+                this.replacePercentage = 0;
+
+                const formData = new FormData();
+                formData.append('file', file);
+
+                const xhr = new XMLHttpRequest();
+                xhr.open('POST', actionUrl, true);
+
+                // CSRF Token
+                const csrfToken = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
+                xhr.setRequestHeader('X-CSRF-TOKEN', csrfToken);
+
+                // Track upload progress
+                xhr.upload.addEventListener('progress', (event) => {
+                    if (event.lengthComputable) {
+                        this.replacePercentage = Math.round((event.loaded / event.total) * 100);
+                    }
+                });
+
+                xhr.onload = () => {
+                    this.isReplacing = false;
+                    this.replacePercentage = 0;
+
+                    if (xhr.status >= 200 && xhr.status < 300) {
+                        window.location.reload();
+                    } else {
+                        alert('Erro ao substituir arquivo. Por favor, tente novamente.');
+                    }
+                };
+
+                xhr.onerror = () => {
+                    this.isReplacing = false;
+                    this.replacePercentage = 0;
+                    alert('Houve um erro de conexão ao realizar o upload.');
+                };
+
+                xhr.send(formData);
             }
         }
     }
