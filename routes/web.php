@@ -273,4 +273,8 @@ Route::get('/revisao/round/{round}/download-annotations', [\App\Http\Controllers
 // Rota pública de Identidade Visual
 Route::get('/brand/{token}', [\App\Http\Controllers\PublicBrandController::class, 'show'])->name('public.brand.show');
 
+// Rota pública de Recibo de Pagamento
+Route::get('/recibo/{token}', [\App\Http\Controllers\PublicReceiptController::class, 'show'])->name('public.receipt.show');
+
+
 

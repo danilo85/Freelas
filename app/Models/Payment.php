@@ -21,6 +21,7 @@ class Payment extends Model
         'bank_account_id',
         'observations',
         'invoice_path',
+        'token',
     ];
 
     protected $casts = [
@@ -65,6 +66,12 @@ class Payment extends Model
      */
     protected static function booted()
     {
+        static::creating(function ($payment) {
+            if (empty($payment->token)) {
+                $payment->token = \Illuminate\Support\Str::random(32);
+            }
+        });
+
         static::created(function ($payment) {
             $userId = $payment->project->client->user_id ?? auth()->id();
             $categoryId = \App\Models\TransactionCategory::where('name', 'Freelance / Projetos')->value('id');

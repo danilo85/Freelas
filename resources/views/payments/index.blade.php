@@ -4,7 +4,7 @@
 @section('page_title', 'Calendário de Pagamentos')
 
 @section('content')
-<div id="pjax-container" class="space-y-6">
+<div id="pjax-container" x-data="paymentDashboard()" class="space-y-6">
 
     <!-- Topo da página: Título e Link de Retorno -->
     <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
@@ -311,27 +311,40 @@
 
                                         <!-- Action buttons -->
                                         <div class="flex items-center justify-end gap-2 border-t border-slate-100 pt-3">
+                                            <!-- Ver Pagamento -->
+                                            <button 
+                                                type="button" 
+                                                @click="openDetailsModal({{ json_encode($p) }}, '{{ addslashes($group['project']->title) }}', '{{ addslashes($group['client']->name) }}')"
+                                                class="w-8 h-8 flex items-center justify-center bg-transparent text-slate-500 hover:text-slate-800 hover:bg-slate-50 border border-slate-200 rounded-[5px] transition-all cursor-pointer" 
+                                                title="Ver Detalhes do Pagamento"
+                                            >
+                                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                                                </svg>
+                                            </button>
+
                                             <!-- Editar Pagamento -->
                                             <a 
                                                 href="{{ $p['edit_url'] }}"
-                                                class="flex items-center gap-1.5 py-1.5 px-3 bg-primary-50 hover:bg-primary-100 border border-primary-200 text-primary-700 text-xs font-bold rounded-[5px] transition-colors shadow-sm"
+                                                class="w-8 h-8 flex items-center justify-center bg-transparent text-primary-650 hover:bg-primary-50 border border-slate-200 rounded-[5px] transition-all"
+                                                title="Editar Pagamento"
                                             >
                                                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"></path>
                                                 </svg>
-                                                Editar
                                             </a>
                                             
                                             <!-- Excluir Pagamento -->
                                             <button 
                                                 type="button" 
                                                 @click="$dispatch('trigger-global-delete', { title: 'Excluir Pagamento', message: 'Tem certeza de que deseja excluir o pagamento de <strong class=\'text-slate-800\'>R$ {{ number_format($p['amount'], 2, ',', '.') }}</strong>?<br><span class=\'text-sm text-red-500 mt-1.5 block bg-red-50/50 p-2.5 rounded-[5px] border border-red-100\'>Aviso: Esta ação removerá permanentemente este registro de pagamento do caixa e a transação correspondente no dashboard.</span>', action: '{{ $p['destroy_url'] }}', highSecurity: false })"
-                                                class="flex items-center gap-1.5 py-1.5 px-3 bg-red-50 hover:bg-red-100 border border-red-150 text-red-600 text-xs font-bold rounded-[5px] transition-colors shadow-sm"
+                                                class="w-8 h-8 flex items-center justify-center bg-transparent text-red-650 hover:bg-red-50 border border-slate-200 rounded-[5px] transition-all"
+                                                title="Excluir Pagamento"
                                             >
                                                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
                                                 </svg>
-                                                Excluir Pagamento
                                             </button>
                                         </div>
                                     </div>
@@ -401,5 +414,98 @@
         </svg>
     </a>
 
+    <!-- Modal de Detalhes do Pagamento -->
+    <div x-show="detailsModalOpen" 
+         class="fixed inset-0 flex items-center justify-center bg-slate-900/40 backdrop-blur-sm"
+         style="z-index: 9999;"
+         x-transition.opacity
+         x-cloak>
+        <div class="bg-white border border-slate-250 shadow-2xl rounded-lg max-w-md w-full p-6 space-y-4 text-left select-none relative" @click.away="detailsModalOpen = false">
+            
+            <div class="flex items-center justify-between border-b border-slate-100 pb-3">
+                <h3 class="font-outfit font-black text-slate-800 text-sm uppercase tracking-tight">Detalhes do Recebimento</h3>
+                <button @click="detailsModalOpen = false" class="text-slate-400 hover:text-slate-600 transition-colors">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                    </svg>
+                </button>
+            </div>
+
+            <div class="space-y-4 text-sm" x-show="activePayment">
+                <div>
+                    <span class="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Projeto</span>
+                    <span class="font-bold text-slate-800 text-sm" x-text="activeProjectTitle"></span>
+                </div>
+
+                <div>
+                    <span class="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Cliente</span>
+                    <span class="font-semibold text-slate-700" x-text="activeClientName"></span>
+                </div>
+
+                <div class="grid grid-cols-2 gap-4 bg-slate-50 border border-slate-100 p-3 rounded-[5px]" x-show="activePayment">
+                    <div>
+                        <span class="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Valor Pago</span>
+                        <span class="font-extrabold text-emerald-600 text-base" x-text="activePayment ? formatMoney(activePayment.amount) : ''"></span>
+                    </div>
+                    <div>
+                        <span class="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Data do Pagamento</span>
+                        <span class="font-bold text-slate-800" x-text="activePayment ? activePayment.paid_at : ''"></span>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-2 gap-4" x-show="activePayment">
+                    <div>
+                        <span class="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Forma de Pagamento</span>
+                        <span class="font-bold text-slate-700 uppercase" x-text="activePayment ? activePayment.payment_method : ''"></span>
+                    </div>
+                    <div>
+                        <span class="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Conta Bancária</span>
+                        <span class="font-semibold text-slate-700" x-text="activePayment ? activePayment.bank_account : ''"></span>
+                    </div>
+                </div>
+
+                <div x-show="activePayment && activePayment.observations">
+                    <span class="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Observações</span>
+                    <p class="text-slate-655 italic leading-relaxed whitespace-pre-line" x-text="activePayment ? activePayment.observations : ''"></p>
+                </div>
+            </div>
+
+            <!-- Footer com Botões de Ação -->
+            <div class="flex items-center justify-end gap-2 pt-3 border-t border-slate-100">
+                <button type="button" @click="detailsModalOpen = false" class="px-4 py-2 border border-slate-200 text-xs font-bold uppercase rounded-[5px] hover:bg-slate-100 transition-colors text-slate-600">
+                    Fechar
+                </button>
+                <template x-if="activePayment && activePayment.token">
+                    <a :href="'/recibo/' + activePayment.token" target="_blank" class="bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs uppercase tracking-wider px-5 py-2.5 rounded-[5px] transition-colors shadow-sm inline-flex items-center gap-1.5">
+                        📄 Gerar Recibo Público
+                    </a>
+                </template>
+            </div>
+
+        </div>
+    </div>
+
 </div>
+
+<script>
+    function paymentDashboard() {
+        return {
+            detailsModalOpen: false,
+            activePayment: null,
+            activeProjectTitle: '',
+            activeClientName: '',
+
+            openDetailsModal(payment, projectTitle, clientName) {
+                this.activePayment = payment;
+                this.activeProjectTitle = projectTitle;
+                this.activeClientName = clientName;
+                this.detailsModalOpen = true;
+            },
+
+            formatMoney(value) {
+                return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(value);
+            }
+        }
+    }
+</script>
 @endsection

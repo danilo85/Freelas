@@ -113,7 +113,8 @@ class PaymentController extends Controller
                     'download_invoice_url' => $p->invoice_path ? route('payments.download-invoice', $p->id) : null,
                     'related_projects' => $p->relatedProjects->pluck('title')->toArray(),
                     'edit_url' => route('payments.edit', $p->id),
-                    'destroy_url' => route('payments.destroy', $p->id)
+                    'destroy_url' => route('payments.destroy', $p->id),
+                    'token' => $p->token,
                 ])->toArray()
             ];
         }
