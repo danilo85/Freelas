@@ -17,11 +17,13 @@ class FileShare extends Model
         'view_count',
         'password',
         'is_active',
+        'is_hidden',
     ];
 
     protected $casts = [
         'expires_at' => 'datetime',
         'is_active' => 'boolean',
+        'is_hidden' => 'boolean',
     ];
 
     public function user()

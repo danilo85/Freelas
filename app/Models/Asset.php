@@ -15,6 +15,11 @@ class Asset extends Model
         'code_snippet',
         'file_size',
         'mime_type',
+        'is_hidden',
+    ];
+
+    protected $casts = [
+        'is_hidden' => 'boolean',
     ];
 
     public function user()

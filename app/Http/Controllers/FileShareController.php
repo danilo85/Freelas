@@ -43,6 +43,8 @@ class FileShareController extends Controller
             }
         }
 
+        // Relevante: não filtramos is_hidden no banco de dados para permitir o toggle instantâneo client-side via Alpine.js
+
         $shares = $query->orderBy('created_at', 'desc')->get();
 
         // Cálculo de estatísticas importantes
@@ -197,6 +199,21 @@ class FileShareController extends Controller
         $share->delete();
 
         return back()->with('success', 'Compartilhamento excluído com sucesso.');
+    }
+
+    /**
+     * Oculta ou exibe um compartilhamento.
+     */
+    public function toggleVisibility(FileShare $share)
+    {
+        abort_if($share->user_id !== auth()->id(), 403);
+
+        $share->update([
+            'is_hidden' => !$share->is_hidden
+        ]);
+
+        $msg = $share->is_hidden ? 'Compartilhamento ocultado com sucesso.' : 'Compartilhamento exibido com sucesso.';
+        return back()->with('success', $msg);
     }
 
     /**

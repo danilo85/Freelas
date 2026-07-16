@@ -175,6 +175,23 @@ class AssetController extends Controller
     }
 
     /**
+     * Oculta ou exibe um asset.
+     */
+    public function toggleVisibility(Asset $asset)
+    {
+        abort_if($asset->user_id !== auth()->id(), 403);
+
+        $asset->update([
+            'is_hidden' => !$asset->is_hidden
+        ]);
+
+        $msg = $asset->is_hidden ? 'Recurso ocultado com sucesso.' : 'Recurso exibido com sucesso.';
+        return back()->with('success', $msg);
+    }
+
+    /**
+     * Faz download do asset.
+     */
     public function download(Asset $asset)
     {
         abort_if($asset->user_id !== auth()->id(), 403);

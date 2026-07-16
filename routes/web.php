@@ -183,6 +183,7 @@ Route::middleware(['auth', 'approved'])->prefix('freelas')->group(function () {
         Route::delete('/utilidades/compartilhamento/{share}', [\App\Http\Controllers\FileShareController::class, 'destroy'])->name('revisoes.shares.destroy');
         Route::post('/utilidades/compartilhamento/{share}/toggle-active', [\App\Http\Controllers\FileShareController::class, 'toggleActive'])->name('revisoes.shares.toggle-active');
         Route::put('/utilidades/compartilhamento/{share}/settings', [\App\Http\Controllers\FileShareController::class, 'updateSettings'])->name('revisoes.shares.settings');
+        Route::post('/utilidades/compartilhamento/{share}/toggle-visibility', [\App\Http\Controllers\FileShareController::class, 'toggleVisibility'])->name('revisoes.shares.toggle-visibility');
 
         // Utilidades - Identidades Visuais
         Route::get('/utilidades/identidades-visuais', [\App\Http\Controllers\BrandGuidelineController::class, 'index'])->name('revisoes.brand-guidelines.index');
@@ -202,6 +203,7 @@ Route::middleware(['auth', 'approved'])->prefix('freelas')->group(function () {
         Route::get('/utilidades/assets/{asset}/download', [\App\Http\Controllers\AssetController::class, 'download'])->name('revisoes.assets.download');
         Route::post('/utilidades/assets/download-batch', [\App\Http\Controllers\AssetController::class, 'downloadBatch'])->name('revisoes.assets.download-batch');
         Route::post('/utilidades/assets/destroy-batch', [\App\Http\Controllers\AssetController::class, 'destroyBatch'])->name('revisoes.assets.destroy-batch');
+        Route::post('/utilidades/assets/{asset}/toggle-visibility', [\App\Http\Controllers\AssetController::class, 'toggleVisibility'])->name('revisoes.assets.toggle-visibility');
 
         // Utilidades - Lembretes e Notas (Google Keep Style)
         Route::get('/utilidades/lembretes', [\App\Http\Controllers\ReminderController::class, 'index'])->name('lembretes.index');

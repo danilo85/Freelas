@@ -138,49 +138,79 @@
                 </button>
             </div>
 
-            <!-- Tags de Filtro Rápidas -->
-            <div class="flex flex-wrap items-center gap-2 pt-1">
-                <span class="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider mr-1">Filtrar por:</span>
-                
-                <!-- Tag: Todos -->
-                <button type="button" 
-                        @click="filterType = ''" 
-                        class="px-3.5 py-1.5 rounded-full text-xs font-bold transition-all cursor-pointer border uppercase tracking-wider focus:outline-none"
-                        :style="!filterType ? 'background-color: #0f172a; border-color: #0f172a; color: #ffffff;' : 'background-color: #f1f5f9; border-color: #e2e8f0; color: #475569;'">
-                    Todos
-                </button>
+            <!-- Filtros de Tipo e Ocultados -->
+            <div class="flex flex-col lg:flex-row lg:items-center justify-between gap-4 pt-1">
+                <div class="flex flex-wrap items-center gap-2">
+                    <span class="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider mr-1">Filtrar por:</span>
+                    
+                    <!-- Tag: Todos -->
+                    <button type="button" 
+                            @click="filterType = ''" 
+                            class="px-3.5 py-1.5 rounded-full text-xs font-bold transition-all cursor-pointer border uppercase tracking-wider focus:outline-none"
+                            :style="!filterType ? 'background-color: #0f172a; border-color: #0f172a; color: #ffffff;' : 'background-color: #f1f5f9; border-color: #e2e8f0; color: #475569;'">
+                        Todos
+                    </button>
 
-                <!-- Tag: Imagens -->
-                <button type="button" 
-                        @click="filterType = 'imagem'" 
-                        class="px-3.5 py-1.5 rounded-full text-xs font-bold transition-all cursor-pointer border uppercase tracking-wider focus:outline-none"
-                        :style="filterType === 'imagem' ? 'background-color: #10b981; border-color: #10b981; color: #ffffff;' : 'background-color: #ecfdf5; border-color: #d1fae5; color: #047857;'">
-                    Imagens
-                </button>
+                    <!-- Tag: Imagens -->
+                    <button type="button" 
+                            @click="filterType = 'imagem'" 
+                            class="px-3.5 py-1.5 rounded-full text-xs font-bold transition-all cursor-pointer border uppercase tracking-wider focus:outline-none"
+                            :style="filterType === 'imagem' ? 'background-color: #10b981; border-color: #10b981; color: #ffffff;' : 'background-color: #ecfdf5; border-color: #d1fae5; color: #047857;'">
+                        Imagens
+                    </button>
 
-                <!-- Tag: Fontes -->
-                <button type="button" 
-                        @click="filterType = 'fonte'" 
-                        class="px-3.5 py-1.5 rounded-full text-xs font-bold transition-all cursor-pointer border uppercase tracking-wider focus:outline-none"
-                        :style="filterType === 'fonte' ? 'background-color: #8b5cf6; border-color: #8b5cf6; color: #ffffff;' : 'background-color: #f5f3ff; border-color: #ede9fe; color: #6d28d9;'">
-                    Fontes
-                </button>
+                    <!-- Tag: Fontes -->
+                    <button type="button" 
+                            @click="filterType = 'fonte'" 
+                            class="px-3.5 py-1.5 rounded-full text-xs font-bold transition-all cursor-pointer border uppercase tracking-wider focus:outline-none"
+                            :style="filterType === 'fonte' ? 'background-color: #8b5cf6; border-color: #8b5cf6; color: #ffffff;' : 'background-color: #f5f3ff; border-color: #ede9fe; color: #6d28d9;'">
+                        Fontes
+                    </button>
 
-                <!-- Tag: Códigos -->
-                <button type="button" 
-                        @click="filterType = 'codigo'" 
-                        class="px-3.5 py-1.5 rounded-full text-xs font-bold transition-all cursor-pointer border uppercase tracking-wider focus:outline-none"
-                        :style="filterType === 'codigo' ? 'background-color: #3b82f6; border-color: #3b82f6; color: #ffffff;' : 'background-color: #eff6ff; border-color: #dbeafe; color: #1d4ed8;'">
-                    Códigos
-                </button>
+                    <!-- Tag: Códigos -->
+                    <button type="button" 
+                            @click="filterType = 'codigo'" 
+                            class="px-3.5 py-1.5 rounded-full text-xs font-bold transition-all cursor-pointer border uppercase tracking-wider focus:outline-none"
+                            :style="filterType === 'codigo' ? 'background-color: #3b82f6; border-color: #3b82f6; color: #ffffff;' : 'background-color: #eff6ff; border-color: #dbeafe; color: #1d4ed8;'">
+                        Códigos
+                    </button>
 
-                <!-- Tag: Arquivos -->
-                <button type="button" 
-                        @click="filterType = 'arquivo'" 
-                        class="px-3.5 py-1.5 rounded-full text-xs font-bold transition-all cursor-pointer border uppercase tracking-wider focus:outline-none"
-                        :style="filterType === 'arquivo' ? 'background-color: #f59e0b; border-color: #f59e0b; color: #ffffff;' : 'background-color: #fffbeb; border-color: #fef3c7; color: #b45309;'">
-                    Arquivos
-                </button>
+                    <!-- Tag: Arquivos -->
+                    <button type="button" 
+                            @click="filterType = 'arquivo'" 
+                            class="px-3.5 py-1.5 rounded-full text-xs font-bold transition-all cursor-pointer border uppercase tracking-wider focus:outline-none"
+                            :style="filterType === 'arquivo' ? 'background-color: #f59e0b; border-color: #f59e0b; color: #ffffff;' : 'background-color: #fffbeb; border-color: #fef3c7; color: #b45309;'">
+                        Arquivos
+                    </button>
+                </div>
+
+                <div class="flex items-center gap-2">
+                    <span class="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider mr-1">Ocultados:</span>
+                    
+                    <!-- Não Mostrar Ocultados -->
+                    <button type="button" 
+                            @click="filterHidden = 'no'" 
+                            class="px-3.5 py-1.5 rounded-full text-xs font-bold transition-all cursor-pointer border uppercase tracking-wider focus:outline-none"
+                            :style="filterHidden === 'no' ? 'background-color: #0f172a; border-color: #0f172a; color: #ffffff;' : 'background-color: #f1f5f9; border-color: #e2e8f0; color: #475569;'">
+                        Ocultar
+                    </button>
+
+                    <!-- Mostrar Todos -->
+                    <button type="button" 
+                            @click="filterHidden = 'all'" 
+                            class="px-3.5 py-1.5 rounded-full text-xs font-bold transition-all cursor-pointer border uppercase tracking-wider focus:outline-none"
+                            :style="filterHidden === 'all' ? 'background-color: #0f172a; border-color: #0f172a; color: #ffffff;' : 'background-color: #f1f5f9; border-color: #e2e8f0; color: #475569;'">
+                        Mostrar Todos
+                    </button>
+
+                    <!-- Apenas Ocultados -->
+                    <button type="button" 
+                            @click="filterHidden = 'only'" 
+                            class="px-3.5 py-1.5 rounded-full text-xs font-bold transition-all cursor-pointer border uppercase tracking-wider focus:outline-none"
+                            :style="filterHidden === 'only' ? 'background-color: #8b5cf6; border-color: #8b5cf6; color: #ffffff;' : 'background-color: #f5f3ff; border-color: #ede9fe; color: #6d28d9;'">
+                        Apenas Ocultados
+                    </button>
+                </div>
             </div>
         </div>
     </div>
@@ -200,7 +230,8 @@
                     $cardBgClass = 'bg-amber-50/15 border-amber-200/80 dark:bg-amber-950/5';
                 }
             @endphp
-            <div x-show="shouldShowAsset('{{ addslashes($asset->title) }}', '{{ addslashes($asset->description) }}', '{{ $asset->type }}')"
+            <div x-data="{ isHidden: {{ $asset->is_hidden ? 'true' : 'false' }} }"
+                 x-show="shouldShowAsset('{{ addslashes($asset->title) }}', '{{ addslashes($asset->description) }}', '{{ $asset->type }}', isHidden)"
                  class="{{ $cardBgClass }} border rounded-[5px] shadow-sm hover:shadow-md transition-all duration-200 relative group overflow-hidden flex flex-col justify-between"
                  x-transition>
                 
@@ -209,7 +240,37 @@
                     <input type="checkbox" 
                            value="{{ $asset->id }}" 
                            x-model="selectedIds"
-                           class="w-4.5 h-4.5 text-primary-600 bg-white border-slate-300 rounded focus:ring-primary-500/20 cursor-pointer shadow-sm">
+                           class="w-4.5 h-4.5 text-primary-600 bg-white border-slate-350 rounded focus:ring-primary-500/20 cursor-pointer shadow-sm">
+                </div>
+
+                <!-- Botão de Ocultar/Desocultar Superior -->
+                <div class="absolute top-3 right-3 z-30 no-print">
+                    <button type="button" 
+                            @click="
+                                fetch('{{ route('revisoes.assets.toggle-visibility', $asset->id) }}', {
+                                    method: 'POST',
+                                    headers: {
+                                        'X-CSRF-TOKEN': '{{ csrf_token() }}',
+                                        'Accept': 'application/json'
+                                    }
+                                });
+                                isHidden = !isHidden;
+                                let item = assetsList.find(x => x.id === {{ $asset->id }});
+                                if (item) item.is_hidden = isHidden;
+                            "
+                            class="w-6 h-6 flex items-center justify-center bg-transparent cursor-pointer transition-all border-0 focus:outline-none"
+                            :class="isHidden ? 'text-purple-600 hover:text-purple-800' : 'text-slate-400 hover:text-slate-700'"
+                            title="Ocultar/Exibir">
+                        <!-- Eye off (when isHidden is true) -->
+                        <svg x-show="isHidden" x-cloak class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l18 18"></path>
+                        </svg>
+                        <!-- Eye (when isHidden is false) -->
+                        <svg x-show="!isHidden" class="w-3.5 h-3.5 opacity-0 group-hover:opacity-100 transition-opacity" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path>
+                        </svg>
+                    </button>
                 </div>
 
                 <!-- Preview Area por tipo -->
@@ -253,8 +314,11 @@
                             <h4 class="font-bold text-slate-800 text-sm leading-snug truncate" title="{{ $asset->title }}">
                                 {{ $asset->title }}
                             </h4>
-                            <!-- Tag de Tipo -->
-                            <span class="text-[9px] font-extrabold uppercase px-1.5 py-0.5 rounded-[3px] shrink-0
+                            <!-- Tag de Tipo ou Ocultado -->
+                            <span x-show="isHidden" x-cloak class="text-[9px] font-black uppercase px-1.5 py-0.5 rounded-[3px] shrink-0 bg-purple-100 text-purple-800 shadow-xs">
+                                👁️ Oculto
+                            </span>
+                            <span x-show="!isHidden" class="text-[9px] font-extrabold uppercase px-1.5 py-0.5 rounded-[3px] shrink-0
                                 {{ $asset->type === 'imagem' ? 'bg-emerald-50 text-emerald-600' : ($asset->type === 'fonte' ? 'bg-purple-50 text-purple-600' : ($asset->type === 'codigo' ? 'bg-blue-50 text-blue-600' : 'bg-amber-50 text-amber-600')) }}">
                                 {{ $asset->type }}
                             </span>
@@ -321,7 +385,7 @@
     </div>
 
     <!-- Estado de Filtro Vazio (Client-side) -->
-    <div x-show="assetsList.filter(a => shouldShowAsset(a.title, a.description, a.type)).length === 0 && assetsList.length > 0" 
+    <div x-show="assetsList.filter(a => shouldShowAsset(a.title, a.description, a.type, a.is_hidden)).length === 0 && assetsList.length > 0" 
          class="text-center py-12 bg-white border border-slate-200 rounded-[5px] shadow-sm select-none" 
          x-cloak>
         <span class="text-5xl block">🔍</span>
@@ -529,9 +593,17 @@
             assetsList: @json($assets),
             searchQuery: '{{ request('search', '') }}',
             filterType: '{{ request('type', '') }}',
+            filterHidden: 'no', // 'no' (default), 'all', 'only'
 
-            shouldShowAsset(title, description, type) {
+            shouldShowAsset(title, description, type, isHidden) {
+                // Filtro de Ocultados
+                if (this.filterHidden === 'no' && isHidden) return false;
+                if (this.filterHidden === 'only' && !isHidden) return false;
+
+                // Filtro de tipo
                 if (this.filterType && type !== this.filterType) return false;
+
+                // Filtro de busca
                 if (this.searchQuery) {
                     const q = this.searchQuery.toLowerCase();
                     const t = (title || '').toLowerCase();

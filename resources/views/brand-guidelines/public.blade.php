@@ -356,7 +356,7 @@
 
                             @if(!empty($typo['font_file']))
                                 <div class="pt-3 border-t">
-                                    <a href="{{ asset('storage/' . $typo['font_file']) }}" download class="inline-flex items-center justify-center gap-1.5 px-3.5 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 text-[10px] font-black uppercase tracking-wider rounded">
+                                    <a href="{{ asset('storage/' . $typo['font_file']) }}" download="{{ \Illuminate\Support\Str::slug($typo['font_family']) }}-{{ \Illuminate\Support\Str::slug($typo['usage']) }}.{{ pathinfo($typo['font_file'], PATHINFO_EXTENSION) }}" class="inline-flex items-center justify-center gap-1.5 px-3.5 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 text-[10px] font-black uppercase tracking-wider rounded">
                                         📥 Baixar Fonte
                                     </a>
                                 </div>
