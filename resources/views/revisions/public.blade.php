@@ -38,6 +38,13 @@
 
     <style>
         [x-cloak] { display: none !important; }
+        @media (max-width: 767px) {
+            html, body {
+                overflow-x: hidden !important;
+                max-width: 100vw !important;
+                width: 100vw !important;
+            }
+        }
         body {
             background-color: #f8fafc;
             color: #1e293b;
@@ -89,8 +96,8 @@
 
 
     <!-- Aviso de Monitor / Desktop Recomendado no Mobile -->
-    <div class="fixed inset-0 bg-slate-950/95 backdrop-blur-md flex flex-col items-center justify-center p-6 text-center select-none md:hidden" style="z-index: 99999999;">
-        <div class="max-w-xs space-y-6">
+    <div class="fixed top-0 left-0 w-full h-full bg-[#0b0f19] flex flex-col items-center justify-center p-6 text-center md:hidden overflow-y-auto" style="z-index: 99999999;">
+        <div class="w-full max-w-xs space-y-6 my-auto flex flex-col items-center justify-center">
             <div class="relative flex items-center justify-center mx-auto w-20 h-20 rounded-full bg-blue-500/10 border border-blue-500/25">
                 <span class="text-4xl animate-pulse">💻</span>
             </div>
@@ -185,6 +192,19 @@
             </div>
         </div>
     </header>
+
+    <!-- Warning Banner for Old Rounds -->
+    @if($activeRound && $activeRound->round_number < $latestRoundNumber)
+        <div class="bg-amber-500/10 border-b border-amber-500/25 text-amber-850 dark:text-amber-200 text-[11px] sm:text-xs px-6 py-2.5 flex items-center justify-between no-print shrink-0 select-none">
+            <div class="flex items-center gap-2 min-w-0">
+                <span class="shrink-0">⚠️</span>
+                <span class="truncate">Você está visualizando a <strong>Rodada #{{ $activeRound->round_number }}</strong> (versão anterior). A versão mais recente é a <strong>Rodada #{{ $latestRoundNumber }}</strong>.</span>
+            </div>
+            <a href="{{ route('public.revisao.show', $revision->share_token) }}" class="underline font-black text-amber-700 hover:text-amber-900 transition-colors uppercase tracking-wider text-[9px] sm:text-[10px] shrink-0 ml-4">
+                Ir para Rodada Atual ➔
+            </a>
+        </div>
+    @endif
 
     <!-- Backdrop de Fundo para Sidebars do Mobile/Tablet -->
     <div x-show="leftSidebarOpen || rightSidebarOpen" 

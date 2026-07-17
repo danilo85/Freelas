@@ -19,8 +19,18 @@ class PublicRevisionController extends Controller
             ->with(['author', 'project.authors', 'rounds.files.annotations'])
             ->firstOrFail();
 
-        // Get the latest round
-        $activeRound = $revision->rounds()->orderBy('round_number', 'desc')->first();
+        // Get the latest round number
+        $latestRoundNumber = $revision->rounds()->max('round_number') ?? 1;
+
+        // Get active round
+        $activeRound = null;
+        if ($request->filled('round')) {
+            $activeRound = $revision->rounds()->where('round_number', $request->round)->first();
+        }
+
+        if (!$activeRound) {
+            $activeRound = $revision->rounds()->where('round_number', $latestRoundNumber)->first();
+        }
 
         $files = $activeRound ? $activeRound->files : collect();
 
@@ -41,7 +51,7 @@ class PublicRevisionController extends Controller
             ? $revision->project->authors
             : collect([$revision->author]);
 
-        return view('revisions.public', compact('revision', 'activeRound', 'files', 'activeFile', 'annotations', 'authors'));
+        return view('revisions.public', compact('revision', 'activeRound', 'files', 'activeFile', 'annotations', 'authors', 'latestRoundNumber'));
     }
 
     public function storeAnnotation(Request $request, $fileId)

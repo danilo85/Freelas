@@ -64,10 +64,10 @@
                        value="{{ route('public.revisao.show', $revision->share_token) }}"
                        class="flex-1 bg-slate-50 border border-slate-200 text-slate-500 text-xs px-4 py-2.5 rounded-[5px] focus:outline-none select-all">
                 
-                <div class="flex gap-2">
+                <div class="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
                     <!-- Botão Copiar Link -->
                     <button @click="copyLink()"
-                            class="bg-slate-900 text-white font-bold text-xs uppercase tracking-wider px-5 py-2.5 rounded-[5px] hover:bg-slate-800 transition-all shadow-sm flex items-center gap-1.5">
+                            class="w-full sm:w-auto justify-center bg-slate-900 text-white font-bold text-xs uppercase tracking-wider px-5 py-2.5 rounded-[5px] hover:bg-slate-800 transition-all shadow-sm flex items-center gap-1.5 cursor-pointer">
                         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 5H6a2 2 0 00-2 2v12a2 2 0 00-2 2h10a2 2 0 002-2v-1M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 012-2h2a2 2 0 012 2m0 0h2a2 2 0 012 2v3m2 4H10m0 0l3-3m-3 3l3 3"></path>
                         </svg>
@@ -77,7 +77,7 @@
                     <!-- Abrir Link -->
                     <a href="{{ route('public.revisao.show', $revision->share_token) }}" 
                        target="_blank"
-                       class="border border-slate-200 hover:bg-slate-50 text-slate-700 font-bold text-xs uppercase tracking-wider px-5 py-2.5 rounded-[5px] transition-all flex items-center gap-1.5">
+                       class="w-full sm:w-auto justify-center border border-slate-200 hover:bg-slate-50 text-slate-700 font-bold text-xs uppercase tracking-wider px-5 py-2.5 rounded-[5px] transition-all flex items-center gap-1.5">
                         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"></path>
                         </svg>
@@ -204,34 +204,48 @@
                                 </div>
 
                                 <!-- Ações da Rodada -->
-                                <div class="flex flex-wrap items-center gap-2 pt-3 border-t border-slate-100">
-                                    <!-- Gerenciar Arquivos -->
-                                    <a href="{{ route('revisoes.rounds.files', $round->id) }}" 
-                                       class="flex-1 sm:flex-none text-center bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs uppercase tracking-wider px-5 py-2.5 rounded-[5px] transition-all shadow-sm shadow-blue-500/10 flex items-center justify-center gap-1.5">
-                                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 13h6m-3-3v6m-9 1V4a2 2 0 012-2h6l2 2h6a2 2 0 012 2v8a2 2 0 01-2 2H5a2 2 0 01-2-2z"></path>
-                                        </svg>
-                                        Gerenciar Arquivos
-                                    </a>
+                                <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pt-3 border-t border-slate-100">
+                                    <div class="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 flex-1 w-full">
+                                        <!-- Visualizar Prova -->
+                                        <a href="{{ route('public.revisao.show', [$revision->share_token, 'round' => $round->round_number]) }}" 
+                                           target="_blank"
+                                           class="w-full sm:w-auto text-center bg-slate-900 hover:bg-slate-800 text-white font-bold text-xs uppercase tracking-wider px-5 py-2.5 rounded-[5px] transition-all shadow-sm flex items-center justify-center gap-1.5"
+                                           title="Visualizar prova pública desta rodada">
+                                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"></path>
+                                            </svg>
+                                            Visualizar Prova
+                                        </a>
 
-                                    <!-- Download ZIP unificado -->
-                                    <a href="{{ route('public.revisao.download.all', $round->id) }}" 
-                                       class="flex-1 sm:flex-none text-center border border-slate-200 hover:bg-slate-50 text-slate-700 font-bold text-xs uppercase tracking-wider px-5 py-2.5 rounded-[5px] transition-all flex items-center justify-center gap-1.5">
-                                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path>
-                                        </svg>
-                                        Baixar ZIP
-                                    </a>
+                                        <!-- Gerenciar Arquivos -->
+                                        <a href="{{ route('revisoes.rounds.files', $round->id) }}" 
+                                           class="w-full sm:w-auto text-center bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs uppercase tracking-wider px-5 py-2.5 rounded-[5px] transition-all shadow-sm shadow-blue-500/10 flex items-center justify-center gap-1.5">
+                                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 13h6m-3-3v6m-9 1V4a2 2 0 012-2h6l2 2h6a2 2 0 012 2v8a2 2 0 01-2 2H5a2 2 0 01-2-2z"></path>
+                                            </svg>
+                                            Gerenciar Arquivos
+                                        </a>
+
+                                        <!-- Download ZIP unificado -->
+                                        <a href="{{ route('public.revisao.download.all', $round->id) }}" 
+                                           class="w-full sm:w-auto text-center border border-slate-200 hover:bg-slate-50 text-slate-700 font-bold text-xs uppercase tracking-wider px-5 py-2.5 rounded-[5px] transition-all flex items-center justify-center gap-1.5">
+                                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path>
+                                            </svg>
+                                            Baixar ZIP
+                                        </a>
+                                    </div>
 
                                     <!-- Excluir Rodada (se não for a primeira) -->
                                     @if($round->round_number > 1)
                                         <button type="button" 
                                                 @click="$dispatch('trigger-global-delete', { title: 'Excluir Rodada', message: 'Deseja realmente excluir esta rodada de ajustes e todos os seus arquivos?', action: '{{ route('revisoes.rounds.destroy', $round->id) }}', highSecurity: false })"
-                                                class="border border-slate-200 text-rose-600 hover:bg-rose-50 p-2.5 rounded-[5px] transition-all flex items-center gap-1 cursor-pointer ml-auto" 
+                                                class="w-full sm:w-auto border border-slate-200 text-rose-600 hover:bg-rose-50 py-2.5 px-3 rounded-[5px] transition-all flex items-center justify-center gap-1 cursor-pointer sm:ml-auto" 
                                                 title="Excluir Rodada">
                                             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
                                             </svg>
+                                            <span class="sm:hidden text-xs font-bold uppercase tracking-wider">Excluir Rodada</span>
                                         </button>
                                     @endif
                                 </div>
