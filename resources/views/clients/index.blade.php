@@ -231,11 +231,27 @@
 
                     <!-- Topo do Card (Foto + Identificação) -->
                     <div class="flex items-center gap-3">
-                        <div class="w-12 h-12 rounded-full bg-slate-50 border border-slate-200 overflow-hidden flex items-center justify-center shrink-0 shadow-inner">
+                        @php
+                            $firstLetter = mb_strtoupper(mb_substr($client->name, 0, 1));
+                            $charVal = ord($firstLetter);
+                            $themes = [
+                                0 => ['bg' => 'bg-blue-50 border-blue-200 text-blue-700', 'dark' => 'dark:bg-blue-950/40 dark:border-blue-900/60 dark:text-blue-300'],
+                                1 => ['bg' => 'bg-emerald-50 border-emerald-200 text-emerald-700', 'dark' => 'dark:bg-emerald-950/40 dark:border-emerald-900/60 dark:text-emerald-300'],
+                                2 => ['bg' => 'bg-indigo-50 border-indigo-200 text-indigo-700', 'dark' => 'dark:bg-indigo-950/40 dark:border-indigo-900/60 dark:text-indigo-300'],
+                                3 => ['bg' => 'bg-purple-50 border-purple-200 text-purple-700', 'dark' => 'dark:bg-purple-950/40 dark:border-purple-900/60 dark:text-purple-300'],
+                                4 => ['bg' => 'bg-pink-50 border-pink-200 text-pink-700', 'dark' => 'dark:bg-pink-950/40 dark:border-pink-900/60 dark:text-pink-300'],
+                                5 => ['bg' => 'bg-rose-50 border-rose-200 text-rose-700', 'dark' => 'dark:bg-rose-950/40 dark:border-rose-900/60 dark:text-rose-300'],
+                                6 => ['bg' => 'bg-amber-50 border-amber-250 text-amber-800', 'dark' => 'dark:bg-amber-950/40 dark:border-amber-900/60 dark:text-amber-300'],
+                                7 => ['bg' => 'bg-violet-50 border-violet-200 text-violet-700', 'dark' => 'dark:bg-violet-950/40 dark:border-violet-900/60 dark:text-violet-300'],
+                            ];
+                            $themeIndex = ($charVal ?: 0) % count($themes);
+                            $selectedTheme = $themes[$themeIndex];
+                        @endphp
+                        <div class="w-12 h-12 rounded-full overflow-hidden flex items-center justify-center shrink-0 shadow-inner border {{ $selectedTheme['bg'] }} {{ $selectedTheme['dark'] }}">
                             @if($client->avatar)
-                                    <img src="{{ asset('storage/' . $client->avatar) }}" class="w-full h-full object-cover">
+                                <img src="{{ asset('storage/' . $client->avatar) }}" class="w-full h-full object-cover">
                             @else
-                                <span class="text-sm font-bold text-slate-400">
+                                <span class="text-sm font-extrabold uppercase">
                                     {{ collect(explode(' ', $client->name))->map(fn($n) => mb_substr($n, 0, 1))->take(2)->join('') }}
                                 </span>
                             @endif
