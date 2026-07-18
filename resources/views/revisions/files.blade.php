@@ -44,6 +44,24 @@
                                placeholder="Ex: Ilustrações, Páginas Internas, Capa"
                                class="w-full px-4 py-2.5 rounded-[5px] border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500 transition-all placeholder-slate-400">
                         <p class="text-[9px] text-slate-400">Deixe em branco para salvar na pasta principal (Raiz).</p>
+                        
+                        @php
+                            $existingFolders = $round->files->pluck('folder_name')->filter()->unique()->values();
+                        @endphp
+                        @if($existingFolders->count() > 0)
+                            <div class="flex flex-wrap gap-1.5 mt-2">
+                                <span class="text-[9px] font-bold text-slate-400 uppercase tracking-wide w-full mb-0.5">Pastas Ativas (Clique para selecionar):</span>
+                                @foreach($existingFolders as $folder)
+                                    <button 
+                                        type="button" 
+                                        @click="folderName = '{{ addslashes($folder) }}'"
+                                        class="px-2 py-1 bg-slate-100 hover:bg-slate-200 border border-slate-200 text-[10px] font-bold text-slate-600 rounded-[3px] transition-colors cursor-pointer"
+                                    >
+                                        {{ $folder }}
+                                    </button>
+                                @endforeach
+                            </div>
+                        @endif
                     </div>
 
                     <!-- Input Files Drag & Drop Zone -->
