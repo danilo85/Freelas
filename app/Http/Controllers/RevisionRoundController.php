@@ -76,7 +76,7 @@ class RevisionRoundController extends Controller
     {
         $request->validate([
             'files' => 'required|array',
-            'files.*' => 'required|file|max:20480', // limit 20MB per file
+            'files.*' => 'required|file|max:307200', // limit 300MB per file
             'folder_name' => 'nullable|string|max:100',
         ]);
 
@@ -128,7 +128,7 @@ class RevisionRoundController extends Controller
     public function replaceFile(Request $request, $fileId)
     {
         $request->validate([
-            'file' => 'required|file|max:20480', // limit 20MB
+            'file' => 'required|file|max:307200', // limit 300MB
         ]);
 
         $file = RevisionFile::whereHas('revisionRound.projectRevision', function ($q) {

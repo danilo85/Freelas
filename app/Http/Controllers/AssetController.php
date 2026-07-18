@@ -71,7 +71,7 @@ class AssetController extends Controller
             'title' => 'required|string|max:255',
             'description' => 'nullable|string',
             'upload_type' => 'required|string|in:file,code',
-            'file' => 'required_if:upload_type,file|nullable|file|max:102400', // 100MB max por arquivo individual no banco de assets
+            'file' => 'required_if:upload_type,file|nullable|file|max:307200', // 300MB max por arquivo individual no banco de assets
             'code_snippet' => 'required_if:upload_type,code|nullable|string',
         ]);
 
