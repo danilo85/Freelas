@@ -162,6 +162,7 @@ Route::middleware(['auth', 'approved'])->prefix('freelas')->group(function () {
         Route::post('/utilidades/revisoes', [\App\Http\Controllers\ProjectRevisionController::class, 'store'])->name('revisoes.store');
         Route::get('/utilidades/revisoes/{revision}', [\App\Http\Controllers\ProjectRevisionController::class, 'show'])->name('revisoes.show');
         Route::delete('/utilidades/revisoes/{revision}', [\App\Http\Controllers\ProjectRevisionController::class, 'destroy'])->name('revisoes.destroy');
+        Route::get('/utilidades/revisoes/{revision}/backup', [\App\Http\Controllers\ProjectRevisionController::class, 'downloadBackup'])->name('revisoes.backup');
         
         // Autocomplete / AJAX Helpers
         Route::get('/utilidades/api/autores', [\App\Http\Controllers\ProjectRevisionController::class, 'searchAuthors'])->name('revisoes.api.authors');
@@ -276,5 +277,14 @@ Route::get('/brand/{token}', [\App\Http\Controllers\PublicBrandController::class
 // Rota pública de Recibo de Pagamento
 Route::get('/recibo/{token}', [\App\Http\Controllers\PublicReceiptController::class, 'show'])->name('public.receipt.show');
 
+// Rota pública do Veredas (Leitura e Estudo Bíblico)
+Route::get('/veredas', [\App\Http\Controllers\BibleController::class, 'publicIndex'])->name('public.bible.index');
 
-
+// Proxy de endpoints para evitar erros de CORS ao consultar a API pública externa do Veredas
+Route::prefix('veredas-api')->group(function () {
+    Route::get('/livros', [\App\Http\Controllers\BibleController::class, 'proxyBooks']);
+    Route::get('/versoes', [\App\Http\Controllers\BibleController::class, 'proxyVersions']);
+    Route::get('/capitulo', [\App\Http\Controllers\BibleController::class, 'proxyChapter']);
+    Route::get('/pesquisa', [\App\Http\Controllers\BibleController::class, 'proxySearch']);
+    Route::get('/contexto', [\App\Http\Controllers\BibleController::class, 'proxyContext']);
+});

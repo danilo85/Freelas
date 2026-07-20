@@ -278,7 +278,7 @@
                         </button>
                         
                         <button type="button" 
-                                @click="$dispatch('trigger-global-delete', { title: 'Excluir Projeto de Revisão', message: 'Deseja realmente excluir este projeto de revisão de arquivos e todas as suas rodadas?', action: '{{ route('revisoes.destroy', $rev->id) }}', highSecurity: false })"
+                                @click="$dispatch('trigger-global-delete', { title: 'Excluir Projeto de Revisão', message: 'Deseja realmente excluir este projeto de revisão de arquivos e todas as suas rodadas?', action: '{{ route('revisoes.destroy', $rev->id) }}', backupUrl: '{{ route('revisoes.backup', $rev->id) }}', highSecurity: false })"
                                 class="w-8 h-8 flex items-center justify-center bg-transparent border-0 shadow-none text-rose-600 hover:bg-rose-50 rounded-[5px] transition-all cursor-pointer" 
                                 title="Excluir Projeto de Revisão">
                             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -631,4 +631,15 @@
         }
     }
 </script>
+
+@if(session('download_backup_url'))
+<script>
+    document.addEventListener('DOMContentLoaded', () => {
+        const iframe = document.createElement('iframe');
+        iframe.style.display = 'none';
+        iframe.src = "{{ session('download_backup_url') }}";
+        document.body.appendChild(iframe);
+    });
+</script>
+@endif
 @endsection

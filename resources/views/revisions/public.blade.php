@@ -187,6 +187,9 @@
                         <a href="{{ route('public.revisao.download.report', $activeRound->id) }}" class="block px-4 py-2 text-xs font-semibold text-slate-700 hover:text-slate-900 hover:bg-slate-50 border-t border-slate-100">
                             📄 Baixar Relatório de Comentários (.TXT)
                         </a>
+                        <button type="button" @click="printProofWithAnnotations()" class="w-full text-left block px-4 py-2 text-xs font-semibold text-slate-700 hover:text-slate-900 hover:bg-slate-50 border-t border-slate-100 cursor-pointer">
+                            🎨 Imprimir Prova com Anotações
+                        </button>
                     @endif
                 </div>
             </div>
@@ -424,10 +427,16 @@
                             title="Marcação Retangular">
                         ⬜
                     </button>
+                    <button @click="setTool('arrow')" 
+                            class="p-2 rounded-[5px] transition-colors"
+                            :class="activeTool === 'arrow' ? 'bg-blue-600 text-white' : 'text-slate-500 hover:text-slate-800 hover:bg-slate-100'"
+                            title="Seta Indicativa">
+                        ↗️
+                    </button>
                     <button @click="clearStrokes()" 
-                            class="p-2 rounded-[5px] text-slate-500 hover:text-slate-800 hover:bg-slate-100 transition-colors"
-                            title="Limpar Desenho Atual">
-                        🧹
+                            class="p-2 rounded-[5px] text-slate-500 hover:text-red-600 hover:bg-red-50 transition-colors"
+                            title="Limpar Marcação Atual">
+                        🗑️
                     </button>
                     
                     <span class="h-4 w-px bg-slate-300 mx-1"></span>
@@ -668,6 +677,9 @@
                             <button @click="resolveContextMenuAction('edit')" class="text-left px-3 py-2 text-xs font-bold text-slate-700 hover:bg-slate-50 border-t border-slate-100 flex items-center gap-2">✏️ Editar Ajuste</button>
                             <button @click="resolveContextMenuAction('toggle')" class="text-left px-3 py-2 text-xs font-bold text-slate-700 hover:bg-slate-50 border-t border-slate-100 flex items-center gap-2">✅ Alternar Status</button>
                             <button @click="resolveContextMenuAction('delete')" class="text-left px-3 py-2 text-xs font-bold text-rose-600 hover:bg-rose-50 border-t border-slate-100 flex items-center gap-2">🗑️ Excluir permanente</button>
+                            <template x-if="isRightClickedAnnoArrow()">
+                                <button @click="resolveContextMenuAction('invert-arrow')" class="text-left px-3 py-2 text-xs font-bold text-blue-600 hover:bg-blue-50 border-t border-slate-100 flex items-center gap-2">🔄 Inverter Seta</button>
+                            </template>
                         </div>
                     </template>
 
@@ -945,6 +957,362 @@
         let currentRenderTask = null; 
         let confirmCallback = null; 
 
+        function drawArrow(ctx, x1, y1, x2, y2, isInverted, color) {
+            ctx.strokeStyle = color || '#ef4444';
+            ctx.fillStyle = color || '#ef4444';
+            ctx.lineWidth = 3;
+            ctx.lineCap = 'round';
+            ctx.lineJoin = 'round';
+
+            let headX = isInverted ? x2 : x1;
+            let headY = isInverted ? y2 : y1;
+            let tailX = isInverted ? x1 : x2;
+            let tailY = isInverted ? y1 : y2;
+
+            ctx.beginPath();
+            ctx.moveTo(tailX, tailY);
+            ctx.lineTo(headX, headY);
+            ctx.stroke();
+
+            const angle = Math.atan2(headY - tailY, headX - tailX);
+            const headLength = 15;
+
+            ctx.beginPath();
+            ctx.moveTo(headX, headY);
+            ctx.lineTo(headX - headLength * Math.cos(angle - Math.PI / 6), headY - headLength * Math.sin(angle - Math.PI / 6));
+            ctx.lineTo(headX - headLength * Math.cos(angle + Math.PI / 6), headY - headLength * Math.sin(angle + Math.PI / 6));
+            ctx.closePath();
+            ctx.fill();
+        } 
+
+        async function printProofWithAnnotations() {
+            try {
+                const annotations = @json($annotations);
+                const isPdf = @json($activeFile && $activeFile->file_type === 'pdf');
+                const imageUrl = @json($activeFile ? Storage::url($activeFile->file_path) : '');
+
+                const printWindow = window.open('', '_blank');
+                if (!printWindow) {
+                    alert('Por favor, ative a permissão de popups para visualizar a impressão.');
+                    return;
+                }
+
+                printWindow.document.write(`
+                    <!DOCTYPE html>
+                    <html lang="pt-BR">
+                    <head>
+                        <title>Imprimir Prova com Marcações</title>
+                        <script src="https://cdn.tailwindcss.com"></s` + `cript>
+                        <style>
+                            body { font-family: 'Inter', sans-serif; background: #fff; margin: 0; padding: 20px; }
+                            .page-container { page-break-after: always; display: flex; flex-direction: column; align-items: center; margin-bottom: 40px; }
+                            .canvas-wrapper { position: relative; border: 1px solid #e2e8f0; margin-bottom: 25px; box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1); }
+                            .overlay-canvas { position: absolute; top: 0; left: 0; pointer-events: none; }
+                            .annotations-list { width: 100%; max-width: 800px; margin-top: 10px; border-top: 1px solid #f1f5f9; padding-top: 15px; }
+                            @media print {
+                                body { padding: 0; }
+                                .no-print { display: none !important; }
+                                .page-container { page-break-after: always; }
+                            }
+                        </style>
+                    </head>
+                    <body class="bg-white">
+                        <div id="loader" class="flex flex-col items-center justify-center min-h-screen space-y-4 no-print text-center px-4">
+                            <div class="animate-spin rounded-full h-10 w-10 border-b-2 border-slate-800"></div>
+                            <p id="loader-message" class="text-sm font-semibold text-slate-700">Gerando visualização de impressão com marcações... Por favor, aguarde.</p>
+                        </div>
+                        <div id="print-content" class="hidden py-4"></div>
+                    </body>
+                    </html>
+                `);
+                printWindow.document.close();
+
+                const printContent = printWindow.document.getElementById('print-content');
+                const loader = printWindow.document.getElementById('loader');
+                const loaderMsg = printWindow.document.getElementById('loader-message');
+
+                if (isPdf) {
+                    if (!pdfDocInstance) {
+                        alert('O documento PDF ainda está sendo carregado no visualizador principal.');
+                        printWindow.close();
+                        return;
+                    }
+
+                    const numPages = pdfDocInstance.numPages;
+                    const pagesToRender = [...new Set(annotations.map(a => Number(a.page_number)))].filter(p => p > 0).sort((a, b) => a - b);
+                    
+                    if (pagesToRender.length === 0) {
+                        alert('Esta prova não possui anotações nesta rodada para imprimir.');
+                        printWindow.close();
+                        return;
+                    }
+
+                    const totalPagesToRender = pagesToRender.length;
+                    for (let i = 0; i < totalPagesToRender; i++) {
+                        const pageNum = pagesToRender[i];
+                        if (loaderMsg) {
+                            loaderMsg.innerText = `Processando página ${pageNum} (${i + 1} de ${totalPagesToRender})...`;
+                        }
+
+                        const pageContainer = printWindow.document.createElement('div');
+                        pageContainer.className = 'page-container';
+                        printContent.appendChild(pageContainer);
+
+                        const title = printWindow.document.createElement('h3');
+                        title.className = 'text-sm font-bold text-slate-850 mb-3 w-full max-w-[800px] border-b pb-1 flex justify-between';
+                        title.innerHTML = `<span>Página ${pageNum} de ${numPages}</span> <span class="text-xs text-slate-400">Revisão: {{ addslashes($revision->title) }}</span>`;
+                        pageContainer.appendChild(title);
+
+                        const canvasWrapper = printWindow.document.createElement('div');
+                        canvasWrapper.className = 'canvas-wrapper';
+                        pageContainer.appendChild(canvasWrapper);
+
+                        // Create canvases in parent window where rendering is permitted
+                        const pdfCanvas = document.createElement('canvas');
+                        const overlayCanvas = document.createElement('canvas');
+                        overlayCanvas.className = 'overlay-canvas';
+
+                        const page = await pdfDocInstance.getPage(pageNum);
+                        const viewport = page.getViewport({ scale: 1.5 });
+                        pdfCanvas.width = viewport.width;
+                        pdfCanvas.height = viewport.height;
+                        overlayCanvas.width = viewport.width;
+                        overlayCanvas.height = viewport.height;
+
+                        if (loaderMsg) {
+                            loaderMsg.innerText = `Renderizando página ${pageNum} de ${numPages}...`;
+                        }
+
+                        const renderCtx = pdfCanvas.getContext('2d');
+                        await page.render({ canvasContext: renderCtx, viewport: viewport }).promise;
+
+                        const overlayCtx = overlayCanvas.getContext('2d');
+                        overlayCtx.strokeStyle = '#ef4444';
+                        overlayCtx.lineWidth = 3;
+                        overlayCtx.fillStyle = 'rgba(239, 68, 68, 0.12)';
+
+                        const pageAnnos = annotations.filter(a => Number(a.page_number) === pageNum);
+                        let annoIndex = 1;
+
+                        pageAnnos.forEach(anno => {
+                            if (!anno.drawing_data) return;
+                            try {
+                                const parsed = JSON.parse(anno.drawing_data);
+                                const scaleX = pdfCanvas.width / parsed.canvasWidth;
+                                const scaleY = pdfCanvas.height / parsed.canvasHeight;
+
+                                if (parsed.type === 'freehand') {
+                                    overlayCtx.beginPath();
+                                    parsed.points.forEach((pt, idx) => {
+                                        const px = pt.x * scaleX;
+                                        const py = pt.y * scaleY;
+                                        if (idx === 0) overlayCtx.moveTo(px, py);
+                                        else overlayCtx.lineTo(px, py);
+                                    });
+                                    overlayCtx.stroke();
+                                    if (parsed.points.length > 0) {
+                                        const firstPt = parsed.points[0];
+                                        drawBadge(overlayCtx, firstPt.x * scaleX, firstPt.y * scaleY, annoIndex);
+                                    }
+                                } else if (parsed.type === 'rectangle') {
+                                    const x1 = parsed.rect.x1 * scaleX;
+                                    const y1 = parsed.rect.y1 * scaleY;
+                                    const x2 = parsed.rect.x2 * scaleX;
+                                    const y2 = parsed.rect.y2 * scaleY;
+                                    
+                                    overlayCtx.beginPath();
+                                    overlayCtx.rect(x1, y1, x2 - x1, y2 - y1);
+                                    overlayCtx.fill();
+                                    overlayCtx.stroke();
+                                    drawBadge(overlayCtx, x1, y1, annoIndex);
+                                } else if (parsed.type === 'arrow') {
+                                    const arrow = parsed.arrow || parsed;
+                                    const ax1 = arrow.x1 * scaleX;
+                                    const ay1 = arrow.y1 * scaleY;
+                                    const ax2 = arrow.x2 * scaleX;
+                                    const ay2 = arrow.y2 * scaleY;
+                                    drawArrow(overlayCtx, ax1, ay1, ax2, ay2, !!arrow.isInverted, parsed.color || '#ef4444');
+                                    drawBadge(overlayCtx, ax1, ay1, annoIndex);
+                                }
+                            } catch (e) {
+                                console.error('Error drawing annotation:', e);
+                            }
+                            annoIndex++;
+                        });
+
+                        // Now that rendering and drawing are fully complete, append them to the print window wrapper!
+                        canvasWrapper.appendChild(pdfCanvas);
+                        canvasWrapper.appendChild(overlayCanvas);
+
+                        if (pageAnnos.length > 0) {
+                            const listDiv = printWindow.document.createElement('div');
+                            listDiv.className = 'annotations-list text-xs space-y-2';
+                            
+                            let listIdx = 1;
+                            pageAnnos.forEach(anno => {
+                                const item = printWindow.document.createElement('div');
+                                item.className = 'flex items-start gap-3 bg-slate-50 p-3 rounded-[5px] border border-slate-150 w-full';
+                                item.innerHTML = `
+                                    <span class="w-5 h-5 flex items-center justify-center bg-red-600 text-white rounded-full font-bold text-[10px] shrink-0">${listIdx}</span>
+                                    <div class="space-y-1">
+                                        <p class="font-bold text-slate-800 leading-relaxed">${anno.comment}</p>
+                                        <span class="text-[9px] text-slate-400 uppercase tracking-wider font-semibold">Revisor: ${anno.author ? anno.author.name : 'Revisor Geral'} | Status: ${anno.status}</span>
+                                    </div>
+                                `;
+                                listDiv.appendChild(item);
+                                listIdx++;
+                            });
+                            pageContainer.appendChild(listDiv);
+                        }
+                    }
+                } else {
+                    if (loaderMsg) {
+                        loaderMsg.innerText = 'Carregando imagem de prova...';
+                    }
+
+                    const pageContainer = printWindow.document.createElement('div');
+                    pageContainer.className = 'page-container';
+                    printContent.appendChild(pageContainer);
+
+                    const title = printWindow.document.createElement('h3');
+                    title.className = 'text-sm font-bold text-slate-850 mb-3 w-full max-w-[800px] border-b pb-1 flex justify-between';
+                    title.innerHTML = `<span>Imagem de Prova</span> <span class="text-xs text-slate-400">Revisão: {{ addslashes($revision->title) }}</span>`;
+                    pageContainer.appendChild(title);
+
+                    const canvasWrapper = printWindow.document.createElement('div');
+                    canvasWrapper.className = 'canvas-wrapper';
+                    pageContainer.appendChild(canvasWrapper);
+
+                    const imgElement = printWindow.document.createElement('img');
+                    imgElement.src = imageUrl;
+                    imgElement.className = 'max-w-full h-auto';
+                    canvasWrapper.appendChild(imgElement);
+
+                    // Create canvases in parent window context
+                    const overlayCanvas = document.createElement('canvas');
+                    overlayCanvas.className = 'overlay-canvas';
+                    canvasWrapper.appendChild(overlayCanvas);
+
+                    await new Promise((resolve, reject) => {
+                        imgElement.onload = () => {
+                            overlayCanvas.width = imgElement.clientWidth || imgElement.naturalWidth || 800;
+                            overlayCanvas.height = imgElement.clientHeight || imgElement.naturalHeight || 600;
+                            resolve();
+                        };
+                        imgElement.onerror = () => {
+                            reject(new Error('Falha ao carregar a imagem da prova.'));
+                        };
+                        if (imgElement.complete) {
+                            imgElement.onload();
+                        }
+                    });
+
+                    const overlayCtx = overlayCanvas.getContext('2d');
+                    overlayCtx.strokeStyle = '#ef4444';
+                    overlayCtx.lineWidth = 3;
+                    overlayCtx.fillStyle = 'rgba(239, 68, 68, 0.12)';
+
+                    let annoIndex = 1;
+                    annotations.forEach(anno => {
+                        if (!anno.drawing_data) return;
+                        try {
+                            const parsed = JSON.parse(anno.drawing_data);
+                            const scaleX = overlayCanvas.width / parsed.canvasWidth;
+                            const scaleY = overlayCanvas.height / parsed.canvasHeight;
+
+                            if (parsed.type === 'freehand') {
+                               overlayCtx.beginPath();
+                               parsed.points.forEach((pt, idx) => {
+                                   const px = pt.x * scaleX;
+                                   const py = pt.y * scaleY;
+                                   if (idx === 0) overlayCtx.moveTo(px, py);
+                                   else overlayCtx.lineTo(px, py);
+                               });
+                               overlayCtx.stroke();
+                               if (parsed.points.length > 0) {
+                                   const firstPt = parsed.points[0];
+                                   drawBadge(overlayCtx, firstPt.x * scaleX, firstPt.y * scaleY, annoIndex);
+                               }
+                            } else if (parsed.type === 'rectangle') {
+                               const x1 = parsed.rect.x1 * scaleX;
+                               const y1 = parsed.rect.y1 * scaleY;
+                               const x2 = parsed.rect.x2 * scaleX;
+                               const y2 = parsed.rect.y2 * scaleY;
+                               
+                               overlayCtx.beginPath();
+                               overlayCtx.rect(x1, y1, x2 - x1, y2 - y1);
+                               overlayCtx.fill();
+                               overlayCtx.stroke();
+                               drawBadge(overlayCtx, x1, y1, annoIndex);
+                            } else if (parsed.type === 'arrow') {
+                                const arrow = parsed.arrow || parsed;
+                                const ax1 = arrow.x1 * scaleX;
+                                const ay1 = arrow.y1 * scaleY;
+                                const ax2 = arrow.x2 * scaleX;
+                                const ay2 = arrow.y2 * scaleY;
+                                drawArrow(overlayCtx, ax1, ay1, ax2, ay2, !!arrow.isInverted, parsed.color || '#ef4444');
+                                drawBadge(overlayCtx, ax1, ay1, annoIndex);
+                            }
+                        } catch (e) {
+                            console.error('Error drawing annotation:', e);
+                        }
+                        annoIndex++;
+                    });
+
+                    if (annotations.length > 0) {
+                        const listDiv = printWindow.document.createElement('div');
+                        listDiv.className = 'annotations-list text-xs space-y-2';
+                        
+                        let listIdx = 1;
+                        annotations.forEach(anno => {
+                            const item = printWindow.document.createElement('div');
+                            item.className = 'flex items-start gap-3 bg-slate-50 p-3 rounded-[5px] border border-slate-150 w-full';
+                            item.innerHTML = `
+                                <span class="w-5 h-5 flex items-center justify-center bg-red-600 text-white rounded-full font-bold text-[10px] shrink-0">${listIdx}</span>
+                                <div class="space-y-1">
+                                    <p class="font-bold text-slate-800 leading-relaxed">${anno.comment}</p>
+                                    <span class="text-[9px] text-slate-400 uppercase tracking-wider font-semibold">Revisor: ${anno.author ? anno.author.name : 'Revisor Geral'} | Status: ${anno.status}</span>
+                                </div>
+                            `;
+                            listDiv.appendChild(item);
+                            listIdx++;
+                        });
+                        pageContainer.appendChild(listDiv);
+                    }
+                }
+
+                function drawBadge(ctx, x, y, index) {
+                    ctx.beginPath();
+                    ctx.arc(x, y, 10, 0, 2 * Math.PI);
+                    ctx.fillStyle = '#ef4444';
+                    ctx.fill();
+                    ctx.strokeStyle = 'white';
+                    ctx.lineWidth = 1.5;
+                    ctx.stroke();
+
+                    ctx.fillStyle = 'white';
+                    ctx.font = 'bold 9px Arial';
+                    ctx.textAlign = 'center';
+                    ctx.textBaseline = 'middle';
+                    ctx.fillText(index, x, y);
+                }
+
+                if (loaderMsg) {
+                    loaderMsg.innerText = 'Preparando impressão...';
+                }
+
+                loader.classList.add('hidden');
+                printContent.classList.remove('hidden');
+
+                setTimeout(() => {
+                    printWindow.print();
+                }, 600);
+            } catch (err) {
+                console.error('[ERROR] Falha ao gerar impressão:', err);
+                alert('Ocorreu um erro ao gerar a impressão: ' + err.message);
+            }
+        }
+
         function proofingSystem(initialAnnotations) {
             return {
                 copiedText: 'Copiar Link',
@@ -1098,6 +1466,7 @@
                 currentPoints: [],
                 allMarkups: [],
                 tempRect: null,
+                tempArrow: null,
 
                 sortAnnotations() {
                     this.annotationsList.sort((a, b) => {
@@ -1375,6 +1744,16 @@
                                 maxX = (Math.max(parsed.rect.x1, parsed.rect.x2) * scaleX) + shiftX;
                                 minY = Math.min(parsed.rect.y1, parsed.rect.y2) * scaleY;
                                 maxY = Math.max(parsed.rect.y1, parsed.rect.y2) * scaleY;
+                            } else if (parsed.type === 'arrow') {
+                                const arrow = parsed.arrow || parsed;
+                                const ax1 = (arrow.x1 * scaleX) + shiftX;
+                                const ay1 = arrow.y1 * scaleY;
+                                const ax2 = (arrow.x2 * scaleX) + shiftX;
+                                const ay2 = arrow.y2 * scaleY;
+                                minX = Math.min(ax1, ax2);
+                                maxX = Math.max(ax1, ax2);
+                                minY = Math.min(ay1, ay2);
+                                maxY = Math.max(ay1, ay2);
                             }
                             
                             if (coords.x >= minX && coords.x <= maxX && coords.y >= minY && coords.y <= maxY) {
@@ -1417,6 +1796,67 @@
                         this.toggleResolve(id);
                     } else if (action === 'delete') {
                         this.deleteAnnotation(id);
+                    } else if (action === 'invert-arrow') {
+                        this.invertArrowDirection(id);
+                    }
+                },
+
+                isRightClickedAnnoArrow() {
+                    if (!this.rightClickedAnnoId) return false;
+                    const anno = this.annotationsList.find(a => a.id === this.rightClickedAnnoId);
+                    if (!anno || !anno.drawing_data) return false;
+                    try {
+                        const parsed = JSON.parse(anno.drawing_data);
+                        return parsed.type === 'arrow';
+                    } catch(e) {
+                        return false;
+                    }
+                },
+
+                invertArrowDirection(id) {
+                    const anno = this.annotationsList.find(a => a.id === id);
+                    if (!anno || !anno.drawing_data) return;
+
+                    try {
+                        const parsed = JSON.parse(anno.drawing_data);
+                        const arrow = parsed.arrow || parsed;
+                        if (parsed.type !== 'arrow') return;
+
+                        // Toggle isInverted
+                        arrow.isInverted = !arrow.isInverted;
+                        
+                        const newDrawingData = JSON.stringify(parsed);
+                        
+                        // Submit update via AJAX
+                        const csrfToken = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
+                        const formData = new FormData();
+                        formData.append('drawing_data', newDrawingData);
+                        formData.append('comment', anno.comment);
+                        formData.append('page_number', anno.page_number);
+
+                        fetch(`/revisao/annotation/${id}/update`, {
+                            method: 'POST',
+                            headers: {
+                                'X-CSRF-TOKEN': csrfToken,
+                                'Accept': 'application/json'
+                            },
+                            body: formData
+                        })
+                        .then(res => res.json())
+                        .then(data => {
+                            if (data.success) {
+                                const index = this.annotationsList.findIndex(a => a.id === id);
+                                if (index !== -1) {
+                                    this.annotationsList[index] = data.annotation;
+                                }
+                                this.renderPDFPage(); // redraw canvas
+                            }
+                        })
+                        .catch(err => {
+                            console.error('Erro ao inverter seta:', err);
+                        });
+                    } catch(e) {
+                        console.error('Erro ao processar dados da seta:', e);
                     }
                 },
 
@@ -1995,6 +2435,14 @@
                             x2: coords.x,
                             y2: coords.y
                         };
+                    } else if (this.activeTool === 'arrow') {
+                        this.tempArrow = {
+                            x1: coords.x,
+                            y1: coords.y,
+                            x2: coords.x,
+                            y2: coords.y,
+                            isInverted: false
+                        };
                     }
                 },
 
@@ -2033,6 +2481,19 @@
                             this.tempRect.y2 - this.tempRect.y1
                         );
                         this.ctx.globalAlpha = 1.0; 
+                    } else if (this.activeTool === 'arrow') {
+                        this.tempArrow.x2 = coords.x;
+                        this.tempArrow.y2 = coords.y;
+
+                        drawArrow(
+                            this.ctx,
+                            this.tempArrow.x1,
+                            this.tempArrow.y1,
+                            this.tempArrow.x2,
+                            this.tempArrow.y2,
+                            this.tempArrow.isInverted,
+                            this.strokeColor
+                        );
                     }
                 },
 
@@ -2087,10 +2548,13 @@
                     };
                 },
 
+
+
                 clearStrokes() {
                     this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
                     this.currentPoints = [];
                     this.tempRect = null;
+                    this.tempArrow = null;
                     this.drawSavedAnnotations();
                 },
 
@@ -2119,15 +2583,17 @@
                     if (!this.editingAnnoId) {
                         let finalPoints = null;
                         let finalRect = null;
+                        let finalArrow = null;
                         let finalCanvasWidth = this.canvas.width;
 
                         if (this.pageMode === 'double' && this.currentPage > 1) {
-                            // Determine which page the drawing belongs to based on the starting coordinate
                             let isRightPage = false;
                             if (this.activeTool === 'freehand' && this.currentPoints.length > 0) {
                                 isRightPage = this.currentPoints[0].x > (this.canvas.width / 2);
                             } else if (this.activeTool === 'rectangle' && this.tempRect) {
                                 isRightPage = this.tempRect.x1 > (this.canvas.width / 2);
+                            } else if (this.activeTool === 'arrow' && this.tempArrow) {
+                                isRightPage = this.tempArrow.x1 > (this.canvas.width / 2);
                             }
 
                             if (isRightPage) {
@@ -2147,16 +2613,25 @@
                                         x2: this.tempRect.x2 - halfWidth,
                                         y2: this.tempRect.y2
                                     };
+                                } else if (this.activeTool === 'arrow') {
+                                    finalArrow = {
+                                        x1: this.tempArrow.x1 - halfWidth,
+                                        y1: this.tempArrow.y1,
+                                        x2: this.tempArrow.x2 - halfWidth,
+                                        y2: this.tempArrow.y2,
+                                        isInverted: this.tempArrow.isInverted
+                                    };
                                 }
                             } else {
-                                // Left page: store with half canvas width
                                 finalCanvasWidth = this.canvas.width / 2;
                                 finalPoints = this.currentPoints;
                                 finalRect = this.tempRect;
+                                finalArrow = this.tempArrow;
                             }
                         } else {
                             finalPoints = this.currentPoints;
                             finalRect = this.tempRect;
+                            finalArrow = this.tempArrow;
                         }
 
                         if (this.activeTool === 'freehand' && (finalPoints || this.currentPoints).length > 0) {
@@ -2172,6 +2647,15 @@
                             drawingData = JSON.stringify({
                                 type: 'rectangle',
                                 rect: finalRect || this.tempRect,
+                                color: this.strokeColor,
+                                canvasWidth: finalCanvasWidth,
+                                canvasHeight: this.canvas.height,
+                                pageMode: this.pageMode
+                            });
+                        } else if (this.activeTool === 'arrow' && (finalArrow || this.tempArrow)) {
+                            drawingData = JSON.stringify({
+                                type: 'arrow',
+                                arrow: finalArrow || this.tempArrow,
                                 color: this.strokeColor,
                                 canvasWidth: finalCanvasWidth,
                                 canvasHeight: this.canvas.height,
@@ -2380,14 +2864,34 @@
                                 boundMaxX = Math.max(rx1, rx2);
                                 boundMinY = Math.min(ry1, ry2);
                                 boundMaxY = Math.max(ry1, ry2);
+                            } else if (parsed.type === 'arrow') {
+                                const arrow = parsed.arrow || parsed;
+                                const ax1 = (arrow.x1 * scaleX) + shiftX;
+                                const ay1 = arrow.y1 * scaleY;
+                                const ax2 = (arrow.x2 * scaleX) + shiftX;
+                                const ay2 = arrow.y2 * scaleY;
+
+                                drawArrow(
+                                    this.ctx,
+                                    ax1,
+                                    ay1,
+                                    ax2,
+                                    ay2,
+                                    !!arrow.isInverted,
+                                    parsed.color || '#f43f5e'
+                                );
+
+
+
+                                boundMinX = Math.min(ax1, ax2);
+                                boundMaxX = Math.max(ax1, ax2);
+                                boundMinY = Math.min(ay1, ay2);
+                                boundMaxY = Math.max(ay1, ay2);
                             }
 
                             // RENDER CONNECTING LEADING LINES & TEXT BUBBLES
                             if (boundMaxX > 0 && boundMaxX < 99999) {
                                 this.ctx.globalAlpha = anno.status === 'resolvido' ? 0.35 : 1.0;
-                                const centerY = (boundMinY + boundMaxY) / 2;
-                                
-                                const alignRight = (boundMaxX + 180) <= this.canvas.width;
                                 
                                 this.ctx.font = '500 11px sans-serif';
                                 const rawComment = this.cleanTextForTag(anno.comment);
@@ -2405,90 +2909,80 @@
                                 const lineHeightHeight = 14;
                                 const bubbleHeight = (textLines.length * lineHeightHeight) + 8;
 
-                                if (alignRight) {
-                                    const targetLineX = boundMaxX + 35;
-                                    const circleX = targetLineX + 10;
-                                    const bubbleX = targetLineX + 23;
+                                let circleX, bubbleX, targetLineX, centerY, alignRight;
 
-                                    this.ctx.beginPath();
-                                    this.ctx.moveTo(boundMaxX, centerY);
-                                    this.ctx.lineTo(targetLineX, centerY);
-                                    this.ctx.strokeStyle = anno.status === 'resolvido' ? '#10b981' : (parsed.color || '#f43f5e');
-                                    this.ctx.lineWidth = 1.5;
-                                    this.ctx.stroke();
+                                if (parsed.type === 'arrow') {
+                                    const arrow = parsed.arrow || parsed;
+                                    const ax1 = (arrow.x1 * scaleX) + shiftX;
+                                    const ay1 = arrow.y1 * scaleY;
+                                    const ax2 = (arrow.x2 * scaleX) + shiftX;
+                                    const ay2 = arrow.y2 * scaleY;
+                                    const tailX = !!arrow.isInverted ? ax1 : ax2;
+                                    const tailY = !!arrow.isInverted ? ay1 : ay2;
 
-                                    // Circle Badge
-                                    this.ctx.beginPath();
-                                    this.ctx.arc(circleX, centerY, 10, 0, 2 * Math.PI);
-                                    this.ctx.fillStyle = anno.status === 'resolvido' ? '#10b981' : '#3b82f6';
-                                    this.ctx.fill();
-                                    
-                                    this.ctx.fillStyle = '#ffffff';
-                                    this.ctx.font = 'bold 11px sans-serif';
-                                    this.ctx.textAlign = 'center';
-                                    this.ctx.textBaseline = 'middle';
-                                    this.ctx.fillText((index + 1).toString(), circleX, centerY);
+                                    centerY = tailY;
+                                    alignRight = (tailX + 180) <= this.canvas.width;
 
-                                    // Bubble card
-                                    const finalBubbleX = clamp(bubbleX, 2, this.canvas.width - bubbleWidth - 2);
-                                    const bubbleY = centerY - (bubbleHeight / 2);
-
-                                    this.ctx.fillStyle = anno.status === 'resolvido' ? '#d1fae5' : '#fef08a';
-                                    this.ctx.beginPath();
-                                    this.ctx.roundRect(finalBubbleX, bubbleY, bubbleWidth, bubbleHeight, 4);
-                                    this.ctx.fill();
-
-                                    this.ctx.fillStyle = anno.status === 'resolvido' ? '#065f46' : '#1e293b';
-                                    this.ctx.textAlign = 'left';
-                                    this.ctx.font = '500 11px sans-serif';
-                                    
-                                    textLines.forEach((ln, idx) => {
-                                        const textY = bubbleY + 6 + (idx * lineHeightHeight) + (lineHeightHeight / 2);
-                                        this.ctx.fillText(ln, finalBubbleX + 8, textY);
-                                    });
-
+                                    if (alignRight) {
+                                        circleX = tailX + 15;
+                                        bubbleX = tailX + 28;
+                                    } else {
+                                        circleX = tailX - 15;
+                                        bubbleX = tailX - 28 - bubbleWidth;
+                                    }
                                 } else {
-                                    const targetLineX = boundMinX - 35;
-                                    const circleX = targetLineX - 10;
-                                    const bubbleX = targetLineX - 24 - bubbleWidth;
+                                    centerY = (boundMinY + boundMaxY) / 2;
+                                    alignRight = (boundMaxX + 180) <= this.canvas.width;
 
+                                    if (alignRight) {
+                                        targetLineX = boundMaxX + 35;
+                                        circleX = targetLineX + 10;
+                                        bubbleX = targetLineX + 23;
+                                    } else {
+                                        targetLineX = boundMinX - 35;
+                                        circleX = targetLineX - 10;
+                                        bubbleX = targetLineX - 24 - bubbleWidth;
+                                    }
+                                }
+
+                                if (parsed.type !== 'arrow') {
                                     this.ctx.beginPath();
-                                    this.ctx.moveTo(boundMinX, centerY);
+                                    this.ctx.moveTo(alignRight ? boundMaxX : boundMinX, centerY);
                                     this.ctx.lineTo(targetLineX, centerY);
                                     this.ctx.strokeStyle = anno.status === 'resolvido' ? '#10b981' : (parsed.color || '#f43f5e');
                                     this.ctx.lineWidth = 1.5;
                                     this.ctx.stroke();
-
-                                    // Circle Badge
-                                    this.ctx.beginPath();
-                                    this.ctx.arc(circleX, centerY, 10, 0, 2 * Math.PI);
-                                    this.ctx.fillStyle = anno.status === 'resolvido' ? '#10b981' : '#3b82f6';
-                                    this.ctx.fill();
-                                    
-                                    this.ctx.fillStyle = '#ffffff';
-                                    this.ctx.font = 'bold 11px sans-serif';
-                                    this.ctx.textAlign = 'center';
-                                    this.ctx.textBaseline = 'middle';
-                                    this.ctx.fillText((index + 1).toString(), circleX, centerY);
-
-                                    // Bubble card
-                                    const finalBubbleX = clamp(bubbleX, 2, this.canvas.width - bubbleWidth - 2);
-                                    const bubbleY = centerY - (bubbleHeight / 2);
-
-                                    this.ctx.fillStyle = anno.status === 'resolvido' ? '#d1fae5' : '#fef08a';
-                                    this.ctx.beginPath();
-                                    this.ctx.roundRect(finalBubbleX, bubbleY, bubbleWidth, bubbleHeight, 4);
-                                    this.ctx.fill();
-
-                                    this.ctx.fillStyle = anno.status === 'resolvido' ? '#065f46' : '#1e293b';
-                                    this.ctx.textAlign = 'left';
-                                    this.ctx.font = '500 11px sans-serif';
-                                    
-                                    textLines.forEach((ln, idx) => {
-                                        const textY = bubbleY + 6 + (idx * lineHeightHeight) + (lineHeightHeight / 2);
-                                        this.ctx.fillText(ln, finalBubbleX + 8, textY);
-                                    });
                                 }
+
+                                // Circle Badge
+                                this.ctx.beginPath();
+                                this.ctx.arc(circleX, centerY, 10, 0, 2 * Math.PI);
+                                this.ctx.fillStyle = anno.status === 'resolvido' ? '#10b981' : '#3b82f6';
+                                this.ctx.fill();
+                                
+                                this.ctx.fillStyle = '#ffffff';
+                                this.ctx.font = 'bold 11px sans-serif';
+                                this.ctx.textAlign = 'center';
+                                this.ctx.textBaseline = 'middle';
+                                this.ctx.fillText((index + 1).toString(), circleX, centerY);
+
+                                // Bubble card
+                                const finalBubbleX = clamp(bubbleX, 2, this.canvas.width - bubbleWidth - 2);
+                                const bubbleY = centerY - (bubbleHeight / 2);
+
+                                this.ctx.fillStyle = anno.status === 'resolvido' ? '#d1fae5' : '#fef08a';
+                                this.ctx.beginPath();
+                                this.ctx.roundRect(finalBubbleX, bubbleY, bubbleWidth, bubbleHeight, 4);
+                                this.ctx.fill();
+
+                                this.ctx.fillStyle = anno.status === 'resolvido' ? '#065f46' : '#1e293b';
+                                this.ctx.textAlign = 'left';
+                                this.ctx.font = '500 11px sans-serif';
+                                
+                                textLines.forEach((ln, idx) => {
+                                    const textY = bubbleY + 6 + (idx * lineHeightHeight) + (lineHeightHeight / 2);
+                                    this.ctx.fillText(ln, finalBubbleX + 8, textY);
+                                });
                             }
 
                         } catch (e) {

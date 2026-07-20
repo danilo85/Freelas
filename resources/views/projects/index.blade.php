@@ -59,47 +59,20 @@
             </div>
         </div>
  
-        <!-- Valor Total Aprovado / Soma Selecionada (Card Verde/Roxo Dinâmico) -->
-        <div 
-            :class="selectionActive ? 'bg-violet-700 shadow-[0_0_20px_rgba(109,40,217,0.4)] border border-violet-500' : 'bg-emerald-600 border border-emerald-500'"
-            class="summary-card rounded-[5px] p-6 shadow-sm flex items-center justify-between hover:shadow-md transition-all duration-300 relative overflow-hidden"
-        >
+        <!-- Valor Total Aprovado (Card Verde Estático) -->
+        <div class="bg-emerald-600 border border-emerald-500 summary-card rounded-[5px] p-6 shadow-sm flex items-center justify-between hover:shadow-md transition-all duration-300 relative overflow-hidden">
             <div class="flex-1 min-w-0">
-                <p 
-                    x-text="selectionActive ? 'Soma Selecionada (Saldo a Receber)' : 'Faturamento Aprovado'"
-                    class="text-sm font-semibold uppercase tracking-wider transition-all duration-300"
-                    :class="selectionActive ? 'text-violet-100' : 'text-emerald-100'"
-                ></p>
-                <h3 class="text-2xl font-bold text-white mt-2 transition-all duration-300">
-                    <span x-text="selectionActive ? (privacyMode ? 'R$ ••••' : 'R$ ' + formatMoney(selectionSum)) : (privacyMode ? 'R$ ••••' : 'R$ ' + formatMoney(totalApprovedValue))"></span>
+                <p class="text-sm font-semibold uppercase tracking-wider text-emerald-100">Faturamento Aprovado</p>
+                <h3 class="text-2xl font-bold text-white mt-2">
+                    <span x-text="privacyMode ? 'R$ ••••' : 'R$ ' + formatMoney(totalApprovedValue)"></span>
                 </h3>
-                <span 
-                    x-text="selectionActive ? 'Soma das parcelas a receber dos itens selecionados' : 'Total restante a receber'"
-                    class="text-sm font-medium block mt-1.5 transition-all duration-300"
-                    :class="selectionActive ? 'text-violet-100/90' : 'text-emerald-100/90'"
-                ></span>
+                <span class="text-sm text-emerald-100/90 font-medium block mt-1.5">Total restante a receber</span>
             </div>
             
             <div class="flex items-center gap-3 shrink-0">
-                <!-- Botão de Limpar Seleção -->
-                <button 
-                    x-show="selectionActive" 
-                    @click.stop="clearSelection()"
-                    x-transition
-                    type="button" 
-                    class="px-3 py-1.5 bg-white/20 hover:bg-white/35 text-white text-xs font-semibold uppercase tracking-wider rounded-[5px] border border-white/30 transition-colors shadow-sm focus:outline-none"
-                >
-                    Limpar
-                </button>
- 
-                <div 
-                    class="w-12 h-12 rounded-[5px] bg-white/20 text-white flex items-center justify-center shadow-sm transition-all duration-300"
-                >
-                    <svg x-show="!selectionActive" class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <div class="w-12 h-12 rounded-[5px] bg-white/20 text-white flex items-center justify-center shadow-sm transition-all duration-300">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-                    </svg>
-                    <svg x-show="selectionActive" class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24" x-cloak>
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"></path>
                     </svg>
                 </div>
             </div>
@@ -687,6 +660,33 @@
         </div>
     </template>
 
+    <!-- Barra Flutuante de Soma de Itens Selecionados (Idêntica à de Finanças) -->
+    <div 
+        x-show="selectionActive" 
+        x-transition:enter="transition ease-out duration-200"
+        x-transition:enter-start="opacity-0 translate-y-8"
+        x-transition:enter-end="opacity-100 translate-y-0"
+        x-transition:leave="transition ease-in duration-200"
+        x-transition:leave-start="opacity-100 translate-y-0"
+        x-transition:leave-end="opacity-0 translate-y-8"
+        class="fixed bottom-6 left-1/2 -translate-x-1/2 z-40 bg-slate-900 text-white rounded-[8px] px-5 py-3 shadow-xl flex items-center justify-between gap-6 w-full max-w-md no-print"
+        x-cloak
+    >
+        <div class="flex flex-col">
+            <span class="text-[9px] uppercase tracking-wider text-slate-400 font-bold">Selecionados (<span x-text="selectedProjects.length"></span>)</span>
+            <span class="text-base font-black text-emerald-400" x-text="privacyMode ? 'R$ ••••' : 'R$ ' + formatMoney(selectionSum)"></span>
+        </div>
+        <div class="flex items-center gap-2">
+            <button 
+                type="button" 
+                @click="clearSelection()" 
+                class="px-3 py-1.5 bg-white/10 hover:bg-white/20 text-white text-[10px] uppercase font-bold rounded-[5px] transition-colors"
+            >
+                Desmarcar
+            </button>
+        </div>
+    </div>
+
 </div>
 
 <script>
@@ -878,6 +878,9 @@
 
             clearSelection() {
                 this.selectedProjects = [];
+                if (this.previousPerPage) {
+                    this.perPage = this.previousPerPage;
+                }
                 // Dispara o evento global para desmarcar todos os cards
                 window.dispatchEvent(new CustomEvent('clear-selections'));
             },
@@ -899,8 +902,16 @@
                             remainingBalance: parseFloat(detail.remainingBalance)
                         });
                     }
+                    if (this.selectedProjects.length === 1) {
+                        this.previousPerPage = this.perPage;
+                        this.perPage = 999999;
+                        this.currentPage = 1;
+                    }
                 } else {
                     this.selectedProjects = this.selectedProjects.filter(p => p.id !== detail.projectId);
+                    if (this.selectedProjects.length === 0) {
+                        this.perPage = this.previousPerPage || 12;
+                    }
                 }
             },
 

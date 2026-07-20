@@ -135,8 +135,19 @@ class PublicPortfolioController extends Controller
             'ip_address' => $ip,
         ]);
 
-        // 5. Envia por E-mail (Se configurado)
         $user = User::where('role', 'master')->first() ?? User::first();
+
+        // 4.1. Cria notificação no painel administrativo
+        if ($user) {
+            \App\Models\Notification::create([
+                'user_id' => $user->id,
+                'title' => 'Nova Mensagem de Contato: ' . $validated['name'],
+                'content' => "E-mail: " . $validated['email'] . "\nTelefone: " . ($validated['phone'] ?? 'Não informado') . "\n\nMensagem:\n" . $validated['message'],
+                'type' => 'contact',
+            ]);
+        }
+
+        // 5. Envia por E-mail (Se configurado)
         $settings = $this->getSettings($user);
         $destEmail = $settings->contact_email ?? 'danilo.a.miguel@hotmail.com';
 

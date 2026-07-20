@@ -4,7 +4,7 @@
 @section('page_title', 'Notificações')
 
 @section('content')
-<div id="pjax-container" class="space-y-6" x-data="{ showClearModal: false }">
+<div id="pjax-container" class="space-y-6" x-data="{ showClearModal: false, showContactModal: false, activeContact: { title: '', content: '' } }">
 
     <!-- Topo da página: Título e Ações -->
     <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
@@ -61,9 +61,12 @@
                         } elseif ($n->type === 'reminder') {
                             $badgeClasses = 'bg-emerald-50 text-emerald-800 border-emerald-150';
                             $badgeText = '⏰ Lembrete';
+                        } elseif ($n->type === 'contact') {
+                            $badgeClasses = 'bg-rose-50 text-rose-800 border-rose-150';
+                            $badgeText = '✉️ Contato';
                         }
                     @endphp
-                    <div class="p-3 sm:p-5 flex items-start justify-between gap-3 sm:gap-4 transition-colors {{ $isUnread ? 'bg-slate-50/50' : 'bg-white' }}">
+                    <div class="p-3 sm:p-5 flex items-start justify-between gap-3 sm:gap-4 transition-colors {{ $n->type === 'contact' ? 'bg-rose-100/50 hover:bg-rose-100/70 border-b border-rose-200/50' : ($isUnread ? 'bg-slate-50/50' : 'bg-white') }}">
                         <div class="flex items-start gap-2 sm:gap-3.5 min-w-0 flex-1">
                             <!-- Indicador de Não Lido -->
                             @if($isUnread)
@@ -85,7 +88,14 @@
                                     {{ $n->title }}
                                 </h3>
                                 <p class="text-[11px] sm:text-xs text-slate-500 leading-relaxed max-w-2xl break-words">
-                                    {{ $n->content }}
+                                    @if($n->type === 'contact')
+                                        {{ \Illuminate\Support\Str::limit($n->content, 120) }}
+                                        <button type="button" @click="activeContact = { title: {{ json_encode($n->title) }}, content: {{ json_encode($n->content) }} }; showContactModal = true" class="text-[10px] sm:text-xs font-bold text-rose-700 hover:text-rose-900 underline cursor-pointer mt-1.5 block">
+                                            Visualizar Mensagem Completa
+                                        </button>
+                                    @else
+                                        {{ $n->content }}
+                                    @endif
                                 </p>
                             </div>
                         </div>
@@ -105,9 +115,11 @@
             </div>
 
             <!-- Paginação -->
-            <div class="px-4 py-3 border-t border-slate-100 bg-slate-50/50">
-                {{ $notifications->links() }}
-            </div>
+            @if($notifications->hasPages())
+                <div class="px-4 py-3 border-t border-slate-100 bg-slate-50/50">
+                    {{ $notifications->links() }}
+                </div>
+            @endif
         @else
             <!-- Estado Vazio -->
             <div class="p-12 text-center text-slate-400 space-y-3">
@@ -166,6 +178,46 @@
                         Sim, Limpar tudo
                     </button>
                 </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal para Visualização da Mensagem de Contato -->
+    <div x-show="showContactModal" 
+         class="fixed inset-0 z-[999999] flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-sm"
+         x-transition:enter="transition ease-out duration-300"
+         x-transition:enter-start="opacity-0"
+         x-transition:enter-end="opacity-100"
+         x-transition:leave="transition ease-in duration-200"
+         x-transition:leave-start="opacity-100"
+         x-transition:leave-end="opacity-0"
+         style="display: none; margin: 0 !important;">
+        
+        <div @click.away="showContactModal = false" 
+             class="bg-white border border-slate-200 rounded-[5px] max-w-lg w-full p-6 shadow-2xl space-y-4 transform transition-all"
+             x-transition:enter="transition ease-out duration-300"
+             x-transition:enter-start="opacity-0 scale-95"
+             x-transition:enter-end="opacity-100 scale-100"
+             x-transition:leave="transition ease-in duration-200"
+             x-transition:leave-start="opacity-100 scale-100"
+             x-transition:leave-end="opacity-0 scale-95">
+            
+            <div class="flex items-center justify-between border-b border-slate-100 pb-3">
+                <div class="flex items-center gap-2">
+                    <span class="text-xl">✉️</span>
+                    <h3 class="text-sm font-black text-slate-800" x-text="activeContact.title">Mensagem de Contato</h3>
+                </div>
+                <button type="button" @click="showContactModal = false" class="text-slate-400 hover:text-slate-650 font-bold text-lg cursor-pointer">×</button>
+            </div>
+
+            <div class="text-xs text-slate-700 bg-slate-50 p-4 rounded-[3px] border border-slate-100 whitespace-pre-wrap leading-relaxed max-h-[350px] overflow-y-auto" x-text="activeContact.content"></div>
+
+            <div class="flex items-center justify-end pt-2">
+                <button type="button" 
+                        @click="showContactModal = false" 
+                        class="px-4 py-2 bg-slate-800 hover:bg-slate-900 text-white text-xs font-bold rounded-[5px] transition-colors shadow-sm uppercase tracking-wider cursor-pointer">
+                    Fechar
+                </button>
             </div>
         </div>
     </div>

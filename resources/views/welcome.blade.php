@@ -431,10 +431,12 @@
         </div>
 
         <!-- Indicador de Scroll -->
-        <div class="absolute bottom-8 inset-x-0 flex justify-center animate-bounce pointer-events-none">
-            <svg class="w-6 h-6 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 14l-7 7m0 0l-7-7m7 7V3"></path>
-            </svg>
+        <div class="absolute bottom-8 inset-x-0 flex justify-center animate-bounce">
+            <a href="#portfolio" class="text-slate-500 hover:text-white transition-colors duration-200" title="Ver Portfólio">
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 14l-7 7m0 0l-7-7m7 7V3"></path>
+                </svg>
+            </a>
         </div>
     </section>
 

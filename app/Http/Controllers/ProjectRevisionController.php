@@ -102,13 +102,190 @@ class ProjectRevisionController extends Controller
         return view('revisions.show', compact('revision'));
     }
 
-    public function destroy($id)
+    public function destroy(Request $request, $id)
     {
-        $revision = ProjectRevision::where('user_id', auth()->id())->findOrFail($id);
+        $revision = ProjectRevision::with('rounds.files.annotations')->where('user_id', auth()->id())->findOrFail($id);
+        
+        $shouldBackup = $request->input('backup') === '1';
+        $downloadUrl = null;
+
+        if ($shouldBackup && $revision->rounds->isNotEmpty()) {
+            $zipFileName = 'backup_revisao_' . \Str::slug($revision->title) . '_' . time() . '.zip';
+            
+            // Ensure backups directory exists
+            $backupsDir = storage_path('app/public/backups');
+            if (!file_exists($backupsDir)) {
+                mkdir($backupsDir, 0755, true);
+            }
+            
+            $zipFilePath = $backupsDir . '/' . $zipFileName;
+
+            $zip = new \ZipArchive();
+            if ($zip->open($zipFilePath, \ZipArchive::CREATE | \ZipArchive::OVERWRITE) === true) {
+                // Add README
+                $readmeContent = "BACKUP COMPLETO DE REVISÃO\n=========================\n";
+                $readmeContent .= "Projeto: " . $revision->title . "\nSubtítulo: " . ($revision->subtitle ?? 'N/A') . "\n";
+                $readmeContent .= "Data de Exportação: " . date('d/m/Y H:i:s') . "\n";
+                $zip->addFromString('LEIA-ME.txt', $readmeContent);
+
+                foreach ($revision->rounds as $round) {
+                    $roundFolder = 'Rodada_' . $round->round_number;
+                    
+                    // Add files
+                    foreach ($round->files as $file) {
+                        if (\Storage::disk('public')->exists($file->file_path)) {
+                            $physicalPath = \Storage::disk('public')->path($file->file_path);
+                            $zipPath = $roundFolder . '/' . ($file->folder_name ? $file->folder_name . '/' : '') . $file->filename;
+                            $zip->addFile($physicalPath, $zipPath);
+                        }
+                    }
+
+                    // Add Report
+                    $reportContent = "RELATÓRIO DE ANOTAÇÕES - RODADA #" . $round->round_number . "\n=========================================================\n";
+                    $reportContent .= "Projeto: " . $revision->title . "\nRodada: " . $round->round_number . "\n";
+                    $reportContent .= "Data de Envio: " . $round->created_at->format('d/m/Y H:i') . "\n=========================================================\n\n";
+
+                    $index = 1;
+                    foreach ($round->files as $file) {
+                        if ($file->annotations->isEmpty()) continue;
+                        $reportContent .= "ARQUIVO: " . ($file->folder_name ? $file->folder_name . '/' : '') . $file->filename . "\n---------------------------------------------------------\n";
+                        foreach ($file->annotations as $anno) {
+                            $reportContent .= "Ajuste #{$index}\n- Posição: Página " . $anno->page_number . "\n- Observação: " . $anno->comment . "\n- Status: " . ucfirst($anno->status) . "\n- Autor: " . ($anno->author ? $anno->author->name : 'Revisor Geral') . "\n\n";
+                            $index++;
+                        }
+                    }
+                    if ($index === 1) {
+                        $reportContent .= "Nenhuma anotação nesta rodada.\n";
+                    }
+                    $zip->addFromString($roundFolder . '/Relatorio_Anotacoes_Rodada_' . $round->round_number . '.txt', $reportContent);
+                }
+                $zip->close();
+                $downloadUrl = asset('storage/backups/' . $zipFileName);
+            }
+        }
+
+        // Physically delete all round files from the disk to free space
+        foreach ($revision->rounds as $round) {
+            foreach ($round->files as $file) {
+                if (\Storage::disk('public')->exists($file->file_path)) {
+                    \Storage::disk('public')->delete($file->file_path);
+                }
+            }
+        }
+
+        // Delete from database
         $revision->delete();
 
-        return redirect()->route('revisoes.index')
-            ->with('success', 'Projeto de revisão excluído com sucesso.');
+        // Clean up old backup ZIP files (older than 1 hour)
+        $oldZipFiles = glob(storage_path('app/public/backups/backup_revisao_*.zip'));
+        if ($oldZipFiles) {
+            foreach ($oldZipFiles as $oldFile) {
+                if (time() - filemtime($oldFile) > 3600) {
+                    @unlink($oldFile);
+                }
+            }
+        }
+
+        $response = redirect()->route('revisoes.index');
+        if ($downloadUrl) {
+            $response->with('download_backup_url', $downloadUrl)
+                     ->with('success', 'Projeto de revisão e arquivos físicos excluídos com sucesso. O download do backup foi iniciado.');
+        } else {
+            $response->with('success', 'Projeto de revisão e arquivos físicos excluídos com sucesso.');
+        }
+
+        return $response;
+    }
+
+    public function downloadBackup($id)
+    {
+        $revision = ProjectRevision::with(['rounds.files.annotations', 'project.client'])
+            ->where('user_id', auth()->id())
+            ->findOrFail($id);
+
+        if ($revision->rounds->isEmpty()) {
+            return redirect()->back()->with('error', 'Esta revisão não possui rodadas de arquivos para backup.');
+        }
+
+        // Clean up old backup files older than 1 hour to prevent disk build-up
+        $oldZipFiles = glob(storage_path('app/public/backup_revisao_*.zip'));
+        if ($oldZipFiles) {
+            foreach ($oldZipFiles as $oldFile) {
+                if (time() - filemtime($oldFile) > 3600) {
+                    @unlink($oldFile);
+                }
+            }
+        }
+
+        $zipFileName = 'backup_revisao_' . \Str::slug($revision->title) . '_' . time() . '.zip';
+        $zipFilePath = storage_path('app/public/' . $zipFileName);
+
+        $zip = new \ZipArchive();
+        if ($zip->open($zipFilePath, \ZipArchive::CREATE | \ZipArchive::OVERWRITE) === true) {
+            
+            // Add a readme file to root of ZIP
+            $readmeContent = "BACKUP COMPLETO DE REVISÃO\n";
+            $readmeContent .= "=========================\n";
+            $readmeContent .= "Projeto: " . $revision->title . "\n";
+            $readmeContent .= "Subtítulo: " . ($revision->subtitle ?? 'N/A') . "\n";
+            $readmeContent .= "Data de Exportação: " . date('d/m/Y H:i:s') . "\n";
+            $zip->addFromString('LEIA-ME.txt', $readmeContent);
+
+            foreach ($revision->rounds as $round) {
+                $roundFolder = 'Rodada_' . $round->round_number;
+                
+                // 1. Add all files in their folders
+                foreach ($round->files as $file) {
+                    if (\Storage::disk('public')->exists($file->file_path)) {
+                        $physicalPath = \Storage::disk('public')->path($file->file_path);
+                        
+                        // Structure: Rodada_X/Folder/filename.ext
+                        $zipPath = $roundFolder . '/' . ($file->folder_name ? $file->folder_name . '/' : '') . $file->filename;
+                        $zip->addFile($physicalPath, $zipPath);
+                    }
+                }
+
+                // 2. Generate and add annotations report for this round
+                $reportContent = "RELATÓRIO DE ANOTAÇÕES E AJUSTES - RODADA #" . $round->round_number . "\n";
+                $reportContent .= "=========================================================\n";
+                $reportContent .= "Projeto: " . $revision->title . "\n";
+                $reportContent .= "Rodada: " . $round->round_number . "\n";
+                $reportContent .= "Status: " . ucfirst($round->status) . "\n";
+                $reportContent .= "Data de Envio: " . $round->created_at->format('d/m/Y H:i') . "\n";
+                $reportContent .= "=========================================================\n\n";
+
+                $index = 1;
+                foreach ($round->files as $file) {
+                    $annotations = $file->annotations;
+                    if ($annotations->isEmpty()) continue;
+
+                    $reportContent .= "ARQUIVO: " . ($file->folder_name ? $file->folder_name . '/' : '') . $file->filename . "\n";
+                    $reportContent .= "---------------------------------------------------------\n";
+                    foreach ($annotations as $anno) {
+                        $reportContent .= "Ajuste #{$index}\n";
+                        $reportContent .= "- Página/Posição: Página " . $anno->page_number . "\n";
+                        $reportContent .= "- Observação: " . $anno->comment . "\n";
+                        $reportContent .= "- Status: " . ucfirst($anno->status) . "\n";
+                        $reportContent .= "- Autor: " . ($anno->author ? $anno->author->name : 'Revisor Geral') . "\n";
+                        $reportContent .= "- Data: " . $anno->created_at->format('d/m/Y H:i') . "\n\n";
+                        $index++;
+                    }
+                    $reportContent .= "\n";
+                }
+
+                if ($index === 1) {
+                    $reportContent .= "Nenhuma anotação registrada para esta rodada.\n";
+                }
+
+                $zip->addFromString($roundFolder . '/Relatorio_Anotacoes_Rodada_' . $round->round_number . '.txt', $reportContent);
+            }
+
+            $zip->close();
+        } else {
+            abort(500, 'Não foi possível gerar o arquivo ZIP de backup.');
+        }
+
+        return response()->download($zipFilePath);
     }
 
     public function searchAuthors(Request $request)

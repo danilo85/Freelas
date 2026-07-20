@@ -546,6 +546,7 @@
                         <a href="{{ route('lembretes.index') }}" class="block py-2 px-3 text-xs font-semibold rounded-[5px] transition-colors {{ request()->routeIs('lembretes.*') ? 'text-white bg-slate-850' : 'text-slate-400 hover:text-white' }}">
                             Lembretes e Notas
                         </a>
+
                         <a href="{{ route('notifications.index') }}" class="block py-2 px-3 text-xs font-semibold rounded-[5px] transition-colors {{ request()->routeIs('notifications.*') ? 'text-white bg-slate-850' : 'text-slate-400 hover:text-white' }}">
                             Notificações
                         </a>
@@ -718,17 +719,33 @@
             </div>
 
             <!-- Ações -->
-            <form :action="globalDeleteAction" method="POST" class="pt-4 flex items-center justify-end gap-2 border-t border-slate-100">
+            <form :action="globalDeleteAction" method="POST" class="pt-4 flex flex-col gap-3 border-t border-slate-100">
                 @csrf
                 @method('DELETE')
-                <button type="button" @click="closeGlobalDelete()" class="px-4 py-2 border border-slate-200 text-slate-500 text-xs font-semibold rounded-[5px] hover:bg-slate-50 transition-colors">
-                    Cancelar
-                </button>
-                <button type="submit" 
-                        :disabled="globalDeleteHighSecurity && globalDeleteConfirmInput.trim().toUpperCase() !== 'EXCLUIR'" 
-                        class="px-4 py-2 bg-red-600 text-white text-xs font-semibold rounded-[5px] hover:bg-red-700 transition-colors disabled:opacity-40 disabled:cursor-not-allowed shadow-sm shadow-red-600/10">
-                    Confirmar Exclusão
-                </button>
+
+                <!-- Opção de Backup antes de excluir -->
+                <template x-if="globalDeleteBackupUrl">
+                    <label class="flex items-start gap-2.5 p-3 rounded-[5px] bg-slate-50 border border-slate-150 hover:bg-slate-100/50 cursor-pointer select-none">
+                        <input type="checkbox" name="backup" value="1" x-model="globalDeleteConfirmBackup" class="mt-1 rounded border-slate-300 text-red-600 focus:ring-red-500/20">
+                        <div class="space-y-0.5">
+                            <span class="text-xs font-bold text-slate-800">Fazer backup dos arquivos antes de excluir</span>
+                            <p class="text-[10px] text-slate-550 leading-relaxed">
+                                Baixa um ZIP com os arquivos originais e relatórios de anotações organizados por rodadas para backup local.
+                            </p>
+                        </div>
+                    </label>
+                </template>
+
+                <div class="flex items-center justify-end gap-2 w-full">
+                    <button type="button" @click="closeGlobalDelete()" class="px-4 py-2 border border-slate-200 text-slate-500 text-xs font-semibold rounded-[5px] hover:bg-slate-50 transition-colors">
+                        Cancelar
+                    </button>
+                    <button type="submit" 
+                            :disabled="globalDeleteHighSecurity && globalDeleteConfirmInput.trim().toUpperCase() !== 'EXCLUIR'" 
+                            class="px-4 py-2 bg-red-600 text-white text-xs font-semibold rounded-[5px] hover:bg-red-700 transition-colors disabled:opacity-40 disabled:cursor-not-allowed shadow-sm shadow-red-600/10">
+                        Confirmar Exclusão
+                    </button>
+                </div>
             </form>
         </div>
     </div>
@@ -899,6 +916,8 @@
                 globalDeleteAction: '',
                 globalDeleteHighSecurity: false,
                 globalDeleteConfirmInput: '',
+                globalDeleteBackupUrl: '',
+                globalDeleteConfirmBackup: false,
 
                 // Visualizador Premium Global (Assets Lightbox)
                 previewModalOpen: false,
@@ -984,6 +1003,8 @@
                     this.globalDeleteAction = data.action || '';
                     this.globalDeleteHighSecurity = !!data.highSecurity;
                     this.globalDeleteConfirmInput = '';
+                    this.globalDeleteBackupUrl = data.backupUrl || '';
+                    this.globalDeleteConfirmBackup = false;
                     this.globalDeleteOpen = true;
                 },
                 
@@ -994,6 +1015,8 @@
                     this.globalDeleteAction = '';
                     this.globalDeleteHighSecurity = false;
                     this.globalDeleteConfirmInput = '';
+                    this.globalDeleteBackupUrl = '';
+                    this.globalDeleteConfirmBackup = false;
                 }
             }
         }
