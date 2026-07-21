@@ -92,19 +92,27 @@ class PaymentController extends Controller
             $nextDayNum++;
         }
 
-        // Agrupamento para os cards empilhados
-        $groupedPayments = $payments->groupBy('project_id');
+        // Agrupamento para os cards empilhados incluindo os projetos adicionais/relacionados contemplados
+        $paymentsByProject = [];
+        foreach ($payments as $p) {
+            $paymentsByProject[$p->project_id][] = $p;
+            foreach ($p->relatedProjects as $relProj) {
+                $paymentsByProject[$relProj->id][] = $p;
+            }
+        }
+
         $projectPayments = [];
-        
-        foreach ($groupedPayments as $projectId => $projectGroup) {
-            $firstPayment = $projectGroup->first();
-            $project = $firstPayment->project;
+        foreach ($paymentsByProject as $projectId => $projectGroup) {
+            $project = \App\Models\Project::with('client')->find($projectId);
+            if (!$project) continue;
 
             $projectPayments[] = [
                 'project' => $project,
                 'client' => $project->client,
-                'payments' => $projectGroup->map(fn($p) => [
+                'payments' => collect($projectGroup)->unique('id')->map(fn($p) => [
                     'id' => $p->id,
+                    'is_related' => $p->project_id !== $projectId,
+                    'main_project_title' => $p->project->title,
                     'amount' => (float) $p->amount,
                     'paid_at' => $p->paid_at->format('d/m/Y'),
                     'payment_method' => $p->payment_method,

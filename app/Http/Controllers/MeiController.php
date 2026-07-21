@@ -29,7 +29,7 @@ class MeiController extends Controller
                       $sub->whereNull('paid_at')->whereYear('due_date', $year);
                   });
             })
-            ->with('category')
+            ->with(['category', 'payment.relatedProjects'])
             ->get();
 
         // Filtra transferências de lucros e transferências internas para não poluírem receitas e despesas
@@ -91,11 +91,29 @@ class MeiController extends Controller
                 if ($t->attachment_path) {
                     $path = $t->attachment_path;
                     
+                    // Coleta todos os projetos associados a esta transação/pagamento
+                    $projectsList = [];
+                    $projectsList[] = [
+                        'description' => $t->description,
+                        'amount' => $t->amount,
+                    ];
+                    
+                    if ($t->payment && $t->payment->relatedProjects->isNotEmpty()) {
+                        foreach ($t->payment->relatedProjects as $relProj) {
+                            $projectsList[] = [
+                                'description' => 'Recebimento: ' . $relProj->title,
+                                'amount' => 0.0,
+                            ];
+                        }
+                    }
+                    
                     if (isset($attachments[$path])) {
-                        $attachments[$path]['projects'][] = [
-                            'description' => $t->description,
-                            'amount' => $t->amount,
-                        ];
+                        foreach ($projectsList as $pList) {
+                            $exists = collect($attachments[$path]['projects'])->contains('description', $pList['description']);
+                            if (!$exists) {
+                                $attachments[$path]['projects'][] = $pList;
+                            }
+                        }
                         $attachments[$path]['amount'] += $t->amount;
                         continue;
                     }
@@ -111,12 +129,7 @@ class MeiController extends Controller
                         'attachment_path' => $t->attachment_path,
                         'download_url' => route('finances.download-attachment', $t->id),
                         'preview_url' => route('finances.preview-attachment', $t->id),
-                        'projects' => [
-                            [
-                                'description' => $t->description,
-                                'amount' => $t->amount,
-                            ]
-                        ]
+                        'projects' => $projectsList
                     ];
                 }
             }

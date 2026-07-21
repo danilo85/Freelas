@@ -47,6 +47,9 @@
                         
                         @php
                             $existingFolders = $round->files->pluck('folder_name')->filter()->unique()->values();
+                            $previousRound = $round->projectRevision->rounds()->where('round_number', $round->round_number - 1)->first();
+                            $previousFolders = $previousRound ? $previousRound->files->pluck('folder_name')->filter()->unique()->values() : collect();
+                            $previousFolders = $previousFolders->diff($existingFolders);
                         @endphp
                         @if($existingFolders->count() > 0)
                             <div class="flex flex-wrap gap-1.5 mt-2">
@@ -58,6 +61,21 @@
                                         class="px-2 py-1 bg-slate-100 hover:bg-slate-200 border border-slate-200 text-[10px] font-bold text-slate-600 rounded-[3px] transition-colors cursor-pointer"
                                     >
                                         {{ $folder }}
+                                    </button>
+                                @endforeach
+                            </div>
+                        @endif
+                        @if($previousFolders->count() > 0)
+                            <div class="flex flex-wrap gap-1.5 mt-2.5">
+                                <span class="text-[9px] font-bold text-blue-500 uppercase tracking-wide w-full mb-0.5">Herdar da Rodada Anterior (Clique para selecionar):</span>
+                                @foreach($previousFolders as $prevFolder)
+                                    <button 
+                                        type="button" 
+                                        @click="folderName = '{{ addslashes($prevFolder) }}'"
+                                        class="px-2 py-1 bg-blue-50 hover:bg-blue-100 border border-blue-200 text-[10px] font-bold text-blue-600 rounded-[3px] transition-colors cursor-pointer"
+                                        title="Herdar pasta '{{ $prevFolder }}' da rodada anterior"
+                                    >
+                                        {{ $prevFolder }}
                                     </button>
                                 @endforeach
                             </div>

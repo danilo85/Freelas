@@ -508,7 +508,11 @@
                                             @foreach($doc['projects'] as $relProj)
                                                 <div class="flex items-center justify-between gap-2 border-t border-slate-100/50 dark:border-slate-850/50 pt-1 first:border-t-0 first:pt-0">
                                                     <span class="truncate pr-1 text-slate-700 dark:text-slate-300" title="{{ $relProj['description'] }}">• {{ str_replace('Recebimento: ', '', $relProj['description']) }}</span>
-                                                    <span class="shrink-0 text-slate-500 font-mono">R$ {{ number_format($relProj['amount'], 2, ',', '.') }}</span>
+                                                    @if($relProj['amount'] > 0)
+                                                        <span class="shrink-0 text-slate-500 font-mono">R$ {{ number_format($relProj['amount'], 2, ',', '.') }}</span>
+                                                    @else
+                                                        <span class="shrink-0 text-blue-500 dark:text-blue-400 font-extrabold uppercase text-[8px] tracking-wider">(NF Compartilhada)</span>
+                                                    @endif
                                                 </div>
                                             @endforeach
                                         </div>

@@ -292,7 +292,7 @@
                                     <span class="text-[11px] text-slate-500 font-medium">{{ \Carbon\Carbon::parse($payment->paid_at)->format('d/m/Y') }} • {{ $payment->payment_method }}</span>
                                 </div>
                                 @if($payment->invoice_path)
-                                    <a href="{{ route('payments.download', $payment->id) }}" class="inline-flex items-center justify-center py-1 px-2.5 bg-emerald-50 hover:bg-emerald-100 border border-emerald-150 text-emerald-700 text-[11px] font-bold rounded-[5px] transition-colors shadow-sm" title="Baixar Nota Fiscal">
+                                    <a href="{{ route('payments.download-invoice', $payment->id) }}" class="inline-flex items-center justify-center py-1 px-2.5 bg-emerald-50 hover:bg-emerald-100 border border-emerald-150 text-emerald-700 text-[11px] font-bold rounded-[5px] transition-colors shadow-sm" title="Baixar Nota Fiscal">
                                         NF
                                     </a>
                                 @endif
