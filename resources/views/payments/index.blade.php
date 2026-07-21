@@ -250,12 +250,6 @@
                                         class="space-y-4"
                                         x-cloak
                                     >
-                                        <!-- If shared from another project -->
-                                        @if(!empty($p['is_related']))
-                                            <div class="bg-blue-50 border border-blue-200 text-blue-700 text-[10px] font-extrabold uppercase px-2.5 py-1 rounded-[5px] tracking-wider block">
-                                                🔗 Contemplado via: {{ $p['main_project_title'] }}
-                                            </div>
-                                        @endif
 
                                         <!-- Amount and Date -->
                                         <div class="flex items-baseline justify-between">

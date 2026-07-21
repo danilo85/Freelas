@@ -92,38 +92,59 @@ class PaymentController extends Controller
             $nextDayNum++;
         }
 
-        // Agrupamento para os cards empilhados incluindo os projetos adicionais/relacionados contemplados
-        $paymentsByProject = [];
-        foreach ($payments as $p) {
-            $paymentsByProject[$p->project_id][] = $p;
-            foreach ($p->relatedProjects as $relProj) {
-                $paymentsByProject[$relProj->id][] = $p;
-            }
-        }
-
+        // Agrupamento para os cards empilhados: agrupa APENAS pelo projeto principal (sem duplicar nos relacionados)
+        $groupedPayments = $payments->groupBy('project_id');
         $projectPayments = [];
-        foreach ($paymentsByProject as $projectId => $projectGroup) {
-            $project = \App\Models\Project::with('client')->find($projectId);
-            if (!$project) continue;
+        
+        foreach ($groupedPayments as $projectId => $projectGroup) {
+            $firstPayment = $projectGroup->first();
+            $project = $firstPayment->project;
 
             $projectPayments[] = [
                 'project' => $project,
                 'client' => $project->client,
-                'payments' => collect($projectGroup)->unique('id')->map(fn($p) => [
-                    'id' => $p->id,
-                    'is_related' => $p->project_id !== $projectId,
-                    'main_project_title' => $p->project->title,
-                    'amount' => (float) $p->amount,
-                    'paid_at' => $p->paid_at->format('d/m/Y'),
-                    'payment_method' => $p->payment_method,
-                    'bank_account' => $p->bank_account ?? '-',
-                    'observations' => $p->observations,
-                    'download_invoice_url' => $p->invoice_path ? route('payments.download-invoice', $p->id) : null,
-                    'related_projects' => $p->relatedProjects->pluck('title')->toArray(),
-                    'edit_url' => route('payments.edit', $p->id),
-                    'destroy_url' => route('payments.destroy', $p->id),
-                    'token' => $p->token,
-                ])->toArray()
+                'payments' => $projectGroup->map(function($p) use ($payments, $projectId) {
+                    $downloadInvoiceUrl = null;
+                    $relatedProjects = [];
+
+                    if ($p->invoice_path) {
+                        $downloadInvoiceUrl = route('payments.download-invoice', $p->id);
+                        $relatedProjects = $p->relatedProjects->pluck('title')->toArray();
+                    } else {
+                        // Se não tem nota direta, procura outra transação/pagamento do mesmo mês que possua nota
+                        // e que contemple este projeto como relacionado.
+                        $sharedPayment = $payments->first(function($otherP) use ($projectId) {
+                            return $otherP->invoice_path && $otherP->relatedProjects->contains('id', $projectId);
+                        });
+
+                        if ($sharedPayment) {
+                            $downloadInvoiceUrl = route('payments.download-invoice', $sharedPayment->id);
+                            
+                            // Adiciona o projeto principal do pagamento compartilhado
+                            $relatedProjects[] = $sharedPayment->project->title;
+                            // Adiciona os demais projetos relacionados dele (excluindo este próprio)
+                            foreach ($sharedPayment->relatedProjects as $relProj) {
+                                if ($relProj->id !== $projectId) {
+                                    $relatedProjects[] = $relProj->title;
+                                }
+                            }
+                        }
+                    }
+
+                    return [
+                        'id' => $p->id,
+                        'amount' => (float) $p->amount,
+                        'paid_at' => $p->paid_at->format('d/m/Y'),
+                        'payment_method' => $p->payment_method,
+                        'bank_account' => $p->bank_account ?? '-',
+                        'observations' => $p->observations,
+                        'download_invoice_url' => $downloadInvoiceUrl,
+                        'related_projects' => $relatedProjects,
+                        'edit_url' => route('payments.edit', $p->id),
+                        'destroy_url' => route('payments.destroy', $p->id),
+                        'token' => $p->token,
+                    ];
+                })->toArray()
             ];
         }
 
