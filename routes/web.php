@@ -175,6 +175,7 @@ Route::middleware(['auth', 'approved'])->prefix('freelas')->group(function () {
 
         Route::get('/utilidades/rounds/{round}/files', [\App\Http\Controllers\RevisionRoundController::class, 'manageFiles'])->name('revisoes.rounds.files');
         Route::post('/utilidades/rounds/{round}/files', [\App\Http\Controllers\RevisionRoundController::class, 'uploadFiles'])->name('revisoes.rounds.upload');
+        Route::post('/utilidades/rounds/{round}/import-approved-files', [\App\Http\Controllers\RevisionRoundController::class, 'importApprovedFiles'])->name('revisoes.rounds.import-approved');
         Route::delete('/utilidades/files/{file}', [\App\Http\Controllers\RevisionRoundController::class, 'deleteFile'])->name('revisoes.files.destroy');
         Route::post('/utilidades/files/{file}/replace', [\App\Http\Controllers\RevisionRoundController::class, 'replaceFile'])->name('revisoes.files.replace');
 

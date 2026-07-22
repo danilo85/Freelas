@@ -17,11 +17,29 @@
     </div>
 
     <!-- Header Card -->
-    <div class="bg-white border border-slate-200 rounded-[5px] p-6 shadow-sm">
-        <span class="text-[9px] font-bold text-slate-400 uppercase tracking-widest block">Projeto: {{ $round->projectRevision->title }}</span>
-        <h3 class="font-outfit font-black text-slate-800 text-lg leading-tight mt-1">
-            Gerenciamento de Arquivos - Rodada #{{ $round->round_number }}
-        </h3>
+    <div class="bg-white border border-slate-200 rounded-[5px] p-6 shadow-sm flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div>
+            <span class="text-[9px] font-bold text-slate-400 uppercase tracking-widest block">Projeto: {{ $round->projectRevision->title }}</span>
+            <h3 class="font-outfit font-black text-slate-800 text-lg leading-tight mt-1">
+                Gerenciamento de Arquivos - Rodada #{{ $round->round_number }}
+            </h3>
+        </div>
+        
+        @php
+            $previousRound = $round->projectRevision->rounds()->where('round_number', $round->round_number - 1)->first();
+            $importableFilesCount = $previousRound ? $previousRound->files()->whereDoesntHave('annotations')->count() : 0;
+        @endphp
+        
+        @if($importableFilesCount > 0)
+            <form action="{{ route('revisoes.rounds.import-approved', $round->id) }}" method="POST" class="shrink-0">
+                @csrf
+                <button type="submit" 
+                        class="px-4 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold rounded-[5px] transition-all shadow-sm uppercase tracking-wider flex items-center gap-2 cursor-pointer"
+                        title="Importa os arquivos que não tiveram nenhum ajuste na rodada anterior">
+                    📥 Importar {{ $importableFilesCount }} Arquivo(s) Sem Ajustes
+                </button>
+            </form>
+        @endif
     </div>
 
     <!-- Upload & File Tree Grid -->

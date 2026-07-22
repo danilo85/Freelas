@@ -162,4 +162,48 @@ class RevisionRoundController extends Controller
 
         return redirect()->back()->with('error', 'Nenhum arquivo enviado.');
     }
+
+    public function importApprovedFiles($roundId)
+    {
+        $round = RevisionRound::whereHas('projectRevision', function ($q) {
+            $q->where('user_id', auth()->id());
+        })->findOrFail($roundId);
+
+        $previousRound = $round->projectRevision->rounds()
+            ->where('round_number', $round->round_number - 1)
+            ->first();
+
+        if (!$previousRound) {
+            return redirect()->back()->with('error', 'Nenhuma rodada anterior encontrada para importar arquivos.');
+        }
+
+        // Get files from the previous round that have 0 annotations
+        $filesToImport = $previousRound->files()->whereDoesntHave('annotations')->get();
+
+        if ($filesToImport->isEmpty()) {
+            return redirect()->back()->with('info', 'Não há arquivos sem ajustes na rodada anterior para serem importados.');
+        }
+
+        $importedCount = 0;
+        foreach ($filesToImport as $file) {
+            // Check if file with same filename and folder already exists in the current round to avoid duplicates
+            $exists = $round->files()
+                ->where('filename', $file->filename)
+                ->where('folder_name', $file->folder_name)
+                ->exists();
+
+            if (!$exists) {
+                $round->files()->create([
+                    'filename' => $file->filename,
+                    'file_path' => $file->file_path, // referencing the same path
+                    'file_type' => $file->file_type,
+                    'file_size' => $file->file_size,
+                    'folder_name' => $file->folder_name,
+                ]);
+                $importedCount++;
+            }
+        }
+
+        return redirect()->back()->with('success', "{$importedCount} arquivo(s) sem ajustes importado(s) com sucesso da rodada anterior!");
+    }
 }
