@@ -246,23 +246,26 @@
     <div class="flex-1 max-w-6xl w-full mx-auto p-4 sm:p-6 space-y-6">
         
         <!-- Header de Controles -->
-        <div class="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-4 pb-4 border-b bible-border-app select-none">
-            <div class="flex items-center gap-2">
-                <a href="/" class="text-sm font-bold bible-text-muted hover:text-white mr-2">← Voltar</a>
-                <button id="decreaseFontBtn" class="w-9 h-9 flex items-center justify-center rounded-lg bible-chip font-bold hover:opacity-80 text-sm">A-</button>
-                <button id="increaseFontBtn" class="w-9 h-9 flex items-center justify-center rounded-lg bible-chip font-bold hover:opacity-80 text-sm">A+</button>
-                <button id="runSearchBtn" class="w-9 h-9 flex items-center justify-center rounded-lg bible-chip font-bold hover:opacity-80 text-base">⌕</button>
+        <div class="flex flex-row items-center justify-between gap-1 pb-4 border-b bible-border-app select-none w-full flex-nowrap">
+            <!-- Left Side: Return & Font Actions -->
+            <div class="flex items-center gap-1 shrink-0">
+                <a href="/" class="text-xs font-bold bible-text-muted hover:text-white mr-1.5 uppercase tracking-wider flex items-center shrink-0">
+                    ←<span class="hidden xs:inline ml-0.5"> Voltar</span>
+                </a>
+                <button id="decreaseFontBtn" class="w-7.5 h-7.5 flex items-center justify-center rounded-lg bible-chip font-bold hover:opacity-80 text-xs shrink-0" style="width: 30px; height: 30px;">A-</button>
+                <button id="increaseFontBtn" class="w-7.5 h-7.5 flex items-center justify-center rounded-lg bible-chip font-bold hover:opacity-80 text-xs shrink-0" style="width: 30px; height: 30px;">A+</button>
+                <button id="runSearchBtn" class="w-7.5 h-7.5 flex items-center justify-center rounded-lg bible-chip font-bold hover:opacity-80 text-sm shrink-0" style="width: 30px; height: 30px;">⌕</button>
             </div>
 
-            <!-- Seleção de Tema e Versão -->
-            <div class="flex items-center gap-3 self-end sm:self-auto">
-                <div class="flex items-center gap-1.5 bg-black/10 dark:bg-white/5 p-1 rounded-lg">
-                    <button class="w-8 h-8 flex items-center justify-center rounded-md text-sm transition-colors hover:bg-black/5 dark:hover:bg-white/5" data-theme-btn="sepia" title="Sépia">◐</button>
-                    <button class="w-8 h-8 flex items-center justify-center rounded-md text-sm transition-colors hover:bg-black/5 dark:hover:bg-white/5" data-theme-btn="claro" title="Claro">☼</button>
-                    <button class="w-8 h-8 flex items-center justify-center rounded-md text-sm transition-colors hover:bg-black/5 dark:hover:bg-white/5" data-theme-btn="escuro" title="Escuro">☾</button>
+            <!-- Right Side: Theme & Version -->
+            <div class="flex items-center gap-1.5 shrink-0">
+                <div class="flex items-center gap-0.5 bg-black/10 dark:bg-white/5 p-0.5 rounded-lg shrink-0">
+                    <button class="flex items-center justify-center rounded-md text-xs transition-colors hover:bg-black/5 dark:hover:bg-white/5" style="width: 25px; height: 25px;" data-theme-btn="sepia" title="Sépia">◐</button>
+                    <button class="flex items-center justify-center rounded-md text-xs transition-colors hover:bg-black/5 dark:hover:bg-white/5" style="width: 25px; height: 25px;" data-theme-btn="claro" title="Claro">☼</button>
+                    <button class="flex items-center justify-center rounded-md text-xs transition-colors hover:bg-black/5 dark:hover:bg-white/5" style="width: 25px; height: 25px;" data-theme-btn="escuro" title="Escuro">☾</button>
                 </div>
 
-                <button id="openVersionPickerBtn" class="px-3 py-1.5 rounded-lg text-xs font-bold bible-chip flex items-center gap-1.5">
+                <button id="openVersionPickerBtn" class="px-2 py-1.5 rounded-lg text-[9px] font-bold bible-chip flex items-center gap-1 shrink-0">
                     <span id="versionPickerLabel">NVI</span> ▾
                 </button>
                 <select id="versionSelect" class="hidden"></select>
@@ -281,24 +284,29 @@
                 </div>
 
                 <!-- Barra de Ações Rápidas Sticky -->
-                <div class="sticky top-2 z-30 flex items-center justify-between p-2 rounded-xl bible-surface shadow-md border bible-border-app select-none">
-                    <div class="flex items-center gap-1">
+                <div class="sticky top-2 z-30 flex flex-col sm:flex-row items-center justify-between p-2 rounded-xl bible-surface shadow-md border bible-border-app select-none gap-2 sm:gap-4">
+                    <!-- Bloco 1: Navegação e Controles Básicos -->
+                    <div class="flex items-center justify-center gap-1.5 w-full sm:w-auto">
                         <button id="prevChapterBtn" class="w-8 h-8 flex items-center justify-center rounded-lg bible-chip hover:opacity-85 font-black">&lsaquo;</button>
-                        <button id="openReferenceBtn" class="px-4 py-1 rounded-lg text-xs font-bold bible-chip hover:opacity-85">Escolher Referência</button>
+                        <button id="openReferenceBtn" class="px-4 py-1.5 rounded-lg text-xs font-bold bible-chip hover:opacity-85 truncate max-w-[130px] sm:max-w-none">Escolher Referência</button>
                         <button id="nextChapterBtn" class="w-8 h-8 flex items-center justify-center rounded-lg bible-chip hover:opacity-85 font-black">&rsaquo;</button>
-                    </div>
-                    <div class="flex items-center gap-1.5">
-                        <button id="openNoteModalBtn" class="w-8 h-8 flex items-center justify-center rounded-lg bible-chip hover:opacity-85 text-xs" title="Escrever nota" disabled>✎</button>
-                        <button id="favoriteBtn" class="w-8 h-8 flex items-center justify-center rounded-lg bible-chip hover:opacity-85 text-sm" title="Favoritar" disabled>☆</button>
                         
                         <div class="w-[1px] h-6 bg-slate-600/30 mx-1"></div>
 
-                        <!-- Paleta de Cores inline -->
-                        <button class="action-dot" data-color="yellow" disabled></button>
-                        <button class="action-dot" data-color="blue" disabled></button>
-                        <button class="action-dot" data-color="green" disabled></button>
-                        <button class="action-dot" data-color="rose" disabled></button>
-                        <button id="clearHighlightBtn" class="text-[10px] font-bold text-slate-400 hover:text-slate-200 px-2 disabled:opacity-40" disabled>Limpar</button>
+                        <button id="openNoteModalBtn" class="w-8 h-8 flex items-center justify-center rounded-lg bible-chip hover:opacity-85 text-xs" title="Escrever nota" disabled>✎</button>
+                        <button id="favoriteBtn" class="w-8 h-8 flex items-center justify-center rounded-lg bible-chip hover:opacity-85 text-sm" title="Favoritar" disabled>☆</button>
+                    </div>
+                    
+                    <!-- Bloco 2: Paleta de Cores e Marcações -->
+                    <div class="flex items-center justify-center gap-2 w-full sm:w-auto mt-0">
+                        <div class="flex items-center gap-1.5">
+                            <button class="action-dot" data-color="yellow" disabled></button>
+                            <button class="action-dot" data-color="blue" disabled></button>
+                            <button class="action-dot" data-color="green" disabled></button>
+                            <button class="action-dot" data-color="rose" disabled></button>
+                        </div>
+                        <div class="w-[1px] h-6 bg-slate-600/30 mx-1 hidden sm:block"></div>
+                        <button id="clearHighlightBtn" class="text-[9px] font-bold text-slate-400 hover:text-slate-200 px-2 disabled:opacity-40 uppercase tracking-wider" disabled>Limpar</button>
                     </div>
                 </div>
 
