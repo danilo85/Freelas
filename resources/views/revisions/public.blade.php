@@ -524,13 +524,13 @@
             </div>
 
             <!-- Visualizer Container -->
-            <div class="flex-1 overflow-auto p-6 flex items-center justify-center relative select-none h-full" 
+            <div class="flex-1 overflow-auto p-6 flex relative select-none h-full" 
                  id="visualizer-scroll-container"
                  :style="scrollLocked ? 'overflow: hidden !important;' : ''">
                 
                 @if($activeFile)
                     <!-- Active File Proofing Area Wrapper -->
-                    <div class="relative shadow-2xl border border-slate-250 bg-white max-w-full" 
+                    <div class="relative shadow-2xl border border-slate-250 bg-white max-w-full m-auto" 
                          id="proofing-viewport"
                          @contextmenu.prevent="handleRightClick($event)">
                         
@@ -554,7 +554,7 @@
                             <img src="" 
                                  id="image-viewer" 
                                  class="max-w-full max-h-[75vh] object-contain block transition-all"
-                                 :style="'transform: scale(' + zoomScale + '); transform-origin: center;'"
+                                 :style="'transform: scale(' + zoomScale + '); transform-origin: top center;'"
                                  @load="initImageDimensions()">
                         @endif
 
