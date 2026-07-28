@@ -183,6 +183,7 @@ Route::middleware(['auth', 'approved'])->prefix('freelas')->group(function () {
         Route::get('/utilidades/compartilhamento', [\App\Http\Controllers\FileShareController::class, 'index'])->name('revisoes.shares.index');
         Route::get('/utilidades/compartilhamento/novo', [\App\Http\Controllers\FileShareController::class, 'create'])->name('revisoes.shares.create');
         Route::post('/utilidades/compartilhamento', [\App\Http\Controllers\FileShareController::class, 'store'])->name('revisoes.shares.store');
+        Route::delete('/utilidades/compartilhamento/expirados', [\App\Http\Controllers\FileShareController::class, 'destroyExpired'])->name('revisoes.shares.destroy-expired');
         Route::delete('/utilidades/compartilhamento/{share}', [\App\Http\Controllers\FileShareController::class, 'destroy'])->name('revisoes.shares.destroy');
         Route::post('/utilidades/compartilhamento/{share}/toggle-active', [\App\Http\Controllers\FileShareController::class, 'toggleActive'])->name('revisoes.shares.toggle-active');
         Route::put('/utilidades/compartilhamento/{share}/settings', [\App\Http\Controllers\FileShareController::class, 'updateSettings'])->name('revisoes.shares.settings');

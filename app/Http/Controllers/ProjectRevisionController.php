@@ -40,6 +40,7 @@ class ProjectRevisionController extends Controller
         $totalProjects = $revisions->count();
         $activeRoundsCount = 0;
         $pendingAdjustmentsCount = 0;
+        $totalFilesSizeBytes = 0;
 
         foreach ($revisions as $rev) {
             foreach ($rev->rounds as $round) {
@@ -48,16 +49,34 @@ class ProjectRevisionController extends Controller
                 }
                 foreach ($round->files as $file) {
                     $pendingAdjustmentsCount += $file->annotations->where('status', 'aberto')->count();
+                    $totalFilesSizeBytes += (float) $file->file_size;
                 }
             }
         }
+
+        // Formata o tamanho total
+        if ($totalFilesSizeBytes >= 1073741824) {
+            $formattedStorageSize = number_format($totalFilesSizeBytes / 1073741824, 2, ',', '.') . ' GB';
+        } elseif ($totalFilesSizeBytes >= 1048576) {
+            $formattedStorageSize = number_format($totalFilesSizeBytes / 1048576, 2, ',', '.') . ' MB';
+        } else {
+            $formattedStorageSize = number_format($totalFilesSizeBytes / 1024, 2, ',', '.') . ' KB';
+        }
+
+        // Limite do Servidor (ex: 10 GB)
+        $storageLimitBytes = 10 * 1024 * 1024 * 1024; // 10 GB
+        $storageLimitFormatted = '10 GB';
+        $storagePercent = min(100, ($totalFilesSizeBytes / $storageLimitBytes) * 100);
 
         return view('revisions.index', compact(
             'revisions',
             'authors',
             'totalProjects',
             'activeRoundsCount',
-            'pendingAdjustmentsCount'
+            'pendingAdjustmentsCount',
+            'formattedStorageSize',
+            'storageLimitFormatted',
+            'storagePercent'
         ));
     }
 

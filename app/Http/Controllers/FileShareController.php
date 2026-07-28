@@ -202,6 +202,33 @@ class FileShareController extends Controller
     }
 
     /**
+     * Remove todos os compartilhamentos expirados do usuário e exclui os arquivos do servidor.
+     */
+    public function destroyExpired()
+    {
+        $userId = auth()->id();
+        $expiredShares = FileShare::where('user_id', $userId)
+            ->where('expires_at', '<=', now())
+            ->with('items')
+            ->get();
+
+        if ($expiredShares->isEmpty()) {
+            return back()->with('info', 'Nenhum compartilhamento expirado encontrado.');
+        }
+
+        $count = 0;
+        foreach ($expiredShares as $share) {
+            foreach ($share->items as $item) {
+                Storage::disk('public')->delete($item->file_path);
+            }
+            $share->delete();
+            $count++;
+        }
+
+        return back()->with('success', "{$count} compartilhamento(s) expirado(s) e seus arquivos foram excluídos com sucesso.");
+    }
+
+    /**
      * Oculta ou exibe um compartilhamento.
      */
     public function toggleVisibility(FileShare $share)

@@ -20,7 +20,7 @@
         }
     }
 </style>
-<div x-data="sharesManager()" class="space-y-6">
+<div x-data="sharesManager()" class="space-y-6 pb-24">
     
     <!-- Top Cards (Métricas com Cores Diferentes) -->
     <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
@@ -83,6 +83,17 @@
                 <span class="text-xs text-rose-100/95 font-medium block mt-1.5">
                     Validades encerradas
                 </span>
+                @if($expiredSharesCount > 0)
+                    <button type="button" 
+                            @click="$dispatch('trigger-global-delete', { title: 'Excluir Compartilhamentos Expirados', message: 'Deseja realmente excluir todos os <strong>{{ $expiredSharesCount }} compartilhamento(s) expirado(s)</strong> e remover permanentemente seus arquivos do servidor?', action: '{{ route('revisoes.shares.destroy-expired') }}', highSecurity: false })"
+                            class="mt-3 px-2.5 py-1 bg-white/20 hover:bg-white/30 text-white rounded-[4px] text-[11px] font-bold transition-all flex items-center gap-1.5 cursor-pointer shadow-xs border border-white/20"
+                            title="Excluir todos os compartilhamentos expirados">
+                        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
+                        </svg>
+                        Excluir Expirados
+                    </button>
+                @endif
             </div>
             <div class="w-12 h-12 rounded-[5px] bg-white/20 text-white flex items-center justify-center shadow-sm">
                 <span class="text-2xl">⏳</span>
@@ -150,6 +161,18 @@
                         :class="filterStatus === 'expirado' ? 'bg-amber-600 border-amber-600 text-white shadow-md shadow-amber-600/10' : 'bg-amber-50 dark:bg-amber-950/40 border-amber-200 dark:border-amber-900/40 text-amber-700 dark:text-amber-300 hover:bg-amber-100 dark:hover:bg-amber-900/30'">
                     Expirados
                 </button>
+
+                @if($expiredSharesCount > 0)
+                    <button type="button" 
+                            @click="$dispatch('trigger-global-delete', { title: 'Excluir Compartilhamentos Expirados', message: 'Deseja realmente excluir todos os <strong>{{ $expiredSharesCount }} compartilhamento(s) expirado(s)</strong> e remover permanentemente seus arquivos do servidor?', action: '{{ route('revisoes.shares.destroy-expired') }}', highSecurity: false })"
+                            class="px-2.5 py-1 rounded-full text-[11px] font-bold transition-all cursor-pointer border border-rose-200 dark:border-rose-900/40 bg-rose-50 dark:bg-rose-950/40 text-rose-600 dark:text-rose-300 hover:bg-rose-600 hover:text-white dark:hover:bg-rose-600 flex items-center gap-1 ml-1"
+                            title="Excluir todos os compartilhamentos expirados">
+                        <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
+                        </svg>
+                        Limpar Expirados
+                    </button>
+                @endif
             </div>
 
             <div class="flex items-center gap-2">
