@@ -233,36 +233,8 @@
                     </button>
                 @endif
             </div>
-
-            <div class="flex items-center gap-2">
-                <span class="text-[10px] font-bold text-slate-400 uppercase tracking-wider mr-1">Ocultados:</span>
-                
-                <!-- Não Mostrar Ocultados -->
-                <button type="button" 
-                        @click="filterHidden = 'no'" 
-                        class="px-3.5 py-1.5 rounded-full text-xs font-bold transition-all cursor-pointer border uppercase tracking-wider focus:outline-none"
-                        :class="filterHidden === 'no' ? 'bg-slate-900 dark:bg-slate-100 border-slate-900 dark:border-slate-100 text-white dark:text-slate-900' : 'bg-slate-100 dark:bg-slate-800 border-slate-200 dark:border-slate-750 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700/50'">
-                    Ocultar
-                </button>
-
-                <!-- Mostrar Todos -->
-                <button type="button" 
-                        @click="filterHidden = 'all'" 
-                        class="px-3.5 py-1.5 rounded-full text-xs font-bold transition-all cursor-pointer border uppercase tracking-wider focus:outline-none"
-                        :class="filterHidden === 'all' ? 'bg-slate-900 dark:bg-slate-100 border-slate-900 dark:border-slate-100 text-white dark:text-slate-900' : 'bg-slate-100 dark:bg-slate-800 border-slate-200 dark:border-slate-750 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700/50'">
-                    Mostrar Todos
-                </button>
-
-                <!-- Apenas Ocultados -->
-                <button type="button" 
-                        @click="filterHidden = 'only'" 
-                        class="px-3.5 py-1.5 rounded-full text-xs font-bold transition-all cursor-pointer border uppercase tracking-wider focus:outline-none"
-                        :class="filterHidden === 'only' ? 'bg-purple-600 border-purple-600 text-white shadow-md shadow-purple-650/10' : 'bg-purple-50 dark:bg-purple-950/40 border-purple-200 dark:border-purple-900/40 text-purple-700 dark:text-purple-300 hover:bg-purple-100 dark:hover:bg-purple-900/30'">
-                    Apenas Ocultados
-                </button>
         </div>
     </div>
-</div>
 
     <!-- Grid de Compartilhamentos -->
     <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -423,19 +395,6 @@
                                 title="{{ $isActive ? 'Desativar Link' : 'Ativar Link' }}">
                             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5.636 18.364a9 9 0 010-12.728m12.728 0a9 9 0 010 12.728m-9.9-2.829a5 5 0 010-7.07m7.07 0a5 5 0 010 7.07M13 12a1 1 0 11-2 0 1 1 0 012 0z"></path>
-                            </svg>
-                        </button>
-                    </form>
-
-                    <!-- Toggle Ocultar (Eye-Slash Icon) -->
-                    <form action="{{ route('revisoes.shares.toggle-visibility', $share->id) }}" method="POST" class="inline">
-                        @csrf
-                        <button type="submit" 
-                                class="w-8 h-8 flex items-center justify-center rounded-[5px] transition-all border-0 shadow-none bg-transparent cursor-pointer
-                                    {{ $share->is_hidden ? 'text-purple-600 hover:bg-purple-50' : 'text-slate-400 hover:bg-slate-50' }}"
-                                title="{{ $share->is_hidden ? 'Mostrar no Painel' : 'Ocultar no Painel' }}">
-                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l18 18"></path>
                             </svg>
                         </button>
                     </form>
