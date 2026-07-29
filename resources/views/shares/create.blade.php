@@ -145,6 +145,42 @@
                         @enderror
                     </div>
 
+                    <!-- Seleção do Local de Armazenamento -->
+                    @php
+                        $isGoogleConnected = !empty(env('GOOGLE_DRIVE_REFRESH_TOKEN'));
+                    @endphp
+
+                    <div class="space-y-2 sm:col-span-2 border-t border-slate-100 pt-3">
+                        <label class="text-xs font-semibold text-slate-500 uppercase tracking-wider block">Onde Salvar os Arquivos</label>
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                            <!-- Opção 1: Google Drive (5 TB) -->
+                            <label class="relative flex items-center p-3 rounded-[5px] border cursor-pointer transition-all {{ $isGoogleConnected ? 'border-emerald-300 bg-emerald-50/20' : 'border-slate-200 bg-slate-50/50 opacity-60' }}">
+                                <input type="radio" name="storage_disk" value="google" {{ $isGoogleConnected ? 'checked' : 'disabled' }} class="text-emerald-600 focus:ring-emerald-500 shrink-0">
+                                <div class="ml-3 flex items-center gap-2">
+                                    <span class="text-lg">☁️</span>
+                                    <div>
+                                        <span class="text-xs font-extrabold text-slate-800 block">Google Drive (5 TB)</span>
+                                        <span class="text-[10px] text-slate-500">
+                                            {{ $isGoogleConnected ? 'Recomendado - 0 MB usados na hospedagem' : 'Não conectado (conecte no painel)' }}
+                                        </span>
+                                    </div>
+                                </div>
+                            </label>
+
+                            <!-- Opção 2: Servidor Local (Hostinger) -->
+                            <label class="relative flex items-center p-3 rounded-[5px] border border-slate-200 cursor-pointer transition-all bg-white hover:bg-slate-50">
+                                <input type="radio" name="storage_disk" value="public" {{ !$isGoogleConnected ? 'checked' : '' }} class="text-slate-600 focus:ring-slate-500 shrink-0">
+                                <div class="ml-3 flex items-center gap-2">
+                                    <span class="text-lg">💾</span>
+                                    <div>
+                                        <span class="text-xs font-extrabold text-slate-800 block">Servidor Local (Hostinger)</span>
+                                        <span class="text-[10px] text-slate-500">Armazena no disco local do servidor</span>
+                                    </div>
+                                </div>
+                            </label>
+                        </div>
+                    </div>
+
                 </div>
 
                 <!-- Botão de Ação -->
@@ -257,6 +293,29 @@
         </div>
     </div>
 
+    <!-- Modal de Alerta / Erro Customizado -->
+    <div x-show="errorMessage" x-cloak class="fixed inset-0 z-[99999] flex items-center justify-center p-4 bg-slate-950/60 backdrop-blur-xs select-none">
+        <div @click.away="errorMessage = ''" class="bg-white border border-slate-200 text-slate-800 rounded-xl p-6 shadow-2xl max-w-md w-full space-y-4 animate-in fade-in zoom-in-95 duration-200">
+            <div class="flex items-center gap-3">
+                <div class="w-10 h-10 rounded-full bg-rose-50 border border-rose-100 text-rose-600 flex items-center justify-center shrink-0">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path>
+                    </svg>
+                </div>
+                <div>
+                    <h3 class="text-sm font-black text-slate-800">Atenção no Upload</h3>
+                    <p class="text-xs text-slate-500 font-medium mt-0.5">Ocorreu um imprevisto ao enviar os arquivos</p>
+                </div>
+            </div>
+            <p class="text-xs text-slate-600 leading-relaxed font-medium bg-slate-50 p-3 rounded-[5px] border border-slate-100" x-text="errorMessage"></p>
+            <div class="flex justify-end pt-1">
+                <button type="button" @click="errorMessage = ''" class="px-4 py-2 bg-slate-800 hover:bg-slate-900 text-white text-xs font-bold rounded-[5px] transition-colors cursor-pointer">
+                    Entendido
+                </button>
+            </div>
+        </div>
+    </div>
+
 </div>
 
 <script>
@@ -269,6 +328,7 @@
             title: '',
             expiresDays: 7,
             hasPassword: false,
+            errorMessage: '',
             
             // Upload progress states
             isUploading: false,
@@ -338,11 +398,11 @@
 
             submitForm(e) {
                 if (this.originalFiles.length === 0) {
-                    alert('Por favor, selecione pelo menos um arquivo antes de compartilhar.');
+                    this.errorMessage = 'Por favor, selecione pelo menos um arquivo antes de compartilhar.';
                     return;
                 }
                 if (this.totalSize > 1024 * 1024 * 1024) {
-                    alert('O tamanho total dos arquivos excede o limite permitido de 1GB.');
+                    this.errorMessage = 'O tamanho total dos arquivos excede o limite permitido de 1GB.';
                     return;
                 }
 
@@ -366,6 +426,8 @@
 
                 const xhr = new XMLHttpRequest();
                 xhr.open('POST', form.action, true);
+                xhr.setRequestHeader('Accept', 'application/json');
+                xhr.setRequestHeader('X-Requested-With', 'XMLHttpRequest');
 
                 const startTime = Date.now();
 
@@ -399,17 +461,33 @@
 
                 xhr.onload = () => {
                     if (xhr.status >= 200 && xhr.status < 300) {
-                        // Sucesso: Redireciona para o index
-                        window.location.href = "{{ route('revisoes.shares.index') }}";
+                        try {
+                            const res = JSON.parse(xhr.responseText);
+                            window.location.href = res.redirect_url || "{{ route('revisoes.shares.index') }}";
+                        } catch (e) {
+                            window.location.href = "{{ route('revisoes.shares.index') }}";
+                        }
                     } else {
                         this.isUploading = false;
-                        alert('Ocorreu uma falha no upload. O tamanho acumulado de uploads pode ter excedido os limites de configuração do servidor PHP (post_max_size / upload_max_filesize).');
+                        try {
+                            const res = JSON.parse(xhr.responseText);
+                            if (res.errors) {
+                                const msgs = Object.values(res.errors).flat().join(' ');
+                                this.errorMessage = msgs || 'Falha no processamento dos arquivos.';
+                            } else if (res.message) {
+                                this.errorMessage = res.message;
+                            } else {
+                                this.errorMessage = 'Ocorreu uma falha no upload (código HTTP ' + xhr.status + ').';
+                            }
+                        } catch (e) {
+                            this.errorMessage = 'O tamanho acumulado dos uploads pode ter excedido os limites do PHP no servidor. Tente enviar arquivos menores ou em pacotes.';
+                        }
                     }
                 };
 
                 xhr.onerror = () => {
                     this.isUploading = false;
-                    alert('Falha de conexão com o servidor ao enviar os arquivos.');
+                    this.errorMessage = 'Falha de conexão com o servidor ao enviar os arquivos.';
                 };
 
                 xhr.send(formData);

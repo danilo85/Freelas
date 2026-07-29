@@ -228,8 +228,16 @@ Route::middleware(['auth', 'approved'])->prefix('freelas')->group(function () {
         Route::post('/utilidades/notificacoes/lidas', [\App\Http\Controllers\NotificationController::class, 'markAllAsRead'])->name('notifications.read-all');
         Route::delete('/utilidades/notificacoes/limpar', [\App\Http\Controllers\NotificationController::class, 'destroyAll'])->name('notifications.destroy-all');
         Route::delete('/utilidades/notificacoes/{notification}', [\App\Http\Controllers\NotificationController::class, 'destroy'])->name('notifications.destroy');
+
+        // Integração Google Drive
+        Route::get('/google-drive/connect', [\App\Http\Controllers\GoogleDriveController::class, 'connect'])->name('google.connect');
+        Route::get('/google-drive/callback', [\App\Http\Controllers\GoogleDriveController::class, 'callback'])->name('google.callback');
+        Route::post('/google-drive/disconnect', [\App\Http\Controllers\GoogleDriveController::class, 'disconnect'])->name('google.disconnect');
     });
 });
+
+// Callback do Google Drive (compatível com redirecionamento de/para a raiz ou com prefixo)
+Route::middleware(['auth'])->get('/google-drive/callback', [\App\Http\Controllers\GoogleDriveController::class, 'callback']);
 
 // Rotas públicas de orçamentos (propostas) para aprovação e rejeição pelo cliente final
 Route::prefix('proposal/{hash}')->name('proposal.')->group(function () {

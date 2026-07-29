@@ -49,27 +49,13 @@
         }
     </style>
 </head>
-<body class="bg-slate-50 text-slate-800 antialiased min-h-screen flex flex-col justify-between selection:bg-blue-500 selection:text-white dark:bg-slate-950 dark:text-slate-100 transition-colors duration-300"
-      x-data="{ darkMode: localStorage.getItem('public_dark_mode') === 'true' }"
-      :class="darkMode ? 'dark' : ''">
+<body class="bg-slate-50 text-slate-800 antialiased min-h-screen flex flex-col justify-between selection:bg-blue-500 selection:text-white transition-colors duration-300">
 
     <!-- Header / Navbar -->
-    <header class="py-5 px-6 max-w-6xl mx-auto w-full flex items-center justify-between border-b border-slate-200/50 dark:border-slate-800/40">
-        <span class="font-outfit font-black text-lg tracking-tight text-slate-900 dark:text-white">
-            DANILO<span class="text-blue-500">MIGUEL</span> <span class="text-xs font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest ml-1">Transfer</span>
+    <header class="py-5 px-6 max-w-6xl mx-auto w-full flex items-center justify-between border-b border-slate-200/50">
+        <span class="font-outfit font-black text-lg tracking-tight text-slate-900">
+            DANILO<span class="text-blue-500">MIGUEL</span> <span class="text-xs font-bold text-slate-400 uppercase tracking-widest ml-1">Transfer</span>
         </span>
-
-        <!-- Darkmode Toggle Button -->
-        <button @click="darkMode = !darkMode; localStorage.setItem('public_dark_mode', darkMode)" class="p-2 rounded-full hover:bg-slate-200 dark:hover:bg-slate-800 transition-colors" title="Alternar Tema">
-            <!-- Sun -->
-            <svg x-show="darkMode" class="w-5 h-5 text-yellow-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 3v1m0 16v1m9-9h-1M4 9H3m15.364-3.364l-.707.707M6.343 17.657l-.707.707M16.243 17.657l.707-.707M7.757 6.343l.707-.707M12 8a4 4 0 100 8 4 4 0 000-8z"></path>
-            </svg>
-            <!-- Moon -->
-            <svg x-show="!darkMode" class="w-5 h-5 text-slate-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z"></path>
-            </svg>
-        </button>
     </header>
 
     <!-- Main Container -->

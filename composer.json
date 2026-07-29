@@ -7,8 +7,10 @@
     "license": "MIT",
     "require": {
         "php": "^8.3",
+        "google/apiclient": "*",
         "laravel/framework": "^13.8",
-        "laravel/tinker": "^3.0"
+        "laravel/tinker": "^3.0",
+        "masbug/flysystem-google-drive-ext": "*"
     },
     "require-dev": {
         "fakerphp/faker": "^1.23",
@@ -23,7 +25,8 @@
         "psr-4": {
             "App\\": "app/",
             "Database\\Factories\\": "database/factories/",
-            "Database\\Seeders\\": "database/seeders/"
+            "Database\\Seeders\\": "database/seeders/",
+            "Google\\Service\\": "vendor/google/apiclient-services/src/"
         }
     },
     "autoload-dev": {

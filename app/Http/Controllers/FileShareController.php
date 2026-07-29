@@ -130,14 +130,26 @@ class FileShareController extends Controller
             'is_active' => true,
         ]);
 
-        // Salva os arquivos e anexa ao compartilhamento
+        // Salva os arquivos e anexa ao compartilhamento (respeita a escolha do usuário ou fallback)
+        $userChoice = $request->get('storage_disk', 'google');
+        $hasGoogle = !empty(env('GOOGLE_DRIVE_REFRESH_TOKEN'));
+        $disk = ($userChoice === 'google' && $hasGoogle) ? 'google' : 'public';
+
         foreach ($request->file('files') as $file) {
-            $path = $file->store('shares', 'public');
+            $path = $file->store('shares', $disk);
             $share->items()->create([
                 'filename' => $file->getClientOriginalName(),
                 'file_path' => $path,
                 'file_size' => $file->getSize(),
                 'mime_type' => $file->getClientMimeType(),
+            ]);
+        }
+
+        if ($request->wantsJson() || $request->ajax()) {
+            return response()->json([
+                'success' => true,
+                'message' => 'Arquivos compartilhados e prontos para envio!',
+                'redirect_url' => route('revisoes.shares.index')
             ]);
         }
 
@@ -193,7 +205,17 @@ class FileShareController extends Controller
         abort_if($share->user_id !== auth()->id(), 403);
 
         foreach ($share->items as $item) {
-            Storage::disk('public')->delete($item->file_path);
+            try {
+                if (!empty(env('GOOGLE_DRIVE_REFRESH_TOKEN')) && Storage::disk('google')->exists($item->file_path)) {
+                    Storage::disk('google')->delete($item->file_path);
+                }
+            } catch (\Throwable $e) {}
+
+            try {
+                if (Storage::disk('public')->exists($item->file_path)) {
+                    Storage::disk('public')->delete($item->file_path);
+                }
+            } catch (\Throwable $e) {}
         }
 
         $share->delete();
@@ -219,7 +241,17 @@ class FileShareController extends Controller
         $count = 0;
         foreach ($expiredShares as $share) {
             foreach ($share->items as $item) {
-                Storage::disk('public')->delete($item->file_path);
+                try {
+                    if (!empty(env('GOOGLE_DRIVE_REFRESH_TOKEN')) && Storage::disk('google')->exists($item->file_path)) {
+                        Storage::disk('google')->delete($item->file_path);
+                    }
+                } catch (\Throwable $e) {}
+
+                try {
+                    if (Storage::disk('public')->exists($item->file_path)) {
+                        Storage::disk('public')->delete($item->file_path);
+                    }
+                } catch (\Throwable $e) {}
             }
             $share->delete();
             $count++;
@@ -313,10 +345,14 @@ class FileShareController extends Controller
         }
 
         $item = $share->items()->findOrFail($itemId);
-        $path = \Illuminate\Support\Facades\Storage::disk('public')->path($item->file_path);
 
-        if (!file_exists($path)) {
-            abort(404, 'Arquivo não encontrado no servidor.');
+        $disk = 'public';
+        try {
+            if (!empty(env('GOOGLE_DRIVE_REFRESH_TOKEN')) && Storage::disk('google')->exists($item->file_path)) {
+                $disk = 'google';
+            }
+        } catch (\Throwable $e) {
+            $disk = 'public';
         }
 
         // Evita múltiplas notificações e incrementos em downloads multi-thread no intervalo de 15 segundos
@@ -339,7 +375,7 @@ class FileShareController extends Controller
             ]);
         }
 
-        return response()->download($path, $item->filename);
+        return Storage::disk($disk)->download($item->file_path, $item->filename);
     }
 
     /**
@@ -367,9 +403,19 @@ class FileShareController extends Controller
 
         if ($zip->open($zipFile, \ZipArchive::CREATE | \ZipArchive::OVERWRITE) === true) {
             foreach ($share->items as $item) {
-                $path = \Illuminate\Support\Facades\Storage::disk('public')->path($item->file_path);
-                if (file_exists($path)) {
-                    $zip->addFile($path, $item->filename);
+                $content = null;
+                try {
+                    if (!empty(env('GOOGLE_DRIVE_REFRESH_TOKEN')) && Storage::disk('google')->exists($item->file_path)) {
+                        $content = Storage::disk('google')->get($item->file_path);
+                    }
+                } catch (\Throwable $e) {}
+
+                if (!$content && Storage::disk('public')->exists($item->file_path)) {
+                    $content = Storage::disk('public')->get($item->file_path);
+                }
+
+                if ($content) {
+                    $zip->addFromString($item->filename, $content);
                 }
             }
             $zip->close();

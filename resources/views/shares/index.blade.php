@@ -21,7 +21,66 @@
     }
 </style>
 <div x-data="sharesManager()" class="space-y-6 pb-24">
-    
+
+    <!-- Banner de Integração Google Drive (5 TB) -->
+    @php
+        $isGoogleConnected = !empty(env('GOOGLE_DRIVE_REFRESH_TOKEN'));
+    @endphp
+
+    <div class="bg-gradient-to-r {{ $isGoogleConnected ? 'from-emerald-950 via-slate-900 to-slate-900 border-emerald-500/40' : 'from-slate-900 via-primary-950 to-slate-900 border-primary-500/40' }} border text-white rounded-xl p-5 shadow-md flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+        <div class="flex items-center gap-3.5">
+            <div class="w-12 h-12 rounded-xl {{ $isGoogleConnected ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30' : 'bg-primary-500/20 text-primary-400 border border-primary-500/30' }} flex items-center justify-center text-2xl shrink-0">
+                <svg class="w-7 h-7" viewBox="0 0 87.3 78" fill="currentColor">
+                    <path d="M6.6 66.85l25.3-43.8h28.6l-25.3 43.8z" fill="#0066da"/>
+                    <path d="M43.8 23.05l14.3-24.8h29.2l-14.3 24.8z" fill="#00ac47"/>
+                    <path d="M58.1 23.05l-14.3 24.8-14.3-24.8h28.6z" fill="#ea4335"/>
+                    <path d="M29.5 47.85l-14.3 24.8h57.2l14.3-24.8z" fill="#00832d"/>
+                    <path d="M87.3 72.65l-14.3-24.8h-57.2l14.3 24.8z" fill="#2684fc"/>
+                    <path d="M15.2 72.65l-14.3-24.8 28.6-49.6 14.3 24.8z" fill="#ffba00"/>
+                </svg>
+            </div>
+            <div>
+                <div class="flex items-center gap-2">
+                    <h3 class="text-base font-extrabold text-white">Armazenamento Google Drive (5 TB)</h3>
+                    @if($isGoogleConnected)
+                        <span class="px-2.5 py-0.5 text-[10px] font-black uppercase tracking-wider bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 rounded-full">
+                            ● Conectado (5 TB Ativos)
+                        </span>
+                    @else
+                        <span class="px-2.5 py-0.5 text-[10px] font-black uppercase tracking-wider bg-amber-500/20 text-amber-300 border border-amber-500/30 rounded-full">
+                            ○ Armazenamento Local
+                        </span>
+                    @endif
+                </div>
+                <p class="text-xs text-slate-300 mt-1 leading-relaxed">
+                    @if($isGoogleConnected)
+                        Seus compartilhamentos estão sendo armazenados diretamente na pasta <strong class="text-white">Freelas_Shared_Files</strong> do seu Google Drive.
+                    @else
+                        Conecte sua conta do Google Drive para armazenar todos os seus arquivos diretamente no seu plano de <strong>5 TB</strong> com custo zero de servidor.
+                    @endif
+                </p>
+            </div>
+        </div>
+
+        <div class="shrink-0 flex items-center gap-2">
+            @if($isGoogleConnected)
+                <form action="{{ route('google.disconnect') }}" method="POST" onsubmit="return confirm('Deseja desconectar a conta do Google Drive?')">
+                    @csrf
+                    <button type="submit" class="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-bold rounded-[5px] border border-slate-700 transition-colors cursor-pointer">
+                        Desconectar
+                    </button>
+                </form>
+            @else
+                <a href="{{ route('google.connect') }}" class="px-5 py-2.5 bg-primary-600 hover:bg-primary-700 text-white text-xs font-bold rounded-[5px] transition-all shadow-md flex items-center gap-2 cursor-pointer">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1"></path>
+                    </svg>
+                    Conectar Google Drive (5 TB)
+                </a>
+            @endif
+        </div>
+    </div>
+
     <!-- Top Cards (Métricas com Cores Diferentes) -->
     <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
         
@@ -234,37 +293,56 @@
                 }
 
                 $totalFilesSize = $share->items->sum('file_size');
+                $firstItem = $share->items->first();
+                $isGoogleDriveShare = $firstItem && !file_exists(storage_path('app/public/' . $firstItem->file_path));
             @endphp
             
             <div x-show="shouldShowShare('{{ addslashes($share->title) }}', '{{ addslashes(strip_tags($share->description)) }}', {{ $isActive ? 'true' : 'false' }}, {{ $isExpired ? 'true' : 'false' }}, {{ $share->is_hidden ? 'true' : 'false' }})"
                  class="{{ $shareCardClass }} {{ $glowClass }} border rounded-[5px] p-5 shadow-sm hover:shadow-md transition-all duration-200 flex flex-col justify-between space-y-4 relative overflow-hidden"
                  x-transition>
                 
-                <!-- Tag Superior de Status / Vencimento -->
-                <div class="flex items-center justify-between">
-                    @if($share->is_hidden)
-                        <span class="bg-purple-100 dark:bg-purple-950/40 text-purple-800 dark:text-purple-300 text-[9px] font-black uppercase tracking-wider px-2 py-0.5 rounded-[5px] flex items-center gap-0.5 shadow-xs">
-                            👁️ Ocultado
-                        </span>
-                    @elseif(!$isActive)
-                        <span class="bg-slate-200 text-slate-700 text-[9px] font-black uppercase tracking-wider px-2 py-0.5 rounded-[5px]">Desativado</span>
-                    @elseif($isExpired)
-                        <span class="bg-rose-600 text-white text-[9px] font-black uppercase tracking-wider px-2 py-0.5 rounded-[5px] flex items-center gap-0.5">
-                            <span>⏳</span> Expirado
-                        </span>
-                    @else
-                        <span class="text-[9px] font-black uppercase tracking-wider px-2 py-0.5 rounded-[5px]
-                            {{ $daysRemaining <= 1 ? 'bg-rose-100 text-rose-800' : ($daysRemaining <= 4 ? 'bg-amber-100 text-amber-800' : 'bg-emerald-100 text-emerald-800') }}">
-                            @if($daysRemaining <= 0)
-                                Expira hoje
-                            @else
-                                Expira em {{ $daysRemaining }} {{ $daysRemaining == 1 ? 'dia' : 'dias' }}
-                            @endif
-                        </span>
-                    @endif
+                <!-- Tag Superior de Status / Vencimento / Google Drive Logo -->
+                <div class="flex items-center justify-between gap-2">
+                    <div class="flex items-center gap-1.5 flex-wrap">
+                        @if($share->is_hidden)
+                            <span class="bg-purple-100 dark:bg-purple-950/40 text-purple-800 dark:text-purple-300 text-[9px] font-black uppercase tracking-wider px-2 py-0.5 rounded-[5px] flex items-center gap-0.5 shadow-xs">
+                                👁️ Ocultado
+                            </span>
+                        @elseif(!$isActive)
+                            <span class="bg-slate-200 text-slate-700 text-[9px] font-black uppercase tracking-wider px-2 py-0.5 rounded-[5px]">Desativado</span>
+                        @elseif($isExpired)
+                            <span class="bg-rose-600 text-white text-[9px] font-black uppercase tracking-wider px-2 py-0.5 rounded-[5px] flex items-center gap-0.5">
+                                <span>⏳</span> Expirado
+                            </span>
+                        @else
+                            <span class="text-[9px] font-black uppercase tracking-wider px-2 py-0.5 rounded-[5px]
+                                {{ $daysRemaining <= 1 ? 'bg-rose-100 text-rose-800' : ($daysRemaining <= 4 ? 'bg-amber-100 text-amber-800' : 'bg-emerald-100 text-emerald-800') }}">
+                                @if($daysRemaining <= 0)
+                                    Expira hoje
+                                @else
+                                    Expira em {{ $daysRemaining }} {{ $daysRemaining == 1 ? 'dia' : 'dias' }}
+                                @endif
+                            </span>
+                        @endif
+
+                        @if($isGoogleDriveShare)
+                            <!-- Logo do Google Drive -->
+                            <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-[5px] bg-white border border-slate-200 text-slate-700 text-[10px] font-extrabold shadow-2xs" title="Armazenado no Google Drive (5 TB)">
+                                <svg class="w-3.5 h-3.5 shrink-0" viewBox="0 0 87.3 78" xmlns="http://www.w3.org/2000/svg">
+                                    <path d="m6.6 66.85 3.85 6.65c.8 1.4 1.95 2.5 3.3 3.3l13.75-23.8h-27.5c0 1.55.4 3.1 1.2 4.5z" fill="#0066da"/>
+                                    <path d="m43.65 25-13.75-23.8c-1.35.8-2.5 1.9-3.3 3.3l-25.4 44c-.8 1.4-1.2 2.95-1.2 4.5h27.5z" fill="#00ac47"/>
+                                    <path d="m73.55 76.8c1.35-.8 2.5-1.9 3.3-3.3l1.2-2.1 8.05-13.9c.8-1.4 1.2-2.95 1.2-4.5h-27.5l6 10.4z" fill="#ea4335"/>
+                                    <path d="m43.65 25 13.75-23.8c-1.35-.8-2.9-1.2-4.45-1.2h-18.6c-1.55 0-3.1.4-4.45 1.2z" fill="#00832d"/>
+                                    <path d="m59.8 53h27.5c0-1.55-.4-3.1-1.2-4.5l-13.75-23.8c-.8-1.4-1.95-2.5-3.3-3.3l-13.75 23.8z" fill="#ffba00"/>
+                                    <path d="m73.55 76.8c1.35-.8 2.5-1.95 3.3-3.3l3.85-6.65c.8-1.4 1.2-2.95 1.2-4.5h-27.5l13.75 23.8z" fill="#2684fc"/>
+                                </svg>
+                                <span>Google Drive</span>
+                            </span>
+                        @endif
+                    </div>
 
                     <!-- Tamanho Total -->
-                    <span class="text-xs font-bold text-slate-400">
+                    <span class="text-xs font-bold text-slate-400 shrink-0">
                         {{ app(\App\Http\Controllers\FileShareController::class)->formatBytes($totalFilesSize) }}
                     </span>
                 </div>
