@@ -18,6 +18,7 @@ class FileShare extends Model
         'password',
         'is_active',
         'is_hidden',
+        'storage_disk',
     ];
 
     protected $casts = [

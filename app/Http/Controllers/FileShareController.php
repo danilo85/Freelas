@@ -119,6 +119,11 @@ class FileShareController extends Controller
         }
 
         // Cria o compartilhamento
+        // Salva os arquivos e anexa ao compartilhamento (respeita a escolha do usuário ou fallback)
+        $userChoice = $request->get('storage_disk', 'google');
+        $hasGoogle = !empty(env('GOOGLE_DRIVE_REFRESH_TOKEN'));
+        $disk = ($userChoice === 'google' && $hasGoogle) ? 'google' : 'public';
+
         $share = FileShare::create([
             'user_id' => auth()->id(),
             'share_token' => Str::random(32),
@@ -128,12 +133,8 @@ class FileShareController extends Controller
             'download_limit' => $request->download_limit,
             'password' => ($request->has('has_password') && $request->filled('password')) ? bcrypt($request->password) : null,
             'is_active' => true,
+            'storage_disk' => $disk,
         ]);
-
-        // Salva os arquivos e anexa ao compartilhamento (respeita a escolha do usuário ou fallback)
-        $userChoice = $request->get('storage_disk', 'google');
-        $hasGoogle = !empty(env('GOOGLE_DRIVE_REFRESH_TOKEN'));
-        $disk = ($userChoice === 'google' && $hasGoogle) ? 'google' : 'public';
 
         foreach ($request->file('files') as $file) {
             $path = $file->store('shares', $disk);
