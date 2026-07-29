@@ -450,39 +450,77 @@
                         <!-- Divisor -->
                         <div class="border-t my-0.5" :class="getDividerClass()"></div>
 
-                        <!-- Rodapé com botões de ação compactos e alinhados à direita -->
-                        <div class="flex flex-wrap items-center justify-end pt-1 gap-1">
-                            <!-- Visualizar -->
-                            <a href="{{ route('projects.show', $project->id) }}" class="w-8 h-8 flex items-center justify-center bg-transparent text-emerald-600 hover:bg-emerald-50 rounded-[5px] transition-all border-0 shadow-none" title="Visualizar Orçamento">
-                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path>
-                                </svg>
-                             </a>
+                        @php
+                            $proposal = $project->proposals->first();
+                            $activeHash = $proposal ? ($proposal->custom_hash ?: $proposal->hash) : null;
+                            $activeUrl = $activeHash ? route('proposal.show', $activeHash) : null;
+                        @endphp
 
-                             <!-- Editar -->
-                             <a href="{{ route('projects.edit', $project->id) }}" class="w-8 h-8 flex items-center justify-center bg-transparent text-primary-600 hover:bg-primary-50 rounded-[5px] transition-all border-0 shadow-none" title="Editar Orçamento">
-                                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"></path>
-                                 </svg>
-                             </a>
+                        <!-- Rodapé com botões de ação compactos -->
+                        <div class="flex flex-wrap items-center justify-between pt-1 gap-1">
+                            <!-- Links da Proposta Ativa (Esquerda) -->
+                            <div class="flex items-center gap-1" x-data="{ copied: false }">
+                                @if($activeUrl)
+                                    <!-- Copiar Link Ativo -->
+                                    <button type="button" 
+                                            @click.stop="navigator.clipboard.writeText('{{ $activeUrl }}'); copied = true; setTimeout(() => copied = false, 2000)" 
+                                            class="w-8 h-8 flex items-center justify-center bg-transparent text-primary-600 hover:bg-primary-50 rounded-[5px] transition-all border-0 shadow-none cursor-pointer" 
+                                            title="Copiar Link Ativo da Proposta">
+                                        <svg x-show="!copied" class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 012-2h2a2 2 0 012 2m0 0h2a2 2 0 012 2v3m2 4H10m0 0l3-3m-3 3l3 3"></path>
+                                        </svg>
+                                        <svg x-show="copied" x-cloak class="w-4 h-4 text-emerald-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"></path>
+                                        </svg>
+                                    </button>
 
-                             <!-- Registrar Pagamento -->
-                             @if($project->status !== 'rejeitado' && $project->status !== 'quitado' && $project->remaining_balance > 0.005)
-                                 <a href="{{ route('payments.create', ['project_id' => $project->id]) }}" class="w-8 h-8 flex items-center justify-center bg-transparent text-emerald-600 hover:bg-emerald-50 rounded-[5px] transition-all border-0 shadow-none" title="Registrar Pagamento">
+                                    <!-- Abrir Link Ativo em Nova Aba -->
+                                    <a href="{{ $activeUrl }}" 
+                                       target="_blank" 
+                                       @click.stop 
+                                       class="w-8 h-8 flex items-center justify-center bg-transparent text-slate-600 hover:bg-slate-100 rounded-[5px] transition-all border-0 shadow-none cursor-pointer" 
+                                       title="Abrir Link Ativo da Proposta em Nova Aba">
+                                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"></path>
+                                        </svg>
+                                    </a>
+                                @endif
+                            </div>
+
+                            <!-- Ações Principais (Direita) -->
+                            <div class="flex items-center gap-1">
+                                <!-- Visualizar -->
+                                <a href="{{ route('projects.show', $project->id) }}" class="w-8 h-8 flex items-center justify-center bg-transparent text-emerald-600 hover:bg-emerald-50 rounded-[5px] transition-all border-0 shadow-none" title="Visualizar Orçamento">
+                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path>
+                                    </svg>
+                                 </a>
+
+                                 <!-- Editar -->
+                                 <a href="{{ route('projects.edit', $project->id) }}" class="w-8 h-8 flex items-center justify-center bg-transparent text-primary-600 hover:bg-primary-50 rounded-[5px] transition-all border-0 shadow-none" title="Editar Orçamento">
                                      <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 4v16m8-8H4"></path>
+                                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"></path>
                                      </svg>
                                  </a>
-                             @endif
 
-                             <!-- Deletar -->
-                             <button type="button" @click.stop="$dispatch('trigger-global-delete', { title: 'Excluir Orçamento', message: 'Tem certeza de que deseja excluir o orçamento <strong class=\'text-slate-850\'>{{ addslashes($project->title) }}</strong>?<br><span class=\'text-xs text-red-500 mt-1.5 block bg-red-50/50 p-2.5 rounded-[5px] border border-red-100\'>Aviso: Esta ação removerá permanentemente o orçamento e todas as transações vinculadas.</span>', action: '{{ route('projects.destroy', $project->id) }}', highSecurity: false })" class="w-8 h-8 flex items-center justify-center bg-transparent text-red-600 hover:bg-red-55 rounded-[5px] transition-all border-0 shadow-none animate-pulse-once" title="Excluir Orçamento">
-                                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
-                                 </svg>
-                             </button>
-                         </div>
+                                 <!-- Registrar Pagamento -->
+                                 @if($project->status !== 'rejeitado' && $project->status !== 'quitado' && $project->remaining_balance > 0.005)
+                                     <a href="{{ route('payments.create', ['project_id' => $project->id]) }}" class="w-8 h-8 flex items-center justify-center bg-transparent text-emerald-600 hover:bg-emerald-50 rounded-[5px] transition-all border-0 shadow-none" title="Registrar Pagamento">
+                                         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 4v16m8-8H4"></path>
+                                         </svg>
+                                     </a>
+                                 @endif
+
+                                 <!-- Deletar -->
+                                 <button type="button" @click.stop="$dispatch('trigger-global-delete', { title: 'Excluir Orçamento', message: 'Tem certeza de que deseja excluir o orçamento <strong class=\'text-slate-850\'>{{ addslashes($project->title) }}</strong>?<br><span class=\'text-xs text-red-500 mt-1.5 block bg-red-50/50 p-2.5 rounded-[5px] border border-red-100\'>Aviso: Esta ação removerá permanentemente o orçamento e todas as transações vinculadas.</span>', action: '{{ route('projects.destroy', $project->id) }}', highSecurity: false })" class="w-8 h-8 flex items-center justify-center bg-transparent text-red-600 hover:bg-red-55 rounded-[5px] transition-all border-0 shadow-none animate-pulse-once" title="Excluir Orçamento">
+                                     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
+                                     </svg>
+                                 </button>
+                             </div>
+                        </div>
                     </div>
                 </div>
             @empty

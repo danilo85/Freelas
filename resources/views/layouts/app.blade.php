@@ -1141,17 +1141,31 @@
     </script>
 
     <!-- Global Notifications Stack -->
-    <div x-data="globalNotificationStackManager()" class="fixed top-4 right-4 z-[999999] space-y-2.5 w-80 select-none pointer-events-none">
+    <div x-data="globalNotificationStackManager()" class="fixed top-4 right-4 z-[999999] space-y-2.5 w-80 sm:w-88 select-none pointer-events-none">
         <template x-for="alert in activeNotifications" :key="alert.id">
-            <div class="bg-slate-900 border border-slate-700 text-white rounded-lg p-4 shadow-2xl flex items-start justify-between gap-3 pointer-events-auto transition-all duration-300">
-                <a :href="'{{ route('notifications.index') }}'" @click="dismissNotification(alert.id)" class="flex-1 min-w-0 flex items-start gap-1 cursor-pointer block select-none">
-                    <div class="flex-1 min-w-0">
-                        <span class="text-[10px] font-black text-amber-400 block uppercase tracking-widest" x-text="alert.badge"></span>
-                        <h4 class="text-xs font-black mt-1 text-white truncate" x-text="alert.title"></h4>
-                        <p class="text-xs text-slate-300 mt-1 line-clamp-3 leading-relaxed" x-text="alert.content"></p>
-                    </div>
+            <div class="bg-slate-900/95 backdrop-blur-md border border-slate-750 text-white rounded-xl p-4 shadow-2xl flex flex-col gap-2.5 pointer-events-auto transition-all duration-300">
+                <div class="flex items-center justify-between gap-2">
+                    <span class="text-[10px] font-black text-amber-400 uppercase tracking-widest" x-text="alert.badge"></span>
+                    <button type="button" @click="dismissNotification(alert.id)" class="text-slate-400 hover:text-white font-bold text-xs shrink-0 cursor-pointer p-0.5" title="Fechar">✕</button>
+                </div>
+
+                <a :href="'{{ route('notifications.index') }}'" class="block min-w-0 select-none hover:opacity-90 transition-opacity">
+                    <h4 class="text-xs font-black text-white truncate" x-text="alert.title"></h4>
+                    <p class="text-xs text-slate-300 mt-1 line-clamp-3 leading-relaxed" x-text="alert.content"></p>
                 </a>
-                <button type="button" @click="dismissNotification(alert.id)" class="text-slate-400 hover:text-white font-black text-xs shrink-0 cursor-pointer">✕</button>
+
+                <div class="flex items-center justify-between pt-1 border-t border-slate-800/80 mt-0.5">
+                    <span class="text-[9px] font-medium text-slate-400">Notificação do Sistema</span>
+                    <button type="button" 
+                            @click="dismissNotification(alert.id)" 
+                            class="px-2.5 py-1 bg-emerald-600/20 hover:bg-emerald-600 text-emerald-300 hover:text-white border border-emerald-500/30 rounded-[5px] text-[10px] font-bold transition-all flex items-center gap-1 cursor-pointer"
+                            title="Marcar como lida e não mostrar mais">
+                        <svg class="w-3 h-3 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"></path>
+                        </svg>
+                        Marcar como lida
+                    </button>
+                </div>
             </div>
         </template>
     </div>
@@ -1176,13 +1190,8 @@
                         if (res.ok) {
                             const data = await res.json();
                             let hasNew = false;
-                            
-                            // Remove notifications that are no longer active
-                            this.activeNotifications = this.activeNotifications.filter(an => {
-                                return data.some(item => item.id === an.id);
-                            });
 
-                            // Add new notifications
+                            // Add new notifications returned by server
                             data.forEach(item => {
                                 const exists = this.activeNotifications.some(an => an.id === item.id);
                                 if (!exists) {
@@ -1203,11 +1212,13 @@
                 async dismissNotification(id) {
                     this.activeNotifications = this.activeNotifications.filter(an => an.id !== id);
                     try {
-                        await fetch(`/utilidades/notifications/${id}/read`, {
+                        const readUrl = "{{ route('lembretes.notifications.read', ':id') }}".replace(':id', id);
+                        await fetch(readUrl, {
                             method: 'POST',
                             headers: {
                                 'X-CSRF-TOKEN': '{{ csrf_token() }}',
-                                'Content-Type': 'application/json'
+                                'Content-Type': 'application/json',
+                                'Accept': 'application/json'
                             }
                         });
                     } catch (e) {

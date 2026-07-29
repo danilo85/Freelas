@@ -11,12 +11,14 @@ class NotificationController extends Controller
     public function index()
     {
         $notifications = Notification::where('user_id', Auth::id())
+            ->whereNotIn('type', ['bill_dismissed', 'reminder_dismissed'])
             ->orderBy('created_at', 'desc')
             ->paginate(15);
 
         // Auto mark all unread notifications as read when user visits this log page
         Notification::where('user_id', Auth::id())
             ->whereNull('read_at')
+            ->whereNotIn('type', ['bill_dismissed', 'reminder_dismissed'])
             ->update(['read_at' => now()]);
 
         return view('notifications.index', compact('notifications'));
@@ -26,6 +28,7 @@ class NotificationController extends Controller
     {
         Notification::where('user_id', Auth::id())
             ->whereNull('read_at')
+            ->whereNotIn('type', ['bill_dismissed', 'reminder_dismissed'])
             ->update(['read_at' => now()]);
 
         return redirect()->back()->with('success', 'Todas as notificações foram marcadas como lidas.');
@@ -44,7 +47,9 @@ class NotificationController extends Controller
 
     public function destroyAll()
     {
-        Notification::where('user_id', Auth::id())->delete();
+        Notification::where('user_id', Auth::id())
+            ->whereNotIn('type', ['bill_dismissed', 'reminder_dismissed'])
+            ->delete();
 
         return redirect()->back()->with('success', 'Histórico de notificações limpo.');
     }

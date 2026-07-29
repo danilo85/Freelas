@@ -20,7 +20,14 @@ class ProjectController extends Controller
         // Carrega projetos pertencentes a clientes do usuário autenticado
         $projects = Project::whereHas('client', function ($q) use ($userId) {
             $q->where('user_id', $userId);
-        })->with(['client', 'authors', 'payments'])->orderBy('created_at', 'desc')->get();
+        })->with(['client', 'authors', 'payments', 'proposals'])->orderBy('created_at', 'desc')->get();
+
+        foreach ($projects as $project) {
+            if ($project->proposals->isEmpty()) {
+                $prop = $project->proposals()->create(['status' => 'pendente']);
+                $project->proposals->push($prop);
+            }
+        }
 
         // 1. Total de Orçamentos
         $totalProjectsCount = $projects->count();
