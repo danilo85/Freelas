@@ -147,6 +147,7 @@
                 // State Chat de Dúvidas
                 activeDuvidaId: null,
                 replyMessageInput: '',
+                isSendingChat: false,
 
                 // Track Changes state
                 originalContent: '',
@@ -201,7 +202,6 @@
                     if (file && file.file_type === 'word') {
                         this.loadingWord = true;
                         
-                        // Inicializa imediatamente com o texto pré-carregado se existir
                         if (initialTexts && initialTexts[this.selectedFileId]) {
                             const preText = initialTexts[this.selectedFileId];
                             this.originalContent = preText;
@@ -360,7 +360,6 @@
                     }, 1000);
                 },
 
-                // APLICA CATEGORIA, DESTACA EM AMARELO COM ESTILO INLINE E SALVA NO BANCO DE DADOS
                 selectCategory(cat) {
                     this.showCategoryMenu = false;
 
@@ -370,11 +369,8 @@
                     }
 
                     this.syncEditorContent();
-                    
-                    // 1. Salva o HTML editado com a marcação amarela síncrona no banco
                     this.persistWordContent();
 
-                    // 2. Salva o apontamento na Coluna 1
                     fetch('{{ route("public.editorial.revisor.corrections.store", $revision->share_token) }}', {
                         method: 'POST',
                         headers: {
@@ -400,7 +396,6 @@
                     });
                 },
 
-                // LINK DIRETO: AO CLICAR EM UM CARD DA COLUNA 1, ROLA DIRETO PARA O TEXTO NO ARQUIVO
                 scrollToCorrection(cor) {
                     const editor = this.$refs.wordEditor;
                     if (!editor || !cor.original_text) return;
@@ -430,7 +425,6 @@
                     }
                 },
 
-                // SALVA O CONTEÚDO HTML DO WORD NO BANCO DE DADOS
                 persistWordContent() {
                     const editor = this.$refs.wordEditor;
                     if (!editor || !this.selectedFileId) return;
@@ -457,7 +451,6 @@
                     });
                 },
 
-                // MENU DE BOTÃO DIREITO DO MOUSE (CONTEXT MENU)
                 openContextMenu(event) {
                     event.preventDefault();
                     this.contextMenuPos = { 
@@ -485,11 +478,13 @@
                     this.showToast('Marcação amarela removida!');
                 },
 
+                // ENVIO DE RESPOSTA NO CHAT COM ANIMAÇÃO DE PONTINHOS E BALÕES ESTILIZADOS
                 sendDuvidaMessage(correction) {
                     if (!this.replyMessageInput || this.replyMessageInput.trim() === '') return;
 
                     const messageText = this.replyMessageInput.trim();
                     this.replyMessageInput = '';
+                    this.isSendingChat = true;
 
                     fetch('{{ url("/revisao-editorial/" . $revision->share_token . "/revisor/corrections") }}/' + correction.id + '/comments', {
                         method: 'POST',
@@ -505,14 +500,23 @@
                     })
                     .then(res => res.json())
                     .then(data => {
+                        this.isSendingChat = false;
                         if (data.success && data.comment) {
                             if (!correction.comments) correction.comments = [];
                             correction.comments.push(data.comment);
                             correction.status = 'respondida';
-                            this.showToast('Mensagem enviada com sucesso no chat!');
+                            this.showToast('Mensagem enviada no chat!');
+
+                            this.$nextTick(() => {
+                                const chatContainer = this.$refs.chatMessagesBox;
+                                if (chatContainer) {
+                                    chatContainer.scrollTop = chatContainer.scrollHeight;
+                                }
+                            });
                         }
                     })
                     .catch(() => {
+                        this.isSendingChat = false;
                         this.showToast('Erro ao enviar mensagem no chat.');
                     });
                 },
@@ -725,7 +729,6 @@
         <!-- COLUNA 1 (ESQUERDA - 320px): LISTA DE APONTAMENTOS LINKADOS COM O ARQUIVO -->
         <aside class="w-80 border-r border-slate-200 bg-white flex flex-col justify-between shrink-0 h-full overflow-hidden z-20">
             
-            <!-- Informação do Arquivo Selecionado -->
             <div class="p-4 border-b border-slate-200 bg-slate-50/50 flex items-center justify-between shrink-0">
                 <div class="min-w-0">
                     <span class="text-[8px] font-bold text-slate-400 uppercase tracking-widest block">Arquivo Ativo</span>
@@ -742,7 +745,7 @@
                 <button @click="categoryFilter = 'duvida'" class="flex-1 py-2.5 text-center border-b-2 text-[10px]" :class="categoryFilter === 'duvida' ? 'border-emerald-600 text-emerald-600 bg-emerald-50' : 'border-transparent text-slate-400'">Dúvidas</button>
             </div>
 
-            <!-- Feed de Apontamentos Linkados com Rolagem Direta até a Posição no Texto -->
+            <!-- Feed de Apontamentos Linkados -->
             <div class="flex-1 overflow-y-auto p-4 space-y-3">
                 <template x-for="cor in correctionsList" :key="cor.id">
                     <div x-show="categoryFilter === 'todas' || categoryFilter === cor.category" 
@@ -787,10 +790,8 @@
         <!-- COLUNA 2 (CENTRO - FLEX-1): VIEWPORT DO DOCUMENTO -->
         <section class="flex-1 bg-slate-200/70 flex flex-col min-w-0 relative overflow-hidden h-full">
             
-            <!-- Barra Secundária Superior do Visualizador / Editor de Texto -->
             <div class="h-12 border-b border-slate-200 bg-white px-4 flex items-center justify-between shrink-0 z-10 shadow-xs">
                 
-                <!-- Ferramentas para PDF -->
                 <template x-if="currentFile && currentFile.file_type === 'pdf'">
                     <div class="flex items-center gap-3 text-xs font-bold text-slate-600">
                         <div class="flex items-center gap-1 bg-slate-100 p-1 rounded-[5px]">
@@ -818,7 +819,6 @@
                     </div>
                 </template>
 
-                <!-- BARRA DE FERRAMENTAS WYSIWYG PARA DOCUMENTOS WORD -->
                 <template x-if="currentFile && currentFile.file_type === 'word'">
                     <div class="flex items-center gap-2 text-xs font-bold w-full justify-between">
                         <div class="flex items-center gap-1 bg-slate-100 p-1 rounded-[5px]">
@@ -855,7 +855,6 @@
                  @contextmenu.prevent="openContextMenu($event)"
                  class="flex-1 overflow-auto flex items-start justify-center p-8 relative bg-slate-200/60">
                 
-                <!-- INDICADOR DE CARREGAMENTO DO WORD -->
                 <div x-show="loadingWord" class="absolute inset-0 bg-white/80 flex items-center justify-center font-bold text-xs text-slate-600 z-20 gap-2">
                     <svg class="animate-spin w-5 h-5 text-blue-600" fill="none" viewBox="0 0 24 24">
                         <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
@@ -864,14 +863,12 @@
                     <span>Carregando documento Word...</span>
                 </div>
 
-                <!-- PDF EM IFRAME NATIVO DO NAVEGADOR -->
                 <template x-if="currentFile && currentFile.file_type === 'pdf' && viewerMode === 'iframe'">
                     <div class="w-full max-w-6xl h-full bg-white paper-shadow rounded-[5px] border border-slate-200 p-2 flex flex-col my-auto">
                         <iframe :src="getFileStreamUrl(currentFile.id)" class="w-full h-full rounded border-0" frameborder="0"></iframe>
                     </div>
                 </template>
 
-                <!-- CANVAS PDF.JS PLUGIN -->
                 <template x-if="currentFile && currentFile.file_type === 'pdf' && viewerMode === 'native'">
                     <div class="bg-white paper-shadow rounded border border-slate-200 p-4 relative max-w-4xl max-h-full overflow-auto flex flex-col items-center my-auto">
                         <div x-show="renderingPdf" class="absolute inset-0 bg-white/80 flex items-center justify-center font-bold text-xs text-slate-500 z-10">
@@ -881,31 +878,26 @@
                     </div>
                 </template>
 
-                <!-- FORMATO DE PÁGINA CORRIDA DO WORD COM DIGITAÇÃO E SALVAMENTO EM TEMPO REAL -->
                 <template x-if="currentFile && currentFile.file_type === 'word'">
                     <div class="w-full flex flex-col items-center">
-                        
                         <div class="word-page-a4 paper-shadow border border-slate-300 text-slate-900 rounded-[2px] transition-all select-text relative"
                              id="word-paper-container">
-
                             <div x-ref="wordEditor"
                                  contenteditable="true"
                                  class="word-paper-content focus:outline-none min-h-[250mm]"
                                  @input="handleEditorInput($event)">
                             </div>
-
                         </div>
                     </div>
                 </template>
 
-                <!-- VISUALIZADOR DE IMAGENS -->
                 <template x-if="currentFile && currentFile.file_type === 'image'">
                     <div class="bg-white paper-shadow rounded p-2 border border-slate-200 max-w-4xl my-auto">
                         <img :src="getFileStreamUrl(currentFile.id)" class="max-h-[75vh] object-contain">
                     </div>
                 </template>
 
-                <!-- WIDGET FLUTUANTE DE CHAT NO CANTO INFERIOR DIREITO DO CANVAS -->
+                <!-- WIDGET FLUTUANTE DE CHAT DE DÚVIDAS ESTILO APPS DE MENSAGEM -->
                 <button type="button" 
                         @click="openDuvidasChatModal = true" 
                         class="fixed bottom-6 right-80 z-40 bg-emerald-600 hover:bg-emerald-700 text-white font-bold px-4 py-3 rounded-full shadow-2xl flex items-center gap-2.5 transition-all transform hover:scale-105" 
@@ -931,7 +923,6 @@
                 </span>
             </div>
 
-            <!-- Lista de Arquivos do Projeto -->
             <div class="flex-1 overflow-y-auto p-3 space-y-2.5">
                 @foreach($revision->files as $file)
                     <div @click="selectedFileId = {{ $file->id }}" 
@@ -959,7 +950,6 @@
                 @endforeach
             </div>
 
-            <!-- Ações do Rodapé -->
             <div class="p-4 border-t border-slate-200 bg-slate-50/50 space-y-2 shrink-0">
                 <button type="button" @click="openUploadVersionModal = true" class="w-full py-2 bg-slate-900 hover:bg-slate-800 text-white font-bold text-xs uppercase tracking-wider rounded-[5px] transition-colors shadow-xs">
                     Subir Nova Versão
@@ -970,58 +960,99 @@
 
     </main>
 
-    <!-- MODAL / DRAWER CHAT FLUTUANTE DE DÚVIDAS -->
+    <!-- DRAWER CHAT MODERNO DE DÚVIDAS COM BALÕES DE FALA E PONTINHOS DE DIGITAÇÃO -->
     <div x-show="openDuvidasChatModal" x-cloak class="fixed inset-0 z-[99999] flex items-center justify-end bg-slate-950/60 backdrop-blur-xs select-none">
-        <div @click.away="openDuvidasChatModal = false" class="bg-white border-l border-slate-200 text-slate-800 h-full max-w-md w-full shadow-2xl flex flex-col justify-between">
+        <div @click.away="openDuvidasChatModal = false" class="bg-white border-l border-slate-200 text-slate-800 h-full max-w-md w-full shadow-2xl flex flex-col justify-between overflow-hidden">
             
-            <div class="p-4 border-b border-slate-200 bg-slate-50/80 flex items-center justify-between shrink-0">
-                <div class="flex items-center gap-2">
-                    <svg class="w-5 h-5 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 10h.01M12 10h.01M16 10h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"/>
-                    </svg>
-                    <h3 class="font-outfit font-black text-slate-900 text-sm uppercase">Chat de Dúvidas</h3>
+            <!-- Header do Chat Estilo WhatsApp/Telegram -->
+            <div class="p-4 border-b border-slate-200 bg-slate-900 text-white flex items-center justify-between shrink-0 shadow-md">
+                <div class="flex items-center gap-3">
+                    <div class="relative">
+                        <div class="w-9 h-9 rounded-full bg-emerald-600 flex items-center justify-center font-bold text-xs text-white">
+                            💬
+                        </div>
+                        <span class="absolute bottom-0 right-0 w-2.5 h-2.5 bg-emerald-400 border-2 border-slate-900 rounded-full"></span>
+                    </div>
+                    <div>
+                        <h3 class="font-outfit font-black text-sm uppercase tracking-tight">Chat de Dúvidas</h3>
+                        <p class="text-[10px] text-slate-400">Revisor & Autor em tempo real</p>
+                    </div>
                 </div>
-                <button type="button" @click="openDuvidasChatModal = false" class="text-slate-400 hover:text-slate-600 font-bold">✕</button>
+                <button type="button" @click="openDuvidasChatModal = false" class="w-8 h-8 rounded-full bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white flex items-center justify-center font-bold text-sm">✕</button>
             </div>
 
-            <div class="flex-1 overflow-y-auto p-4 space-y-4">
+            <!-- Lista de Tópicos e Balões de Fala -->
+            <div x-ref="chatMessagesBox" class="flex-1 overflow-y-auto p-4 space-y-5 bg-slate-50/70">
                 <template x-for="cor in duvidasList" :key="cor.id">
-                    <div class="p-3.5 bg-emerald-50/60 border border-emerald-200 rounded-lg text-xs space-y-3">
-                        <div class="flex items-center justify-between border-b border-emerald-200/80 pb-1.5">
-                            <span class="font-bold text-emerald-950 uppercase text-[10px]">Dúvida Marcada</span>
-                            <span class="text-[9px] font-bold px-2 py-0.5 rounded bg-emerald-200 text-emerald-800" x-text="cor.status"></span>
+                    <div class="bg-white border border-slate-200 rounded-2xl p-4 shadow-xs space-y-3">
+                        
+                        <!-- Cabeçalho da Dúvida no Documento -->
+                        <div class="flex items-center justify-between border-b border-slate-100 pb-2">
+                            <span class="text-[10px] font-black uppercase px-2.5 py-0.5 rounded-full bg-emerald-100 text-emerald-800">Dúvida Marcada</span>
+                            <span class="text-[9px] font-bold text-slate-400" x-text="cor.status"></span>
                         </div>
 
-                        <p class="font-mono text-emerald-950 font-bold bg-white p-2 rounded border border-emerald-200 cursor-pointer" @click="scrollToCorrection(cor)" x-text="'💬 ' + (cor.original_text || 'Dúvida no documento')"></p>
+                        <!-- Citação do Texto no Arquivo -->
+                        <div @click="scrollToCorrection(cor)" class="p-2.5 bg-slate-100 border-l-4 border-emerald-500 rounded-r-lg text-xs font-serif italic text-slate-700 cursor-pointer hover:bg-slate-200/80 transition-colors" title="Clique para ir até este ponto no documento">
+                            <span class="font-sans font-bold text-[10px] text-emerald-800 uppercase block not-italic mb-0.5">Trecho Citado:</span>
+                            <span x-text="'“' + (cor.original_text || 'Dúvida no documento') + '”'"></span>
+                        </div>
 
-                        <div class="space-y-2 pt-1">
+                        <!-- Mensagens da Dúvida em Formato Balão de Fala -->
+                        <div class="space-y-3 pt-2">
                             <template x-for="cmt in (cor.comments || [])" :key="cmt.id">
-                                <div class="p-2.5 rounded bg-white border border-slate-200 space-y-1">
-                                    <div class="flex items-center justify-between text-[10px] font-bold">
-                                        <span class="text-slate-800" x-text="cmt.author_name || 'Usuário'"></span>
-                                        <span class="text-slate-400" x-text="cmt.created_at || ''"></span>
+                                <div class="flex flex-col" :class="(cmt.author_name === 'Revisor' || cmt.user_id) ? 'items-end' : 'items-start'">
+                                    
+                                    <!-- Balão de Fala do Revisor (Direita - Azul) / Autor (Esquerda - Cinza) -->
+                                    <div class="max-w-[85%] p-3 text-xs leading-relaxed shadow-xs transition-all"
+                                         :class="(cmt.author_name === 'Revisor' || cmt.user_id) 
+                                                 ? 'bg-blue-600 text-white rounded-2xl rounded-tr-xs' 
+                                                 : 'bg-slate-200 text-slate-800 rounded-2xl rounded-tl-xs border border-slate-300'">
+                                        
+                                        <div class="flex items-center justify-between gap-3 text-[9px] font-bold mb-1 opacity-80 border-b border-current/20 pb-0.5">
+                                            <span x-text="cmt.author_name || 'Usuário'"></span>
+                                            <span x-text="cmt.created_at || ''"></span>
+                                        </div>
+
+                                        <p class="whitespace-pre-wrap font-sans text-xs" x-text="cmt.message"></p>
                                     </div>
-                                    <p class="text-slate-600 text-[11px]" x-text="cmt.message"></p>
                                 </div>
                             </template>
                         </div>
 
-                        <div class="pt-2 flex items-center gap-2">
+                        <!-- ANIMAÇÃO DE PONTINHOS DE DIGITAÇÃO AO ENVIAR -->
+                        <template x-if="isSendingChat">
+                            <div class="flex justify-end pt-1">
+                                <div class="px-3 py-2 bg-blue-100 rounded-2xl rounded-tr-xs flex items-center gap-1.5 shadow-xs">
+                                    <span class="w-1.5 h-1.5 bg-blue-600 rounded-full animate-bounce"></span>
+                                    <span class="w-1.5 h-1.5 bg-blue-600 rounded-full animate-bounce [animation-delay:0.2s]"></span>
+                                    <span class="w-1.5 h-1.5 bg-blue-600 rounded-full animate-bounce [animation-delay:0.4s]"></span>
+                                </div>
+                            </div>
+                        </template>
+
+                        <!-- Input para Responder esta Dúvida -->
+                        <div class="pt-3 border-t border-slate-100 flex items-center gap-2">
                             <input type="text" 
                                    x-model="replyMessageInput"
                                    @keydown.enter="sendDuvidaMessage(cor)"
-                                   placeholder="Escreva sua resposta..."
-                                   class="flex-1 px-3 py-2 border border-slate-200 rounded text-xs focus:ring-1 focus:ring-emerald-500 bg-white">
-                            <button type="button" @click="sendDuvidaMessage(cor)" class="px-3 py-2 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded text-xs">
-                                Enviar
+                                   placeholder="Responder dúvida..."
+                                   class="flex-1 px-3.5 py-2 border border-slate-200 rounded-full text-xs focus:ring-2 focus:ring-emerald-500 focus:outline-none bg-slate-50">
+                            <button type="button" @click="sendDuvidaMessage(cor)" class="w-9 h-9 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-full flex items-center justify-center shadow-sm transition-all transform hover:scale-105">
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"/></svg>
                             </button>
                         </div>
+
                     </div>
                 </template>
 
                 <template x-if="duvidasList.length === 0">
-                    <div class="text-center text-slate-400 py-12 text-xs font-medium">
-                        Nenhuma dúvida registrada. Altere a categoria de um apontamento para "Dúvida" para abrir uma conversa com o Autor!
+                    <div class="text-center text-slate-400 py-16 text-xs font-medium space-y-2">
+                        <div class="w-12 h-12 rounded-full bg-slate-200 flex items-center justify-center mx-auto text-xl text-slate-400">
+                            💬
+                        </div>
+                        <p class="font-bold text-slate-600">Nenhuma dúvida no momento</p>
+                        <p class="text-[11px] text-slate-400 max-w-xs mx-auto">Altere a categoria de um apontamento para "Dúvida" para abrir um tópico de conversa com o Autor!</p>
                     </div>
                 </template>
             </div>
