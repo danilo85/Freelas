@@ -72,15 +72,15 @@
             </div>
         </div>
 
-        <!-- Links Públicos do Projeto (Link do Revisor vs Link do Autor) -->
+        <!-- Links Públicos do Projeto (Apenas Ícones) -->
         <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
             <!-- Link do Revisor -->
             <div class="space-y-2 p-4 bg-slate-50 dark:bg-slate-800/40 rounded-[5px] border border-slate-200 dark:border-slate-700">
-                <label class="text-[10px] font-black text-purple-700 dark:text-purple-400 uppercase tracking-wider block">🔗 Link do Workspace do Revisor</label>
+                <label class="text-[10px] font-black text-purple-700 dark:text-purple-400 uppercase tracking-wider block">🔗 Workspace do Revisor</label>
                 <div class="flex items-center gap-2">
                     <input type="text" readonly value="{{ route('public.editorial.revisor.show', $editorialRevision->share_token) }}" class="flex-1 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 text-xs px-3 py-2 rounded-[5px] select-all font-mono">
-                    <a href="{{ route('public.editorial.revisor.show', $editorialRevision->share_token) }}" target="_blank" class="px-3 py-2 bg-purple-600 hover:bg-purple-700 text-white font-bold text-xs rounded-[5px] uppercase tracking-wider">
-                        Abrir
+                    <a href="{{ route('public.editorial.revisor.show', $editorialRevision->share_token) }}" target="_blank" class="w-9 h-9 bg-purple-600 hover:bg-purple-700 text-white rounded-[5px] flex items-center justify-center text-sm transition-all shadow-xs" title="Abrir Workspace do Revisor">
+                        ↗️
                     </a>
                 </div>
             </div>
@@ -90,8 +90,8 @@
                 <label class="text-[10px] font-black text-slate-700 dark:text-slate-300 uppercase tracking-wider block">🔗 Link do Autor (Esclarecer Dúvidas)</label>
                 <div class="flex items-center gap-2">
                     <input type="text" readonly value="{{ route('public.editorial.show', $editorialRevision->share_token) }}" class="flex-1 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 text-xs px-3 py-2 rounded-[5px] select-all font-mono">
-                    <button type="button" @click="copyShareLink('{{ route('public.editorial.show', $editorialRevision->share_token) }}')" class="px-3 py-2 bg-slate-900 text-white font-bold text-xs rounded-[5px] uppercase tracking-wider">
-                        Copiar
+                    <button type="button" @click="copyShareLink('{{ route('public.editorial.show', $editorialRevision->share_token) }}')" class="w-9 h-9 bg-slate-900 hover:bg-slate-800 text-white rounded-[5px] flex items-center justify-center text-sm transition-all shadow-xs" title="Copiar Link do Autor">
+                        📋
                     </button>
                 </div>
             </div>
@@ -109,8 +109,8 @@
                     <span class="text-xs text-slate-400 font-bold block mt-0.5">{{ $editorialRevision->files->count() }} Arquivos Cadastrados</span>
                 </div>
                 
-                <button type="button" @click="openUploadModal = true" class="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs rounded-[5px] uppercase tracking-wider transition-all flex items-center gap-1.5 shadow-sm">
-                    📤 Fazer Upload / Substituir
+                <button type="button" @click="openUploadModal = true" class="w-9 h-9 bg-blue-600 hover:bg-blue-700 text-white rounded-[5px] flex items-center justify-center text-base transition-all shadow-xs" title="Upload de Novos Arquivos">
+                    📤
                 </button>
             </div>
 
@@ -127,16 +127,17 @@
                             </div>
                         </div>
 
+                        <!-- BOTOES COM ICONES APENAS (SEM TEXTO) -->
                         <div class="flex items-center gap-2 shrink-0">
-                            <a href="{{ route('public.editorial.file.download', ['token' => $editorialRevision->share_token, 'fileId' => $file->id]) }}" target="_blank" class="px-3 py-1.5 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 font-bold text-xs rounded-[5px] transition-colors">
-                                ⬇️ Baixar
+                            <a href="{{ route('public.editorial.file.download', ['token' => $editorialRevision->share_token, 'fileId' => $file->id]) }}" target="_blank" class="w-8 h-8 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 rounded-[5px] flex items-center justify-center text-sm transition-colors" title="Baixar Arquivo">
+                                ⬇️
                             </a>
 
                             <form action="{{ route('revisoes-editoriais.files.destroy', $file->id) }}" method="POST" onsubmit="return confirm('Tem certeza que deseja excluir o arquivo {{ $file->filename }}?')">
                                 @csrf
                                 @method('DELETE')
-                                <button type="submit" class="px-3 py-1.5 bg-rose-50 hover:bg-rose-100 text-rose-700 dark:bg-rose-950/40 dark:hover:bg-rose-900/60 dark:text-rose-300 font-bold text-xs rounded-[5px] transition-colors">
-                                    🗑️ Excluir
+                                <button type="submit" class="w-8 h-8 bg-rose-50 hover:bg-rose-100 text-rose-700 dark:bg-rose-950/40 dark:hover:bg-rose-900/60 dark:text-rose-300 rounded-[5px] flex items-center justify-center text-sm transition-colors" title="Excluir Arquivo">
+                                    🗑️
                                 </button>
                             </form>
                         </div>
@@ -159,7 +160,6 @@
                     </span>
                 </div>
                 
-                <!-- Métricas Principais -->
                 <div class="grid grid-cols-2 gap-3 text-center text-xs font-bold">
                     <div class="p-3 bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-[5px]">
                         <span class="text-xl font-black text-slate-800 dark:text-slate-100 block">{{ $editorialRevision->corrections->count() }}</span>
@@ -196,28 +196,62 @@
 
     </div>
 
-    <!-- Modal Upload de Novos Arquivos pelo Admin -->
+    <!-- MODAL MODERNO DRAG & DROP DE ARQUIVOS COM BARRA DE PROGRESSO EM TEMPO REAL -->
     <div x-show="openUploadModal" x-cloak class="fixed inset-0 z-[99999] flex items-center justify-center p-4 bg-slate-950/60 backdrop-blur-xs select-none">
-        <div @click.away="openUploadModal = false" class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-slate-800 dark:text-slate-100 rounded-xl p-6 shadow-2xl max-w-md w-full space-y-4">
+        <div @click.away="openUploadModal = false" class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-slate-800 dark:text-slate-100 rounded-xl p-6 shadow-2xl max-w-lg w-full space-y-4">
+            
             <div class="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-3">
-                <h3 class="font-outfit font-black text-md uppercase">📤 Upload de Novos Arquivos</h3>
+                <h3 class="font-outfit font-black text-md uppercase">📤 Upload Moderno de Arquivos</h3>
                 <button type="button" @click="openUploadModal = false" class="text-slate-400 hover:text-slate-600 font-bold">✕</button>
             </div>
 
-            <form action="{{ route('revisoes-editoriais.files.upload', $editorialRevision->id) }}" method="POST" enctype="multipart/form-data" class="space-y-4 text-xs">
-                @csrf
+            <!-- ZONA DE DRAG & DROP -->
+            <div @dragover.prevent="isDragging = true"
+                 @dragleave.prevent="isDragging = false"
+                 @drop.prevent="handleFileDrop($event)"
+                 @click="$refs.fileInput.click()"
+                 class="border-2 border-dashed rounded-xl p-8 text-center cursor-pointer transition-all space-y-3"
+                 :class="isDragging ? 'border-blue-500 bg-blue-50/50 dark:bg-blue-950/30' : 'border-slate-300 dark:border-slate-700 bg-slate-50/50 dark:bg-slate-800/40 hover:bg-slate-100 dark:hover:bg-slate-800'">
+                
+                <input type="file" x-ref="fileInput" @change="handleFileSelect($event)" multiple class="hidden">
 
-                <div>
-                    <label class="font-bold block mb-1">Selecione Arquivo(s) (PDF, Word ou Imagens)</label>
-                    <input type="file" name="files[]" multiple required class="w-full px-3 py-2 border border-slate-200 dark:border-slate-700 rounded-[5px] bg-slate-50 dark:bg-slate-800">
-                    <p class="text-[10px] text-slate-400 mt-1">Ao enviar um PDF, a versão editável em Word é convertida automaticamente!</p>
-                </div>
+                <span class="text-4xl block">📁</span>
+                <p class="text-xs font-bold text-slate-700 dark:text-slate-200">
+                    Arraste & Solte seus arquivos aqui ou <span class="text-blue-600 underline">clique para buscar</span>
+                </p>
+                <p class="text-[10px] text-slate-400">PDF, Word (.docx) ou Imagens (Máx: 100MB)</p>
+            </div>
 
-                <div class="flex justify-end gap-2 pt-2 border-t border-slate-100 dark:border-slate-800">
-                    <button type="button" @click="openUploadModal = false" class="px-4 py-2 bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 font-bold rounded-[5px]">Cancelar</button>
-                    <button type="submit" class="px-4 py-2 bg-blue-600 text-white font-bold rounded-[5px]">Subir Arquivos</button>
+            <!-- LISTA DE ARQUIVOS SELECIONADOS -->
+            <template x-if="selectedFiles.length > 0">
+                <div class="space-y-2 max-h-32 overflow-y-auto">
+                    <template x-for="(file, index) in selectedFiles" :key="index">
+                        <div class="flex items-center justify-between p-2.5 bg-slate-100 dark:bg-slate-800 rounded text-xs font-medium">
+                            <span class="truncate max-w-[240px]" x-text="file.name"></span>
+                            <span class="text-[10px] text-slate-400" x-text="(file.size / 1024 / 1024).toFixed(2) + ' MB'"></span>
+                        </div>
+                    </template>
                 </div>
-            </form>
+            </template>
+
+            <!-- BARRA DE PROGRESSO EM TEMPO REAL COM PORCENTAGEM -->
+            <div x-show="uploading" class="space-y-2 pt-2">
+                <div class="flex items-center justify-between text-xs font-bold text-slate-700 dark:text-slate-200">
+                    <span>Enviando arquivos...</span>
+                    <span x-text="uploadProgress + '%'"></span>
+                </div>
+                <div class="w-full bg-slate-200 dark:bg-slate-700 rounded-full h-3 overflow-hidden">
+                    <div class="bg-blue-600 h-3 rounded-full transition-all duration-150" :style="'width: ' + uploadProgress + '%'"></div>
+                </div>
+            </div>
+
+            <div class="flex justify-end gap-2 pt-3 border-t border-slate-100 dark:border-slate-800">
+                <button type="button" @click="openUploadModal = false" class="px-4 py-2 bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 font-bold text-xs rounded-[5px]">Cancelar</button>
+                <button type="button" @click="submitUploadWithProgress()" :disabled="selectedFiles.length === 0 || uploading" class="w-9 h-9 bg-blue-600 hover:bg-blue-700 text-white rounded-[5px] flex items-center justify-center text-sm transition-all disabled:opacity-50" title="Iniciar Upload">
+                    🚀
+                </button>
+            </div>
+
         </div>
     </div>
 
@@ -228,10 +262,66 @@
         return {
             openUploadModal: false,
             toastMessage: '',
+            isDragging: false,
+            selectedFiles: [],
+            uploading: false,
+            uploadProgress: 0,
+
             copyShareLink(url) {
                 navigator.clipboard.writeText(url);
                 this.toastMessage = 'Link copiado com sucesso!';
                 setTimeout(() => { this.toastMessage = ''; }, 4000);
+            },
+
+            handleFileSelect(event) {
+                this.selectedFiles = Array.from(event.target.files);
+            },
+
+            handleFileDrop(event) {
+                this.isDragging = false;
+                if (event.dataTransfer.files.length > 0) {
+                    this.selectedFiles = Array.from(event.dataTransfer.files);
+                }
+            },
+
+            submitUploadWithProgress() {
+                if (this.selectedFiles.length === 0) return;
+
+                this.uploading = true;
+                this.uploadProgress = 0;
+
+                const formData = new FormData();
+                formData.append('_token', '{{ csrf_token() }}');
+                
+                this.selectedFiles.forEach(file => {
+                    formData.append('files[]', file);
+                });
+
+                const xhr = new XMLHttpRequest();
+                xhr.open('POST', '{{ route("revisoes-editoriais.files.upload", $editorialRevision->id) }}', true);
+
+                xhr.upload.onprogress = (e) => {
+                    if (e.lengthComputable) {
+                        this.uploadProgress = Math.round((e.loaded / e.total) * 100);
+                    }
+                };
+
+                xhr.onload = () => {
+                    this.uploading = false;
+                    if (xhr.status === 200 || xhr.status === 302) {
+                        this.toastMessage = 'Arquivos enviados com sucesso!';
+                        setTimeout(() => { window.location.reload(); }, 800);
+                    } else {
+                        alert('Falha ao realizar upload.');
+                    }
+                };
+
+                xhr.onerror = () => {
+                    this.uploading = false;
+                    alert('Erro de rede ao enviar os arquivos.');
+                };
+
+                xhr.send(formData);
             }
         }
     }
