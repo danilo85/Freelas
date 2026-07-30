@@ -1375,18 +1375,18 @@
         <!-- Seletor de Nível de Análise (Padrão vs Acadêmico/Exigente) -->
         <div class="px-3.5 py-2 bg-purple-950 border-b border-purple-800 flex items-center justify-between text-[11px] text-purple-200 shrink-0">
             <span class="font-bold uppercase tracking-wider text-[9px] text-purple-300">Nível de Análise:</span>
-            <div class="flex items-center gap-1 bg-purple-900 p-0.5 rounded">
+            <div class="flex items-center gap-1 bg-purple-900 p-1 rounded-md border border-purple-800">
                 <button type="button" 
                         @click="checkLanguageTool('default')" 
-                        class="px-2.5 py-0.5 rounded font-bold" 
-                        :class="langToolLevel === 'default' ? 'bg-purple-600 text-white' : 'text-purple-300 hover:text-white'">
-                    Padrão
+                        class="px-2.5 py-1 rounded text-[11px] font-black transition-colors" 
+                        :class="langToolLevel === 'default' ? 'bg-emerald-500 text-slate-950 shadow-sm' : 'text-purple-300 hover:text-white font-medium'">
+                    ✓ Padrão
                 </button>
                 <button type="button" 
                         @click="checkLanguageTool('picky')" 
-                        class="px-2.5 py-0.5 rounded font-bold" 
-                        :class="langToolLevel === 'picky' ? 'bg-purple-600 text-white' : 'text-purple-300 hover:text-white'">
-                    Acadêmico / Estilo (Exigente)
+                        class="px-2.5 py-1 rounded text-[11px] font-black transition-colors" 
+                        :class="langToolLevel === 'picky' ? 'bg-emerald-500 text-slate-950 shadow-sm' : 'text-purple-300 hover:text-white font-medium'">
+                    ⚡ Acadêmico / Estilo
                 </button>
             </div>
         </div>
