@@ -41,7 +41,7 @@
     <script defer src="https://cdn.jsdelivr.net/npm/@alpinejs/mask@3.x.x/dist/cdn.min.js"></script>
     <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
 
-    <!-- PDF.js CDN para Renderização de PDFs -->
+    <!-- PDF.js CDN -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.min.js"></script>
     <script>
         pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.worker.min.js';
@@ -77,13 +77,14 @@
             border-radius: 4px;
             box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
         }
-        mark.revisor-highlight {
-            background-color: #fef08a; /* Amarelo suave */
-            color: #713f12;
-            padding: 2px 4px;
-            border-radius: 3px;
-            border-bottom: 2px solid #facc15;
-            font-weight: 500;
+        /* MARCAÇÃO AMARELA AUTOMÁTICA NAS LINHAS ALTERADAS */
+        .word-paper-content .edited-line {
+            background-color: #fef08a !important; /* Amarelo suave */
+            color: #713f12 !important;
+            padding: 2px 6px;
+            border-radius: 4px;
+            border-left: 4px solid #facc15;
+            transition: all 0.2s ease;
         }
     </style>
 
@@ -99,16 +100,16 @@
                 openUploadVersionModal: false,
                 categoryFilter: 'todas',
                 viewMode: 'track', // 'track', 'original', 'final'
-                viewerMode: 'iframe', // 'iframe' como padrão para PDFs (renderiza 100% de layout, cores e orientação)
+                viewerMode: 'iframe', // 'iframe' como padrão para PDFs (renderização 100% fiel de layout e cores)
                 toastMessage: '',
                 selectedFileId: filesData.length > 0 ? filesData[0].id : null,
-                languageToolMatches: [],
+                correctionsList: @json($revision->corrections),
                 
                 // Track Changes state
                 originalContent: '',
                 revisedContent: '',
                 savingText: false,
-                autoCategory: 'ortografia',
+                typingTimer: null,
 
                 // Auth State
                 isAuth: @json($isAuthenticated),
@@ -116,25 +117,11 @@
                 loginPassword: '',
                 loginError: '',
 
-                // PDF.js State
-                pdfDoc: null,
-                currentPage: 1,
-                totalPages: 1,
-                pdfScale: 1.2,
-                renderingPdf: false,
-
                 init() {
                     this.loadContentForSelectedFile();
 
                     this.$watch('selectedFileId', (id) => {
                         this.loadContentForSelectedFile();
-                        this.handleFileChange(id);
-                    });
-
-                    this.$nextTick(() => {
-                        if (this.currentFile && this.currentFile.file_type === 'pdf') {
-                            this.loadPdfDocument();
-                        }
                     });
                 },
 
@@ -146,6 +133,13 @@
                     const text = textsData[this.selectedFileId] || '';
                     this.originalContent = text;
                     this.revisedContent = text;
+
+                    this.$nextTick(() => {
+                        const editor = this.$refs.wordEditor;
+                        if (editor) {
+                            editor.innerHTML = text;
+                        }
+                    });
                 },
 
                 getFileStreamUrl(id) {
@@ -156,145 +150,87 @@
                     return streamBaseUrl + '/' + id + '/download';
                 },
 
-                handleFileChange(id) {
-                    const file = this.currentFile;
-                    if (file && file.file_type === 'pdf' && this.viewerMode === 'native') {
-                        this.loadPdfDocument();
-                    }
-                },
-
-                loadPdfDocument() {
-                    if (!this.currentFile) return;
-                    const url = this.getFileStreamUrl(this.currentFile.id);
-                    this.renderingPdf = true;
-
-                    fetch(url)
-                        .then(res => res.arrayBuffer())
-                        .then(buffer => pdfjsLib.getDocument({ data: buffer }).promise)
-                        .then(pdf => {
-                            this.pdfDoc = pdf;
-                            this.totalPages = pdf.numPages;
-                            this.currentPage = 1;
-                            this.renderPdfPage(1);
-                        })
-                        .catch(() => {
-                            this.renderingPdf = false;
-                        });
-                },
-
-                renderPdfPage(num) {
-                    if (!this.pdfDoc) return;
-                    this.renderingPdf = true;
-
-                    this.pdfDoc.getPage(num).then(page => {
-                        const canvas = document.getElementById('pdf-canvas');
-                        if (!canvas) return;
-                        const ctx = canvas.getContext('2d');
-                        const viewport = page.getViewport({ scale: this.pdfScale });
-
-                        canvas.height = viewport.height;
-                        canvas.width = viewport.width;
-
-                        page.render({ canvasContext: ctx, viewport: viewport }).promise.then(() => {
-                            this.renderingPdf = false;
-                        });
-                    });
-                },
-
-                prevPage() {
-                    if (this.currentPage <= 1) return;
-                    this.currentPage--;
-                    this.renderPdfPage(this.currentPage);
-                },
-
-                nextPage() {
-                    if (this.currentPage >= this.totalPages) return;
-                    this.currentPage++;
-                    this.renderPdfPage(this.currentPage);
-                },
-
-                zoomPdf(delta) {
-                    this.pdfScale = Math.max(0.5, Math.min(3.0, this.pdfScale + delta));
-                    this.renderPdfPage(this.currentPage);
-                },
-
                 execCmd(command, value = null) {
                     document.execCommand(command, false, value);
-                    const editor = document.getElementById('word-paper-editor');
+                    this.syncEditorContent();
+                },
+
+                syncEditorContent() {
+                    const editor = this.$refs.wordEditor;
                     if (editor) {
                         this.revisedContent = editor.innerHTML;
                     }
                 },
 
-                // MARCA EM AMARELO SUAVE E CRIA O APONTAMENTO AUTOMATICAMENTE (SEM CAIXA/MODAL)
-                highlightAndCreateApontamento(cat = 'ortografia') {
+                // EVENTO DE DIGITAÇÃO DIRETA NO WORD (SEM PULAR O CURSOR E SEM RELOAD)
+                handleEditorInput(event) {
+                    this.syncEditorContent();
+
+                    // Destaca a linha/parágrafo atual que foi alterado em amarelo suave
                     const sel = window.getSelection();
-                    if (!sel || sel.rangeCount === 0 || sel.toString().trim() === '') {
-                        this.showToast('Selecione um trecho do texto para marcar.');
-                        return;
+                    if (sel && sel.anchorNode) {
+                        let node = sel.anchorNode.nodeType === 3 ? sel.anchorNode.parentNode : sel.anchorNode;
+                        
+                        // Encontra o elemento de parágrafo/linha do editor
+                        while (node && node !== this.$refs.wordEditor && !['P', 'DIV', 'LI', 'H1', 'H2', 'H3'].includes(node.nodeName)) {
+                            node = node.parentNode;
+                        }
+
+                        if (node && node !== this.$refs.wordEditor) {
+                            node.classList.add('edited-line');
+                        }
                     }
 
-                    const selectedText = sel.toString().trim();
-                    const range = sel.getRangeAt(0);
-
-                    // Cria o elemento marcador em amarelo suave
-                    const markNode = document.createElement('mark');
-                    markNode.className = 'revisor-highlight';
-                    markNode.textContent = selectedText;
-
-                    range.deleteContents();
-                    range.insertNode(markNode);
-
-                    // Atualiza o estado
-                    const editor = document.getElementById('word-paper-editor');
-                    if (editor) {
-                        this.revisedContent = editor.innerHTML;
-                    }
-
-                    // Envia a criação do apontamento via AJAX para a Coluna 1
-                    fetch('{{ route("public.editorial.revisor.corrections.store", $revision->share_token) }}', {
-                        method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/json',
-                            'X-CSRF-TOKEN': '{{ csrf_token() }}'
-                        },
-                        body: JSON.stringify({
-                            editorial_revision_file_id: this.selectedFileId,
-                            category: cat,
-                            original_text: selectedText,
-                            suggested_text: selectedText,
-                            justification: 'Apontamento marcado diretamente no texto.'
-                        })
-                    })
-                    .then(res => {
-                        this.showToast('Trecho marcado em amarelo e apontamento adicionado à Coluna 1!');
-                        setTimeout(() => { window.location.reload(); }, 1200);
-                    });
+                    // Envia atualização silenciosa e cria o apontamento automático na Coluna 1
+                    clearTimeout(this.typingTimer);
+                    this.typingTimer = setTimeout(() => {
+                        this.autoSaveAndRegisterCorrection();
+                    }, 1500);
                 },
 
-                saveEditedText() {
-                    if (!this.currentFile) return;
-                    this.savingText = true;
-                    const editor = document.getElementById('word-paper-editor');
+                // REGISTRA O APONTAMENTO AUTOMATICAMENTE NA COLUNA 1 SEM DAR RELOAD NA PÁGINA
+                autoSaveAndRegisterCorrection() {
+                    const editor = this.$refs.wordEditor;
                     const contentToSave = editor ? editor.innerHTML : this.revisedContent;
 
-                    fetch('{{ url("/revisao-editorial/" . $revision->share_token . "/revisor/file") }}/' + this.currentFile.id + '/content', {
+                    // 1. Salva o conteúdo do arquivo
+                    fetch('{{ url("/revisao-editorial/" . $revision->share_token . "/revisor/file") }}/' + this.selectedFileId + '/content', {
                         method: 'POST',
                         headers: {
                             'Content-Type': 'application/json',
                             'X-CSRF-TOKEN': '{{ csrf_token() }}'
                         },
                         body: JSON.stringify({ revised_content: contentToSave })
+                    });
+
+                    // 2. Cria apontamento automático na Coluna 1
+                    fetch('{{ route("public.editorial.revisor.corrections.store", $revision->share_token) }}', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'Accept': 'application/json',
+                            'X-CSRF-TOKEN': '{{ csrf_token() }}'
+                        },
+                        body: JSON.stringify({
+                            editorial_revision_file_id: this.selectedFileId,
+                            category: 'ortografia',
+                            original_text: 'Edição direta no documento',
+                            suggested_text: 'Texto atualizado pelo revisor',
+                            justification: 'Edição em tempo real salva no documento.'
+                        })
                     })
                     .then(res => res.json())
                     .then(data => {
-                        this.savingText = false;
-                        this.showToast('Documento Word salvo com sucesso!');
+                        this.showToast('Documento atualizado e apontamento registrado na Coluna 1!');
+                        if (data.correction) {
+                            this.correctionsList.unshift(data.correction);
+                        }
                     })
-                    .catch(() => {
-                        this.savingText = false;
-                        this.showToast('Erro ao salvar alterações no servidor.');
-                    });
+                    .catch(() => {});
+                },
+
+                saveEditedText() {
+                    this.autoSaveAndRegisterCorrection();
                 },
 
                 submitRevisorLogin() {
@@ -327,7 +263,7 @@
 
                 showToast(msg) {
                     this.toastMessage = msg;
-                    setTimeout(() => { this.toastMessage = ''; }, 4000);
+                    setTimeout(() => { this.toastMessage = ''; }, 3000);
                 },
 
                 copyAuthorLink(url) {
@@ -457,39 +393,25 @@
                 <button @click="categoryFilter = 'duvida'" class="flex-1 py-2.5 text-center border-b-2 text-[10px]" :class="categoryFilter === 'duvida' ? 'border-blue-600 text-blue-600 bg-blue-50' : 'border-transparent text-slate-400'">Dúvidas</button>
             </div>
 
-            <!-- Feed de Apontamentos Automáticos do Revisor -->
+            <!-- Feed de Apontamentos Automáticos em Tempo Real -->
             <div class="flex-1 overflow-y-auto p-4 space-y-3">
-                @forelse($revision->corrections as $cor)
-                    @php
-                        $badgeClass = match($cor->category) {
-                            'ortografia' => 'bg-rose-100 text-rose-800 border border-rose-200',
-                            'gramatica' => 'bg-amber-100 text-amber-800 border border-amber-200',
-                            'duvida' => 'bg-blue-100 text-blue-800 border border-blue-200',
-                            'padronizacao' => 'bg-purple-100 text-purple-800 border border-purple-200',
-                            default => 'bg-slate-100 text-slate-800 border border-slate-200',
-                        };
-                    @endphp
-                    <div x-show="categoryFilter === 'todas' || categoryFilter === '{{ $cor->category }}'" class="p-3.5 bg-amber-50/50 border border-amber-200 rounded-[5px] text-xs space-y-2">
+                <template x-for="cor in correctionsList" :key="cor.id">
+                    <div x-show="categoryFilter === 'todas' || categoryFilter === cor.category" class="p-3.5 bg-amber-50/60 border border-amber-200 rounded-[5px] text-xs space-y-2">
                         <div class="flex items-center justify-between">
-                            <span class="text-[9px] font-black uppercase px-2 py-0.5 rounded-[3px] {{ $badgeClass }}">
-                                {{ ucfirst($cor->category) }}
-                            </span>
+                            <span class="text-[9px] font-black uppercase px-2 py-0.5 rounded-[3px] bg-amber-100 text-amber-900 border border-amber-300" x-text="cor.category"></span>
                             <span class="text-[10px] text-slate-400 font-bold">Apontamento Marcado</span>
                         </div>
 
-                        @if($cor->original_text)
-                            <p class="font-mono text-amber-950 font-bold bg-amber-100 px-1.5 py-0.5 rounded">"{{ $cor->original_text }}"</p>
-                        @endif
+                        <p class="font-mono text-amber-950 font-bold bg-amber-100/90 px-1.5 py-0.5 rounded" x-text="cor.original_text || 'Edição direta'"></p>
+                        <p class="text-slate-600 italic text-[11px]" x-text="'💡 ' + (cor.justification || 'Edição no documento.')"></p>
+                    </div>
+                </template>
 
-                        @if($cor->justification)
-                            <p class="text-slate-600 italic text-[11px]">💡 {{ $cor->justification }}</p>
-                        @endif
-                    </div>
-                @empty
+                <template x-if="correctionsList.length === 0">
                     <div class="text-center text-slate-400 py-12 font-semibold text-xs border border-dashed border-slate-200 rounded-[5px]">
-                        Nenhum apontamento marcado. Selecione trechos no documento Word para destacar em amarelo!
+                        Nenhum apontamento marcado. Altere o texto no Word para destacar em amarelo e salvar automaticamente!
                     </div>
-                @endforelse
+                </template>
             </div>
 
         </aside>
@@ -503,18 +425,13 @@
                 <!-- Ferramentas para PDF -->
                 <template x-if="currentFile && currentFile.file_type === 'pdf'">
                     <div class="flex items-center gap-3 text-xs font-bold text-slate-600">
-                        <div class="flex items-center gap-1 bg-slate-100 p-1 rounded-[5px]">
-                            <button type="button" @click="viewerMode = 'iframe'" class="px-3 py-1 rounded-[3px]" :class="viewerMode === 'iframe' ? 'bg-white text-slate-900 shadow-xs' : 'text-slate-500'">
-                                🖥️ Leitor Nativo (Preserva Layout, Cores e Orientação)
-                            </button>
-                            <button type="button" @click="viewerMode = 'native'" class="px-3 py-1 rounded-[3px]" :class="viewerMode === 'native' ? 'bg-white text-slate-900 shadow-xs' : 'text-slate-500'">
-                                📄 PDF Canvas
-                            </button>
-                        </div>
+                        <span class="px-3 py-1 bg-slate-100 text-slate-800 rounded font-bold">
+                            🖥️ Leitor Nativo (Preserva Layout, Cores e Orientação do PDF)
+                        </span>
                     </div>
                 </template>
 
-                <!-- BARRA DE FERRAMENTAS WYSIWYG PARA DOCUMENTOS WORD (COM MARCADOR AMARELO AUTOMÁTICO) -->
+                <!-- BARRA DE FERRAMENTAS WYSIWYG PARA DOCUMENTOS WORD -->
                 <template x-if="currentFile && currentFile.file_type === 'word'">
                     <div class="flex items-center gap-2 text-xs font-bold w-full justify-between">
                         <div class="flex items-center gap-1 bg-slate-100 p-1 rounded-[5px]">
@@ -522,10 +439,10 @@
                             <button type="button" @click="execCmd('italic')" class="px-2.5 py-1 hover:bg-white rounded italic text-slate-800" title="Itálico">I</button>
                             <button type="button" @click="execCmd('underline')" class="px-2.5 py-1 hover:bg-white rounded underline text-slate-800" title="Sublinhado">U</button>
                             <span class="h-4 w-px bg-slate-300 mx-1"></span>
-                            <!-- BOTÃO MARCADOR EM AMARELO AUTO-CRIADOR DE APONTAMENTO -->
-                            <button type="button" @click="highlightAndCreateApontamento('ortografia')" class="px-3 py-1 bg-amber-300 hover:bg-amber-400 text-amber-950 rounded font-bold transition-all flex items-center gap-1 shadow-xs" title="Destacar em Amarelo Suave e criar apontamento automaticamente na Coluna 1">
-                                🪶 Marcar em Amarelo Suave
-                            </button>
+                            <button type="button" @click="execCmd('justifyLeft')" class="px-2 py-1 hover:bg-white rounded text-slate-700" title="Esquerda">⬅️</button>
+                            <button type="button" @click="execCmd('justifyCenter')" class="px-2 py-1 hover:bg-white rounded text-slate-700" title="Centro">⏹️</button>
+                            <button type="button" @click="execCmd('justifyRight')" class="px-2 py-1 hover:bg-white rounded text-slate-700" title="Direita">➡️</button>
+                            <button type="button" @click="execCmd('justifyFull')" class="px-2 py-1 hover:bg-white rounded text-slate-700" title="Justificado">↔️</button>
                         </div>
 
                         <div class="flex items-center gap-2">
@@ -541,36 +458,25 @@
             <!-- CANVAS PRINCIPAL (Document Visualizer / Folha A4 do Word) -->
             <div class="flex-1 overflow-auto flex items-start justify-center p-8 relative bg-slate-200/60">
                 
-                <!-- PDF EM IFRAME NATIVO DO NAVEGADOR (ABRE 100% DE PDFS PRESERVANDO LAYOUT, CORES E ORIENTAÇÃO HORIZONTAL/VERTICAL) -->
-                <template x-if="currentFile && currentFile.file_type === 'pdf' && viewerMode === 'iframe'">
+                <!-- PDF EM IFRAME NATIVO DO NAVEGADOR (ABRE 100% DE PDFS PRESERVANDO LAYOUT, CORES E ORIENTAÇÃO) -->
+                <template x-if="currentFile && currentFile.file_type === 'pdf'">
                     <div class="w-full max-w-6xl h-full bg-white paper-shadow rounded-[5px] border border-slate-200 p-2 flex flex-col my-auto">
                         <iframe :src="getFileStreamUrl(currentFile.id)" class="w-full h-full rounded border-0" frameborder="0"></iframe>
                     </div>
                 </template>
 
-                <!-- CANVAS PDF.JS SECUNDÁRIO -->
-                <template x-if="currentFile && currentFile.file_type === 'pdf' && viewerMode === 'native'">
-                    <div class="bg-white paper-shadow rounded border border-slate-200 p-4 relative max-w-4xl max-h-full overflow-auto flex flex-col items-center my-auto">
-                        <div x-show="renderingPdf" class="absolute inset-0 bg-white/80 flex items-center justify-center font-bold text-xs text-slate-500 z-10">
-                            Renderizando PDF...
-                        </div>
-                        <canvas id="pdf-canvas" class="max-w-full block mx-auto shadow-sm border border-slate-200"></canvas>
-                    </div>
-                </template>
-
-                <!-- FORMATO DE PÁGINA CORRIDA DO WORD COM RISCO SUAVE DE DEMARCAÇÃO -->
+                <!-- FORMATO DE PÁGINA CORRIDA DO WORD COM DIGITAÇÃO NATIVA SEM PULAR O CURSOR -->
                 <template x-if="currentFile && currentFile.file_type === 'word'">
                     <div class="w-full flex flex-col items-center">
                         
                         <div class="word-page-a4 paper-shadow border border-slate-300 text-slate-900 rounded-[2px] transition-all select-text relative"
                              id="word-paper-container">
 
-                            <!-- Conteúdo Editável do Word -->
-                            <div id="word-paper-editor"
+                            <!-- Conteúdo Editável do Word sem Re-evaluation do InnerHTML no Alpine -->
+                            <div x-ref="wordEditor"
                                  contenteditable="true"
                                  class="word-paper-content focus:outline-none min-h-[250mm]"
-                                 @input="revisedContent = $el.innerHTML"
-                                 x-html="revisedContent">
+                                 @input="handleEditorInput($event)">
                             </div>
 
                         </div>
