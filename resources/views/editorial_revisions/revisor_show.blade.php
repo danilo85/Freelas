@@ -306,10 +306,6 @@
                                         editor.innerHTML = text;
                                     }
 
-                                    if (this.pdfEditMode) {
-                                        this.renderPdfPageCanvasesToEditMode();
-                                    }
-
                                     const savedScroll = localStorage.getItem('revisor_scroll_' + shareToken + '_' + this.selectedFileId);
                                     const container = this.$refs.documentViewport;
                                     if (savedScroll && container) {
@@ -321,53 +317,6 @@
                                 this.loadingWord = false;
                             });
                     }
-                },
-
-                renderPdfPageCanvasesToEditMode() {
-                    if (!this.currentFile || this.currentFile.file_type !== 'pdf' || !this.pdfEditMode) return;
-
-                    const url = this.getFileStreamUrl(this.currentFile.id);
-                    fetch(url)
-                        .then(res => {
-                            if (!res.ok) throw new Error('Falha no stream');
-                            return res.arrayBuffer();
-                        })
-                        .then(buffer => pdfjsLib.getDocument({ data: buffer }).promise)
-                        .then(pdf => {
-                            for (let pageNum = 1; pageNum <= pdf.numPages; pageNum++) {
-                                pdf.getPage(pageNum).then(page => {
-                                    const viewport = page.getViewport({ scale: 1.5 });
-                                    const canvas = document.createElement('canvas');
-                                    canvas.width = viewport.width;
-                                    canvas.height = viewport.height;
-                                    const ctx = canvas.getContext('2d');
-
-                                    page.render({ canvasContext: ctx, viewport: viewport }).promise.then(() => {
-                                        const imgUrl = canvas.toDataURL('image/png');
-                                        const editor = this.$refs.wordEditor;
-                                        if (!editor) return;
-
-                                        const pageCard = editor.querySelector(`.pdf-page-card[data-page="${page.pageNumber}"]`);
-                                        if (pageCard && !pageCard.querySelector('.pdf-vector-preview-img')) {
-                                            const imgContainer = document.createElement('div');
-                                            imgContainer.className = 'my-4 text-center select-none pdf-vector-preview-container bg-slate-50 p-3 rounded-lg border border-slate-200';
-                                            imgContainer.innerHTML = `
-                                                <div class="flex items-center justify-between text-[11px] font-bold text-slate-500 mb-2 border-b border-slate-200 pb-1">
-                                                    <span>🎨 Layout Vetorial Fiel do PDF Original</span>
-                                                    <span class="text-blue-600">Preservado 100% em Imagem</span>
-                                                </div>
-                                                <img src="${imgUrl}" class="w-full rounded shadow-sm border border-slate-200 mx-auto block pdf-vector-preview-img" style="max-height: 580px; object-fit: contain;" alt="Design Vetorial Original" />
-                                            `;
-                                            const pageBody = pageCard.querySelector('.pdf-page-body');
-                                            if (pageBody) {
-                                                pageBody.insertBefore(imgContainer, pageBody.firstChild);
-                                            }
-                                        }
-                                    });
-                                });
-                            }
-                        })
-                        .catch(() => {});
                 },
 
                 handleViewportScroll(event) {
