@@ -111,14 +111,15 @@
             100% { background-color: #fef08a; }
         }
 
-        /* MARCAÇÃO DE ERRO DO LANGUAGETOOL EM ROXO */
-        .purple-highlight-target {
-            background-color: #f3e8ff !important;
-            color: #6b21a8 !important;
-            border-left: 4px solid #a855f7 !important;
-            padding: 4px 8px;
+        /* MARCAÇÃO DE PALAVRA DO LANGUAGETOOL EM ROXO (APENAS NA PALAVRA) */
+        mark.purple-word-mark {
+            background-color: #e9d5ff !important;
+            color: #581c87 !important;
+            padding: 2px 6px;
             border-radius: 4px;
-            transition: all 0.3s ease;
+            border: 1px solid #c084fc !important;
+            box-shadow: 0 1px 3px rgba(168, 85, 247, 0.2);
+            display: inline-block;
         }
 
         /* CAPA DE SELEÇÃO E DESTAQUE DE TEXTO SOBRE O PDF ORIGINAL */
@@ -679,10 +680,22 @@
                         return;
                     }
 
-                    const allElements = editor.querySelectorAll('p, div, li, mark, h1, h2, h3, span');
+                    // Limpa destaques roxos anteriores em palavras
+                    const oldMarks = editor.querySelectorAll('.purple-word-mark');
+                    oldMarks.forEach(m => {
+                        const parentNode = m.parentNode;
+                        if (parentNode) {
+                            m.replaceWith(document.createTextNode(m.textContent));
+                            parentNode.normalize();
+                        }
+                    });
+
+                    // Procura o parágrafo ou item de lista mais específico contendo a palavra
+                    const allLeafElements = editor.querySelectorAll('p, li, h3, h4, span');
                     let foundElement = null;
 
-                    for (let el of allElements) {
+                    for (let el of allLeafElements) {
+                        if (el.classList.contains('pdf-page-card') || el.id === 'word-paper-container') continue;
                         if (el.textContent.toLowerCase().includes(matchText.toLowerCase())) {
                             foundElement = el;
                             break;
@@ -691,9 +704,13 @@
 
                     if (foundElement) {
                         foundElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
-                        foundElement.classList.add('purple-highlight-target');
-                        foundElement.setAttribute('style', 'background-color: #f3e8ff !important; color: #6b21a8 !important; border-left: 4px solid #a855f7 !important; padding: 4px 8px; border-radius: 4px; transition: all 0.3s ease;');
-                        this.showToast('Rolou até "' + matchText + '" e destacou em roxo!');
+
+                        // Destaca APENAS a palavra exata em roxo
+                        const escapedText = matchText.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+                        const regex = new RegExp('(' + escapedText + ')', 'gi');
+                        foundElement.innerHTML = foundElement.innerHTML.replace(regex, '<mark class="purple-word-mark bg-purple-200 text-purple-950 font-bold px-1.5 py-0.5 rounded border border-purple-400 inline-block">$1</mark>');
+
+                        this.showToast('Palavra "' + matchText + '" destacada em roxo!');
                     } else {
                         this.showToast('Trecho "' + matchText + '" não localizado no layout ativo.');
                     }
