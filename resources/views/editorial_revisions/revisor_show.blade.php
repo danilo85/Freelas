@@ -8,6 +8,90 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Outfit:wght@600;700;800;900&display=swap" rel="stylesheet">
+    <style>
+        [x-cloak] { display: none !important; }
+    </style>
+    <script>
+        function revisorWorkspace() {
+            const filesData = @json($revision->files);
+            const textsData = @json($extractedTexts);
+
+            return {
+                openCorrectionModal: false,
+                categoryFilter: 'todas',
+                toastMessage: '',
+                selectedFileId: filesData.length > 0 ? filesData[0].id : null,
+                languageToolMatches: [],
+                
+                modalCategory: 'ortografia',
+                modalOriginalText: '',
+                modalSuggestedText: '',
+                modalJustification: '',
+
+                get currentFile() {
+                    return filesData.find(f => f.id == this.selectedFileId) || null;
+                },
+
+                get extractedText() {
+                    return textsData[this.selectedFileId] || 'Conteúdo disponível para download em formato original.';
+                },
+
+                captureSelectedText() {
+                    const sel = window.getSelection().toString().trim();
+                    if (sel) {
+                        this.modalOriginalText = sel;
+                    }
+                },
+
+                copyAuthorLink(url) {
+                    navigator.clipboard.writeText(url);
+                    this.toastMessage = 'Link do Autor copiado com sucesso!';
+                    setTimeout(() => { this.toastMessage = ''; }, 4000);
+                },
+
+                checkLanguageTool() {
+                    const text = this.extractedText;
+                    if (!text || text.length < 5) {
+                        this.toastMessage = 'Não há texto suficiente para análise ortográfica.';
+                        setTimeout(() => { this.toastMessage = ''; }, 4000);
+                        return;
+                    }
+
+                    this.toastMessage = 'Analisando texto com LanguageTool...';
+
+                    fetch('{{ route("public.editorial.revisor.languagetool", $revision->share_token) }}', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'X-CSRF-TOKEN': '{{ csrf_token() }}'
+                        },
+                        body: JSON.stringify({ text: text })
+                    })
+                    .then(res => res.json())
+                    .then(data => {
+                        this.languageToolMatches = data.matches || [];
+                        this.toastMessage = 'Análise concluída! Encontradas ' + this.languageToolMatches.length + ' sugestões.';
+                        setTimeout(() => { this.toastMessage = ''; }, 4000);
+                    })
+                    .catch(err => {
+                        this.toastMessage = 'Falha ao conectar ao serviço de ortografia.';
+                        setTimeout(() => { this.toastMessage = ''; }, 4000);
+                    });
+                },
+
+                applyLanguageToolMatch(match) {
+                    const orig = this.extractedText.substring(match.offset, match.offset + match.length);
+                    const replacement = (match.replacements && match.replacements.length > 0) ? match.replacements[0].value : '';
+                    
+                    this.modalCategory = 'ortografia';
+                    this.modalOriginalText = orig;
+                    this.modalSuggestedText = replacement;
+                    this.modalJustification = 'Sugestão automática do LanguageTool: ' + match.message;
+                    this.openCorrectionModal = true;
+                }
+            }
+        }
+    </script>
 </head>
 <body class="font-sans antialiased bg-slate-50 text-slate-800 min-h-full flex flex-col justify-between" x-data="revisorWorkspace()">
 
@@ -114,10 +198,10 @@
                 </div>
 
                 <!-- Painel de Sugestões Automáticas do LanguageTool -->
-                <div x-show="languageToolMatches.length > 0" class="bg-purple-50/60 border border-purple-200 rounded-[5px] p-5 space-y-3">
+                <div x-show="languageToolMatches.length > 0" x-cloak class="bg-purple-50/60 border border-purple-200 rounded-[5px] p-5 space-y-3">
                     <div class="flex items-center justify-between">
                         <h4 class="font-outfit font-black text-xs uppercase tracking-wider text-purple-800 flex items-center gap-2">
-                            <span>🔍</span> Sugestões da Verificação Ortográfica ({{ count([]) }} <span x-text="languageToolMatches.length"></span>)
+                            <span>🔍</span> Sugestões da Verificação Ortográfica (<span x-text="languageToolMatches.length"></span>)
                         </h4>
                         <button type="button" @click="languageToolMatches = []" class="text-purple-400 hover:text-purple-700 font-bold text-xs">Fechar</button>
                     </div>
@@ -127,7 +211,7 @@
                             <div class="p-3 bg-white rounded-[5px] border border-purple-100 text-xs space-y-1">
                                 <p class="font-bold text-purple-950" x-text="match.message"></p>
                                 <p class="text-[11px] text-slate-500">
-                                    Sugestões: <strong class="text-emerald-700" x-text="match.replacements.slice(0, 3).map(r => r.value).join(', ')"></strong>
+                                    Sugestões: <strong class="text-emerald-700" x-text="match.replacements ? match.replacements.slice(0, 3).map(r => r.value).join(', ') : ''"></strong>
                                 </p>
                                 <button type="button" @click="applyLanguageToolMatch(match)" class="mt-1 px-2.5 py-1 bg-purple-600 text-white font-bold text-[10px] rounded-[5px] uppercase tracking-wider">
                                     + Criar Apontamento desta Sugestão
@@ -208,7 +292,10 @@
     <!-- Modal Criar Apontamento no Portal do Revisor -->
     <div x-show="openCorrectionModal" x-cloak class="fixed inset-0 z-[99999] flex items-center justify-center p-4 bg-slate-950/60 backdrop-blur-xs select-none">
         <div @click.away="openCorrectionModal = false" class="bg-white border border-slate-200 text-slate-800 rounded-xl p-6 shadow-2xl max-w-lg w-full space-y-4">
-            <h3 class="font-outfit font-black text-slate-900 text-md uppercase">➕ Novo Apontamento de Revisão</h3>
+            <div class="flex items-center justify-between border-b border-slate-100 pb-3">
+                <h3 class="font-outfit font-black text-slate-900 text-md uppercase">➕ Novo Apontamento de Revisão</h3>
+                <button type="button" @click="openCorrectionModal = false" class="text-slate-400 hover:text-slate-600 font-bold">✕</button>
+            </div>
 
             <form action="{{ route('public.editorial.revisor.corrections.store', $revision->share_token) }}" method="POST" class="space-y-3 text-xs">
                 @csrf
@@ -259,84 +346,4 @@
     </div>
 
 </body>
-
-<script>
-    function revisorWorkspace() {
-        const filesData = @json($revision->files);
-        const textsData = @json($extractedTexts);
-
-        return {
-            openCorrectionModal: false,
-            categoryFilter: 'todas',
-            toastMessage: '',
-            selectedFileId: filesData.length > 0 ? filesData[0].id : null,
-            languageToolMatches: [],
-            
-            modalCategory: 'ortografia',
-            modalOriginalText: '',
-            modalSuggestedText: '',
-            modalJustification: '',
-
-            get currentFile() {
-                return filesData.find(f => f.id == this.selectedFileId) || null;
-            },
-
-            get extractedText() {
-                return textsData[this.selectedFileId] || 'Carregando conteúdo...';
-            },
-
-            captureSelectedText() {
-                const sel = window.getSelection().toString().trim();
-                if (sel) {
-                    this.modalOriginalText = sel;
-                }
-            },
-
-            copyAuthorLink(url) {
-                navigator.clipboard.writeText(url);
-                this.toastMessage = 'Link do Autor copiado com sucesso!';
-                setTimeout(() => { this.toastMessage = ''; }, 4000);
-            },
-
-            checkLanguageTool() {
-                const text = this.extractedText;
-                if (!text || text.length < 5) {
-                    this.toastMessage = 'Não há texto suficiente para análise ortográfica.';
-                    return;
-                }
-
-                this.toastMessage = 'Analisando texto com LanguageTool...';
-
-                fetch('{{ route("public.editorial.revisor.languagetool", $revision->share_token) }}', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'X-CSRF-TOKEN': '{{ csrf_token() }}'
-                    },
-                    body: JSON.stringify({ text: text })
-                })
-                .then(res => res.json())
-                .then(data => {
-                    this.languageToolMatches = data.matches || [];
-                    this.toastMessage = 'Análise concluída! Encontradas ' + this.languageToolMatches.length + ' sugestões.';
-                    setTimeout(() => { this.toastMessage = ''; }, 4000);
-                })
-                .catch(err => {
-                    this.toastMessage = 'Falha ao conectar ao serviço de ortografia.';
-                });
-            },
-
-            applyLanguageToolMatch(match) {
-                const orig = this.extractedText.substring(match.offset, match.offset + match.length);
-                const replacement = (match.replacements && match.replacements.length > 0) ? match.replacements[0].value : '';
-                
-                this.modalCategory = 'ortografia';
-                this.modalOriginalText = orig;
-                this.modalSuggestedText = replacement;
-                this.modalJustification = 'Sugestão automática do LanguageTool: ' + match.message;
-                this.openCorrectionModal = true;
-            }
-        }
-    }
-</script>
 </html>
