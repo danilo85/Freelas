@@ -369,16 +369,56 @@
 
                 renderAllPdfPages() {
                     if (!window._activePdfDoc) return;
-                                            textContent: textContent,
-                                            container: textLayer,
-                                            viewport: viewport,
-                                            textDivs: []
-                                        });
-                                    }
-                                });
-                            }
+                    const pdf = window._activePdfDoc;
+                    this.renderingPdf = true;
+
+                    const container = document.getElementById('pdf-continuous-container');
+                    if (!container) return;
+                    container.innerHTML = '';
+
+                    let renderPromises = [];
+
+                    for (let pageNum = 1; pageNum <= pdf.numPages; pageNum++) {
+                        const pageWrapper = document.createElement('div');
+                        pageWrapper.id = 'pdf-page-wrapper-' + pageNum;
+                        pageWrapper.className = 'my-6 flex flex-col items-center select-text relative shadow-lg bg-white border border-slate-300 rounded-[2px] p-4 w-full max-w-4xl mx-auto';
+                        pageWrapper.setAttribute('data-page', pageNum);
+
+                        const canvas = document.createElement('canvas');
+                        canvas.id = 'pdf-canvas-page-' + pageNum;
+                        canvas.className = 'max-w-full block mx-auto shadow-xs border border-slate-200';
+
+                        const pageBadge = document.createElement('div');
+                        pageBadge.className = 'w-full flex items-center justify-between border-b border-slate-200 pb-2 mb-4 text-[11px] font-bold text-slate-600 select-none';
+                        pageBadge.innerHTML = `<span>📄 PÁGINA ${pageNum} DE ${pdf.numPages}</span><span class="text-[10px] text-slate-400 uppercase tracking-wider">PDF.js (Páginas Corridas)</span>`;
+
+                        pageWrapper.appendChild(pageBadge);
+                        pageWrapper.appendChild(canvas);
+                        container.appendChild(pageWrapper);
+
+                        const p = pdf.getPage(pageNum).then(page => {
+                            const viewport = page.getViewport({ scale: this.pdfScale });
+                            canvas.height = viewport.height;
+                            canvas.width = viewport.width;
+                            const ctx = canvas.getContext('2d');
+                            return page.render({ canvasContext: ctx, viewport: viewport }).promise;
                         });
+                        renderPromises.push(p);
+                    }
+
+                    Promise.all(renderPromises).then(() => {
+                        this.renderingPdf = false;
                     });
+                },
+
+                scrollToPdfPage(pageNum) {
+                    if (pageNum < 1 || pageNum > this.totalPages) return;
+                    this.currentPage = pageNum;
+
+                    const target = document.getElementById('pdf-page-wrapper-' + pageNum);
+                    if (target) {
+                        target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                    }
                 },
 
                 prevPage() {
@@ -951,7 +991,7 @@
 
             <button type="button" @click="copyAuthorLink('{{ route('public.editorial.show', $revision->share_token) }}')" class="w-9 h-9 bg-slate-900 hover:bg-slate-800 text-white font-bold rounded-[5px] transition-all flex items-center justify-center shadow-sm" title="Copiar Link do Autor">
                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1"/>
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.101 1.101"/>
                 </svg>
             </button>
         </div>
