@@ -277,7 +277,9 @@ Route::prefix('revisao-editorial/{token}')->name('public.editorial.')->group(fun
     Route::post('/revisor/corrections', [\App\Http\Controllers\EditorialPublicController::class, 'storeCorrectionPublic'])->name('revisor.corrections.store');
     Route::post('/revisor/glossary', [\App\Http\Controllers\EditorialPublicController::class, 'storeGlossaryPublic'])->name('revisor.glossary.store');
     Route::post('/revisor/version', [\App\Http\Controllers\EditorialPublicController::class, 'storeFileVersionPublic'])->name('revisor.version.store');
-    Route::post('/revisor/languagetool', [\App\Http\Controllers\EditorialPublicController::class, 'checkLanguageTool'])->name('revisor.languagetool');
+    // Stream e Download Seguro de Arquivos (sem erro 403 Forbidden)
+    Route::get('/file/{fileId}/stream', [\App\Http\Controllers\EditorialPublicController::class, 'streamFile'])->name('file.stream');
+    Route::get('/file/{fileId}/download', [\App\Http\Controllers\EditorialPublicController::class, 'downloadFile'])->name('file.download');
 });
 
 // Rotas públicas de orçamentos (propostas) para aprovação e rejeição pelo cliente final

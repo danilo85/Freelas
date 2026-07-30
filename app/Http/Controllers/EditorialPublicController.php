@@ -38,6 +38,50 @@ class EditorialPublicController extends Controller
     }
 
     /**
+     * Stream de arquivo seguro inline para PDF.js, leitores e imagens sem erros 403.
+     */
+    public function streamFile(int $fileId)
+    {
+        $file = EditorialRevisionFile::findOrFail($fileId);
+        $revision = $file->editorialRevision;
+
+        if (!Storage::disk($revision->storage_disk)->exists($file->file_path)) {
+            abort(404, 'Arquivo não encontrado no servidor.');
+        }
+
+        $mime = $file->mime_type ?: 'application/pdf';
+
+        return response()->stream(function () use ($file, $revision) {
+            $stream = Storage::disk($revision->storage_disk)->readStream($file->file_path);
+            if ($stream) {
+                fpassthru($stream);
+                if (is_resource($stream)) {
+                    fclose($stream);
+                }
+            }
+        }, 200, [
+            'Content-Type' => $mime,
+            'Content-Disposition' => 'inline; filename="' . $file->filename . '"',
+            'Cache-Control' => 'no-cache, private',
+        ]);
+    }
+
+    /**
+     * Download direto do arquivo bruto.
+     */
+    public function downloadFile(int $fileId)
+    {
+        $file = EditorialRevisionFile::findOrFail($fileId);
+        $revision = $file->editorialRevision;
+
+        if (!Storage::disk($revision->storage_disk)->exists($file->file_path)) {
+            abort(404, 'Arquivo não encontrado para download.');
+        }
+
+        return Storage::disk($revision->storage_disk)->download($file->file_path, $file->filename);
+    }
+
+    /**
      * Login rápido do Revisor no portal público com e-mail e senha fornecidos.
      */
     public function revisorLogin(Request $request, string $token)

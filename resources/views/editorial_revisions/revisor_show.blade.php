@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="csrf-token" content="{{ csrf_token() }}">
-    <title>Workspace de Revisão Editorial | {{ $revision->title }}</title>
+    <title>Workspace do Revisor - {{ $revision->title }}</title>
     <link rel="icon" type="image/png" href="{{ asset('storage/freela/freela-03.png') }}">
 
     <!-- Google Fonts -->
@@ -54,6 +54,7 @@
         function revisorWorkspace() {
             const filesData = @json($revision->files);
             const textsData = @json($extractedTexts);
+            const streamBaseUrl = '{{ url("/revisao-editorial/" . $revision->share_token . "/file") }}';
 
             return {
                 openCorrectionModal: false,
@@ -103,6 +104,14 @@
                     return textsData[this.selectedFileId] || 'Conteúdo disponível para leitura e download no formato original.';
                 },
 
+                getFileStreamUrl(id) {
+                    return streamBaseUrl + '/' + id + '/stream';
+                },
+
+                getFileDownloadUrl(id) {
+                    return streamBaseUrl + '/' + id + '/download';
+                },
+
                 handleFileChange(id) {
                     const file = this.currentFile;
                     if (file && file.file_type === 'pdf') {
@@ -112,7 +121,7 @@
 
                 loadPdfDocument() {
                     if (!this.currentFile) return;
-                    const url = '{{ asset("storage") }}/' + this.currentFile.file_path;
+                    const url = this.getFileStreamUrl(this.currentFile.id);
                     this.renderingPdf = true;
 
                     pdfjsLib.getDocument(url).promise.then(pdf => {
@@ -374,9 +383,9 @@
                             </select>
                         </div>
 
-                        <!-- Botão de Download do Arquivo Original -->
+                        <!-- Botão de Download do Arquivo Original sem Erro 403 -->
                         <template x-if="currentFile">
-                            <a :href="'{{ asset('storage') }}/' + currentFile.file_path" target="_blank" class="px-3.5 py-2.5 bg-slate-900 hover:bg-slate-800 text-white font-bold text-xs rounded-[5px] transition-colors flex items-center gap-1.5 shrink-0 uppercase tracking-wider shadow-xs">
+                            <a :href="getFileDownloadUrl(currentFile.id)" target="_blank" class="px-3.5 py-2.5 bg-slate-900 hover:bg-slate-800 text-white font-bold text-xs rounded-[5px] transition-colors flex items-center gap-1.5 shrink-0 uppercase tracking-wider shadow-xs">
                                 <span>⬇️ Baixar Original</span>
                             </a>
                         </template>
@@ -406,10 +415,10 @@
                         </div>
                         <canvas id="pdf-canvas" class="max-w-full shadow-md rounded border border-slate-200"></canvas>
                         
-                        <!-- Fallback iframe caso queira ver o PDF completo -->
+                        <!-- Fallback Stream URL sem Erro 403 -->
                         <div class="w-full pt-4 border-t border-slate-100 text-center">
-                            <a :href="'{{ asset('storage') }}/' + currentFile.file_path" target="_blank" class="text-xs text-primary-600 font-bold hover:underline">
-                                🔗 Abrir PDF completo em nova aba do navegador
+                            <a :href="getFileStreamUrl(currentFile.id)" target="_blank" class="text-xs text-primary-600 font-bold hover:underline">
+                                🔗 Abrir PDF completo via Stream em nova aba
                             </a>
                         </div>
                     </div>
@@ -433,7 +442,7 @@
                 <!-- Visualizador de Imagens para Scans e Fotografias -->
                 <template x-if="currentFile && currentFile.file_type === 'image'">
                     <div class="bg-white border border-slate-200 rounded-[5px] p-6 shadow-sm flex items-center justify-center min-h-[500px]">
-                        <img :src="'{{ asset('storage') }}/' + currentFile.file_path" class="max-h-[600px] object-contain rounded shadow-sm">
+                        <img :src="getFileStreamUrl(currentFile.id)" class="max-h-[600px] object-contain rounded shadow-sm">
                     </div>
                 </template>
 
