@@ -3,11 +3,45 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Portal de Revisão Editorial - {{ $revision->title }}</title>
-    @vite(['resources/css/app.css', 'resources/js/app.js'])
+    <title>Portal do Autor - {{ $revision->title }}</title>
+    <link rel="icon" type="image/png" href="{{ asset('storage/freela/freela-03.png') }}">
+
+    <!-- Google Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Outfit:wght@600;700;800;900&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800;900&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                        outfit: ['Outfit', 'sans-serif'],
+                    },
+                    colors: {
+                        primary: {
+                            50: '#eff6ff',
+                            100: '#dbeafe',
+                            500: '#3b82f6',
+                            600: '#2563eb',
+                            700: '#1d4ed8',
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+
+    <!-- Alpine.js CDN -->
+    <script defer src="https://cdn.jsdelivr.net/npm/@alpinejs/mask@3.x.x/dist/cdn.min.js"></script>
+    <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+
+    <style>
+        [x-cloak] { display: none !important; }
+    </style>
 </head>
 <body class="font-sans antialiased bg-slate-50 text-slate-800 min-h-full flex flex-col justify-between">
 
@@ -21,7 +55,7 @@
                     <p class="text-[11px] text-slate-400 font-medium">Área de acompanhamento e resposta a dúvidas do autor</p>
                 </div>
             </div>
-            <span class="px-3 py-1 bg-primary-50 text-primary-700 text-xs font-bold rounded-full border border-primary-100">
+            <span class="px-3 py-1 bg-primary-50 text-primary-700 text-xs font-bold rounded-full border border-primary-100 uppercase tracking-wider">
                 Acesso do Autor(a)
             </span>
         </div>
@@ -40,7 +74,7 @@
         <div class="bg-white border border-slate-200 rounded-[5px] p-6 shadow-sm space-y-3">
             <h2 class="text-xl font-black font-outfit text-slate-900">{{ $revision->title }}</h2>
             @if($revision->description)
-                <p class="text-xs text-slate-600 leading-relaxed font-medium bg-slate-50 p-3 rounded-[5px] border border-slate-100">
+                <p class="text-xs text-slate-600 leading-relaxed font-medium bg-slate-50 p-3.5 rounded-[5px] border border-slate-100">
                     <strong>Instruções do Projeto:</strong> {{ $revision->description }}
                 </p>
             @endif
@@ -71,7 +105,7 @@
                     </div>
 
                     @if($duvida->original_text)
-                        <div class="bg-slate-50 p-3 rounded-[5px] border border-slate-100 text-xs">
+                        <div class="bg-slate-50 p-3.5 rounded-[5px] border border-slate-100 text-xs">
                             <span class="text-[9px] font-bold text-slate-400 uppercase block mb-1">Trecho Citado</span>
                             <p class="font-mono text-slate-800">"{{ $duvida->original_text }}"</p>
                         </div>
@@ -93,7 +127,7 @@
                                     <span>👤 {{ $com->author_name ?: 'Autor(a)' }}</span>
                                     <span>{{ $com->created_at->format('d/m/Y H:i') }}</span>
                                 </div>
-                                <p class="font-medium">{{ $com->message }}</p>
+                                <p class="font-medium leading-relaxed">{{ $com->message }}</p>
                             </div>
                         @endforeach
 
@@ -101,11 +135,11 @@
                         <form action="{{ route('public.editorial.reply', ['token' => $revision->share_token, 'correctionId' => $duvida->id]) }}" method="POST" class="space-y-2 pt-2">
                             @csrf
                             <div class="grid grid-cols-1 sm:grid-cols-3 gap-2">
-                                <input type="text" name="author_name" placeholder="Seu Nome (ex: Maria)" class="px-3 py-2 border rounded-[5px] text-xs">
-                                <input type="text" name="message" required placeholder="Digite sua resposta ou esclarecimento..." class="sm:col-span-2 px-3 py-2 border rounded-[5px] text-xs">
+                                <input type="text" name="author_name" placeholder="Seu Nome (ex: Maria)" class="px-3 py-2 border rounded-[5px] text-xs font-medium">
+                                <input type="text" name="message" required placeholder="Digite sua resposta ou esclarecimento..." class="sm:col-span-2 px-3 py-2 border rounded-[5px] text-xs font-medium">
                             </div>
                             <div class="flex justify-end">
-                                <button type="submit" class="px-4 py-2 bg-primary-600 text-white font-bold text-xs rounded-[5px] hover:bg-primary-700 transition-colors">
+                                <button type="submit" class="px-4 py-2 bg-primary-600 text-white font-bold text-xs rounded-[5px] hover:bg-primary-700 transition-colors uppercase tracking-wider">
                                     Responder ao Revisor
                                 </button>
                             </div>

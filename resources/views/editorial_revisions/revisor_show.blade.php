@@ -4,13 +4,43 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="csrf-token" content="{{ csrf_token() }}">
-    <title>Workspace do Revisor - {{ $revision->title }}</title>
-    @vite(['resources/css/app.css', 'resources/js/app.js'])
+    <title>Workspace de Revisão Editorial | {{ $revision->title }}</title>
+    <link rel="icon" type="image/png" href="{{ asset('storage/freela/freela-03.png') }}">
+
+    <!-- Google Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Outfit:wght@600;700;800;900&display=swap" rel="stylesheet">
-    
-    <!-- PDF.js CDN para Renderização Interativa de PDFs -->
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800;900&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                        outfit: ['Outfit', 'sans-serif'],
+                    },
+                    colors: {
+                        primary: {
+                            50: '#eff6ff',
+                            100: '#dbeafe',
+                            500: '#3b82f6',
+                            600: '#2563eb',
+                            700: '#1d4ed8',
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+
+    <!-- Alpine.js CDN -->
+    <script defer src="https://cdn.jsdelivr.net/npm/@alpinejs/mask@3.x.x/dist/cdn.min.js"></script>
+    <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+
+    <!-- PDF.js CDN para Renderização de PDFs -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.min.js"></script>
     <script>
         pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.worker.min.js';
@@ -33,7 +63,7 @@
                 selectedFileId: filesData.length > 0 ? filesData[0].id : null,
                 languageToolMatches: [],
                 
-                // Login State
+                // Auth State
                 isAuth: @json($isAuthenticated),
                 loginEmail: '',
                 loginPassword: '',
@@ -70,7 +100,7 @@
                 },
 
                 get extractedText() {
-                    return textsData[this.selectedFileId] || 'Conteúdo disponível para download em formato original.';
+                    return textsData[this.selectedFileId] || 'Conteúdo disponível para leitura e download no formato original.';
                 },
 
                 handleFileChange(id) {
@@ -92,7 +122,6 @@
                         this.renderPdfPage(1);
                     }).catch(err => {
                         this.renderingPdf = false;
-                        this.showToast('Falha ao carregar o PDF para visualização interativa.');
                     });
                 },
 
@@ -162,7 +191,7 @@
                         }
                     })
                     .catch(() => {
-                        this.loginError = 'Ocorreu um erro no servidor ao validar o acesso.';
+                        this.loginError = 'Erro no servidor ao validar o acesso.';
                     });
                 },
 
@@ -170,6 +199,7 @@
                     const sel = window.getSelection().toString().trim();
                     if (sel) {
                         this.modalOriginalText = sel;
+                        this.showToast('Trecho capturado do texto! Clique em + Novo Apontamento para usar.');
                     }
                 },
 
@@ -180,7 +210,7 @@
 
                 copyAuthorLink(url) {
                     navigator.clipboard.writeText(url);
-                    this.showToast('Link do Autor copiado com sucesso!');
+                    this.showToast('Link do Autor copiado com sucesso para a área de transferência!');
                 },
 
                 checkLanguageTool() {
@@ -267,7 +297,7 @@
         <button type="button" @click="toastMessage = ''" class="text-slate-400 hover:text-white ml-2">✕</button>
     </div>
 
-    <!-- Botão Flutuante de Adicionar Apontamento e LanguageTool -->
+    <!-- Botões Flutuantes (Canto Inferior Direito) -->
     <div class="fixed bottom-6 right-6 z-40 flex flex-col items-end gap-3" x-show="isAuth">
         <button type="button" 
                 @click="checkLanguageTool()" 
@@ -335,9 +365,9 @@
                 <!-- Barra do Leitor: Seletor de Arquivos e Controles de Zoom/Página -->
                 <div class="bg-white border border-slate-200 rounded-[5px] p-4 shadow-sm space-y-3">
                     <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-                        <div class="space-y-1">
-                            <span class="text-[9px] font-bold text-slate-400 uppercase tracking-wider block">Arquivo em Análise</span>
-                            <select x-model="selectedFileId" class="px-3 py-1.5 border border-slate-200 rounded-[5px] text-xs font-bold bg-slate-50 text-slate-800 focus:outline-none">
+                        <div class="space-y-1 flex-1">
+                            <span class="text-[9px] font-bold text-slate-400 uppercase tracking-wider block">Arquivo Selecionado</span>
+                            <select x-model="selectedFileId" class="w-full px-3 py-2 border border-slate-200 rounded-[5px] text-xs font-bold bg-slate-50 text-slate-800 focus:outline-none">
                                 @foreach($revision->files as $file)
                                     <option value="{{ $file->id }}">{{ $file->filename }} ({{ strtoupper($file->file_type) }} - v{{ $file->version }})</option>
                                 @endforeach
@@ -346,7 +376,7 @@
 
                         <!-- Botão de Download do Arquivo Original -->
                         <template x-if="currentFile">
-                            <a :href="'{{ asset('storage') }}/' + currentFile.file_path" target="_blank" class="px-3.5 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs rounded-[5px] transition-colors flex items-center gap-1.5 border border-slate-200 shrink-0">
+                            <a :href="'{{ asset('storage') }}/' + currentFile.file_path" target="_blank" class="px-3.5 py-2.5 bg-slate-900 hover:bg-slate-800 text-white font-bold text-xs rounded-[5px] transition-colors flex items-center gap-1.5 shrink-0 uppercase tracking-wider shadow-xs">
                                 <span>⬇️ Baixar Original</span>
                             </a>
                         </template>
@@ -375,6 +405,13 @@
                             Renderizando página do PDF...
                         </div>
                         <canvas id="pdf-canvas" class="max-w-full shadow-md rounded border border-slate-200"></canvas>
+                        
+                        <!-- Fallback iframe caso queira ver o PDF completo -->
+                        <div class="w-full pt-4 border-t border-slate-100 text-center">
+                            <a :href="'{{ asset('storage') }}/' + currentFile.file_path" target="_blank" class="text-xs text-primary-600 font-bold hover:underline">
+                                🔗 Abrir PDF completo em nova aba do navegador
+                            </a>
+                        </div>
                     </div>
                 </template>
 
