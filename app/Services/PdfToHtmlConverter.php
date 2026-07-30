@@ -27,7 +27,8 @@ class PdfToHtmlConverter
     }
 
     /**
-     * Extrai o texto completo de um arquivo PDF e o converte em HTML rico preservando a diagramação página por página.
+     * Extrai o texto completo E AS IMAGENS EMBUTIDAS de cada página de um PDF,
+     * incorporando-as no HTML rico de cada Folha A4 do editor.
      */
     public static function convertToHtml(string $filePath, string $diskName = 'public'): string
     {
@@ -52,9 +53,52 @@ class PdfToHtmlConverter
             $totalPages = count($pages);
             $html = '';
 
+            // Diretório para salvar as imagens extraídas do PDF
+            $fileHash = md5($filePath);
+            $imgDirRel = "editorial_revisions/pdf_images/{$fileHash}";
+            Storage::disk('public')->makeDirectory($imgDirRel);
+
             foreach ($pages as $index => $page) {
+                $pageNum = $index + 1;
                 $text = trim($page->getText());
-                if (empty($text)) continue;
+                
+                // Extrai Imagens XObjects da Página
+                $pageImagesHtml = '';
+                try {
+                    $xobjects = $page->getXObjects();
+                    $imgCount = 0;
+                    $processedHashes = [];
+
+                    foreach ($xobjects as $name => $xobj) {
+                        $subtype = $xobj->getHeader()->get('Subtype') ? $xobj->getHeader()->get('Subtype')->getContent() : '';
+                        if ($subtype === 'Image') {
+                            $content = $xobj->getContent();
+                            if (empty($content) || strlen($content) < 100) continue;
+
+                            // Evita duplicatas da mesma imagem na página
+                            $contentHash = md5($content);
+                            if (in_array($contentHash, $processedHashes)) continue;
+                            $processedHashes[] = $contentHash;
+
+                            $imgCount++;
+                            $imgFileName = "p{$pageNum}_img{$imgCount}_{$contentHash}.jpg";
+                            $imgRelPath = "{$imgDirRel}/{$imgFileName}";
+
+                            if (!Storage::disk('public')->exists($imgRelPath)) {
+                                Storage::disk('public')->put($imgRelPath, $content);
+                            }
+
+                            $imgUrl = asset("storage/{$imgRelPath}");
+                            $pageImagesHtml .= '<div class="my-4 text-center select-none">';
+                            $pageImagesHtml .= '<img src="' . $imgUrl . '" class="max-w-full rounded shadow-sm border border-slate-200 mx-auto block my-2" style="max-height: 380px; object-fit: contain;" alt="Imagem da Página ' . $pageNum . '">';
+                            $pageImagesHtml .= '</div>';
+                        }
+                    }
+                } catch (\Throwable $eImg) {
+                    // Ignora erros individuais na extração de imagens
+                }
+
+                if (empty($text) && empty($pageImagesHtml)) continue;
 
                 $lines = explode("\n", $text);
                 $pageContentHtml = '';
@@ -93,26 +137,25 @@ class PdfToHtmlConverter
                     $pageContentHtml .= '</ul>';
                 }
 
-                if (!empty($pageContentHtml)) {
-                    $pageNum = $index + 1;
+                if (!empty($pageContentHtml) || !empty($pageImagesHtml)) {
                     $html .= '<div class="pdf-page-card bg-white border border-slate-300 rounded-[2px] paper-shadow p-10 mb-10 relative select-text" data-page="' . $pageNum . '" style="width: 210mm; min-height: 297mm; box-sizing: border-box; margin-left: auto; margin-right: auto;">';
                     $html .= '<div class="flex items-center justify-between border-b border-slate-200 pb-3 mb-6 select-none">';
                     $html .= '<span class="text-[10px] font-black uppercase tracking-widest px-2.5 py-1 bg-slate-900 text-white rounded">📄 Página ' . $pageNum . ' de ' . $totalPages . ' (PDF Original)</span>';
-                    $html .= '<span class="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Formato A4 • Layout Preservado</span>';
+                    $html .= '<span class="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Texto & Imagens Preservados</span>';
                     $html .= '</div>';
-                    $html .= '<div class="pdf-page-body">' . $pageContentHtml . '</div>';
+                    $html .= '<div class="pdf-page-body">' . $pageContentHtml . $pageImagesHtml . '</div>';
                     $html .= '</div>';
                 }
             }
 
             if (empty($html)) {
-                return '<p class="p-6 text-slate-500 italic">O arquivo PDF é escaneado em imagem ou não possui camada de texto extraível.</p>';
+                return '<p class="p-6 text-slate-500 italic">O arquivo PDF não possui texto nem imagens extraíveis.</p>';
             }
 
             return $html;
 
         } catch (\Throwable $e) {
-            return '<p class="p-6 text-rose-500 font-bold">Falha ao extrair texto do PDF: ' . e($e->getMessage()) . '</p>';
+            return '<p class="p-6 text-rose-500 font-bold">Falha ao extrair texto e imagens do PDF: ' . e($e->getMessage()) . '</p>';
         }
     }
 }
