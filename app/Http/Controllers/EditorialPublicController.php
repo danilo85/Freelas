@@ -40,7 +40,7 @@ class EditorialPublicController extends Controller
     /**
      * Stream de arquivo ultra-seguro inline para PDF.js, leitores e imagens.
      */
-    public function streamFile(int $fileId)
+    public function streamFile(string $token, int $fileId)
     {
         $file = EditorialRevisionFile::findOrFail($fileId);
         $revision = $file->editorialRevision;
@@ -58,6 +58,22 @@ class EditorialPublicController extends Controller
                 ]);
             }
         } catch (\Throwable $e) {}
+
+        return $disk->download($file->file_path, $file->filename);
+    }
+
+    /**
+     * Download direto do arquivo bruto.
+     */
+    public function downloadFile(string $token, int $fileId)
+    {
+        $file = EditorialRevisionFile::findOrFail($fileId);
+        $revision = $file->editorialRevision;
+        $disk = Storage::disk($revision->storage_disk);
+
+        if (!$disk->exists($file->file_path)) {
+            abort(404, 'Arquivo não encontrado para download.');
+        }
 
         return $disk->download($file->file_path, $file->filename);
     }

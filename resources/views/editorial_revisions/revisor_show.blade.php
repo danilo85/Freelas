@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="pt-BR" class="h-full bg-slate-100">
+<html lang="pt-BR" class="h-full w-full overflow-hidden bg-slate-100">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -90,7 +90,7 @@
                 pdfDoc: null,
                 currentPage: 1,
                 totalPages: 1,
-                pdfScale: 1.1,
+                pdfScale: 1.2,
                 renderingPdf: false,
 
                 // Modal Correction State
@@ -313,7 +313,7 @@
         }
     </script>
 </head>
-<body class="font-sans antialiased bg-slate-100 text-slate-800 min-h-screen flex flex-col overflow-hidden" x-data="revisorWorkspace()">
+<body class="font-sans antialiased bg-slate-100 text-slate-800 h-screen w-screen overflow-hidden flex flex-col" x-data="revisorWorkspace()">
 
     <!-- Modal de Autenticação / Login do Revisor -->
     <div x-show="!isAuth" x-cloak class="fixed inset-0 z-[999999] flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-sm select-none">
@@ -386,8 +386,8 @@
         </div>
     </header>
 
-    <!-- CORPO PRINCIPAL DE 3 COLUNAS -->
-    <main class="flex-1 flex overflow-hidden h-[calc(100vh-4rem)]">
+    <!-- CORPO PRINCIPAL DE 3 COLUNAS COM ALTURA FLUIDA 100% -->
+    <main class="flex-1 flex overflow-hidden min-h-0">
 
         <!-- COLUNA 1 (ESQUERDA - 320px): LISTA DE APONTAMENTOS E CATEGORIAS -->
         <aside class="w-80 border-r border-slate-200 bg-white flex flex-col justify-between shrink-0 h-full overflow-hidden z-20">
@@ -450,7 +450,7 @@
 
         </aside>
 
-        <!-- COLUNA 2 (CENTRO - FLEX-1): VIEWPORT DO DOCUMENTO (FOLHA BRANCA NO CENTRO DO CANVAS CINZA) -->
+        <!-- COLUNA 2 (CENTRO - FLEX-1): VIEWPORT DO DOCUMENTO -->
         <section class="flex-1 bg-slate-200/70 flex flex-col min-w-0 relative overflow-hidden h-full">
             
             <!-- Barra Secundária Superior do Visualizador -->
@@ -501,33 +501,30 @@
                 
                 <!-- CANVAS PDF.JS -->
                 <template x-if="viewerMode === 'native' && currentFile && currentFile.file_type === 'pdf'">
-                    <div class="bg-white paper-shadow rounded border border-slate-200 p-2 relative max-w-4xl">
+                    <div class="bg-white paper-shadow rounded border border-slate-200 p-2 relative max-w-4xl max-h-full overflow-auto">
                         <div x-show="renderingPdf" class="absolute inset-0 bg-white/80 flex items-center justify-center font-bold text-xs text-slate-500 z-10">
                             Renderizando PDF...
                         </div>
-                        <canvas id="pdf-canvas" class="max-w-full block"></canvas>
+                        <canvas id="pdf-canvas" class="max-w-full block mx-auto"></canvas>
                     </div>
                 </template>
 
                 <!-- EDITOR WORD TRACK CHANGES -->
                 <template x-if="viewerMode === 'native' && currentFile && currentFile.file_type === 'word'">
-                    <div class="w-full max-w-4xl bg-white paper-shadow rounded-[5px] border border-slate-200 p-8 space-y-4 my-auto">
+                    <div class="w-full max-w-4xl bg-white paper-shadow rounded-[5px] border border-slate-200 p-8 space-y-4 my-auto max-h-full overflow-y-auto">
                         <div class="flex items-center justify-between border-b border-slate-100 pb-3">
                             <h4 class="font-outfit font-black text-xs uppercase tracking-wider text-slate-400">Editor Directo do Revisor (Track Changes)</h4>
                             <span class="text-[10px] text-slate-400 italic">Digite alterações diretamente no texto abaixo</span>
                         </div>
 
-                        <!-- Modo Track Changes / Edição Direta -->
                         <div x-show="viewMode === 'track'" class="space-y-2">
                             <textarea x-model="revisedContent" rows="18" class="w-full bg-slate-50 text-slate-800 font-serif text-sm p-6 border border-slate-200 rounded-[5px] leading-relaxed focus:outline-none focus:ring-1 focus:ring-blue-500 select-text" @mouseup="captureSelectedText"></textarea>
                         </div>
 
-                        <!-- Modo Versão Antiga -->
                         <div x-show="viewMode === 'original'" class="p-6 bg-rose-50 border border-rose-200 rounded-[5px] text-xs font-serif leading-relaxed text-rose-900 max-h-[500px] overflow-y-auto whitespace-pre-wrap">
                             <span x-text="originalContent"></span>
                         </div>
 
-                        <!-- Modo Versão Final -->
                         <div x-show="viewMode === 'final'" class="p-6 bg-emerald-50 border border-emerald-200 rounded-[5px] text-xs font-serif leading-relaxed text-emerald-900 max-h-[500px] overflow-y-auto whitespace-pre-wrap">
                             <span x-text="revisedContent"></span>
                         </div>
