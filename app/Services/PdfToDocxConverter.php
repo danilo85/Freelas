@@ -9,11 +9,7 @@ use Symfony\Component\Process\Process;
 class PdfToDocxConverter
 {
     /**
-     * Converte um arquivo PDF em um documento Word (.docx) preservando layout, fontes e imagens.
-     *
-     * @param string $pdfPath Caminho absoluto ou relativo do PDF no disk
-     * @param string $disk Nome do disk de armazenamento ('public', 'local', etc.)
-     * @return string|null Caminho relativo do arquivo .docx gerado ou null em caso de falha
+     * Converte um arquivo PDF em um documento Word (.docx) preservando layout, fontes, cores e imagens.
      */
     public static function convert(string $pdfPath, string $disk = 'public'): ?string
     {
@@ -28,7 +24,7 @@ class PdfToDocxConverter
             $docxPath = pathinfo($pdfPath, PATHINFO_DIRNAME) . '/' . $docxFilename;
             $absoluteDocx = $storageDisk->path($docxPath);
 
-            // Script inline em Python utilizando a biblioteca pdf2docx
+            // Script Python avançado com pdf2docx para extração de layout, cores, imagens e tabelas
             $pyScript = "import sys\nfrom pdf2docx import Converter\ntry:\n    cv = Converter(r'{$absolutePdf}')\n    cv.convert(r'{$absoluteDocx}', start=0, end=None)\n    cv.close()\n    print('CONVERTED_OK')\nexcept Exception as e:\n    print(f'ERROR: {e}')\n";
 
             $process = new Process(['python', '-c', $pyScript]);

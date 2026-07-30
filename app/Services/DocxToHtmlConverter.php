@@ -3,58 +3,60 @@
 namespace App\Services;
 
 use Illuminate\Support\Facades\Storage;
-use Illuminate\Support\Str;
 
 class DocxToHtmlConverter
 {
     /**
-     * Converte o arquivo .docx em HTML rico preservando formatação, fontes, tamanhos, cores, imagens e parágrafos.
+     * Converte o arquivo .docx em HTML rico preservando formatação, fontes, tamanhos, cores, imagens (base64) e parágrafos.
      */
     public static function convertToHtml(string $docxPath, string $disk = 'public'): string
     {
         try {
             $storageDisk = Storage::disk($disk);
             if (!$storageDisk->exists($docxPath)) {
-                return '<p class="text-slate-500 italic">Arquivo Word não encontrado.</p>';
+                return '<p class="text-slate-500 italic p-6">Arquivo Word não encontrado.</p>';
             }
 
             $absolutePath = $storageDisk->path($docxPath);
             if (!file_exists($absolutePath)) {
-                return '<p class="text-slate-500 italic">Caminho físico do arquivo inválido.</p>';
+                return '<p class="text-slate-500 italic p-6">Caminho físico do arquivo inválido.</p>';
             }
 
             $zip = new \ZipArchive();
             if ($zip->open($absolutePath) !== true) {
-                return '<p class="text-slate-500 italic">Erro ao abrir arquivo .docx.</p>';
+                return '<p class="text-slate-500 italic p-6">Erro ao abrir arquivo .docx.</p>';
             }
 
-            // Extrai imagens para pasta de mídias pública
+            // Mapeia todas as imagens em word/media/ diretamente em Data URI (Base64) de alta fidelidade
             $mediaMap = [];
-            $mediaDirName = 'editorial_media/' . pathinfo($docxPath, PATHINFO_FILENAME);
-            
             for ($i = 0; $i < $zip->numFiles; $i++) {
                 $filename = $zip->getNameIndex($i);
                 if (str_starts_with($filename, 'word/media/')) {
                     $imageContent = $zip->getFromIndex($i);
                     $imageBasename = basename($filename);
-                    $mediaPath = $mediaDirName . '/' . $imageBasename;
-                    
-                    Storage::disk('public')->put($mediaPath, $imageContent);
-                    $publicUrl = Storage::disk('public')->url($mediaPath);
-                    $mediaMap[$imageBasename] = $publicUrl;
+                    $ext = strtolower(pathinfo($imageBasename, PATHINFO_EXTENSION));
+                    $mime = match($ext) {
+                        'png' => 'image/png',
+                        'jpg', 'jpeg' => 'image/jpeg',
+                        'gif' => 'image/gif',
+                        'svg' => 'image/svg+xml',
+                        default => 'image/png'
+                    };
+                    $base64 = 'data:' . $mime . ';base64,' . base64_encode($imageContent);
+                    $mediaMap[$imageBasename] = $base64;
                 }
             }
 
-            // Lê o XML principal do documento
+            // Lê o XML principal do documento e os relacionamentos
             $xmlData = $zip->getFromName('word/document.xml');
             $relationshipsXml = $zip->getFromName('word/_rels/document.xml.rels');
             $zip->close();
 
             if (!$xmlData) {
-                return '<p class="text-slate-500 italic">XML do documento inválido.</p>';
+                return '<p class="text-slate-500 italic p-6">XML do documento inválido.</p>';
             }
 
-            // Mapeia IDs de relacionamentos (rId -> arquivo de mídia)
+            // Mapeia IDs de relacionamentos (rId -> Base64 Data URI)
             $relMap = [];
             if ($relationshipsXml) {
                 $relsDoc = new \DOMDocument();
@@ -62,11 +64,9 @@ class DocxToHtmlConverter
                 foreach ($relsDoc->getElementsByTagName('Relationship') as $rel) {
                     $id = $rel->getAttribute('Id');
                     $target = $rel->getAttribute('Target');
-                    if (str_starts_with($target, 'media/')) {
-                        $imgName = basename($target);
-                        if (isset($mediaMap[$imgName])) {
-                            $relMap[$id] = $mediaMap[$imgName];
-                        }
+                    $imgName = basename($target);
+                    if (isset($mediaMap[$imgName])) {
+                        $relMap[$id] = $mediaMap[$imgName];
                     }
                 }
             }
@@ -77,7 +77,7 @@ class DocxToHtmlConverter
 
             $body = $dom->getElementsByTagName('body')->item(0);
             if (!$body) {
-                return '<p class="text-slate-500 italic">Corpo do documento não encontrado.</p>';
+                return '<p class="text-slate-500 italic p-6">Corpo do documento não encontrado.</p>';
             }
 
             $html = '';
@@ -90,18 +90,16 @@ class DocxToHtmlConverter
                 }
             }
 
-            return $html ?: '<p class="text-slate-400 italic">Documento em branco.</p>';
+            return $html ?: '<p class="text-slate-400 italic p-6">Documento em branco.</p>';
         } catch (\Throwable $e) {
-            return '<p class="text-rose-500 italic">Erro ao converter Word em HTML: ' . htmlspecialchars($e->getMessage()) . '</p>';
+            return '<p class="text-rose-500 italic p-6">Erro ao converter Word em HTML: ' . htmlspecialchars($e->getMessage()) . '</p>';
         }
     }
 
     private static function parseParagraph(\DOMNode $node, array $relMap): string
     {
-        $styleAttr = '';
         $align = '';
 
-        // Procura propriedades do parágrafo
         foreach ($node->childNodes as $child) {
             if ($child->nodeName === 'w:pPr') {
                 foreach ($child->childNodes as $pPrChild) {
@@ -124,11 +122,11 @@ class DocxToHtmlConverter
         }
 
         if (trim(strip_tags($pContent)) === '' && !str_contains($pContent, '<img')) {
-            return '<p class="mb-4">&nbsp;</p>';
+            return '<p class="mb-3">&nbsp;</p>';
         }
 
         $style = $align ? ' style="' . $align . '"' : '';
-        return '<p class="mb-4 leading-relaxed text-slate-800 font-serif text-base"' . $style . '>' . $pContent . '</p>';
+        return '<p class="mb-3 leading-relaxed text-slate-900 font-serif text-base"' . $style . '>' . $pContent . '</p>';
     }
 
     private static function parseRun(\DOMNode $node, array $relMap): string
@@ -164,14 +162,23 @@ class DocxToHtmlConverter
                 $runContent .= htmlspecialchars($child->nodeValue);
             } elseif ($child->nodeName === 'w:br') {
                 $runContent .= '<br>';
-            } elseif ($child->nodeName === 'w:drawing') {
-                // Procura imagens incorporadas
+            } elseif ($child->nodeName === 'w:drawing' || $child->nodeName === 'w:pict') {
+                // Procura imagens incorporadas no XML do Word
                 $blips = $child->getElementsByTagName('blip');
-                foreach ($blips as $blip) {
-                    $embedId = $blip->getAttribute('r:embed');
-                    if (isset($relMap[$embedId])) {
-                        $imgUrl = $relMap[$embedId];
-                        $runContent .= '<img src="' . $imgUrl . '" class="my-4 max-w-full rounded shadow-sm mx-auto block">';
+                if ($blips->length > 0) {
+                    foreach ($blips as $blip) {
+                        $embedId = $blip->getAttribute('r:embed');
+                        if (isset($relMap[$embedId])) {
+                            $runContent .= '<img src="' . $relMap[$embedId] . '" class="my-4 max-w-full rounded shadow-sm mx-auto block">';
+                        }
+                    }
+                } else {
+                    $imagedatas = $child->getElementsByTagName('imagedata');
+                    foreach ($imagedatas as $imgData) {
+                        $embedId = $imgData->getAttribute('r:id');
+                        if (isset($relMap[$embedId])) {
+                            $runContent .= '<img src="' . $relMap[$embedId] . '" class="my-4 max-w-full rounded shadow-sm mx-auto block">';
+                        }
                     }
                 }
             }

@@ -54,22 +54,28 @@
             backdrop-filter: blur(10px);
         }
         .paper-shadow {
-            box-shadow: 0 15px 35px -5px rgba(0, 0, 0, 0.15), 0 0 10px rgba(0, 0, 0, 0.05);
+            box-shadow: 0 15px 35px -5px rgba(0, 0, 0, 0.2), 0 0 10px rgba(0, 0, 0, 0.05);
         }
+        /* ESTILO DA FOLHA A4 DO WORD COM PÁGINAS INFINITAS E QUEBRAS VISUAIS */
         .word-page-a4 {
             width: 210mm;
             min-height: 297mm;
             padding: 25mm 20mm;
-            background: #ffffff;
+            background-color: #ffffff;
+            background-image: linear-gradient(to bottom, transparent 296mm, #cbd5e1 296mm, #f1f5f9 297mm);
+            background-size: 100% 297mm;
+            border: 1px solid #cbd5e1;
             margin: 20px auto;
             box-sizing: border-box;
+            border-radius: 2px;
         }
         .word-paper-content img {
             max-width: 100%;
             height: auto;
             display: block;
-            margin: 1rem auto;
+            margin: 1.5rem auto;
             border-radius: 4px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
         }
     </style>
 
@@ -517,11 +523,11 @@
             </div>
 
             <!-- CANVAS PRINCIPAL (Document Visualizer / Folha A4 do Word) -->
-            <div class="flex-1 overflow-auto flex items-center justify-center p-6 relative bg-slate-200/60">
+            <div class="flex-1 overflow-auto flex items-start justify-center p-8 relative bg-slate-200/60">
                 
                 <!-- CANVAS PDF.JS NATIVO -->
                 <template x-if="currentFile && currentFile.file_type === 'pdf' && viewerMode === 'native'">
-                    <div class="bg-white paper-shadow rounded border border-slate-200 p-4 relative max-w-4xl max-h-full overflow-auto flex flex-col items-center">
+                    <div class="bg-white paper-shadow rounded border border-slate-200 p-4 relative max-w-4xl max-h-full overflow-auto flex flex-col items-center my-auto">
                         <div x-show="renderingPdf" class="absolute inset-0 bg-white/80 flex items-center justify-center font-bold text-xs text-slate-500 z-10">
                             Renderizando PDF...
                         </div>
@@ -531,20 +537,20 @@
 
                 <!-- PDF EM IFRAME NATIVO DO NAVEGADOR -->
                 <template x-if="currentFile && currentFile.file_type === 'pdf' && viewerMode === 'iframe'">
-                    <div class="w-full max-w-5xl h-full bg-white paper-shadow rounded-[5px] border border-slate-200 p-2 flex flex-col">
+                    <div class="w-full max-w-5xl h-full bg-white paper-shadow rounded-[5px] border border-slate-200 p-2 flex flex-col my-auto">
                         <iframe :src="getFileStreamUrl(currentFile.id)" class="w-full h-full rounded border-0" frameborder="0"></iframe>
                     </div>
                 </template>
 
-                <!-- FORMATO DE PÁGINA A4 DE VERDADE DO MICROSOFT WORD (COM MARGENS, IMAGENS E FONTES PRESERVADAS) -->
+                <!-- FORMATO DE PÁGINAS A4 MULTIPLAS CONTINUAS DO MICROSOFT WORD -->
                 <template x-if="currentFile && currentFile.file_type === 'word'">
-                    <div class="w-full h-full overflow-y-auto p-6 flex flex-col items-center">
+                    <div class="w-full flex flex-col items-center">
                         
-                        <!-- PÁGINA A4 COM SOMBRA E MARGENS PADRÃO DO WORD -->
+                        <!-- FOLHA DE PAPEL A4 DO WORD COM PÁGINAS QUE EXPANDEM INFINITAMENTE -->
                         <div class="word-page-a4 paper-shadow border border-slate-300 text-slate-900 rounded-[2px] transition-all select-text relative"
                              id="word-paper-container">
 
-                            <!-- Conteúdo Editável do Word -->
+                            <!-- Conteúdo Editável do Word com Imagens Base64 e Fontes Preservadas -->
                             <div id="word-paper-editor"
                                  contenteditable="true"
                                  class="word-paper-content focus:outline-none min-h-[250mm]"
@@ -559,7 +565,7 @@
 
                 <!-- VISUALIZADOR DE IMAGENS -->
                 <template x-if="currentFile && currentFile.file_type === 'image'">
-                    <div class="bg-white paper-shadow rounded p-2 border border-slate-200 max-w-4xl">
+                    <div class="bg-white paper-shadow rounded p-2 border border-slate-200 max-w-4xl my-auto">
                         <img :src="getFileStreamUrl(currentFile.id)" class="max-h-[75vh] object-contain">
                     </div>
                 </template>
@@ -568,7 +574,7 @@
 
         </section>
 
-        <!-- COLUNA 3 (DIREITA - 280px): NAVEGADOR DE ARQUIVOS COM SELEÇÃO DE PDF E WORD CONVERTIDO -->
+        <!-- COLUNA 3 (DIREITA - 280px): NAVEGADOR DE ARQUIVOS -->
         <aside class="w-72 border-l border-slate-200 bg-white flex flex-col justify-between shrink-0 h-full overflow-hidden z-20">
             
             <div class="p-4 border-b border-slate-200 bg-slate-50/50 flex items-center justify-between shrink-0">
@@ -578,7 +584,7 @@
                 </span>
             </div>
 
-            <!-- Lista de Arquivos do Projeto (PDFs e Words Editáveis Vinculados) -->
+            <!-- Lista de Arquivos do Projeto -->
             <div class="flex-1 overflow-y-auto p-3 space-y-2.5">
                 @foreach($revision->files as $file)
                     <div @click="selectedFileId = {{ $file->id }}" 
@@ -595,7 +601,6 @@
 
                         <h5 class="text-xs font-bold text-slate-800 truncate" title="{{ $file->filename }}">{{ $file->filename }}</h5>
                         
-                        <!-- Badges de troca rápida (PDF vs Word Editável) -->
                         <div class="flex items-center justify-between pt-1 border-t border-slate-100 text-[10px] font-bold text-slate-500">
                             <span>{{ number_format($file->file_size / 1024, 1) }} KB</span>
                             <a :href="getFileDownloadUrl({{ $file->id }})" target="_blank" @click.stop class="text-blue-600 hover:underline">
