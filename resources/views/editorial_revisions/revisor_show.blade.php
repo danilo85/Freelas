@@ -129,7 +129,8 @@
                 openDuvidasChatModal: false,
                 categoryFilter: 'todas',
                 viewMode: 'track',
-                viewerMode: 'iframe',
+                viewerMode: 'native', // Plugin PDF.js como PRIORIDADE PADRÃO
+                pdfEditMode: false, // Permite alternar para edição de texto extraído do PDF
                 toastMessage: '',
                 selectedFileId: initialFileId,
                 correctionsList: @json($revision->corrections),
@@ -170,9 +171,11 @@
 
                 init() {
                     this.loadContentForSelectedFile();
+                    this.handleFileChange(this.selectedFileId);
 
                     this.$watch('selectedFileId', (id) => {
                         localStorage.setItem('revisor_file_' + shareToken, id);
+                        this.pdfEditMode = false;
                         this.loadContentForSelectedFile();
                         this.handleFileChange(id);
                     });
@@ -199,7 +202,7 @@
                     if (!this.selectedFileId) return;
 
                     const file = this.currentFile;
-                    if (file && file.file_type === 'word') {
+                    if (file && (file.file_type === 'word' || this.pdfEditMode)) {
                         this.loadingWord = true;
                         
                         if (initialTexts && initialTexts[this.selectedFileId]) {
@@ -256,8 +259,10 @@
 
                 handleFileChange(id) {
                     const file = this.currentFile;
-                    if (file && file.file_type === 'pdf' && this.viewerMode === 'native') {
-                        this.loadPdfDocument();
+                    if (file && file.file_type === 'pdf' && !this.pdfEditMode) {
+                        if (this.viewerMode === 'native') {
+                            this.loadPdfDocument();
+                        }
                     }
                 },
 
@@ -267,7 +272,10 @@
                     this.renderingPdf = true;
 
                     fetch(url)
-                        .then(res => res.arrayBuffer())
+                        .then(res => {
+                            if (!res.ok) throw new Error('Falha no stream');
+                            return res.arrayBuffer();
+                        })
                         .then(buffer => pdfjsLib.getDocument({ data: buffer }).promise)
                         .then(pdf => {
                             window._activePdfDoc = pdf;
@@ -277,6 +285,9 @@
                         })
                         .catch(() => {
                             this.renderingPdf = false;
+                            // FALLBACK AUTOMÁTICO SE O PLUGIN PDF.JS FALHAR
+                            this.viewerMode = 'iframe';
+                            this.showToast('Alternado para o Leitor Nativo do Navegador.');
                         });
                 },
 
@@ -792,18 +803,22 @@
             
             <div class="h-12 border-b border-slate-200 bg-white px-4 flex items-center justify-between shrink-0 z-10 shadow-xs">
                 
+                <!-- FERRAMENTAS PARA PDF (PLUGIN PDF.JS COMO PRIORIDADE + MODO DE EDIÇÃO DE TEXTO) -->
                 <template x-if="currentFile && currentFile.file_type === 'pdf'">
-                    <div class="flex items-center gap-3 text-xs font-bold text-slate-600">
+                    <div class="flex items-center justify-between w-full text-xs font-bold text-slate-600">
                         <div class="flex items-center gap-1 bg-slate-100 p-1 rounded-[5px]">
-                            <button type="button" @click="viewerMode = 'iframe'" class="px-3 py-1 rounded-[3px]" :class="viewerMode === 'iframe' ? 'bg-white text-slate-900 shadow-xs' : 'text-slate-500'">
-                                Leitor Nativo
+                            <button type="button" @click="pdfEditMode = false; viewerMode = 'native'; loadPdfDocument()" class="px-3 py-1 rounded-[3px]" :class="(viewerMode === 'native' && !pdfEditMode) ? 'bg-white text-slate-900 shadow-xs' : 'text-slate-500'">
+                                Plugin PDF.js (Prioridade)
                             </button>
-                            <button type="button" @click="viewerMode = 'native'; loadPdfDocument()" class="px-3 py-1 rounded-[3px]" :class="viewerMode === 'native' ? 'bg-white text-slate-900 shadow-xs' : 'text-slate-500'">
-                                Plugin PDF.js
+                            <button type="button" @click="pdfEditMode = false; viewerMode = 'iframe'" class="px-3 py-1 rounded-[3px]" :class="(viewerMode === 'iframe' && !pdfEditMode) ? 'bg-white text-slate-900 shadow-xs' : 'text-slate-500'">
+                                Leitor Nativo (iFrame)
+                            </button>
+                            <button type="button" @click="pdfEditMode = true; loadContentForSelectedFile()" class="px-3 py-1 rounded-[3px] bg-purple-100 text-purple-800 hover:bg-purple-200" :class="pdfEditMode ? 'bg-purple-600 text-white shadow-xs' : ''">
+                                📝 Editar / Destacar Texto do PDF
                             </button>
                         </div>
 
-                        <template x-if="viewerMode === 'native'">
+                        <template x-if="viewerMode === 'native' && !pdfEditMode">
                             <div class="flex items-center gap-2 pl-3 border-l border-slate-200">
                                 <button type="button" @click="prevPage()" class="w-7 h-7 bg-slate-100 hover:bg-slate-200 rounded-[3px] flex items-center justify-center">
                                     <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/></svg>
@@ -816,9 +831,19 @@
                                 <button type="button" @click="zoomPdf(0.1)" class="w-7 h-7 bg-slate-100 hover:bg-slate-200 rounded-[3px] flex items-center justify-center font-bold text-xs">+</button>
                             </div>
                         </template>
+
+                        <template x-if="pdfEditMode">
+                            <div class="flex items-center gap-2">
+                                <button type="button" @click="persistWordContent()" class="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded text-xs transition-all shadow-xs flex items-center gap-1.5">
+                                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4"/></svg>
+                                    <span>Salvar Edição do PDF</span>
+                                </button>
+                            </div>
+                        </template>
                     </div>
                 </template>
 
+                <!-- BARRA DE FERRAMENTAS WYSIWYG PARA DOCUMENTOS WORD -->
                 <template x-if="currentFile && currentFile.file_type === 'word'">
                     <div class="flex items-center gap-2 text-xs font-bold w-full justify-between">
                         <div class="flex items-center gap-1 bg-slate-100 p-1 rounded-[5px]">
@@ -860,16 +885,18 @@
                         <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
                         <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path>
                     </svg>
-                    <span>Carregando documento Word...</span>
+                    <span>Carregando documento...</span>
                 </div>
 
-                <template x-if="currentFile && currentFile.file_type === 'pdf' && viewerMode === 'iframe'">
+                <!-- PDF EM IFRAME NATIVO DO NAVEGADOR -->
+                <template x-if="currentFile && currentFile.file_type === 'pdf' && viewerMode === 'iframe' && !pdfEditMode">
                     <div class="w-full max-w-6xl h-full bg-white paper-shadow rounded-[5px] border border-slate-200 p-2 flex flex-col my-auto">
                         <iframe :src="getFileStreamUrl(currentFile.id)" class="w-full h-full rounded border-0" frameborder="0"></iframe>
                     </div>
                 </template>
 
-                <template x-if="currentFile && currentFile.file_type === 'pdf' && viewerMode === 'native'">
+                <!-- CANVAS PDF.JS PLUGIN (PRIORIDADE PADRÃO) -->
+                <template x-if="currentFile && currentFile.file_type === 'pdf' && viewerMode === 'native' && !pdfEditMode">
                     <div class="bg-white paper-shadow rounded border border-slate-200 p-4 relative max-w-4xl max-h-full overflow-auto flex flex-col items-center my-auto">
                         <div x-show="renderingPdf" class="absolute inset-0 bg-white/80 flex items-center justify-center font-bold text-xs text-slate-500 z-10">
                             Renderizando PDF via Plugin PDF.js...
@@ -878,7 +905,8 @@
                     </div>
                 </template>
 
-                <template x-if="currentFile && currentFile.file_type === 'word'">
+                <!-- FORMATO DE PÁGINA CORRIDA DO WORD OU MODO EDIÇÃO DO PDF COM MARCAÇÕES EM AMARELO -->
+                <template x-if="(currentFile && currentFile.file_type === 'word') || (currentFile && currentFile.file_type === 'pdf' && pdfEditMode)">
                     <div class="w-full flex flex-col items-center">
                         <div class="word-page-a4 paper-shadow border border-slate-300 text-slate-900 rounded-[2px] transition-all select-text relative"
                              id="word-paper-container">
