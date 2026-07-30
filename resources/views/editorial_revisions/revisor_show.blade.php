@@ -92,6 +92,7 @@
                 totalPages: 1,
                 pdfScale: 1.2,
                 renderingPdf: false,
+                pdfError: '',
 
                 // Modal Correction State
                 modalCategory: 'ortografia',
@@ -149,15 +150,27 @@
                     if (!this.currentFile) return;
                     const url = this.getFileStreamUrl(this.currentFile.id);
                     this.renderingPdf = true;
+                    this.pdfError = '';
 
-                    pdfjsLib.getDocument(url).promise.then(pdf => {
-                        this.pdfDoc = pdf;
-                        this.totalPages = pdf.numPages;
-                        this.currentPage = 1;
-                        this.renderPdfPage(1);
-                    }).catch(err => {
-                        this.renderingPdf = false;
-                    });
+                    // Busca o ArrayBuffer diretamente para garantir leitura total sem bloqueio CORS/Worker
+                    fetch(url)
+                        .then(res => {
+                            if (!res.ok) throw new Error('Falha HTTP ao carregar PDF (' + res.status + ')');
+                            return res.arrayBuffer();
+                        })
+                        .then(buffer => {
+                            return pdfjsLib.getDocument({ data: buffer }).promise;
+                        })
+                        .then(pdf => {
+                            this.pdfDoc = pdf;
+                            this.totalPages = pdf.numPages;
+                            this.currentPage = 1;
+                            this.renderPdfPage(1);
+                        })
+                        .catch(err => {
+                            this.renderingPdf = false;
+                            this.pdfError = 'Não foi possível carregar a prévia do PDF. Utilize o botão de download ou a visualização externa.';
+                        });
                 },
 
                 renderPdfPage(num) {
@@ -501,30 +514,41 @@
                 
                 <!-- CANVAS PDF.JS -->
                 <template x-if="viewerMode === 'native' && currentFile && currentFile.file_type === 'pdf'">
-                    <div class="bg-white paper-shadow rounded border border-slate-200 p-2 relative max-w-4xl max-h-full overflow-auto">
+                    <div class="bg-white paper-shadow rounded border border-slate-200 p-4 relative max-w-4xl max-h-full overflow-auto flex flex-col items-center">
                         <div x-show="renderingPdf" class="absolute inset-0 bg-white/80 flex items-center justify-center font-bold text-xs text-slate-500 z-10">
                             Renderizando PDF...
                         </div>
-                        <canvas id="pdf-canvas" class="max-w-full block mx-auto"></canvas>
+                        <template x-if="pdfError">
+                            <div class="p-4 bg-rose-50 border border-rose-200 text-rose-700 text-xs font-bold rounded text-center my-auto">
+                                <p x-text="pdfError"></p>
+                                <a :href="getFileStreamUrl(currentFile.id)" target="_blank" class="mt-2 inline-block px-3 py-1.5 bg-slate-900 text-white rounded font-bold uppercase tracking-wider">
+                                    Abrir PDF Direto em Nova Guia ↗
+                                </a>
+                            </div>
+                        </template>
+                        <canvas id="pdf-canvas" class="max-w-full block mx-auto shadow-sm border border-slate-200"></canvas>
                     </div>
                 </template>
 
-                <!-- EDITOR WORD TRACK CHANGES -->
+                <!-- EDITOR WORD TRACK CHANGES (Com Diagramação e Parágrafos Preservados) -->
                 <template x-if="viewerMode === 'native' && currentFile && currentFile.file_type === 'word'">
                     <div class="w-full max-w-4xl bg-white paper-shadow rounded-[5px] border border-slate-200 p-8 space-y-4 my-auto max-h-full overflow-y-auto">
                         <div class="flex items-center justify-between border-b border-slate-100 pb-3">
                             <h4 class="font-outfit font-black text-xs uppercase tracking-wider text-slate-400">Editor Directo do Revisor (Track Changes)</h4>
-                            <span class="text-[10px] text-slate-400 italic">Digite alterações diretamente no texto abaixo</span>
+                            <span class="text-[10px] text-slate-400 italic">Diagramação de parágrafos preservada do Word</span>
                         </div>
 
+                        <!-- Modo Track Changes / Edição Direta -->
                         <div x-show="viewMode === 'track'" class="space-y-2">
-                            <textarea x-model="revisedContent" rows="18" class="w-full bg-slate-50 text-slate-800 font-serif text-sm p-6 border border-slate-200 rounded-[5px] leading-relaxed focus:outline-none focus:ring-1 focus:ring-blue-500 select-text" @mouseup="captureSelectedText"></textarea>
+                            <textarea x-model="revisedContent" rows="18" class="w-full bg-slate-50 text-slate-800 font-serif text-sm p-6 border border-slate-200 rounded-[5px] leading-relaxed focus:outline-none focus:ring-1 focus:ring-blue-500 select-text whitespace-pre-wrap" @mouseup="captureSelectedText"></textarea>
                         </div>
 
+                        <!-- Modo Versão Antiga -->
                         <div x-show="viewMode === 'original'" class="p-6 bg-rose-50 border border-rose-200 rounded-[5px] text-xs font-serif leading-relaxed text-rose-900 max-h-[500px] overflow-y-auto whitespace-pre-wrap">
                             <span x-text="originalContent"></span>
                         </div>
 
+                        <!-- Modo Versão Final -->
                         <div x-show="viewMode === 'final'" class="p-6 bg-emerald-50 border border-emerald-200 rounded-[5px] text-xs font-serif leading-relaxed text-emerald-900 max-h-[500px] overflow-y-auto whitespace-pre-wrap">
                             <span x-text="revisedContent"></span>
                         </div>
@@ -533,8 +557,12 @@
 
                 <!-- GOOGLE DOCS VIEWER EMBED -->
                 <template x-if="viewerMode === 'google' && currentFile">
-                    <div class="w-full max-w-5xl h-full bg-white paper-shadow rounded-[5px] border border-slate-200 p-2 flex flex-col">
-                        <iframe :src="getGoogleDocsViewerUrl(currentFile.id)" class="w-full h-full rounded border-0" frameborder="0"></iframe>
+                    <div class="w-full max-w-5xl h-full bg-white paper-shadow rounded-[5px] border border-slate-200 p-2 flex flex-col space-y-2">
+                        <div class="bg-amber-50 border border-amber-200 text-amber-800 p-2.5 rounded text-[11px] font-bold flex items-center justify-between">
+                            <span>ℹ️ O Google Docs Viewer requer um domínio público online (como na Hostinger). Em ambiente local (localhost), utilize o <strong>Leitor/Editor Interno</strong>.</span>
+                            <a :href="getGoogleDocsViewerUrl(currentFile.id)" target="_blank" class="text-amber-900 underline font-black">Abrir ↗</a>
+                        </div>
+                        <iframe :src="getGoogleDocsViewerUrl(currentFile.id)" class="w-full flex-1 rounded border-0" frameborder="0"></iframe>
                     </div>
                 </template>
 

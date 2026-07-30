@@ -291,29 +291,46 @@ class EditorialPublicController extends Controller
     }
 
     /**
-     * Método auxiliar nativo em PHP para extrair texto legível de arquivos Word (.docx) ou PDF.
+     * Método auxiliar nativo em PHP para extrair texto formatado preservando parágrafos de arquivos Word (.docx).
      */
     protected function extractTextFromFile(EditorialRevisionFile $file, string $disk)
     {
         try {
-            $filePath = Storage::disk($disk)->path($file->file_path);
-            
-            // Se o arquivo for .docx, lê o XML interno do arquivo ZIP
+            $disksToTry = array_unique([$disk, 'public', 'local']);
+            $filePath = null;
+
+            foreach ($disksToTry as $d) {
+                if (Storage::disk($d)->exists($file->file_path)) {
+                    $filePath = Storage::disk($d)->path($file->file_path);
+                    break;
+                }
+            }
+
+            if (!$filePath || !file_exists($filePath)) {
+                $filePath = storage_path('app/public/' . $file->file_path);
+            }
+
             if ($file->file_type === 'word' && file_exists($filePath)) {
                 $zip = new \ZipArchive();
                 if ($zip->open($filePath) === true) {
                     if (($index = $zip->locateName('word/document.xml')) !== false) {
                         $data = $zip->getFromIndex($index);
                         $zip->close();
-                        $xml = new \DOMDocument();
-                        @$xml->loadXML($data, LIBXML_NOENT | LIBXML_XINCLUDE | LIBXML_NOERROR | LIBXML_NOWARNING);
-                        return strip_tags($xml->saveXML());
+
+                        // Processa XML do Word preservando a diagramação de parágrafos <w:p> e quebras <w:br>
+                        $data = str_replace(['</w:p>', '<w:br/>', '<w:br>', '</w:tr>'], ["\n\n", "\n", "\n", "\n"], $data);
+                        $data = str_replace('<w:tab/>', "\t", $data);
+
+                        $text = trim(strip_tags($data));
+                        // Normaliza linhas em branco duplas sem colar tudo num parágrafo só
+                        $text = preg_replace("/\n{3,}/", "\n\n", $text);
+                        return $text;
                     }
                     $zip->close();
                 }
             }
         } catch (\Throwable $e) {}
 
-        return 'Conteúdo disponível para download em formato original.';
+        return 'Conteúdo do arquivo disponível para leitura e download.';
     }
 }
