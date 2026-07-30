@@ -10,7 +10,8 @@
         "google/apiclient": "*",
         "laravel/framework": "^13.8",
         "laravel/tinker": "^3.0",
-        "masbug/flysystem-google-drive-ext": "*"
+        "masbug/flysystem-google-drive-ext": "*",
+        "smalot/pdfparser": "^2.12"
     },
     "require-dev": {
         "fakerphp/faker": "^1.23",

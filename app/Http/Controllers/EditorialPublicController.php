@@ -367,11 +367,17 @@ class EditorialPublicController extends Controller
             return response()->json(['content' => $html]);
         }
 
+        if ($file->file_type === 'pdf') {
+            $html = \App\Services\PdfToHtmlConverter::convertToHtml($file->file_path, $revision->storage_disk ?: 'public');
+            $file->update(['extracted_text' => $html]);
+            return response()->json(['content' => $html]);
+        }
+
         return response()->json(['content' => $file->extracted_text ?: '<p class="p-6 text-slate-500 italic">Sem conteúdo pré-extraído.</p>']);
     }
 
     /**
-     * Método auxiliar para extrair HTML rico preservando formatação, fontes, tamanhos e imagens de arquivos Word (.docx).
+     * Método auxiliar para extrair HTML rico preservando formatação de arquivos Word (.docx) e PDF.
      */
     protected function extractTextFromFile(EditorialRevisionFile $file, string $disk)
     {
@@ -385,6 +391,12 @@ class EditorialPublicController extends Controller
             return $html;
         }
 
-        return 'Conteúdo do arquivo disponível para leitura e download.';
+        if ($file->file_type === 'pdf') {
+            $html = \App\Services\PdfToHtmlConverter::convertToHtml($file->file_path, $disk);
+            $file->update(['extracted_text' => $html]);
+            return $html;
+        }
+
+        return '';
     }
 }
