@@ -92,7 +92,6 @@
     <script>
         function revisorWorkspace() {
             const filesData = @json($revision->files);
-            const textsData = @json($extractedTexts);
             const streamBaseUrl = '{{ url("/revisao-editorial/" . $revision->share_token . "/file") }}';
 
             return {
@@ -101,7 +100,7 @@
                 openUploadVersionModal: false,
                 categoryFilter: 'todas',
                 viewMode: 'track',
-                viewerMode: 'iframe', // 'iframe' como padrão para PDFs (renderiza 100% de layout, cores e orientação)
+                viewerMode: 'iframe', // 'iframe' como padrão para PDFs
                 toastMessage: '',
                 selectedFileId: filesData.length > 0 ? filesData[0].id : null,
                 correctionsList: @json($revision->corrections),
@@ -109,6 +108,7 @@
                 // Track Changes state
                 originalContent: '',
                 revisedContent: '',
+                loadingWord: false,
                 savingText: false,
                 typingTimer: null,
 
@@ -137,18 +137,34 @@
                     return filesData.find(f => f.id == this.selectedFileId) || null;
                 },
 
+                // CARREGA O CONTEÚDO DO WORD VIA AJAX EM TEMPO REAL (SOLUÇÃO DEFINITIVA PARA ARQUIVOS GRANDES)
                 loadContentForSelectedFile() {
                     if (!this.selectedFileId) return;
-                    const text = textsData[this.selectedFileId] || textsData[String(this.selectedFileId)] || '';
-                    this.originalContent = text;
-                    this.revisedContent = text;
 
-                    this.$nextTick(() => {
-                        const editor = this.$refs.wordEditor;
-                        if (editor) {
-                            editor.innerHTML = text;
-                        }
-                    });
+                    const file = this.currentFile;
+                    if (file && file.file_type === 'word') {
+                        this.loadingWord = true;
+                        const url = streamBaseUrl + '/' + this.selectedFileId + '/text-content';
+
+                        fetch(url)
+                            .then(res => res.json())
+                            .then(data => {
+                                const text = data.content || '';
+                                this.originalContent = text;
+                                this.revisedContent = text;
+                                this.loadingWord = false;
+
+                                this.$nextTick(() => {
+                                    const editor = this.$refs.wordEditor;
+                                    if (editor) {
+                                        editor.innerHTML = text;
+                                    }
+                                });
+                            })
+                            .catch(() => {
+                                this.loadingWord = false;
+                            });
+                    }
                 },
 
                 getFileStreamUrl(id) {
@@ -166,7 +182,6 @@
                     }
                 },
 
-                // PDF.JS SEM ERROS DE PROXY (UTILIZA INSTÂNCIA BRUTA WINDOW._ACTIVEPDFDOC)
                 loadPdfDocument() {
                     if (!this.currentFile) return;
                     const url = this.getFileStreamUrl(this.currentFile.id);
@@ -234,7 +249,6 @@
                     }
                 },
 
-                // DIGITAÇÃO NATIVA NO WORD (SEM PULAR O CURSOR E SEM RELOAD)
                 handleEditorInput(event) {
                     this.syncEditorContent();
 
@@ -257,7 +271,6 @@
                     }, 1500);
                 },
 
-                // SALVAMENTO SILÊNCIOSO SEM NENHUM RELOAD NA PÁGINA
                 autoSaveAndRegisterCorrection() {
                     const editor = this.$refs.wordEditor;
                     const contentToSave = editor ? editor.innerHTML : this.revisedContent;
@@ -374,7 +387,9 @@
     <div x-show="!isAuth" x-cloak class="fixed inset-0 z-[999999] flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-sm select-none">
         <div class="bg-white border border-slate-200 text-slate-800 rounded-xl p-8 shadow-2xl max-w-md w-full space-y-6">
             <div class="text-center space-y-2">
-                <span class="text-4xl block">🔐</span>
+                <svg class="w-10 h-10 mx-auto text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/>
+                </svg>
                 <h3 class="font-outfit font-black text-xl uppercase tracking-tight text-slate-900">Acesso Restrito ao Revisor</h3>
                 <p class="text-xs text-slate-500 font-medium">Digite os seus dados de acesso para desbloquear o Workspace do projeto <strong class="text-slate-700">{{ $revision->title }}</strong>.</p>
             </div>
@@ -406,7 +421,9 @@
          x-cloak 
          x-transition
          class="fixed bottom-20 right-6 z-[99999] bg-slate-900 text-white px-5 py-3.5 rounded-[5px] shadow-2xl flex items-center gap-3 text-xs font-bold border border-slate-700">
-        <span class="text-lg">✨</span>
+        <svg class="w-4 h-4 text-purple-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/>
+        </svg>
         <span x-text="toastMessage"></span>
         <button type="button" @click="toastMessage = ''" class="text-slate-400 hover:text-white ml-2">✕</button>
     </div>
@@ -427,12 +444,16 @@
         </div>
 
         <div class="flex items-center gap-2">
-            <button type="button" @click="checkLanguageTool()" class="bg-purple-600 hover:bg-purple-700 text-white font-bold text-xs uppercase tracking-wider px-3.5 py-2 rounded-[5px] transition-all flex items-center gap-1.5 shadow-sm">
-                <span>🔍</span> LanguageTool
+            <button type="button" @click="checkLanguageTool()" class="w-9 h-9 bg-purple-600 hover:bg-purple-700 text-white font-bold rounded-[5px] transition-all flex items-center justify-center shadow-sm" title="Analisar com LanguageTool">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
+                </svg>
             </button>
 
-            <button type="button" @click="copyAuthorLink('{{ route('public.editorial.show', $revision->share_token) }}')" class="bg-slate-900 hover:bg-slate-800 text-white font-bold text-xs uppercase tracking-wider px-4 py-2 rounded-[5px] transition-all flex items-center gap-1.5 shadow-sm">
-                <span>🔗</span> Link do Autor
+            <button type="button" @click="copyAuthorLink('{{ route('public.editorial.show', $revision->share_token) }}')" class="w-9 h-9 bg-slate-900 hover:bg-slate-800 text-white font-bold rounded-[5px] transition-all flex items-center justify-center shadow-sm" title="Copiar Link do Autor">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1]"/>
+                </svg>
             </button>
         </div>
     </header>
@@ -470,7 +491,7 @@
                         </div>
 
                         <p class="font-mono text-amber-950 font-bold bg-amber-100/90 px-1.5 py-0.5 rounded" x-text="cor.original_text || 'Edição direta'"></p>
-                        <p class="text-slate-600 italic text-[11px]" x-text="'💡 ' + (cor.justification || 'Edição no documento.')"></p>
+                        <p class="text-slate-600 italic text-[11px]" x-text="(cor.justification || 'Edição no documento.')"></p>
                     </div>
                 </template>
 
@@ -489,25 +510,29 @@
             <!-- Barra Secundária Superior do Visualizador / Editor de Texto -->
             <div class="h-12 border-b border-slate-200 bg-white px-4 flex items-center justify-between shrink-0 z-10 shadow-xs">
                 
-                <!-- Ferramentas para PDF -->
+                <!-- Ferramentas para PDF com SVG Icons -->
                 <template x-if="currentFile && currentFile.file_type === 'pdf'">
                     <div class="flex items-center gap-3 text-xs font-bold text-slate-600">
                         <div class="flex items-center gap-1 bg-slate-100 p-1 rounded-[5px]">
                             <button type="button" @click="viewerMode = 'iframe'" class="px-3 py-1 rounded-[3px]" :class="viewerMode === 'iframe' ? 'bg-white text-slate-900 shadow-xs' : 'text-slate-500'">
-                                🖥️ Leitor Nativo Navegador (Preserva 100% de Layout e Cores)
+                                Leitor Nativo
                             </button>
                             <button type="button" @click="viewerMode = 'native'; loadPdfDocument()" class="px-3 py-1 rounded-[3px]" :class="viewerMode === 'native' ? 'bg-white text-slate-900 shadow-xs' : 'text-slate-500'">
-                                📄 Plugin PDF.js Canvas
+                                Plugin PDF.js
                             </button>
                         </div>
 
                         <template x-if="viewerMode === 'native'">
                             <div class="flex items-center gap-2 pl-3 border-l border-slate-200">
-                                <button type="button" @click="prevPage()" class="px-2 py-1 bg-slate-100 hover:bg-slate-200 rounded-[3px]">◀</button>
+                                <button type="button" @click="prevPage()" class="w-7 h-7 bg-slate-100 hover:bg-slate-200 rounded-[3px] flex items-center justify-center">
+                                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/></svg>
+                                </button>
                                 <span>PÁG. <span x-text="currentPage"></span> DE <span x-text="totalPages"></span></span>
-                                <button type="button" @click="nextPage()" class="px-2 py-1 bg-slate-100 hover:bg-slate-200 rounded-[3px]">▶</button>
-                                <button type="button" @click="zoomPdf(-0.1)" class="px-2 py-1 bg-slate-100 hover:bg-slate-200 rounded-[3px] ml-2">🔍-</button>
-                                <button type="button" @click="zoomPdf(0.1)" class="px-2 py-1 bg-slate-100 hover:bg-slate-200 rounded-[3px]">🔍+</button>
+                                <button type="button" @click="nextPage()" class="w-7 h-7 bg-slate-100 hover:bg-slate-200 rounded-[3px] flex items-center justify-center">
+                                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
+                                </button>
+                                <button type="button" @click="zoomPdf(-0.1)" class="w-7 h-7 bg-slate-100 hover:bg-slate-200 rounded-[3px] ml-2 flex items-center justify-center font-bold text-xs">-</button>
+                                <button type="button" @click="zoomPdf(0.1)" class="w-7 h-7 bg-slate-100 hover:bg-slate-200 rounded-[3px] flex items-center justify-center font-bold text-xs">+</button>
                             </div>
                         </template>
                     </div>
@@ -517,19 +542,26 @@
                 <template x-if="currentFile && currentFile.file_type === 'word'">
                     <div class="flex items-center gap-2 text-xs font-bold w-full justify-between">
                         <div class="flex items-center gap-1 bg-slate-100 p-1 rounded-[5px]">
-                            <button type="button" @click="execCmd('bold')" class="px-2.5 py-1 hover:bg-white rounded font-black text-slate-800" title="Negrito">B</button>
-                            <button type="button" @click="execCmd('italic')" class="px-2.5 py-1 hover:bg-white rounded italic text-slate-800" title="Itálico">I</button>
-                            <button type="button" @click="execCmd('underline')" class="px-2.5 py-1 hover:bg-white rounded underline text-slate-800" title="Sublinhado">U</button>
+                            <button type="button" @click="execCmd('bold')" class="w-7 h-7 hover:bg-white rounded font-black text-slate-800 flex items-center justify-center" title="Negrito">B</button>
+                            <button type="button" @click="execCmd('italic')" class="w-7 h-7 hover:bg-white rounded italic text-slate-800 flex items-center justify-center" title="Itálico">I</button>
+                            <button type="button" @click="execCmd('underline')" class="w-7 h-7 hover:bg-white rounded underline text-slate-800 flex items-center justify-center" title="Sublinhado">U</button>
                             <span class="h-4 w-px bg-slate-300 mx-1"></span>
-                            <button type="button" @click="execCmd('justifyLeft')" class="px-2 py-1 hover:bg-white rounded text-slate-700" title="Esquerda">⬅️</button>
-                            <button type="button" @click="execCmd('justifyCenter')" class="px-2 py-1 hover:bg-white rounded text-slate-700" title="Centro">⏹️</button>
-                            <button type="button" @click="execCmd('justifyRight')" class="px-2 py-1 hover:bg-white rounded text-slate-700" title="Direita">➡️</button>
-                            <button type="button" @click="execCmd('justifyFull')" class="px-2 py-1 hover:bg-white rounded text-slate-700" title="Justificado">↔️</button>
+                            <button type="button" @click="execCmd('justifyLeft')" class="w-7 h-7 hover:bg-white rounded text-slate-700 flex items-center justify-center" title="Esquerda">
+                                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h10M4 18h14"/></svg>
+                            </button>
+                            <button type="button" @click="execCmd('justifyCenter')" class="w-7 h-7 hover:bg-white rounded text-slate-700 flex items-center justify-center" title="Centro">
+                                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M7 12h10M5 18h14"/></svg>
+                            </button>
+                            <button type="button" @click="execCmd('justifyRight')" class="w-7 h-7 hover:bg-white rounded text-slate-700 flex items-center justify-center" title="Direita">
+                                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M10 12h10M6 18h14"/></svg>
+                            </button>
                         </div>
 
                         <div class="flex items-center gap-2">
-                            <button type="button" @click="saveEditedText()" class="px-4 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-[5px] uppercase tracking-wider transition-all flex items-center gap-1 shadow-sm">
-                                <span>💾</span> <span x-text="savingText ? 'Salvando...' : 'Salvar Documento'">Salvar</span>
+                            <button type="button" @click="saveEditedText()" class="w-9 h-9 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-[5px] flex items-center justify-center shadow-sm" title="Salvar Documento">
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4"/>
+                                </svg>
                             </button>
                         </div>
                     </div>
@@ -540,6 +572,15 @@
             <!-- CANVAS PRINCIPAL (Document Visualizer / Folha A4 do Word) -->
             <div class="flex-1 overflow-auto flex items-start justify-center p-8 relative bg-slate-200/60">
                 
+                <!-- INDICADOR DE CARREGAMENTO DO WORD -->
+                <div x-show="loadingWord" class="absolute inset-0 bg-white/80 flex items-center justify-center font-bold text-xs text-slate-600 z-20 gap-2">
+                    <svg class="animate-spin w-5 h-5 text-blue-600" fill="none" viewBox="0 0 24 24">
+                        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                        <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path>
+                    </svg>
+                    <span>Carregando documento Word...</span>
+                </div>
+
                 <!-- PDF EM IFRAME NATIVO DO NAVEGADOR -->
                 <template x-if="currentFile && currentFile.file_type === 'pdf' && viewerMode === 'iframe'">
                     <div class="w-full max-w-6xl h-full bg-white paper-shadow rounded-[5px] border border-slate-200 p-2 flex flex-col my-auto">
@@ -547,7 +588,7 @@
                     </div>
                 </template>
 
-                <!-- CANVAS PDF.JS PLUGIN (SEM ERROS DE PROXY DE CLASSE) -->
+                <!-- CANVAS PDF.JS PLUGIN -->
                 <template x-if="currentFile && currentFile.file_type === 'pdf' && viewerMode === 'native'">
                     <div class="bg-white paper-shadow rounded border border-slate-200 p-4 relative max-w-4xl max-h-full overflow-auto flex flex-col items-center my-auto">
                         <div x-show="renderingPdf" class="absolute inset-0 bg-white/80 flex items-center justify-center font-bold text-xs text-slate-500 z-10">
@@ -557,14 +598,13 @@
                     </div>
                 </template>
 
-                <!-- FORMATO DE PÁGINA CORRIDA DO WORD COM DIGITAÇÃO NATIVA SEM PULAR O CURSOR -->
+                <!-- FORMATO DE PÁGINA CORRIDA DO WORD COM DIGITAÇÃO NATIVA -->
                 <template x-if="currentFile && currentFile.file_type === 'word'">
                     <div class="w-full flex flex-col items-center">
                         
                         <div class="word-page-a4 paper-shadow border border-slate-300 text-slate-900 rounded-[2px] transition-all select-text relative"
                              id="word-paper-container">
 
-                            <!-- Conteúdo Editável do Word com Injeção Segura e $refs -->
                             <div x-ref="wordEditor"
                                  contenteditable="true"
                                  class="word-paper-content focus:outline-none min-h-[250mm]"
@@ -596,7 +636,7 @@
                 </span>
             </div>
 
-            <!-- Lista de Arquivos do Projeto -->
+            <!-- Lista de Arquivos do Projeto com SVG Icons -->
             <div class="flex-1 overflow-y-auto p-3 space-y-2.5">
                 @foreach($revision->files as $file)
                     <div @click="selectedFileId = {{ $file->id }}" 
@@ -615,8 +655,9 @@
                         
                         <div class="flex items-center justify-between pt-1 border-t border-slate-100 text-[10px] font-bold text-slate-500">
                             <span>{{ number_format($file->file_size / 1024, 1) }} KB</span>
-                            <a :href="getFileDownloadUrl({{ $file->id }})" target="_blank" @click.stop class="text-blue-600 hover:underline">
-                                ⬇️ Baixar
+                            <a :href="getFileDownloadUrl({{ $file->id }})" target="_blank" @click.stop class="text-blue-600 hover:underline flex items-center gap-1">
+                                <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/></svg>
+                                Baixar
                             </a>
                         </div>
                     </div>
@@ -626,7 +667,7 @@
             <!-- Ações do Rodapé -->
             <div class="p-4 border-t border-slate-200 bg-slate-50/50 space-y-2 shrink-0">
                 <button type="button" @click="openUploadVersionModal = true" class="w-full py-2 bg-slate-900 hover:bg-slate-800 text-white font-bold text-xs uppercase tracking-wider rounded-[5px] transition-colors shadow-xs">
-                    📤 Subir Nova Versão
+                    Subir Nova Versão
                 </button>
             </div>
 
@@ -638,7 +679,7 @@
     <div x-show="openUploadVersionModal" x-cloak class="fixed inset-0 z-[99999] flex items-center justify-center p-4 bg-slate-950/60 backdrop-blur-xs select-none">
         <div @click.away="openUploadVersionModal = false" class="bg-white border border-slate-200 text-slate-800 rounded-xl p-6 shadow-2xl max-w-md w-full space-y-4">
             <div class="flex items-center justify-between border-b border-slate-100 pb-3">
-                <h3 class="font-outfit font-black text-slate-900 text-md uppercase">📤 Salvar Nova Versão Revisada</h3>
+                <h3 class="font-outfit font-black text-slate-900 text-md uppercase">Salvar Nova Versão Revisada</h3>
                 <button type="button" @click="openUploadVersionModal = false" class="text-slate-400 hover:text-slate-600 font-bold">✕</button>
             </div>
 

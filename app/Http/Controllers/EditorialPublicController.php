@@ -311,6 +311,22 @@ class EditorialPublicController extends Controller
     }
 
     /**
+     * Retorna o HTML rico de um arquivo Word em tempo real via AJAX.
+     */
+    public function getFileTextContent(string $token, int $fileId)
+    {
+        $revision = EditorialRevision::where('share_token', $token)->firstOrFail();
+        $file = $revision->files()->where('id', $fileId)->firstOrFail();
+
+        if ($file->file_type === 'word') {
+            $html = \App\Services\DocxToHtmlConverter::convertToHtml($file->file_path, $revision->storage_disk ?: 'public');
+            return response()->json(['content' => $html]);
+        }
+
+        return response()->json(['content' => $file->extracted_text ?: '<p class="p-6 text-slate-500 italic">Sem conteúdo pré-extraído.</p>']);
+    }
+
+    /**
      * Método auxiliar para extrair HTML rico preservando formatação, fontes, tamanhos e imagens de arquivos Word (.docx).
      */
     protected function extractTextFromFile(EditorialRevisionFile $file, string $disk)

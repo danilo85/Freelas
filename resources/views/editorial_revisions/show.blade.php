@@ -31,7 +31,7 @@
          x-cloak 
          x-transition
          class="fixed bottom-24 right-6 z-[99999] bg-slate-900 text-white px-5 py-3.5 rounded-[5px] shadow-2xl flex items-center gap-3 text-xs font-bold border border-slate-700">
-        <span class="text-lg">✨</span>
+        <svg class="w-4 h-4 text-purple-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
         <span x-text="toastMessage"></span>
         <button type="button" @click="toastMessage = ''" class="text-slate-400 hover:text-white ml-2">✕</button>
     </div>
@@ -52,7 +52,7 @@
             <!-- Ficha & Alterar Revisor -->
             <div class="flex items-center gap-3 bg-slate-50 dark:bg-slate-800/60 px-4 py-3 rounded-[5px] border border-slate-150 dark:border-slate-700 shrink-0 self-start md:self-center">
                 <div class="w-9 h-9 rounded-full bg-purple-100 dark:bg-purple-900/50 text-purple-700 dark:text-purple-300 font-bold flex items-center justify-center text-sm border border-purple-200 dark:border-purple-800">
-                    ✍️
+                    <svg class="w-4 h-4 text-purple-600 dark:text-purple-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"/></svg>
                 </div>
                 <div>
                     <span class="text-[8px] font-bold text-slate-400 uppercase tracking-wider block">Revisor Atribuído</span>
@@ -72,26 +72,26 @@
             </div>
         </div>
 
-        <!-- Links Públicos do Projeto (Apenas Ícones) -->
+        <!-- Links Públicos do Projeto (Apenas SVG Icons) -->
         <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
             <!-- Link do Revisor -->
             <div class="space-y-2 p-4 bg-slate-50 dark:bg-slate-800/40 rounded-[5px] border border-slate-200 dark:border-slate-700">
-                <label class="text-[10px] font-black text-purple-700 dark:text-purple-400 uppercase tracking-wider block">🔗 Workspace do Revisor</label>
+                <label class="text-[10px] font-black text-purple-700 dark:text-purple-400 uppercase tracking-wider block">Workspace do Revisor</label>
                 <div class="flex items-center gap-2">
                     <input type="text" readonly value="{{ route('public.editorial.revisor.show', $editorialRevision->share_token) }}" class="flex-1 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 text-xs px-3 py-2 rounded-[5px] select-all font-mono">
-                    <a href="{{ route('public.editorial.revisor.show', $editorialRevision->share_token) }}" target="_blank" class="w-9 h-9 bg-purple-600 hover:bg-purple-700 text-white rounded-[5px] flex items-center justify-center text-sm transition-all shadow-xs" title="Abrir Workspace do Revisor">
-                        ↗️
+                    <a href="{{ route('public.editorial.revisor.show', $editorialRevision->share_token) }}" target="_blank" class="w-9 h-9 bg-purple-600 hover:bg-purple-700 text-white rounded-[5px] flex items-center justify-center transition-all shadow-xs" title="Abrir Workspace do Revisor">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/></svg>
                     </a>
                 </div>
             </div>
 
             <!-- Link do Autor -->
             <div class="space-y-2 p-4 bg-slate-50 dark:bg-slate-800/40 rounded-[5px] border border-slate-200 dark:border-slate-700">
-                <label class="text-[10px] font-black text-slate-700 dark:text-slate-300 uppercase tracking-wider block">🔗 Link do Autor (Esclarecer Dúvidas)</label>
+                <label class="text-[10px] font-black text-slate-700 dark:text-slate-300 uppercase tracking-wider block">Link do Autor (Esclarecer Dúvidas)</label>
                 <div class="flex items-center gap-2">
                     <input type="text" readonly value="{{ route('public.editorial.show', $editorialRevision->share_token) }}" class="flex-1 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 text-xs px-3 py-2 rounded-[5px] select-all font-mono">
-                    <button type="button" @click="copyShareLink('{{ route('public.editorial.show', $editorialRevision->share_token) }}')" class="w-9 h-9 bg-slate-900 hover:bg-slate-800 text-white rounded-[5px] flex items-center justify-center text-sm transition-all shadow-xs" title="Copiar Link do Autor">
-                        📋
+                    <button type="button" @click="copyShareLink('{{ route('public.editorial.show', $editorialRevision->share_token) }}')" class="w-9 h-9 bg-slate-900 hover:bg-slate-800 text-white rounded-[5px] flex items-center justify-center transition-all shadow-xs" title="Copiar Link do Autor">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"/></svg>
                     </button>
                 </div>
             </div>
@@ -109,8 +109,8 @@
                     <span class="text-xs text-slate-400 font-bold block mt-0.5">{{ $editorialRevision->files->count() }} Arquivos Cadastrados</span>
                 </div>
                 
-                <button type="button" @click="openUploadModal = true" class="w-9 h-9 bg-blue-600 hover:bg-blue-700 text-white rounded-[5px] flex items-center justify-center text-base transition-all shadow-xs" title="Upload de Novos Arquivos">
-                    📤
+                <button type="button" @click="openUploadModal = true" class="w-9 h-9 bg-blue-600 hover:bg-blue-700 text-white rounded-[5px] flex items-center justify-center transition-all shadow-xs" title="Upload de Novos Arquivos">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"/></svg>
                 </button>
             </div>
 
@@ -118,8 +118,14 @@
                 @forelse($editorialRevision->files as $file)
                     <div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-4 rounded-[5px] shadow-xs flex items-center justify-between gap-4">
                         <div class="flex items-center gap-3 min-w-0">
-                            <span class="text-2xl shrink-0">
-                                @if($file->file_type === 'pdf') 📄 @elseif($file->file_type === 'word') 📝 @else 🖼️ @endif
+                            <span class="p-2 rounded bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 shrink-0">
+                                @if($file->file_type === 'pdf')
+                                    <svg class="w-5 h-5 text-rose-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z"/></svg>
+                                @elseif($file->file_type === 'word')
+                                    <svg class="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+                                @else
+                                    <svg class="w-5 h-5 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
+                                @endif
                             </span>
                             <div class="min-w-0">
                                 <h5 class="font-bold text-xs text-slate-800 dark:text-slate-200 truncate" title="{{ $file->filename }}">{{ $file->filename }}</h5>
@@ -127,17 +133,17 @@
                             </div>
                         </div>
 
-                        <!-- BOTOES COM ICONES APENAS (SEM TEXTO) -->
+                        <!-- BOTOES COM ICONES APENAS (SEM EMOJIS) -->
                         <div class="flex items-center gap-2 shrink-0">
-                            <a href="{{ route('public.editorial.file.download', ['token' => $editorialRevision->share_token, 'fileId' => $file->id]) }}" target="_blank" class="w-8 h-8 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 rounded-[5px] flex items-center justify-center text-sm transition-colors" title="Baixar Arquivo">
-                                ⬇️
+                            <a href="{{ route('public.editorial.file.download', ['token' => $editorialRevision->share_token, 'fileId' => $file->id]) }}" target="_blank" class="w-8 h-8 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 rounded-[5px] flex items-center justify-center transition-colors" title="Baixar Arquivo">
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/></svg>
                             </a>
 
                             <form action="{{ route('revisoes-editoriais.files.destroy', $file->id) }}" method="POST" onsubmit="return confirm('Tem certeza que deseja excluir o arquivo {{ $file->filename }}?')">
                                 @csrf
                                 @method('DELETE')
-                                <button type="submit" class="w-8 h-8 bg-rose-50 hover:bg-rose-100 text-rose-700 dark:bg-rose-950/40 dark:hover:bg-rose-900/60 dark:text-rose-300 rounded-[5px] flex items-center justify-center text-sm transition-colors" title="Excluir Arquivo">
-                                    🗑️
+                                <button type="submit" class="w-8 h-8 bg-rose-50 hover:bg-rose-100 text-rose-700 dark:bg-rose-950/40 dark:hover:bg-rose-900/60 dark:text-rose-300 rounded-[5px] flex items-center justify-center transition-colors" title="Excluir Arquivo">
+                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
                                 </button>
                             </form>
                         </div>
@@ -201,7 +207,7 @@
         <div @click.away="openUploadModal = false" class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-slate-800 dark:text-slate-100 rounded-xl p-6 shadow-2xl max-w-lg w-full space-y-4">
             
             <div class="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-3">
-                <h3 class="font-outfit font-black text-md uppercase">📤 Upload Moderno de Arquivos</h3>
+                <h3 class="font-outfit font-black text-md uppercase">Upload Moderno de Arquivos</h3>
                 <button type="button" @click="openUploadModal = false" class="text-slate-400 hover:text-slate-600 font-bold">✕</button>
             </div>
 
@@ -215,7 +221,9 @@
                 
                 <input type="file" x-ref="fileInput" @change="handleFileSelect($event)" multiple class="hidden">
 
-                <span class="text-4xl block">📁</span>
+                <svg class="w-10 h-10 mx-auto text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"/>
+                </svg>
                 <p class="text-xs font-bold text-slate-700 dark:text-slate-200">
                     Arraste & Solte seus arquivos aqui ou <span class="text-blue-600 underline">clique para buscar</span>
                 </p>
@@ -248,7 +256,7 @@
             <div class="flex justify-end gap-2 pt-3 border-t border-slate-100 dark:border-slate-800">
                 <button type="button" @click="openUploadModal = false" class="px-4 py-2 bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 font-bold text-xs rounded-[5px]">Cancelar</button>
                 <button type="button" @click="submitUploadWithProgress()" :disabled="selectedFiles.length === 0 || uploading" class="w-9 h-9 bg-blue-600 hover:bg-blue-700 text-white rounded-[5px] flex items-center justify-center text-sm transition-all disabled:opacity-50" title="Iniciar Upload">
-                    🚀
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3"/></svg>
                 </button>
             </div>
 
