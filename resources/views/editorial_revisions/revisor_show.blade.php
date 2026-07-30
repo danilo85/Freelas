@@ -54,15 +54,15 @@
             backdrop-filter: blur(10px);
         }
         .paper-shadow {
-            box-shadow: 0 15px 35px -5px rgba(0, 0, 0, 0.2), 0 0 10px rgba(0, 0, 0, 0.05);
+            box-shadow: 0 10px 30px -5px rgba(0, 0, 0, 0.12), 0 0 5px rgba(0, 0, 0, 0.05);
         }
-        /* ESTILO DA FOLHA A4 DO WORD COM PÁGINAS INFINITAS E QUEBRAS VISUAIS */
+        /* FOLHA CORRIDA DO WORD COM RISCO SUAVE DE DEMARCAÇÃO */
         .word-page-a4 {
             width: 210mm;
             min-height: 297mm;
             padding: 25mm 20mm;
             background-color: #ffffff;
-            background-image: linear-gradient(to bottom, transparent 296mm, #cbd5e1 296mm, #f1f5f9 297mm);
+            background-image: linear-gradient(to bottom, transparent 296mm, #e2e8f0 296mm, #ffffff 297mm);
             background-size: 100% 297mm;
             border: 1px solid #cbd5e1;
             margin: 20px auto;
@@ -77,6 +77,14 @@
             border-radius: 4px;
             box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
         }
+        mark.revisor-highlight {
+            background-color: #fef08a; /* Amarelo suave */
+            color: #713f12;
+            padding: 2px 4px;
+            border-radius: 3px;
+            border-bottom: 2px solid #facc15;
+            font-weight: 500;
+        }
     </style>
 
     <script>
@@ -88,11 +96,10 @@
             return {
                 leftSidebarOpen: false,
                 rightSidebarOpen: false,
-                openCorrectionModal: false,
                 openUploadVersionModal: false,
                 categoryFilter: 'todas',
                 viewMode: 'track', // 'track', 'original', 'final'
-                viewerMode: 'native', // 'native' ou 'iframe'
+                viewerMode: 'iframe', // 'iframe' como padrão para PDFs (renderiza 100% de layout, cores e orientação)
                 toastMessage: '',
                 selectedFileId: filesData.length > 0 ? filesData[0].id : null,
                 languageToolMatches: [],
@@ -101,6 +108,7 @@
                 originalContent: '',
                 revisedContent: '',
                 savingText: false,
+                autoCategory: 'ortografia',
 
                 // Auth State
                 isAuth: @json($isAuthenticated),
@@ -114,13 +122,6 @@
                 totalPages: 1,
                 pdfScale: 1.2,
                 renderingPdf: false,
-
-                // Modal Correction State
-                modalCategory: 'ortografia',
-                modalOriginalText: '',
-                modalSuggestedText: '',
-                modalJustification: '',
-                modalPageNumber: 1,
 
                 init() {
                     this.loadContentForSelectedFile();
@@ -196,7 +197,6 @@
 
                         page.render({ canvasContext: ctx, viewport: viewport }).promise.then(() => {
                             this.renderingPdf = false;
-                            this.modalPageNumber = num;
                         });
                     });
                 },
@@ -226,6 +226,52 @@
                     }
                 },
 
+                // MARCA EM AMARELO SUAVE E CRIA O APONTAMENTO AUTOMATICAMENTE (SEM CAIXA/MODAL)
+                highlightAndCreateApontamento(cat = 'ortografia') {
+                    const sel = window.getSelection();
+                    if (!sel || sel.rangeCount === 0 || sel.toString().trim() === '') {
+                        this.showToast('Selecione um trecho do texto para marcar.');
+                        return;
+                    }
+
+                    const selectedText = sel.toString().trim();
+                    const range = sel.getRangeAt(0);
+
+                    // Cria o elemento marcador em amarelo suave
+                    const markNode = document.createElement('mark');
+                    markNode.className = 'revisor-highlight';
+                    markNode.textContent = selectedText;
+
+                    range.deleteContents();
+                    range.insertNode(markNode);
+
+                    // Atualiza o estado
+                    const editor = document.getElementById('word-paper-editor');
+                    if (editor) {
+                        this.revisedContent = editor.innerHTML;
+                    }
+
+                    // Envia a criação do apontamento via AJAX para a Coluna 1
+                    fetch('{{ route("public.editorial.revisor.corrections.store", $revision->share_token) }}', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'X-CSRF-TOKEN': '{{ csrf_token() }}'
+                        },
+                        body: JSON.stringify({
+                            editorial_revision_file_id: this.selectedFileId,
+                            category: cat,
+                            original_text: selectedText,
+                            suggested_text: selectedText,
+                            justification: 'Apontamento marcado diretamente no texto.'
+                        })
+                    })
+                    .then(res => {
+                        this.showToast('Trecho marcado em amarelo e apontamento adicionado à Coluna 1!');
+                        setTimeout(() => { window.location.reload(); }, 1200);
+                    });
+                },
+
                 saveEditedText() {
                     if (!this.currentFile) return;
                     this.savingText = true;
@@ -243,7 +289,7 @@
                     .then(res => res.json())
                     .then(data => {
                         this.savingText = false;
-                        this.showToast('Alterações do texto salvas com sucesso no documento Word!');
+                        this.showToast('Documento Word salvo com sucesso!');
                     })
                     .catch(() => {
                         this.savingText = false;
@@ -277,14 +323,6 @@
                     .catch(() => {
                         this.loginError = 'Erro no servidor ao validar o acesso.';
                     });
-                },
-
-                captureSelectedText() {
-                    const sel = window.getSelection().toString().trim();
-                    if (sel) {
-                        this.modalOriginalText = sel;
-                        this.showToast('Trecho capturado do texto! Clique em + Novo Apontamento para usar.');
-                    }
                 },
 
                 showToast(msg) {
@@ -390,10 +428,6 @@
                 <span>🔍</span> LanguageTool
             </button>
 
-            <button type="button" @click="openCorrectionModal = true" class="bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs uppercase tracking-wider px-4 py-2 rounded-[5px] transition-all flex items-center gap-1.5 shadow-sm">
-                <span>➕</span> Novo Apontamento
-            </button>
-
             <button type="button" @click="copyAuthorLink('{{ route('public.editorial.show', $revision->share_token) }}')" class="bg-slate-900 hover:bg-slate-800 text-white font-bold text-xs uppercase tracking-wider px-4 py-2 rounded-[5px] transition-all flex items-center gap-1.5 shadow-sm">
                 <span>🔗</span> Link do Autor
             </button>
@@ -403,7 +437,7 @@
     <!-- CORPO PRINCIPAL DE 3 COLUNAS COM ALTURA FLUIDA 100% -->
     <main class="flex-1 flex overflow-hidden min-h-0">
 
-        <!-- COLUNA 1 (ESQUERDA - 320px): LISTA DE APONTAMENTOS E CATEGORIAS -->
+        <!-- COLUNA 1 (ESQUERDA - 320px): LISTA DE APONTAMENTOS AUTOMÁTICOS -->
         <aside class="w-80 border-r border-slate-200 bg-white flex flex-col justify-between shrink-0 h-full overflow-hidden z-20">
             
             <!-- Informação do Arquivo Selecionado -->
@@ -423,7 +457,7 @@
                 <button @click="categoryFilter = 'duvida'" class="flex-1 py-2.5 text-center border-b-2 text-[10px]" :class="categoryFilter === 'duvida' ? 'border-blue-600 text-blue-600 bg-blue-50' : 'border-transparent text-slate-400'">Dúvidas</button>
             </div>
 
-            <!-- Feed de Apontamentos -->
+            <!-- Feed de Apontamentos Automáticos do Revisor -->
             <div class="flex-1 overflow-y-auto p-4 space-y-3">
                 @forelse($revision->corrections as $cor)
                     @php
@@ -435,29 +469,25 @@
                             default => 'bg-slate-100 text-slate-800 border border-slate-200',
                         };
                     @endphp
-                    <div x-show="categoryFilter === 'todas' || categoryFilter === '{{ $cor->category }}'" class="p-3.5 bg-slate-50 border border-slate-200 rounded-[5px] text-xs space-y-2">
+                    <div x-show="categoryFilter === 'todas' || categoryFilter === '{{ $cor->category }}'" class="p-3.5 bg-amber-50/50 border border-amber-200 rounded-[5px] text-xs space-y-2">
                         <div class="flex items-center justify-between">
                             <span class="text-[9px] font-black uppercase px-2 py-0.5 rounded-[3px] {{ $badgeClass }}">
                                 {{ ucfirst($cor->category) }}
                             </span>
-                            <span class="text-[10px] text-slate-400 font-bold">Pág. {{ $cor->page_number ?: 1 }}</span>
+                            <span class="text-[10px] text-slate-400 font-bold">Apontamento Marcado</span>
                         </div>
 
                         @if($cor->original_text)
-                            <p class="font-mono text-slate-600 line-through">"{{ $cor->original_text }}"</p>
-                        @endif
-
-                        @if($cor->suggested_text)
-                            <p class="font-mono text-emerald-800 font-bold">➔ {{ $cor->suggested_text }}</p>
+                            <p class="font-mono text-amber-950 font-bold bg-amber-100 px-1.5 py-0.5 rounded">"{{ $cor->original_text }}"</p>
                         @endif
 
                         @if($cor->justification)
-                            <p class="text-slate-500 italic">💡 {{ $cor->justification }}</p>
+                            <p class="text-slate-600 italic text-[11px]">💡 {{ $cor->justification }}</p>
                         @endif
                     </div>
                 @empty
                     <div class="text-center text-slate-400 py-12 font-semibold text-xs border border-dashed border-slate-200 rounded-[5px]">
-                        Nenhum apontamento cadastrado nesta revisão.
+                        Nenhum apontamento marcado. Selecione trechos no documento Word para destacar em amarelo!
                     </div>
                 @endforelse
             </div>
@@ -474,25 +504,17 @@
                 <template x-if="currentFile && currentFile.file_type === 'pdf'">
                     <div class="flex items-center gap-3 text-xs font-bold text-slate-600">
                         <div class="flex items-center gap-1 bg-slate-100 p-1 rounded-[5px]">
+                            <button type="button" @click="viewerMode = 'iframe'" class="px-3 py-1 rounded-[3px]" :class="viewerMode === 'iframe' ? 'bg-white text-slate-900 shadow-xs' : 'text-slate-500'">
+                                🖥️ Leitor Nativo (Preserva Layout, Cores e Orientação)
+                            </button>
                             <button type="button" @click="viewerMode = 'native'" class="px-3 py-1 rounded-[3px]" :class="viewerMode === 'native' ? 'bg-white text-slate-900 shadow-xs' : 'text-slate-500'">
                                 📄 PDF Canvas
                             </button>
-                            <button type="button" @click="viewerMode = 'iframe'" class="px-3 py-1 rounded-[3px]" :class="viewerMode === 'iframe' ? 'bg-white text-slate-900 shadow-xs' : 'text-slate-500'">
-                                🖥️ Leitor Nativo Navegador
-                            </button>
-                        </div>
-
-                        <div class="flex items-center gap-2 pl-3 border-l border-slate-200">
-                            <button type="button" @click="prevPage()" class="px-2 py-1 bg-slate-100 hover:bg-slate-200 rounded-[3px]">◀</button>
-                            <span>PÁG. <span x-text="currentPage"></span> DE <span x-text="totalPages"></span></span>
-                            <button type="button" @click="nextPage()" class="px-2 py-1 bg-slate-100 hover:bg-slate-200 rounded-[3px]">▶</button>
-                            <button type="button" @click="zoomPdf(-0.1)" class="px-2 py-1 bg-slate-100 hover:bg-slate-200 rounded-[3px] ml-2">🔍-</button>
-                            <button type="button" @click="zoomPdf(0.1)" class="px-2 py-1 bg-slate-100 hover:bg-slate-200 rounded-[3px]">🔍+</button>
                         </div>
                     </div>
                 </template>
 
-                <!-- BARRA DE FERRAMENTAS WYSIWYG PARA DOCUMENTOS WORD -->
+                <!-- BARRA DE FERRAMENTAS WYSIWYG PARA DOCUMENTOS WORD (COM MARCADOR AMARELO AUTOMÁTICO) -->
                 <template x-if="currentFile && currentFile.file_type === 'word'">
                     <div class="flex items-center gap-2 text-xs font-bold w-full justify-between">
                         <div class="flex items-center gap-1 bg-slate-100 p-1 rounded-[5px]">
@@ -500,21 +522,15 @@
                             <button type="button" @click="execCmd('italic')" class="px-2.5 py-1 hover:bg-white rounded italic text-slate-800" title="Itálico">I</button>
                             <button type="button" @click="execCmd('underline')" class="px-2.5 py-1 hover:bg-white rounded underline text-slate-800" title="Sublinhado">U</button>
                             <span class="h-4 w-px bg-slate-300 mx-1"></span>
-                            <button type="button" @click="execCmd('justifyLeft')" class="px-2 py-1 hover:bg-white rounded text-slate-700" title="Esquerda">⬅️</button>
-                            <button type="button" @click="execCmd('justifyCenter')" class="px-2 py-1 hover:bg-white rounded text-slate-700" title="Centro">⏹️</button>
-                            <button type="button" @click="execCmd('justifyRight')" class="px-2 py-1 hover:bg-white rounded text-slate-700" title="Direita">➡️</button>
-                            <button type="button" @click="execCmd('justifyFull')" class="px-2 py-1 hover:bg-white rounded text-slate-700" title="Justificado">↔️</button>
+                            <!-- BOTÃO MARCADOR EM AMARELO AUTO-CRIADOR DE APONTAMENTO -->
+                            <button type="button" @click="highlightAndCreateApontamento('ortografia')" class="px-3 py-1 bg-amber-300 hover:bg-amber-400 text-amber-950 rounded font-bold transition-all flex items-center gap-1 shadow-xs" title="Destacar em Amarelo Suave e criar apontamento automaticamente na Coluna 1">
+                                🪶 Marcar em Amarelo Suave
+                            </button>
                         </div>
 
                         <div class="flex items-center gap-2">
-                            <div class="flex items-center gap-1 bg-slate-100 p-1 rounded-[5px]">
-                                <button type="button" @click="viewMode = 'track'" class="px-2.5 py-1 rounded-[3px]" :class="viewMode === 'track' ? 'bg-blue-600 text-white' : 'text-slate-500'">✨ Track Changes</button>
-                                <button type="button" @click="viewMode = 'original'" class="px-2.5 py-1 rounded-[3px]" :class="viewMode === 'original' ? 'bg-rose-600 text-white' : 'text-slate-500'">🔴 Original</button>
-                                <button type="button" @click="viewMode = 'final'" class="px-2.5 py-1 rounded-[3px]" :class="viewMode === 'final' ? 'bg-emerald-600 text-white' : 'text-slate-500'">🟢 Versão Final</button>
-                            </div>
-
-                            <button type="button" @click="saveEditedText()" class="px-4 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-[5px] uppercase tracking-wider transition-all flex items-center gap-1">
-                                <span>💾</span> <span x-text="savingText ? 'Salvando...' : 'Salvar Alterações'">Salvar</span>
+                            <button type="button" @click="saveEditedText()" class="px-4 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-[5px] uppercase tracking-wider transition-all flex items-center gap-1 shadow-sm">
+                                <span>💾</span> <span x-text="savingText ? 'Salvando...' : 'Salvar Documento'">Salvar</span>
                             </button>
                         </div>
                     </div>
@@ -525,7 +541,14 @@
             <!-- CANVAS PRINCIPAL (Document Visualizer / Folha A4 do Word) -->
             <div class="flex-1 overflow-auto flex items-start justify-center p-8 relative bg-slate-200/60">
                 
-                <!-- CANVAS PDF.JS NATIVO -->
+                <!-- PDF EM IFRAME NATIVO DO NAVEGADOR (ABRE 100% DE PDFS PRESERVANDO LAYOUT, CORES E ORIENTAÇÃO HORIZONTAL/VERTICAL) -->
+                <template x-if="currentFile && currentFile.file_type === 'pdf' && viewerMode === 'iframe'">
+                    <div class="w-full max-w-6xl h-full bg-white paper-shadow rounded-[5px] border border-slate-200 p-2 flex flex-col my-auto">
+                        <iframe :src="getFileStreamUrl(currentFile.id)" class="w-full h-full rounded border-0" frameborder="0"></iframe>
+                    </div>
+                </template>
+
+                <!-- CANVAS PDF.JS SECUNDÁRIO -->
                 <template x-if="currentFile && currentFile.file_type === 'pdf' && viewerMode === 'native'">
                     <div class="bg-white paper-shadow rounded border border-slate-200 p-4 relative max-w-4xl max-h-full overflow-auto flex flex-col items-center my-auto">
                         <div x-show="renderingPdf" class="absolute inset-0 bg-white/80 flex items-center justify-center font-bold text-xs text-slate-500 z-10">
@@ -535,27 +558,18 @@
                     </div>
                 </template>
 
-                <!-- PDF EM IFRAME NATIVO DO NAVEGADOR -->
-                <template x-if="currentFile && currentFile.file_type === 'pdf' && viewerMode === 'iframe'">
-                    <div class="w-full max-w-5xl h-full bg-white paper-shadow rounded-[5px] border border-slate-200 p-2 flex flex-col my-auto">
-                        <iframe :src="getFileStreamUrl(currentFile.id)" class="w-full h-full rounded border-0" frameborder="0"></iframe>
-                    </div>
-                </template>
-
-                <!-- FORMATO DE PÁGINAS A4 MULTIPLAS CONTINUAS DO MICROSOFT WORD -->
+                <!-- FORMATO DE PÁGINA CORRIDA DO WORD COM RISCO SUAVE DE DEMARCAÇÃO -->
                 <template x-if="currentFile && currentFile.file_type === 'word'">
                     <div class="w-full flex flex-col items-center">
                         
-                        <!-- FOLHA DE PAPEL A4 DO WORD COM PÁGINAS QUE EXPANDEM INFINITAMENTE -->
                         <div class="word-page-a4 paper-shadow border border-slate-300 text-slate-900 rounded-[2px] transition-all select-text relative"
                              id="word-paper-container">
 
-                            <!-- Conteúdo Editável do Word com Imagens Base64 e Fontes Preservadas -->
+                            <!-- Conteúdo Editável do Word -->
                             <div id="word-paper-editor"
                                  contenteditable="true"
                                  class="word-paper-content focus:outline-none min-h-[250mm]"
                                  @input="revisedContent = $el.innerHTML"
-                                 @mouseup="captureSelectedText"
                                  x-html="revisedContent">
                             </div>
 
@@ -621,62 +635,6 @@
         </aside>
 
     </main>
-
-    <!-- Modal Criar Apontamento -->
-    <div x-show="openCorrectionModal" x-cloak class="fixed inset-0 z-[99999] flex items-center justify-center p-4 bg-slate-950/60 backdrop-blur-xs select-none">
-        <div @click.away="openCorrectionModal = false" class="bg-white border border-slate-200 text-slate-800 rounded-xl p-6 shadow-2xl max-w-lg w-full space-y-4">
-            <div class="flex items-center justify-between border-b border-slate-100 pb-3">
-                <h3 class="font-outfit font-black text-slate-900 text-md uppercase">➕ Novo Apontamento de Revisão</h3>
-                <button type="button" @click="openCorrectionModal = false" class="text-slate-400 hover:text-slate-600 font-bold">✕</button>
-            </div>
-
-            <form action="{{ route('public.editorial.revisor.corrections.store', $revision->share_token) }}" method="POST" class="space-y-3 text-xs">
-                @csrf
-                <input type="hidden" name="editorial_revision_file_id" :value="selectedFileId">
-                
-                <div class="grid grid-cols-2 gap-3">
-                    <div>
-                        <label class="font-bold block mb-1">Categoria</label>
-                        <select name="category" x-model="modalCategory" required class="w-full px-3 py-2 border border-slate-200 rounded-[5px]">
-                            <option value="ortografia">Ortografia</option>
-                            <option value="gramatica">Gramática</option>
-                            <option value="pontuacao">Pontuação</option>
-                            <option value="clareza">Clareza de Frase</option>
-                            <option value="padronizacao">Padronização</option>
-                            <option value="duvida">Dúvida para o Autor</option>
-                            <option value="termo_tecnico">Termo Técnico</option>
-                            <option value="observacao">Observação Geral</option>
-                        </select>
-                    </div>
-
-                    <div>
-                        <label class="font-bold block mb-1">Página (Opcional)</label>
-                        <input type="number" name="page_number" x-model="modalPageNumber" placeholder="Ex: 5" class="w-full px-3 py-2 border border-slate-200 rounded-[5px]">
-                    </div>
-                </div>
-
-                <div>
-                    <label class="font-bold block mb-1">Texto Original do Autor</label>
-                    <textarea name="original_text" x-model="modalOriginalText" rows="2" placeholder="Trecho extraído do texto..." class="w-full px-3 py-2 border border-slate-200 rounded-[5px]"></textarea>
-                </div>
-
-                <div>
-                    <label class="font-bold block mb-1">Sugestão de Correção</label>
-                    <textarea name="suggested_text" x-model="modalSuggestedText" rows="2" placeholder="Digite a correção sugerida..." class="w-full px-3 py-2 border border-slate-200 rounded-[5px]"></textarea>
-                </div>
-
-                <div>
-                    <label class="font-bold block mb-1">Justificativa / Comentário</label>
-                    <input type="text" name="justification" x-model="modalJustification" placeholder="Explicação da regra ou orientação..." class="w-full px-3 py-2 border border-slate-200 rounded-[5px]">
-                </div>
-
-                <div class="flex justify-end gap-2 pt-2 border-t border-slate-100">
-                    <button type="button" @click="openCorrectionModal = false" class="px-4 py-2 bg-slate-100 text-slate-600 font-bold rounded-[5px]">Cancelar</button>
-                    <button type="submit" class="px-4 py-2 bg-emerald-600 text-white font-bold rounded-[5px]">Salvar Apontamento</button>
-                </div>
-            </form>
-        </div>
-    </div>
 
     <!-- Modal Upload de Nova Versão -->
     <div x-show="openUploadVersionModal" x-cloak class="fixed inset-0 z-[99999] flex items-center justify-center p-4 bg-slate-950/60 backdrop-blur-xs select-none">
