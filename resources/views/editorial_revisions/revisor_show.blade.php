@@ -1,16 +1,16 @@
 <!DOCTYPE html>
-<html lang="pt-BR" class="h-full bg-slate-900">
+<html lang="pt-BR" class="h-full bg-slate-100">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="csrf-token" content="{{ csrf_token() }}">
-    <title>Workspace de Revisão Editorial | {{ $revision->title }}</title>
+    <title>Painel de Revisão Editorial | {{ $revision->title }}</title>
     <link rel="icon" type="image/png" href="{{ asset('storage/freela/freela-03.png') }}">
 
     <!-- Google Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800;900&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800;900&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 
     <!-- Tailwind CSS CDN -->
     <script src="https://cdn.tailwindcss.com"></script>
@@ -48,8 +48,13 @@
 
     <style>
         [x-cloak] { display: none !important; }
-        .track-added { background-color: #d1fae5; color: #065f46; font-weight: bold; text-decoration: none; padding: 0 4px; border-radius: 3px; }
-        .track-removed { background-color: #ffe4e6; color: #9f1239; text-decoration: line-through; padding: 0 4px; border-radius: 3px; }
+        .glassmorphism {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+        }
+        .paper-shadow {
+            box-shadow: 0 10px 30px -5px rgba(0, 0, 0, 0.1), 0 0 5px rgba(0, 0, 0, 0.05);
+        }
     </style>
 
     <script>
@@ -59,6 +64,8 @@
             const streamBaseUrl = '{{ url("/revisao-editorial/" . $revision->share_token . "/file") }}';
 
             return {
+                leftSidebarOpen: false,
+                rightSidebarOpen: false,
                 openCorrectionModal: false,
                 openUploadVersionModal: false,
                 categoryFilter: 'todas',
@@ -71,7 +78,6 @@
                 // Track Changes state
                 originalContent: '',
                 revisedContent: '',
-                isEditingText: false,
                 savingText: false,
 
                 // Auth State
@@ -84,7 +90,7 @@
                 pdfDoc: null,
                 currentPage: 1,
                 totalPages: 1,
-                pdfScale: 1.2,
+                pdfScale: 1.1,
                 renderingPdf: false,
 
                 // Modal Correction State
@@ -307,33 +313,33 @@
         }
     </script>
 </head>
-<body class="font-sans antialiased bg-slate-900 text-slate-100 min-h-full flex flex-col justify-between" x-data="revisorWorkspace()">
+<body class="font-sans antialiased bg-slate-100 text-slate-800 min-h-screen flex flex-col overflow-hidden" x-data="revisorWorkspace()">
 
     <!-- Modal de Autenticação / Login do Revisor -->
-    <div x-show="!isAuth" x-cloak class="fixed inset-0 z-[999999] flex items-center justify-center p-4 bg-slate-950/90 backdrop-blur-sm select-none">
-        <div class="bg-slate-800 border border-slate-700 text-slate-100 rounded-xl p-8 shadow-2xl max-w-md w-full space-y-6">
+    <div x-show="!isAuth" x-cloak class="fixed inset-0 z-[999999] flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-sm select-none">
+        <div class="bg-white border border-slate-200 text-slate-800 rounded-xl p-8 shadow-2xl max-w-md w-full space-y-6">
             <div class="text-center space-y-2">
                 <span class="text-4xl block">🔐</span>
-                <h3 class="font-outfit font-black text-xl uppercase tracking-tight text-white">Acesso Restrito ao Revisor</h3>
-                <p class="text-xs text-slate-400 font-medium">Digite os seus dados de acesso para desbloquear o Workspace do projeto <strong class="text-slate-200">{{ $revision->title }}</strong>.</p>
+                <h3 class="font-outfit font-black text-xl uppercase tracking-tight text-slate-900">Acesso Restrito ao Revisor</h3>
+                <p class="text-xs text-slate-500 font-medium">Digite os seus dados de acesso para desbloquear o Workspace do projeto <strong class="text-slate-700">{{ $revision->title }}</strong>.</p>
             </div>
 
             <template x-if="loginError">
-                <div class="bg-rose-900/50 border border-rose-700 text-rose-200 p-3 rounded-[5px] text-xs font-bold" x-text="loginError"></div>
+                <div class="bg-rose-50 border border-rose-200 text-rose-700 p-3 rounded-[5px] text-xs font-bold" x-text="loginError"></div>
             </template>
 
             <form @submit.prevent="submitRevisorLogin" class="space-y-4 text-xs">
                 <div>
-                    <label class="font-bold block mb-1 uppercase tracking-wider text-slate-400">E-mail do Revisor</label>
-                    <input type="email" x-model="loginEmail" required placeholder="revisora@exemplo.com" class="w-full px-4 py-3 border border-slate-700 rounded-[5px] bg-slate-900 text-white font-medium text-sm">
+                    <label class="font-bold block mb-1 uppercase tracking-wider text-slate-500">E-mail do Revisor</label>
+                    <input type="email" x-model="loginEmail" required placeholder="revisora@exemplo.com" class="w-full px-4 py-3 border border-slate-200 rounded-[5px] bg-slate-50 text-slate-800 font-medium text-sm">
                 </div>
 
                 <div>
-                    <label class="font-bold block mb-1 uppercase tracking-wider text-slate-400">Senha de Acesso</label>
-                    <input type="password" x-model="loginPassword" required placeholder="••••••••" class="w-full px-4 py-3 border border-slate-700 rounded-[5px] bg-slate-900 text-white font-medium text-sm">
+                    <label class="font-bold block mb-1 uppercase tracking-wider text-slate-500">Senha de Acesso</label>
+                    <input type="password" x-model="loginPassword" required placeholder="••••••••" class="w-full px-4 py-3 border border-slate-200 rounded-[5px] bg-slate-50 text-slate-800 font-medium text-sm">
                 </div>
 
-                <button type="submit" class="w-full py-3.5 bg-primary-600 hover:bg-primary-700 text-white font-bold text-xs uppercase tracking-wider rounded-[5px] shadow-md transition-all">
+                <button type="submit" class="w-full py-3.5 bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs uppercase tracking-wider rounded-[5px] shadow-md transition-all">
                     Entrar no Workspace
                 </button>
             </form>
@@ -344,240 +350,256 @@
     <div x-show="toastMessage" 
          x-cloak 
          x-transition
-         class="fixed bottom-24 right-6 z-[99999] bg-emerald-600 text-white px-5 py-3.5 rounded-[5px] shadow-2xl flex items-center gap-3 text-xs font-bold border border-emerald-500">
+         class="fixed bottom-20 right-6 z-[99999] bg-slate-900 text-white px-5 py-3.5 rounded-[5px] shadow-2xl flex items-center gap-3 text-xs font-bold border border-slate-700">
         <span class="text-lg">✨</span>
         <span x-text="toastMessage"></span>
-        <button type="button" @click="toastMessage = ''" class="text-emerald-200 hover:text-white ml-2">✕</button>
+        <button type="button" @click="toastMessage = ''" class="text-slate-400 hover:text-white ml-2">✕</button>
     </div>
 
-    <!-- Topo Escuro Moderno (Igual ao Portal do Autor de Revisão) -->
-    <header class="bg-slate-950 border-b border-slate-800 shadow-md py-4 px-6 sticky top-0 z-50">
-        <div class="max-w-7xl mx-auto flex flex-col md:flex-row md:items-center justify-between gap-4">
-            <div class="flex items-center gap-3">
-                <span class="text-2xl">✍️</span>
-                <div>
-                    <h1 class="text-base font-black font-outfit uppercase tracking-tight text-white">Workspace de Revisão Editorial</h1>
-                    <p class="text-[11px] text-slate-400 font-medium">{{ $revision->title }}</p>
-                </div>
-            </div>
+    <!-- HEADER SUPERIOR (Igual ao Painel de Provas do Autor) -->
+    <header class="h-16 border-b border-slate-200 glassmorphism px-6 flex items-center justify-between z-30 shrink-0 select-none">
+        <div class="flex items-center gap-3">
+            <span class="font-outfit font-black text-sm tracking-tight text-slate-800">
+                DANILO<span class="text-blue-600">MIGUEL</span>
+            </span>
+            <span class="h-4 w-px bg-slate-200"></span>
+            <span class="text-xs font-bold text-slate-500 uppercase tracking-widest">Painel de Revisão Editorial</span>
+        </div>
 
-            <div class="flex items-center gap-3 flex-wrap">
-                <button type="button" 
-                        @click="openUploadVersionModal = true" 
-                        class="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-bold rounded-[5px] transition-colors border border-slate-700 flex items-center gap-1.5 cursor-pointer uppercase tracking-wider">
-                    <span>📤</span> Salvar Nova Versão
-                </button>
+        <div class="flex items-center gap-2 bg-slate-50 border border-slate-200 px-3.5 py-1.5 rounded-[5px] text-xs font-medium">
+            <span class="text-[10px] font-bold text-slate-400 uppercase tracking-wide">Revisor Atribuído:</span>
+            <span class="font-bold text-slate-800">{{ $revision->revisor ? $revision->revisor->name : 'Revisor Geral / Cliente' }}</span>
+        </div>
 
-                <button type="button" 
-                        @click="copyAuthorLink('{{ route('public.editorial.show', $revision->share_token) }}')" 
-                        class="px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white text-xs font-bold rounded-[5px] transition-colors shadow-xs flex items-center gap-1.5 cursor-pointer uppercase tracking-wider">
-                    <span>🔗</span> Link para o Autor
-                </button>
+        <div class="flex items-center gap-2">
+            <button type="button" @click="checkLanguageTool()" class="bg-purple-600 hover:bg-purple-700 text-white font-bold text-xs uppercase tracking-wider px-3.5 py-2 rounded-[5px] transition-all flex items-center gap-1.5 shadow-sm">
+                <span>🔍</span> LanguageTool
+            </button>
 
-                <button type="button" 
-                        @click="openCorrectionModal = true" 
-                        class="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold rounded-[5px] transition-colors shadow-xs flex items-center gap-1.5 cursor-pointer uppercase tracking-wider">
-                    <span>➕</span> Criar Apontamento
-                </button>
-            </div>
+            <button type="button" @click="openCorrectionModal = true" class="bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs uppercase tracking-wider px-4 py-2 rounded-[5px] transition-all flex items-center gap-1.5 shadow-sm">
+                <span>➕</span> Novo Apontamento
+            </button>
+
+            <button type="button" @click="copyAuthorLink('{{ route('public.editorial.show', $revision->share_token) }}')" class="bg-slate-900 hover:bg-slate-800 text-white font-bold text-xs uppercase tracking-wider px-4 py-2 rounded-[5px] transition-all flex items-center gap-1.5 shadow-sm">
+                <span>🔗</span> Link do Autor
+            </button>
         </div>
     </header>
 
-    <!-- Conteúdo Principal do Revisor -->
-    <main class="max-w-7xl mx-auto px-4 py-8 w-full flex-1 space-y-6">
+    <!-- CORPO PRINCIPAL DE 3 COLUNAS -->
+    <main class="flex-1 flex overflow-hidden h-[calc(100vh-4rem)]">
 
-        <!-- Grid Principal: Leitor/Editor Interativo (Esquerda) vs Apontamentos (Direita) -->
-        <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+        <!-- COLUNA 1 (ESQUERDA - 320px): LISTA DE APONTAMENTOS E CATEGORIAS -->
+        <aside class="w-80 border-r border-slate-200 bg-white flex flex-col justify-between shrink-0 h-full overflow-hidden z-20">
+            
+            <!-- Informação do Arquivo Selecionado -->
+            <div class="p-4 border-b border-slate-200 bg-slate-50/50 flex items-center justify-between shrink-0">
+                <div class="min-w-0">
+                    <span class="text-[8px] font-bold text-slate-400 uppercase tracking-widest block">Arquivo Ativo</span>
+                    <h5 class="text-xs font-bold text-slate-800 truncate mt-0.5" x-text="currentFile ? currentFile.filename : 'Selecione um arquivo'"></h5>
+                    <span class="text-[9px] text-slate-500 font-bold block mt-0.5" x-text="currentFile ? 'Versão ' + currentFile.version + ' • ' + currentFile.file_type.toUpperCase() : ''"></span>
+                </div>
+            </div>
 
-            <!-- Coluna Esquerda: Editor de Texto com Track Changes / PDF / Imagem (7 Colunas) -->
-            <div class="lg:col-span-7 space-y-4">
+            <!-- Filtros de Apontamentos -->
+            <div class="flex border-b border-slate-200 text-xs font-bold uppercase tracking-wider shrink-0 bg-white">
+                <button @click="categoryFilter = 'todas'" class="flex-1 py-2.5 text-center border-b-2 text-[10px]" :class="categoryFilter === 'todas' ? 'border-blue-600 text-blue-600 bg-slate-50' : 'border-transparent text-slate-400'">Todas</button>
+                <button @click="categoryFilter = 'ortografia'" class="flex-1 py-2.5 text-center border-b-2 text-[10px]" :class="categoryFilter === 'ortografia' ? 'border-rose-600 text-rose-600 bg-rose-50' : 'border-transparent text-slate-400'">Ortografia</button>
+                <button @click="categoryFilter = 'gramatica'" class="flex-1 py-2.5 text-center border-b-2 text-[10px]" :class="categoryFilter === 'gramatica' ? 'border-amber-600 text-amber-600 bg-amber-50' : 'border-transparent text-slate-400'">Gramática</button>
+                <button @click="categoryFilter = 'duvida'" class="flex-1 py-2.5 text-center border-b-2 text-[10px]" :class="categoryFilter === 'duvida' ? 'border-blue-600 text-blue-600 bg-blue-50' : 'border-transparent text-slate-400'">Dúvidas</button>
+            </div>
+
+            <!-- Feed de Apontamentos -->
+            <div class="flex-1 overflow-y-auto p-4 space-y-3">
+                @forelse($revision->corrections as $cor)
+                    @php
+                        $badgeClass = match($cor->category) {
+                            'ortografia' => 'bg-rose-100 text-rose-800 border border-rose-200',
+                            'gramatica' => 'bg-amber-100 text-amber-800 border border-amber-200',
+                            'duvida' => 'bg-blue-100 text-blue-800 border border-blue-200',
+                            'padronizacao' => 'bg-purple-100 text-purple-800 border border-purple-200',
+                            default => 'bg-slate-100 text-slate-800 border border-slate-200',
+                        };
+                    @endphp
+                    <div x-show="categoryFilter === 'todas' || categoryFilter === '{{ $cor->category }}'" class="p-3.5 bg-slate-50 border border-slate-200 rounded-[5px] text-xs space-y-2">
+                        <div class="flex items-center justify-between">
+                            <span class="text-[9px] font-black uppercase px-2 py-0.5 rounded-[3px] {{ $badgeClass }}">
+                                {{ ucfirst($cor->category) }}
+                            </span>
+                            <span class="text-[10px] text-slate-400 font-bold">Pág. {{ $cor->page_number ?: 1 }}</span>
+                        </div>
+
+                        @if($cor->original_text)
+                            <p class="font-mono text-slate-600 line-through">"{{ $cor->original_text }}"</p>
+                        @endif
+
+                        @if($cor->suggested_text)
+                            <p class="font-mono text-emerald-800 font-bold">➔ {{ $cor->suggested_text }}</p>
+                        @endif
+
+                        @if($cor->justification)
+                            <p class="text-slate-500 italic">💡 {{ $cor->justification }}</p>
+                        @endif
+                    </div>
+                @empty
+                    <div class="text-center text-slate-400 py-12 font-semibold text-xs border border-dashed border-slate-200 rounded-[5px]">
+                        Nenhum apontamento cadastrado nesta revisão.
+                    </div>
+                @endforelse
+            </div>
+
+        </aside>
+
+        <!-- COLUNA 2 (CENTRO - FLEX-1): VIEWPORT DO DOCUMENTO (FOLHA BRANCA NO CENTRO DO CANVAS CINZA) -->
+        <section class="flex-1 bg-slate-200/70 flex flex-col min-w-0 relative overflow-hidden h-full">
+            
+            <!-- Barra Secundária Superior do Visualizador -->
+            <div class="h-12 border-b border-slate-200 bg-white px-4 flex items-center justify-between shrink-0 z-10 shadow-xs">
                 
-                <!-- Barra de Ferramentas de Edição e Alternador de Visão (Track Changes) -->
-                <div class="bg-slate-800 border border-slate-700 rounded-[5px] p-4 shadow-sm space-y-3">
-                    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-                        <div class="space-y-1 flex-1">
-                            <span class="text-[9px] font-bold text-slate-400 uppercase tracking-wider block">Arquivo Selecionado</span>
-                            <select x-model="selectedFileId" class="w-full px-3 py-2 border border-slate-700 rounded-[5px] text-xs font-bold bg-slate-900 text-white focus:outline-none">
-                                @foreach($revision->files as $file)
-                                    <option value="{{ $file->id }}">{{ $file->filename }} ({{ strtoupper($file->file_type) }} - v{{ $file->version }})</option>
-                                @endforeach
-                            </select>
-                        </div>
-
-                        <!-- Alternador Leitor Interno vs Google Docs Viewer -->
-                        <div class="flex items-center gap-1 shrink-0 bg-slate-900 p-1 rounded-[5px] text-xs font-bold border border-slate-700">
-                            <button type="button" @click="viewerMode = 'native'" class="px-3 py-1.5 rounded-[5px] transition-all" :class="viewerMode === 'native' ? 'bg-primary-600 text-white' : 'text-slate-400 hover:text-white'">
-                                👁️ Editor Interno
-                            </button>
-                            <button type="button" @click="viewerMode = 'google'" class="px-3 py-1.5 rounded-[5px] transition-all" :class="viewerMode === 'google' ? 'bg-primary-600 text-white' : 'text-slate-400 hover:text-white'">
-                                🌐 Google Docs Viewer
-                            </button>
-                        </div>
+                <!-- Ferramentas de Visualização (Modo Leitor Interno vs Google Docs Viewer) -->
+                <div class="flex items-center gap-2">
+                    <div class="flex items-center gap-1 bg-slate-100 p-1 rounded-[5px] text-xs font-bold">
+                        <button type="button" @click="viewerMode = 'native'" class="px-3 py-1 rounded-[3px] transition-all" :class="viewerMode === 'native' ? 'bg-white text-slate-900 shadow-xs' : 'text-slate-500 hover:text-slate-800'">
+                            👁️ Leitor/Editor Interno
+                        </button>
+                        <button type="button" @click="viewerMode = 'google'" class="px-3 py-1 rounded-[3px] transition-all" :class="viewerMode === 'google' ? 'bg-white text-slate-900 shadow-xs' : 'text-slate-500 hover:text-slate-800'">
+                            🌐 Google Docs Viewer
+                        </button>
                     </div>
 
-                    <!-- Ferramentas do Track Changes (Modos Antes / Alterações / Depois) -->
-                    <template x-if="viewerMode === 'native' && currentFile && currentFile.file_type === 'word'">
-                        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pt-3 border-t border-slate-700 text-xs font-bold">
-                            <div class="flex items-center gap-1">
-                                <button type="button" @click="viewMode = 'track'" class="px-2.5 py-1 rounded-[5px]" :class="viewMode === 'track' ? 'bg-emerald-600 text-white' : 'bg-slate-900 text-slate-400 hover:text-white'">✨ Edição com Marcas</button>
-                                <button type="button" @click="viewMode = 'original'" class="px-2.5 py-1 rounded-[5px]" :class="viewMode === 'original' ? 'bg-rose-600 text-white' : 'bg-slate-900 text-slate-400 hover:text-white'">🔴 Versão Antiga</button>
-                                <button type="button" @click="viewMode = 'final'" class="px-2.5 py-1 rounded-[5px]" :class="viewMode === 'final' ? 'bg-blue-600 text-white' : 'bg-slate-900 text-slate-400 hover:text-white'">🟢 Versão Atualizada</button>
-                            </div>
-
-                            <button type="button" @click="saveEditedText()" class="px-3.5 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-[5px] uppercase tracking-wider transition-all shadow-sm flex items-center gap-1.5">
-                                <span>💾</span> <span x-text="savingText ? 'Salvando...' : 'Salvar Alterações'">Salvar Alterações</span>
-                            </button>
+                    <!-- Controles para PDF (Navegação & Zoom) -->
+                    <template x-if="viewerMode === 'native' && currentFile && currentFile.file_type === 'pdf'">
+                        <div class="flex items-center gap-2 text-xs font-bold text-slate-600 pl-4 border-l border-slate-200">
+                            <button type="button" @click="prevPage()" class="px-2.5 py-1 bg-slate-100 hover:bg-slate-200 rounded-[3px]">◀</button>
+                            <span>PÁG. <span x-text="currentPage"></span> DE <span x-text="totalPages"></span></span>
+                            <button type="button" @click="nextPage()" class="px-2.5 py-1 bg-slate-100 hover:bg-slate-200 rounded-[3px]">▶</button>
+                            <button type="button" @click="zoomPdf(-0.1)" class="px-2 py-1 bg-slate-100 hover:bg-slate-200 rounded-[3px] ml-2">🔍-</button>
+                            <button type="button" @click="zoomPdf(0.1)" class="px-2 py-1 bg-slate-100 hover:bg-slate-200 rounded-[3px]">🔍+</button>
                         </div>
                     </template>
                 </div>
 
-                <!-- EDITOR INTERATIVO DO REVISOR (Para Word / Text) -->
+                <!-- Ferramentas do Track Changes (Para Documentos Word) -->
                 <template x-if="viewerMode === 'native' && currentFile && currentFile.file_type === 'word'">
-                    <div class="bg-slate-800 border border-slate-700 rounded-[5px] p-6 shadow-sm space-y-4 min-h-[550px]">
-                        <div class="flex items-center justify-between border-b border-slate-700 pb-3">
-                            <h3 class="font-outfit font-black text-xs uppercase tracking-wider text-slate-400">Editor de Texto Directo (Track Changes)</h3>
-                            <button type="button" @click="checkLanguageTool()" class="text-xs font-bold text-purple-400 hover:text-purple-300 flex items-center gap-1">
-                                🔍 LanguageTool Spellcheck
-                            </button>
+                    <div class="flex items-center gap-2 text-xs font-bold">
+                        <div class="flex items-center gap-1 bg-slate-100 p-1 rounded-[5px]">
+                            <button type="button" @click="viewMode = 'track'" class="px-2.5 py-1 rounded-[3px]" :class="viewMode === 'track' ? 'bg-blue-600 text-white' : 'text-slate-500'">✨ Track Changes</button>
+                            <button type="button" @click="viewMode = 'original'" class="px-2.5 py-1 rounded-[3px]" :class="viewMode === 'original' ? 'bg-rose-600 text-white' : 'text-slate-500'">🔴 Versão Antiga</button>
+                            <button type="button" @click="viewMode = 'final'" class="px-2.5 py-1 rounded-[3px]" :class="viewMode === 'final' ? 'bg-emerald-600 text-white' : 'text-slate-500'">🟢 Versão Final</button>
                         </div>
 
-                        <!-- Modo 1: Edição Direta com Controle de Alterações -->
-                        <div x-show="viewMode === 'track'" class="space-y-3">
-                            <textarea x-model="revisedContent" rows="16" class="w-full bg-slate-900 text-slate-100 font-serif text-sm p-5 border border-slate-700 rounded-[5px] leading-relaxed focus:outline-none focus:border-primary-500 select-text" @mouseup="captureSelectedText"></textarea>
-                            <p class="text-[11px] text-slate-400 italic">💡 Altere o texto diretamente na caixa acima. As palavras adicionadas ou corrigidas serão destacadas no projeto.</p>
+                        <button type="button" @click="saveEditedText()" class="px-3 py-1 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-[5px] uppercase tracking-wider transition-all flex items-center gap-1">
+                            <span>💾</span> <span x-text="savingText ? 'Salvando...' : 'Salvar Alterações'">Salvar</span>
+                        </button>
+                    </div>
+                </template>
+
+            </div>
+
+            <!-- CANVAS PRINCIPAL (Document Visualizer na Folha Branca) -->
+            <div class="flex-1 overflow-auto flex items-center justify-center p-6 relative">
+                
+                <!-- CANVAS PDF.JS -->
+                <template x-if="viewerMode === 'native' && currentFile && currentFile.file_type === 'pdf'">
+                    <div class="bg-white paper-shadow rounded border border-slate-200 p-2 relative max-w-4xl">
+                        <div x-show="renderingPdf" class="absolute inset-0 bg-white/80 flex items-center justify-center font-bold text-xs text-slate-500 z-10">
+                            Renderizando PDF...
+                        </div>
+                        <canvas id="pdf-canvas" class="max-w-full block"></canvas>
+                    </div>
+                </template>
+
+                <!-- EDITOR WORD TRACK CHANGES -->
+                <template x-if="viewerMode === 'native' && currentFile && currentFile.file_type === 'word'">
+                    <div class="w-full max-w-4xl bg-white paper-shadow rounded-[5px] border border-slate-200 p-8 space-y-4 my-auto">
+                        <div class="flex items-center justify-between border-b border-slate-100 pb-3">
+                            <h4 class="font-outfit font-black text-xs uppercase tracking-wider text-slate-400">Editor Directo do Revisor (Track Changes)</h4>
+                            <span class="text-[10px] text-slate-400 italic">Digite alterações diretamente no texto abaixo</span>
                         </div>
 
-                        <!-- Modo 2: Visualização de Versão Antiga (Original) -->
-                        <div x-show="viewMode === 'original'" class="p-5 bg-rose-950/40 border border-rose-900/60 rounded-[5px] text-xs font-serif leading-relaxed text-rose-200 max-h-[500px] overflow-y-auto whitespace-pre-wrap">
+                        <!-- Modo Track Changes / Edição Direta -->
+                        <div x-show="viewMode === 'track'" class="space-y-2">
+                            <textarea x-model="revisedContent" rows="18" class="w-full bg-slate-50 text-slate-800 font-serif text-sm p-6 border border-slate-200 rounded-[5px] leading-relaxed focus:outline-none focus:ring-1 focus:ring-blue-500 select-text" @mouseup="captureSelectedText"></textarea>
+                        </div>
+
+                        <!-- Modo Versão Antiga -->
+                        <div x-show="viewMode === 'original'" class="p-6 bg-rose-50 border border-rose-200 rounded-[5px] text-xs font-serif leading-relaxed text-rose-900 max-h-[500px] overflow-y-auto whitespace-pre-wrap">
                             <span x-text="originalContent"></span>
                         </div>
 
-                        <!-- Modo 3: Visualização da Versão Final Atualizada -->
-                        <div x-show="viewMode === 'final'" class="p-5 bg-emerald-950/40 border border-emerald-900/60 rounded-[5px] text-xs font-serif leading-relaxed text-emerald-200 max-h-[500px] overflow-y-auto whitespace-pre-wrap">
+                        <!-- Modo Versão Final -->
+                        <div x-show="viewMode === 'final'" class="p-6 bg-emerald-50 border border-emerald-200 rounded-[5px] text-xs font-serif leading-relaxed text-emerald-900 max-h-[500px] overflow-y-auto whitespace-pre-wrap">
                             <span x-text="revisedContent"></span>
                         </div>
                     </div>
                 </template>
 
-                <!-- MODO GOOGLE DOCS VIEWER -->
+                <!-- GOOGLE DOCS VIEWER EMBED -->
                 <template x-if="viewerMode === 'google' && currentFile">
-                    <div class="bg-slate-800 border border-slate-700 rounded-[5px] p-2 shadow-sm min-h-[650px] flex flex-col space-y-2">
-                        <div class="flex items-center justify-between px-3 py-1.5 text-xs font-bold text-slate-400 border-b border-slate-700">
-                            <span>🌐 Google Docs Viewer Online</span>
-                            <a :href="getGoogleDocsViewerUrl(currentFile.id)" target="_blank" class="text-primary-400 hover:underline">Abrir em nova guia ↗</a>
-                        </div>
-                        <iframe :src="getGoogleDocsViewerUrl(currentFile.id)" class="w-full h-[600px] rounded border border-slate-700 bg-white" frameborder="0"></iframe>
+                    <div class="w-full max-w-5xl h-full bg-white paper-shadow rounded-[5px] border border-slate-200 p-2 flex flex-col">
+                        <iframe :src="getGoogleDocsViewerUrl(currentFile.id)" class="w-full h-full rounded border-0" frameborder="0"></iframe>
                     </div>
                 </template>
 
-                <!-- RENDERIZADOR DE PDF -->
-                <template x-if="viewerMode === 'native' && currentFile && currentFile.file_type === 'pdf'">
-                    <div class="bg-slate-800 border border-slate-700 rounded-[5px] p-4 shadow-sm flex flex-col items-center justify-center min-h-[600px] overflow-auto relative">
-                        <div x-show="renderingPdf" class="absolute inset-0 bg-slate-900/80 flex items-center justify-center font-bold text-xs text-slate-400 z-10">
-                            Renderizando página do PDF...
-                        </div>
-                        <canvas id="pdf-canvas" class="max-w-full shadow-md rounded border border-slate-700"></canvas>
+                <!-- VISUALIZADOR DE IMAGENS -->
+                <template x-if="viewerMode === 'native' && currentFile && currentFile.file_type === 'image'">
+                    <div class="bg-white paper-shadow rounded p-2 border border-slate-200 max-w-4xl">
+                        <img :src="getFileStreamUrl(currentFile.id)" class="max-h-[75vh] object-contain">
                     </div>
                 </template>
 
-                <!-- Sugestões da Verificação Ortográfica -->
-                <div x-show="languageToolMatches.length > 0" x-cloak class="bg-purple-950/60 border border-purple-800 rounded-[5px] p-5 space-y-3">
-                    <div class="flex items-center justify-between">
-                        <h4 class="font-outfit font-black text-xs uppercase tracking-wider text-purple-300 flex items-center gap-2">
-                            <span>🔍</span> Sugestões Ortográficas do LanguageTool (<span x-text="languageToolMatches.length"></span>)
-                        </h4>
-                        <button type="button" @click="languageToolMatches = []" class="text-purple-400 hover:text-purple-200 font-bold text-xs">Fechar</button>
-                    </div>
-
-                    <div class="space-y-2 max-h-60 overflow-y-auto">
-                        <template x-for="(match, index) in languageToolMatches" :key="index">
-                            <div class="p-3 bg-slate-900 rounded-[5px] border border-purple-800 text-xs space-y-1">
-                                <p class="font-bold text-purple-200" x-text="match.message"></p>
-                                <p class="text-[11px] text-slate-400">
-                                    Sugestões: <strong class="text-emerald-400" x-text="match.replacements ? match.replacements.slice(0, 3).map(r => r.value).join(', ') : ''"></strong>
-                                </p>
-                                <button type="button" @click="applyLanguageToolMatch(match)" class="mt-1 px-2.5 py-1 bg-purple-600 text-white font-bold text-[10px] rounded-[5px] uppercase tracking-wider">
-                                    + Criar Apontamento desta Sugestão
-                                </button>
-                            </div>
-                        </template>
-                    </div>
-                </div>
-
             </div>
 
-            <!-- Coluna Direita: Painel de Apontamentos por Categoria (5 Colunas) -->
-            <div class="lg:col-span-5 space-y-4">
-                
-                <div class="bg-slate-800 border border-slate-700 rounded-[5px] p-5 shadow-sm space-y-4">
-                    <div class="flex items-center justify-between border-b border-slate-700 pb-3">
-                        <h3 class="font-outfit font-black text-white text-sm uppercase tracking-tight">Apontamentos Cadastrados</h3>
-                        <span class="px-2.5 py-0.5 bg-slate-900 text-slate-300 text-[10px] font-bold rounded-full border border-slate-700">
-                            {{ $revision->corrections->count() }} Registros
-                        </span>
-                    </div>
+        </section>
 
-                    <!-- Filtro por Categoria -->
-                    <div class="flex items-center gap-1.5 flex-wrap text-xs">
-                        <button type="button" @click="categoryFilter = 'todas'" class="px-2.5 py-1 rounded-full text-[10px] font-bold uppercase" :class="categoryFilter === 'todas' ? 'bg-white text-slate-900' : 'bg-slate-900 text-slate-400'">Todas</button>
-                        <button type="button" @click="categoryFilter = 'ortografia'" class="px-2.5 py-1 rounded-full text-[10px] font-bold uppercase" :class="categoryFilter === 'ortografia' ? 'bg-rose-600 text-white' : 'bg-rose-950/60 text-rose-300'">Ortografia</button>
-                        <button type="button" @click="categoryFilter = 'gramatica'" class="px-2.5 py-1 rounded-full text-[10px] font-bold uppercase" :class="categoryFilter === 'gramatica' ? 'bg-amber-600 text-white' : 'bg-amber-950/60 text-amber-300'">Gramática</button>
-                        <button type="button" @click="categoryFilter = 'duvida'" class="px-2.5 py-1 rounded-full text-[10px] font-bold uppercase" :class="categoryFilter === 'duvida' ? 'bg-blue-600 text-white' : 'bg-blue-950/60 text-blue-300'">Dúvidas</button>
-                    </div>
-
-                    <!-- Lista de Correções -->
-                    <div class="space-y-3 max-h-[650px] overflow-y-auto">
-                        @forelse($revision->corrections as $cor)
-                            @php
-                                $badgeClass = match($cor->category) {
-                                    'ortografia' => 'bg-rose-900/60 text-rose-200 border border-rose-700',
-                                    'gramatica' => 'bg-amber-900/60 text-amber-200 border border-amber-700',
-                                    'duvida' => 'bg-blue-900/60 text-blue-200 border border-blue-700',
-                                    'padronizacao' => 'bg-purple-900/60 text-purple-200 border border-purple-700',
-                                    default => 'bg-slate-700 text-slate-200',
-                                };
-                            @endphp
-                            <div x-show="categoryFilter === 'todas' || categoryFilter === '{{ $cor->category }}'" class="p-3.5 bg-slate-900 border border-slate-700 rounded-[5px] text-xs space-y-2">
-                                <div class="flex items-center justify-between">
-                                    <span class="text-[9px] font-black uppercase px-2 py-0.5 rounded-[5px] {{ $badgeClass }}">
-                                        {{ ucfirst($cor->category) }}
-                                    </span>
-                                    <span class="text-[10px] text-slate-400 font-bold">Pág. {{ $cor->page_number ?: 1 }} • {{ ucfirst($cor->status) }}</span>
-                                </div>
-
-                                @if($cor->original_text)
-                                    <p class="font-mono text-slate-400 line-through">"{{ $cor->original_text }}"</p>
-                                @endif
-
-                                @if($cor->suggested_text)
-                                    <p class="font-mono text-emerald-400 font-bold">➔ {{ $cor->suggested_text }}</p>
-                                @endif
-
-                                @if($cor->justification)
-                                    <p class="text-slate-400 italic">💡 {{ $cor->justification }}</p>
-                                @endif
-                            </div>
-                        @empty
-                            <div class="text-center text-slate-500 py-8 font-semibold text-xs border border-dashed border-slate-700 rounded-[5px]">
-                                Nenhum apontamento cadastrado ainda.
-                            </div>
-                        @endforelse
-                    </div>
-
-                </div>
-
+        <!-- COLUNA 3 (DIREITA - 280px): NAVEGADOR DE ARQUIVOS -->
+        <aside class="w-72 border-l border-slate-200 bg-white flex flex-col justify-between shrink-0 h-full overflow-hidden z-20">
+            
+            <div class="p-4 border-b border-slate-200 bg-slate-50/50 flex items-center justify-between shrink-0">
+                <h4 class="font-outfit font-black text-slate-800 text-xs uppercase tracking-tight">Navegador de Arquivos</h4>
+                <span class="px-2 py-0.5 bg-slate-200 text-slate-700 text-[10px] font-bold rounded-full">
+                    {{ $revision->files->count() }}
+                </span>
             </div>
 
-        </div>
+            <!-- Lista de Arquivos do Projeto -->
+            <div class="flex-1 overflow-y-auto p-3 space-y-2">
+                @foreach($revision->files as $file)
+                    <div @click="selectedFileId = {{ $file->id }}" 
+                         class="p-3 rounded-[5px] border transition-all cursor-pointer select-none space-y-1"
+                         :class="selectedFileId == {{ $file->id }} ? 'bg-blue-50/80 border-blue-400 shadow-xs' : 'bg-slate-50/60 border-slate-200 hover:bg-slate-100'">
+                        
+                        <div class="flex items-center justify-between">
+                            <span class="text-[9px] font-black uppercase px-2 py-0.5 rounded-[3px]"
+                                  :class="selectedFileId == {{ $file->id }} ? 'bg-blue-600 text-white' : 'bg-slate-200 text-slate-600'">
+                                {{ strtoupper($file->file_type) }}
+                            </span>
+                            <span class="text-[10px] text-slate-400 font-bold">v{{ $file->version }}</span>
+                        </div>
+
+                        <h5 class="text-xs font-bold text-slate-800 truncate" title="{{ $file->filename }}">{{ $file->filename }}</h5>
+                        <p class="text-[10px] text-slate-400 font-medium">{{ number_format($file->file_size / 1024, 1) }} KB</p>
+                    </div>
+                @endforeach
+            </div>
+
+            <!-- Ações do Rodapé -->
+            <div class="p-4 border-t border-slate-200 bg-slate-50/50 space-y-2 shrink-0">
+                <button type="button" @click="openUploadVersionModal = true" class="w-full py-2 bg-slate-900 hover:bg-slate-800 text-white font-bold text-xs uppercase tracking-wider rounded-[5px] transition-colors shadow-xs">
+                    📤 Subir Nova Versão
+                </button>
+            </div>
+
+        </aside>
 
     </main>
 
     <!-- Modal Criar Apontamento -->
-    <div x-show="openCorrectionModal" x-cloak class="fixed inset-0 z-[99999] flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-xs select-none">
-        <div @click.away="openCorrectionModal = false" class="bg-slate-800 border border-slate-700 text-slate-100 rounded-xl p-6 shadow-2xl max-w-lg w-full space-y-4">
-            <div class="flex items-center justify-between border-b border-slate-700 pb-3">
-                <h3 class="font-outfit font-black text-white text-md uppercase">➕ Novo Apontamento de Revisão</h3>
-                <button type="button" @click="openCorrectionModal = false" class="text-slate-400 hover:text-white font-bold">✕</button>
+    <div x-show="openCorrectionModal" x-cloak class="fixed inset-0 z-[99999] flex items-center justify-center p-4 bg-slate-950/60 backdrop-blur-xs select-none">
+        <div @click.away="openCorrectionModal = false" class="bg-white border border-slate-200 text-slate-800 rounded-xl p-6 shadow-2xl max-w-lg w-full space-y-4">
+            <div class="flex items-center justify-between border-b border-slate-100 pb-3">
+                <h3 class="font-outfit font-black text-slate-900 text-md uppercase">➕ Novo Apontamento de Revisão</h3>
+                <button type="button" @click="openCorrectionModal = false" class="text-slate-400 hover:text-slate-600 font-bold">✕</button>
             </div>
 
             <form action="{{ route('public.editorial.revisor.corrections.store', $revision->share_token) }}" method="POST" class="space-y-3 text-xs">
@@ -587,7 +609,7 @@
                 <div class="grid grid-cols-2 gap-3">
                     <div>
                         <label class="font-bold block mb-1">Categoria</label>
-                        <select name="category" x-model="modalCategory" required class="w-full px-3 py-2 border border-slate-700 rounded-[5px] bg-slate-900 text-white">
+                        <select name="category" x-model="modalCategory" required class="w-full px-3 py-2 border border-slate-200 rounded-[5px]">
                             <option value="ortografia">Ortografia</option>
                             <option value="gramatica">Gramática</option>
                             <option value="pontuacao">Pontuação</option>
@@ -601,27 +623,27 @@
 
                     <div>
                         <label class="font-bold block mb-1">Página (Opcional)</label>
-                        <input type="number" name="page_number" x-model="modalPageNumber" placeholder="Ex: 5" class="w-full px-3 py-2 border border-slate-700 rounded-[5px] bg-slate-900 text-white">
+                        <input type="number" name="page_number" x-model="modalPageNumber" placeholder="Ex: 5" class="w-full px-3 py-2 border border-slate-200 rounded-[5px]">
                     </div>
                 </div>
 
                 <div>
                     <label class="font-bold block mb-1">Texto Original do Autor</label>
-                    <textarea name="original_text" x-model="modalOriginalText" rows="2" placeholder="Trecho extraído do texto..." class="w-full px-3 py-2 border border-slate-700 rounded-[5px] bg-slate-900 text-white"></textarea>
+                    <textarea name="original_text" x-model="modalOriginalText" rows="2" placeholder="Trecho extraído do texto..." class="w-full px-3 py-2 border border-slate-200 rounded-[5px]"></textarea>
                 </div>
 
                 <div>
                     <label class="font-bold block mb-1">Sugestão de Correção</label>
-                    <textarea name="suggested_text" x-model="modalSuggestedText" rows="2" placeholder="Digite a correção sugerida..." class="w-full px-3 py-2 border border-slate-700 rounded-[5px] bg-slate-900 text-white"></textarea>
+                    <textarea name="suggested_text" x-model="modalSuggestedText" rows="2" placeholder="Digite a correção sugerida..." class="w-full px-3 py-2 border border-slate-200 rounded-[5px]"></textarea>
                 </div>
 
                 <div>
                     <label class="font-bold block mb-1">Justificativa / Comentário</label>
-                    <input type="text" name="justification" x-model="modalJustification" placeholder="Explicação da regra ou orientação..." class="w-full px-3 py-2 border border-slate-700 rounded-[5px] bg-slate-900 text-white">
+                    <input type="text" name="justification" x-model="modalJustification" placeholder="Explicação da regra ou orientação..." class="w-full px-3 py-2 border border-slate-200 rounded-[5px]">
                 </div>
 
-                <div class="flex justify-end gap-2 pt-2 border-t border-slate-700">
-                    <button type="button" @click="openCorrectionModal = false" class="px-4 py-2 bg-slate-700 text-slate-200 font-bold rounded-[5px]">Cancelar</button>
+                <div class="flex justify-end gap-2 pt-2 border-t border-slate-100">
+                    <button type="button" @click="openCorrectionModal = false" class="px-4 py-2 bg-slate-100 text-slate-600 font-bold rounded-[5px]">Cancelar</button>
                     <button type="submit" class="px-4 py-2 bg-emerald-600 text-white font-bold rounded-[5px]">Salvar Apontamento</button>
                 </div>
             </form>
@@ -629,11 +651,11 @@
     </div>
 
     <!-- Modal Upload de Nova Versão -->
-    <div x-show="openUploadVersionModal" x-cloak class="fixed inset-0 z-[99999] flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-xs select-none">
-        <div @click.away="openUploadVersionModal = false" class="bg-slate-800 border border-slate-700 text-slate-100 rounded-xl p-6 shadow-2xl max-w-md w-full space-y-4">
-            <div class="flex items-center justify-between border-b border-slate-700 pb-3">
-                <h3 class="font-outfit font-black text-white text-md uppercase">📤 Salvar Nova Versão Revisada</h3>
-                <button type="button" @click="openUploadVersionModal = false" class="text-slate-400 hover:text-white font-bold">✕</button>
+    <div x-show="openUploadVersionModal" x-cloak class="fixed inset-0 z-[99999] flex items-center justify-center p-4 bg-slate-950/60 backdrop-blur-xs select-none">
+        <div @click.away="openUploadVersionModal = false" class="bg-white border border-slate-200 text-slate-800 rounded-xl p-6 shadow-2xl max-w-md w-full space-y-4">
+            <div class="flex items-center justify-between border-b border-slate-100 pb-3">
+                <h3 class="font-outfit font-black text-slate-900 text-md uppercase">📤 Salvar Nova Versão Revisada</h3>
+                <button type="button" @click="openUploadVersionModal = false" class="text-slate-400 hover:text-slate-600 font-bold">✕</button>
             </div>
 
             <form action="{{ route('public.editorial.revisor.version.store', $revision->share_token) }}" method="POST" enctype="multipart/form-data" class="space-y-3 text-xs">
@@ -642,13 +664,13 @@
 
                 <div>
                     <label class="font-bold block mb-1">Arquivo Revisado (Word / PDF / Imagem)</label>
-                    <input type="file" name="file" required class="w-full px-3 py-2 border border-slate-700 rounded-[5px] bg-slate-900 text-white">
+                    <input type="file" name="file" required class="w-full px-3 py-2 border border-slate-200 rounded-[5px]">
                     <p class="text-[10px] text-slate-400 mt-1">Este arquivo criará uma nova versão no histórico (ex: Versão 2).</p>
                 </div>
 
-                <div class="flex justify-end gap-2 pt-2 border-t border-slate-700">
-                    <button type="button" @click="openUploadVersionModal = false" class="px-4 py-2 bg-slate-700 text-slate-200 font-bold rounded-[5px]">Cancelar</button>
-                    <button type="submit" class="px-4 py-2 bg-primary-600 text-white font-bold rounded-[5px]">Salvar Nova Versão</button>
+                <div class="flex justify-end gap-2 pt-2 border-t border-slate-100">
+                    <button type="button" @click="openUploadVersionModal = false" class="px-4 py-2 bg-slate-100 text-slate-600 font-bold rounded-[5px]">Cancelar</button>
+                    <button type="submit" class="px-4 py-2 bg-blue-600 text-white font-bold rounded-[5px]">Salvar Nova Versão</button>
                 </div>
             </form>
         </div>
