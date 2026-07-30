@@ -100,7 +100,7 @@
                 openUploadVersionModal: false,
                 categoryFilter: 'todas',
                 viewMode: 'track', // 'track', 'original', 'final'
-                viewerMode: 'iframe', // 'iframe' como padrão para PDFs (renderização 100% fiel de layout e cores)
+                viewerMode: 'iframe', // 'iframe' como padrão para PDFs (renderização 100% fiel)
                 toastMessage: '',
                 selectedFileId: filesData.length > 0 ? filesData[0].id : null,
                 correctionsList: @json($revision->corrections),
@@ -117,11 +117,19 @@
                 loginPassword: '',
                 loginError: '',
 
+                // PDF.js State
+                pdfDoc: null,
+                currentPage: 1,
+                totalPages: 1,
+                pdfScale: 1.2,
+                renderingPdf: false,
+
                 init() {
                     this.loadContentForSelectedFile();
 
                     this.$watch('selectedFileId', (id) => {
                         this.loadContentForSelectedFile();
+                        this.handleFileChange(id);
                     });
                 },
 
@@ -150,6 +158,68 @@
                     return streamBaseUrl + '/' + id + '/download';
                 },
 
+                handleFileChange(id) {
+                    const file = this.currentFile;
+                    if (file && file.file_type === 'pdf' && this.viewerMode === 'native') {
+                        this.loadPdfDocument();
+                    }
+                },
+
+                loadPdfDocument() {
+                    if (!this.currentFile) return;
+                    const url = this.getFileStreamUrl(this.currentFile.id);
+                    this.renderingPdf = true;
+
+                    fetch(url)
+                        .then(res => res.arrayBuffer())
+                        .then(buffer => pdfjsLib.getDocument({ data: buffer }).promise)
+                        .then(pdf => {
+                            this.pdfDoc = pdf;
+                            this.totalPages = pdf.numPages;
+                            this.currentPage = 1;
+                            this.renderPdfPage(1);
+                        })
+                        .catch(() => {
+                            this.renderingPdf = false;
+                        });
+                },
+
+                renderPdfPage(num) {
+                    if (!this.pdfDoc) return;
+                    this.renderingPdf = true;
+
+                    this.pdfDoc.getPage(num).then(page => {
+                        const canvas = document.getElementById('pdf-canvas');
+                        if (!canvas) return;
+                        const ctx = canvas.getContext('2d');
+                        const viewport = page.getViewport({ scale: this.pdfScale });
+
+                        canvas.height = viewport.height;
+                        canvas.width = viewport.width;
+
+                        page.render({ canvasContext: ctx, viewport: viewport }).promise.then(() => {
+                            this.renderingPdf = false;
+                        });
+                    });
+                },
+
+                prevPage() {
+                    if (this.currentPage <= 1) return;
+                    this.currentPage--;
+                    this.renderPdfPage(this.currentPage);
+                },
+
+                nextPage() {
+                    if (this.currentPage >= this.totalPages) return;
+                    this.currentPage++;
+                    this.renderPdfPage(this.currentPage);
+                },
+
+                zoomPdf(delta) {
+                    this.pdfScale = Math.max(0.5, Math.min(3.0, this.pdfScale + delta));
+                    this.renderPdfPage(this.currentPage);
+                },
+
                 execCmd(command, value = null) {
                     document.execCommand(command, false, value);
                     this.syncEditorContent();
@@ -162,16 +232,14 @@
                     }
                 },
 
-                // EVENTO DE DIGITAÇÃO DIRETA NO WORD (SEM PULAR O CURSOR E SEM RELOAD)
+                // DIGITAÇÃO NATIVA NO WORD (SEM PULAR O CURSOR E SEM RELOAD)
                 handleEditorInput(event) {
                     this.syncEditorContent();
 
-                    // Destaca a linha/parágrafo atual que foi alterado em amarelo suave
                     const sel = window.getSelection();
                     if (sel && sel.anchorNode) {
                         let node = sel.anchorNode.nodeType === 3 ? sel.anchorNode.parentNode : sel.anchorNode;
                         
-                        // Encontra o elemento de parágrafo/linha do editor
                         while (node && node !== this.$refs.wordEditor && !['P', 'DIV', 'LI', 'H1', 'H2', 'H3'].includes(node.nodeName)) {
                             node = node.parentNode;
                         }
@@ -181,19 +249,17 @@
                         }
                     }
 
-                    // Envia atualização silenciosa e cria o apontamento automático na Coluna 1
                     clearTimeout(this.typingTimer);
                     this.typingTimer = setTimeout(() => {
                         this.autoSaveAndRegisterCorrection();
                     }, 1500);
                 },
 
-                // REGISTRA O APONTAMENTO AUTOMATICAMENTE NA COLUNA 1 SEM DAR RELOAD NA PÁGINA
+                // SALVAMENTO SILÊNCIOSO SEM NENHUM RELOAD NA PÁGINA
                 autoSaveAndRegisterCorrection() {
                     const editor = this.$refs.wordEditor;
                     const contentToSave = editor ? editor.innerHTML : this.revisedContent;
 
-                    // 1. Salva o conteúdo do arquivo
                     fetch('{{ url("/revisao-editorial/" . $revision->share_token . "/revisor/file") }}/' + this.selectedFileId + '/content', {
                         method: 'POST',
                         headers: {
@@ -203,7 +269,6 @@
                         body: JSON.stringify({ revised_content: contentToSave })
                     });
 
-                    // 2. Cria apontamento automático na Coluna 1
                     fetch('{{ route("public.editorial.revisor.corrections.store", $revision->share_token) }}', {
                         method: 'POST',
                         headers: {
@@ -214,14 +279,14 @@
                         body: JSON.stringify({
                             editorial_revision_file_id: this.selectedFileId,
                             category: 'ortografia',
-                            original_text: 'Edição direta no documento',
+                            original_text: 'Edição no documento Word',
                             suggested_text: 'Texto atualizado pelo revisor',
-                            justification: 'Edição em tempo real salva no documento.'
+                            justification: 'Alteração salva no documento.'
                         })
                     })
                     .then(res => res.json())
                     .then(data => {
-                        this.showToast('Documento atualizado e apontamento registrado na Coluna 1!');
+                        this.showToast('Documento Word atualizado!');
                         if (data.correction) {
                             this.correctionsList.unshift(data.correction);
                         }
@@ -422,12 +487,28 @@
             <!-- Barra Secundária Superior do Visualizador / Editor de Texto -->
             <div class="h-12 border-b border-slate-200 bg-white px-4 flex items-center justify-between shrink-0 z-10 shadow-xs">
                 
-                <!-- Ferramentas para PDF -->
+                <!-- Ferramentas para PDF com Seletor de Modo (Leitor Nativo vs Plugin PDF.js Canvas) -->
                 <template x-if="currentFile && currentFile.file_type === 'pdf'">
                     <div class="flex items-center gap-3 text-xs font-bold text-slate-600">
-                        <span class="px-3 py-1 bg-slate-100 text-slate-800 rounded font-bold">
-                            🖥️ Leitor Nativo (Preserva Layout, Cores e Orientação do PDF)
-                        </span>
+                        <div class="flex items-center gap-1 bg-slate-100 p-1 rounded-[5px]">
+                            <button type="button" @click="viewerMode = 'iframe'" class="px-3 py-1 rounded-[3px]" :class="viewerMode === 'iframe' ? 'bg-white text-slate-900 shadow-xs' : 'text-slate-500'">
+                                🖥️ Leitor Nativo Navegador
+                            </button>
+                            <button type="button" @click="viewerMode = 'native'; loadPdfDocument()" class="px-3 py-1 rounded-[3px]" :class="viewerMode === 'native' ? 'bg-white text-slate-900 shadow-xs' : 'text-slate-500'">
+                                📄 Plugin PDF.js Canvas
+                            </button>
+                        </div>
+
+                        <!-- Controles de Navegação para o Plugin PDF.js Canvas -->
+                        <template x-if="viewerMode === 'native'">
+                            <div class="flex items-center gap-2 pl-3 border-l border-slate-200">
+                                <button type="button" @click="prevPage()" class="px-2 py-1 bg-slate-100 hover:bg-slate-200 rounded-[3px]">◀</button>
+                                <span>PÁG. <span x-text="currentPage"></span> DE <span x-text="totalPages"></span></span>
+                                <button type="button" @click="nextPage()" class="px-2 py-1 bg-slate-100 hover:bg-slate-200 rounded-[3px]">▶</button>
+                                <button type="button" @click="zoomPdf(-0.1)" class="px-2 py-1 bg-slate-100 hover:bg-slate-200 rounded-[3px] ml-2">🔍-</button>
+                                <button type="button" @click="zoomPdf(0.1)" class="px-2 py-1 bg-slate-100 hover:bg-slate-200 rounded-[3px]">🔍+</button>
+                            </div>
+                        </template>
                     </div>
                 </template>
 
@@ -458,10 +539,20 @@
             <!-- CANVAS PRINCIPAL (Document Visualizer / Folha A4 do Word) -->
             <div class="flex-1 overflow-auto flex items-start justify-center p-8 relative bg-slate-200/60">
                 
-                <!-- PDF EM IFRAME NATIVO DO NAVEGADOR (ABRE 100% DE PDFS PRESERVANDO LAYOUT, CORES E ORIENTAÇÃO) -->
-                <template x-if="currentFile && currentFile.file_type === 'pdf'">
+                <!-- PDF EM IFRAME NATIVO DO NAVEGADOR -->
+                <template x-if="currentFile && currentFile.file_type === 'pdf' && viewerMode === 'iframe'">
                     <div class="w-full max-w-6xl h-full bg-white paper-shadow rounded-[5px] border border-slate-200 p-2 flex flex-col my-auto">
                         <iframe :src="getFileStreamUrl(currentFile.id)" class="w-full h-full rounded border-0" frameborder="0"></iframe>
+                    </div>
+                </template>
+
+                <!-- CANVAS PDF.JS PLUGIN -->
+                <template x-if="currentFile && currentFile.file_type === 'pdf' && viewerMode === 'native'">
+                    <div class="bg-white paper-shadow rounded border border-slate-200 p-4 relative max-w-4xl max-h-full overflow-auto flex flex-col items-center my-auto">
+                        <div x-show="renderingPdf" class="absolute inset-0 bg-white/80 flex items-center justify-center font-bold text-xs text-slate-500 z-10">
+                            Renderizando PDF via Plugin PDF.js...
+                        </div>
+                        <canvas id="pdf-canvas" class="max-w-full block mx-auto shadow-sm border border-slate-200"></canvas>
                     </div>
                 </template>
 
@@ -472,7 +563,7 @@
                         <div class="word-page-a4 paper-shadow border border-slate-300 text-slate-900 rounded-[2px] transition-all select-text relative"
                              id="word-paper-container">
 
-                            <!-- Conteúdo Editável do Word sem Re-evaluation do InnerHTML no Alpine -->
+                            <!-- Conteúdo Editável do Word -->
                             <div x-ref="wordEditor"
                                  contenteditable="true"
                                  class="word-paper-content focus:outline-none min-h-[250mm]"

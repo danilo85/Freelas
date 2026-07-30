@@ -12,14 +12,27 @@ class DocxToHtmlConverter
     public static function convertToHtml(string $docxPath, string $disk = 'public'): string
     {
         try {
-            $storageDisk = Storage::disk($disk);
-            if (!$storageDisk->exists($docxPath)) {
-                return '<p class="text-slate-500 italic p-6">Arquivo Word não encontrado.</p>';
+            $disksToTry = array_unique([$disk, 'public', 'local']);
+            $absolutePath = null;
+
+            foreach ($disksToTry as $d) {
+                if ($d && Storage::disk($d)->exists($docxPath)) {
+                    try {
+                        $absolutePath = Storage::disk($d)->path($docxPath);
+                        if (file_exists($absolutePath)) break;
+                    } catch (\Throwable $e) {}
+                }
             }
 
-            $absolutePath = $storageDisk->path($docxPath);
-            if (!file_exists($absolutePath)) {
-                return '<p class="text-slate-500 italic p-6">Caminho físico do arquivo inválido.</p>';
+            if (!$absolutePath || !file_exists($absolutePath)) {
+                $directPath = storage_path('app/public/' . $docxPath);
+                if (file_exists($directPath)) {
+                    $absolutePath = $directPath;
+                }
+            }
+
+            if (!$absolutePath || !file_exists($absolutePath)) {
+                return '<p class="text-slate-500 italic p-6">Arquivo Word não localizado no servidor.</p>';
             }
 
             $zip = new \ZipArchive();

@@ -315,12 +315,12 @@ class EditorialPublicController extends Controller
      */
     protected function extractTextFromFile(EditorialRevisionFile $file, string $disk)
     {
-        if ($file->extracted_text) {
-            return $file->extracted_text;
-        }
-
         if ($file->file_type === 'word') {
             return \App\Services\DocxToHtmlConverter::convertToHtml($file->file_path, $disk);
+        }
+
+        if ($file->extracted_text) {
+            return $file->extracted_text;
         }
 
         return 'Conteúdo do arquivo disponível para leitura e download.';
