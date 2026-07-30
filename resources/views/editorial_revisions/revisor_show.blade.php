@@ -102,6 +102,14 @@
             border-left: 4px solid #facc15;
             transition: all 0.2s ease;
         }
+        .pulse-highlight-target {
+            outline: 3px solid #3b82f6 !important;
+            animation: flashHighlight 1.5s ease-out;
+        }
+        @keyframes flashHighlight {
+            0% { background-color: #60a5fa; }
+            100% { background-color: #fef08a; }
+        }
     </style>
 
     <script>
@@ -131,7 +139,7 @@
                 pendingEditedNode: null,
                 pendingSelectedText: '',
 
-                // MENU DE BOTÃO DIREITO DO MOUSE (CONTEXT MENU)
+                // MENU DE BOTÃO DIREITO DO MOUSE
                 showContextMenu: false,
                 contextMenuPos: { x: 0, y: 0 },
 
@@ -167,7 +175,6 @@
                         this.handleFileChange(id);
                     });
 
-                    // Oculta menus ao clicar fora
                     document.addEventListener('click', (e) => {
                         if (!e.target.closest('#category-popover-menu')) {
                             this.showCategoryMenu = false;
@@ -309,7 +316,6 @@
                     }
                 },
 
-                // PEQUENO MENU FLUTUANTE AO EDITAR/SELECIONAR
                 handleEditorInput(event) {
                     this.syncEditorContent();
 
@@ -325,7 +331,6 @@
                             this.pendingEditedNode = node;
                             this.pendingSelectedText = sel.toString().trim() || node.textContent.trim().substring(0, 60);
 
-                            // Exibe o pequeno menu de categorização próximo ao cursor
                             if (event.clientX && event.clientY) {
                                 this.categoryMenuPos = { x: Math.min(event.clientX, window.innerWidth - 300), y: Math.max(event.clientY - 50, 80) };
                             } else {
@@ -336,14 +341,13 @@
                         }
                     }
 
-                    // Salva alterações no banco em segundo plano de forma contínua
                     clearTimeout(this.typingTimer);
                     this.typingTimer = setTimeout(() => {
                         this.persistWordContent();
                     }, 1000);
                 },
 
-                // APLICA A CATEGORIA ESCOLHIDA NO MENU FLUTUANTE, MARCA EM AMARELO E CRIA O APONTAMENTO
+                // APLICA CATEGORIA, MARCA EM AMARELO E PERSISTE O HTML NO BANCO DE DADOS IMEDIATAMENTE
                 selectCategory(cat) {
                     this.showCategoryMenu = false;
 
@@ -352,9 +356,11 @@
                     }
 
                     this.syncEditorContent();
+                    
+                    // 1. Salva o HTML com as marcações amarelas no banco de dados de forma síncrona
                     this.persistWordContent();
 
-                    // Cria o apontamento na Coluna 1
+                    // 2. Salva o apontamento na Coluna 1
                     fetch('{{ route("public.editorial.revisor.corrections.store", $revision->share_token) }}', {
                         method: 'POST',
                         headers: {
@@ -372,12 +378,44 @@
                     })
                     .then(res => res.json())
                     .then(data => {
-                        this.showToast('Marcado em amarelo e adicionado à categoria ' + cat.toUpperCase() + '!');
+                        this.showToast('Marcado em amarelo e salvo permanentemente!');
                         if (data.correction) {
                             data.correction.comments = data.correction.comments || [];
                             this.correctionsList.unshift(data.correction);
                         }
                     });
+                },
+
+                // LINK DIRETO: AO CLICAR EM UM CARD DA COLUNA 1, ROLA DIRETO PARA O TEXTO NO ARQUIVO
+                scrollToCorrection(cor) {
+                    const editor = this.$refs.wordEditor;
+                    if (!editor || !cor.original_text) return;
+
+                    const searchText = cor.original_text.toLowerCase().trim();
+                    const allElements = editor.querySelectorAll('.edited-line, p, div, li, mark');
+
+                    let foundElement = null;
+                    for (let el of allElements) {
+                        if (el.textContent.toLowerCase().includes(searchText)) {
+                            foundElement = el;
+                            break;
+                        }
+                    }
+
+                    if (!foundElement) {
+                        foundElement = editor.querySelector('.edited-line');
+                    }
+
+                    if (foundElement) {
+                        foundElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                        foundElement.classList.add('pulse-highlight-target');
+                        setTimeout(() => {
+                            foundElement.classList.remove('pulse-highlight-target');
+                        }, 2000);
+                        this.showToast('Rolou até a marcação no documento!');
+                    } else {
+                        this.showToast('Trecho correspondente no documento.');
+                    }
                 },
 
                 // SALVA O CONTEÚDO HTML DO WORD COM TODAS AS MARCAÇÕES AMARELAS PERMANENTES
@@ -399,7 +437,7 @@
                     })
                     .then(() => {
                         this.savingText = false;
-                        this.showToast('Documento salvo no banco de dados!');
+                        this.showToast('Documento e marcações salvas!');
                     })
                     .catch(() => {
                         this.savingText = false;
@@ -416,7 +454,6 @@
                     this.showContextMenu = true;
                 },
 
-                // DESFAZ A MARCAÇÃO AMARELA DA LINHA OU SELEÇÃO
                 removeHighlight() {
                     this.showContextMenu = false;
                     const sel = window.getSelection();
@@ -585,7 +622,7 @@
         <button type="button" @click="toastMessage = ''" class="text-slate-400 hover:text-white ml-2">✕</button>
     </div>
 
-    <!-- PEQUENO MENU FLUTUANTE DE CATEGORIZAÇÃO AO EDITAR/SELECIONAR (POPUP) -->
+    <!-- PEQUENO MENU FLUTUANTE DE CATEGORIZAÇÃO AO EDITAR/SELECIONAR -->
     <div id="category-popover-menu"
          x-show="showCategoryMenu"
          x-cloak
@@ -654,15 +691,6 @@
         </div>
 
         <div class="flex items-center gap-2">
-            <!-- CHAT FLUTUANTE DE DÚVIDAS -->
-            <button type="button" @click="openDuvidasChatModal = true" class="px-3.5 py-2 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-[5px] text-xs transition-all flex items-center gap-2 shadow-sm" title="Abrir Chat de Dúvidas">
-                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 10h.01M12 10h.01M16 10h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"/>
-                </svg>
-                <span>Chat de Dúvidas</span>
-                <span class="px-1.5 py-0.5 bg-emerald-800 text-white rounded-full text-[10px]" x-text="duvidasList.length"></span>
-            </button>
-
             <button type="button" @click="checkLanguageTool()" class="w-9 h-9 bg-purple-600 hover:bg-purple-700 text-white font-bold rounded-[5px] transition-all flex items-center justify-center shadow-sm" title="Analisar com LanguageTool">
                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
@@ -678,9 +706,9 @@
     </header>
 
     <!-- CORPO PRINCIPAL DE 3 COLUNAS COM ALTURA FLUIDA 100% -->
-    <main class="flex-1 flex overflow-hidden min-h-0">
+    <main class="flex-1 flex overflow-hidden min-h-0 relative">
 
-        <!-- COLUNA 1 (ESQUERDA - 320px): LISTA DE APONTAMENTOS SEM SELECT NOS CARDS -->
+        <!-- COLUNA 1 (ESQUERDA - 320px): LISTA DE APONTAMENTOS LINKADOS COM O ARQUIVO -->
         <aside class="w-80 border-r border-slate-200 bg-white flex flex-col justify-between shrink-0 h-full overflow-hidden z-20">
             
             <!-- Informação do Arquivo Selecionado -->
@@ -700,10 +728,13 @@
                 <button @click="categoryFilter = 'duvida'" class="flex-1 py-2.5 text-center border-b-2 text-[10px]" :class="categoryFilter === 'duvida' ? 'border-emerald-600 text-emerald-600 bg-emerald-50' : 'border-transparent text-slate-400'">Dúvidas</button>
             </div>
 
-            <!-- Feed de Apontamentos Automáticos sem Selects Indesejados -->
+            <!-- Feed de Apontamentos Linkados com Rolagem Direta até a Posição no Texto -->
             <div class="flex-1 overflow-y-auto p-4 space-y-3">
                 <template x-for="cor in correctionsList" :key="cor.id">
-                    <div x-show="categoryFilter === 'todas' || categoryFilter === cor.category" class="p-3.5 bg-amber-50/60 border border-amber-200 rounded-[5px] text-xs space-y-2">
+                    <div x-show="categoryFilter === 'todas' || categoryFilter === cor.category" 
+                         @click="scrollToCorrection(cor)"
+                         class="p-3.5 bg-amber-50/60 border border-amber-200 rounded-[5px] text-xs space-y-2 cursor-pointer hover:bg-amber-100/70 hover:border-amber-400 transition-all group">
+                        
                         <div class="flex items-center justify-between">
                             <span class="text-[9px] font-black uppercase px-2 py-0.5 rounded text-white"
                                   :class="{
@@ -712,14 +743,17 @@
                                       'bg-emerald-600': cor.category === 'duvida',
                                       'bg-purple-600': cor.category === 'padronizacao'
                                   }" x-text="cor.category"></span>
-                            <span class="text-[10px] text-slate-400 font-bold">Apontamento</span>
+                            <span class="text-[10px] text-slate-400 group-hover:text-blue-600 font-bold flex items-center gap-1">
+                                <span>Ir para o texto</span>
+                                <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3"/></svg>
+                            </span>
                         </div>
 
                         <p class="font-mono text-amber-950 font-bold bg-amber-100/90 px-1.5 py-0.5 rounded" x-text="cor.original_text || 'Edição direta'"></p>
                         <p class="text-slate-600 italic text-[11px]" x-text="(cor.justification || 'Edição no documento.')"></p>
 
                         <template x-if="cor.category === 'duvida'">
-                            <button type="button" @click="activeDuvidaId = cor.id; openDuvidasChatModal = true" class="w-full py-1 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-[10px] uppercase tracking-wider rounded flex items-center justify-center gap-1 mt-1">
+                            <button type="button" @click.stop="activeDuvidaId = cor.id; openDuvidasChatModal = true" class="w-full py-1 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-[10px] uppercase tracking-wider rounded flex items-center justify-center gap-1 mt-1">
                                 <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"/></svg>
                                 <span>Abrir Chat (<span x-text="cor.comments ? cor.comments.length : 0"></span>)</span>
                             </button>
@@ -736,7 +770,7 @@
 
         </aside>
 
-        <!-- COLUNA 2 (CENTRO - FLEX-1): VIEWPORT DO DOCUMENTO (COM MENU CONTEXTUAL DE BOTÃO DIREITO) -->
+        <!-- COLUNA 2 (CENTRO - FLEX-1): VIEWPORT DO DOCUMENTO -->
         <section class="flex-1 bg-slate-200/70 flex flex-col min-w-0 relative overflow-hidden h-full">
             
             <!-- Barra Secundária Superior do Visualizador / Editor de Texto -->
@@ -797,7 +831,7 @@
 
             </div>
 
-            <!-- CANVAS PRINCIPAL (COM MENU DE BOTÃO DIREITO HABILITADO VIA @contextmenu.prevent) -->
+            <!-- CANVAS PRINCIPAL -->
             <div x-ref="documentViewport"
                  @scroll="handleViewportScroll($event)"
                  @contextmenu.prevent="openContextMenu($event)"
@@ -852,6 +886,18 @@
                         <img :src="getFileStreamUrl(currentFile.id)" class="max-h-[75vh] object-contain">
                     </div>
                 </template>
+
+                <!-- WIDGET FLUTUANTE DE CHAT NO CANTO INFERIOR DIREITO DO CANVAS -->
+                <button type="button" 
+                        @click="openDuvidasChatModal = true" 
+                        class="fixed bottom-6 right-80 z-40 bg-emerald-600 hover:bg-emerald-700 text-white font-bold px-4 py-3 rounded-full shadow-2xl flex items-center gap-2.5 transition-all transform hover:scale-105" 
+                        title="Abrir Chat de Dúvidas">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 10h.01M12 10h.01M16 10h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"/>
+                    </svg>
+                    <span class="text-xs font-bold">Chat de Dúvidas</span>
+                    <span class="px-2 py-0.5 bg-emerald-800 text-white rounded-full text-[10px]" x-text="duvidasList.length"></span>
+                </button>
 
             </div>
 
@@ -928,7 +974,7 @@
                             <span class="text-[9px] font-bold px-2 py-0.5 rounded bg-emerald-200 text-emerald-800" x-text="cor.status"></span>
                         </div>
 
-                        <p class="font-mono text-emerald-950 font-bold bg-white p-2 rounded border border-emerald-200" x-text="'💬 ' + (cor.original_text || 'Dúvida no documento')"></p>
+                        <p class="font-mono text-emerald-950 font-bold bg-white p-2 rounded border border-emerald-200 cursor-pointer" @click="scrollToCorrection(cor)" x-text="'💬 ' + (cor.original_text || 'Dúvida no documento')"></p>
 
                         <div class="space-y-2 pt-1">
                             <template x-for="cmt in (cor.comments || [])" :key="cmt.id">
