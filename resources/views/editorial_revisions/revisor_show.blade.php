@@ -955,11 +955,11 @@
                 <!-- FORMATO DE PÁGINA CORRIDA DO WORD OU MODO EDIÇÃO DO PDF COM MARCAÇÕES EM AMARELO -->
                 <template x-if="(currentFile && currentFile.file_type === 'word') || (currentFile && currentFile.file_type === 'pdf' && pdfEditMode)">
                     <div class="w-full flex flex-col items-center">
-                        <div class="word-page-a4 paper-shadow border border-slate-300 text-slate-900 rounded-[2px] transition-all select-text relative"
+                        <div :class="(currentFile && currentFile.file_type === 'pdf') ? 'w-full flex flex-col items-center space-y-8 select-text' : 'word-page-a4 paper-shadow border border-slate-300 text-slate-900 rounded-[2px] transition-all select-text relative'"
                              id="word-paper-container">
                             <div x-ref="wordEditor"
                                  contenteditable="true"
-                                 class="word-paper-content focus:outline-none min-h-[250mm]"
+                                 class="word-paper-content focus:outline-none w-full flex flex-col items-center"
                                  @input="handleEditorInput($event)">
                             </div>
                         </div>

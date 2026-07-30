@@ -7,7 +7,7 @@ use Illuminate\Support\Facades\Storage;
 class PdfToHtmlConverter
 {
     /**
-     * Gara a inclusão do Autoloader das classes do Smalot PdfParser.
+     * Garante a inclusão do Autoloader das classes do Smalot PdfParser.
      */
     protected static function registerAutoloader(): void
     {
@@ -27,7 +27,7 @@ class PdfToHtmlConverter
     }
 
     /**
-     * Extrai o texto completo de um arquivo PDF e o converte em HTML rico e editável para a Folha A4.
+     * Extrai o texto completo de um arquivo PDF e o converte em HTML rico preservando a diagramação página por página.
      */
     public static function convertToHtml(string $filePath, string $diskName = 'public'): string
     {
@@ -49,6 +49,7 @@ class PdfToHtmlConverter
             $pdf = $parser->parseFile($filePathOnDisk);
 
             $pages = $pdf->getPages();
+            $totalPages = count($pages);
             $html = '';
 
             foreach ($pages as $index => $page) {
@@ -56,23 +57,50 @@ class PdfToHtmlConverter
                 if (empty($text)) continue;
 
                 $lines = explode("\n", $text);
-                $pageHtml = '';
+                $pageContentHtml = '';
+                $inList = false;
 
                 foreach ($lines as $line) {
                     $cleanLine = trim($line);
                     if ($cleanLine === '') continue;
 
-                    if (mb_strlen($cleanLine) < 60 && mb_strtoupper($cleanLine) === $cleanLine && preg_match('/[A-Z]/', $cleanLine)) {
-                        $pageHtml .= '<h3 class="text-base font-bold text-slate-900 mt-6 mb-3 uppercase tracking-tight">' . e($cleanLine) . '</h3>';
+                    // Detecta marcadores de tópicos ou listas (ex: •, -, a.1), 1.)
+                    if (preg_match('/^(?:[•\-\*]|\b[a-z0-9]+\))\s+(.+)/i', $cleanLine, $matches)) {
+                        if (!$inList) {
+                            $pageContentHtml .= '<ul class="list-disc pl-5 my-3 space-y-1.5 text-slate-900 font-serif text-base">';
+                            $inList = true;
+                        }
+                        $pageContentHtml .= '<li class="leading-relaxed">' . e($matches[1]) . '</li>';
+                        continue;
+                    }
+
+                    if ($inList) {
+                        $pageContentHtml .= '</ul>';
+                        $inList = false;
+                    }
+
+                    // Títulos de seção ou cabeçalhos em maiúsculo
+                    if (mb_strlen($cleanLine) < 70 && mb_strtoupper($cleanLine) === $cleanLine && preg_match('/[A-Z]/', $cleanLine)) {
+                        $pageContentHtml .= '<h3 class="font-outfit font-black text-lg text-slate-900 mt-6 mb-3 uppercase tracking-tight border-b border-slate-200 pb-1">' . e($cleanLine) . '</h3>';
+                    } elseif (preg_match('/^(?:Objetivos|Materiais|Sessão|Capítulo|Introdução|Conclusão):/i', $cleanLine)) {
+                        $pageContentHtml .= '<h4 class="font-bold text-slate-800 text-base mt-4 mb-2">' . e($cleanLine) . '</h4>';
                     } else {
-                        $pageHtml .= '<p class="mb-3 leading-relaxed text-slate-900 font-serif text-base">' . e($cleanLine) . '</p>';
+                        $pageContentHtml .= '<p class="mb-3.5 leading-relaxed text-slate-900 font-serif text-base text-justify">' . e($cleanLine) . '</p>';
                     }
                 }
 
-                if (!empty($pageHtml)) {
-                    $html .= '<div class="pdf-page-block mb-8 pb-4 border-b border-slate-200" data-page="' . ($index + 1) . '">';
-                    $html .= '<span class="text-[9px] font-bold text-slate-400 uppercase tracking-widest block mb-2">--- PÁGINA ' . ($index + 1) . ' DO PDF ---</span>';
-                    $html .= $pageHtml;
+                if ($inList) {
+                    $pageContentHtml .= '</ul>';
+                }
+
+                if (!empty($pageContentHtml)) {
+                    $pageNum = $index + 1;
+                    $html .= '<div class="pdf-page-card bg-white border border-slate-300 rounded-[2px] paper-shadow p-10 mb-10 relative select-text" data-page="' . $pageNum . '" style="width: 210mm; min-height: 297mm; box-sizing: border-box; margin-left: auto; margin-right: auto;">';
+                    $html .= '<div class="flex items-center justify-between border-b border-slate-200 pb-3 mb-6 select-none">';
+                    $html .= '<span class="text-[10px] font-black uppercase tracking-widest px-2.5 py-1 bg-slate-900 text-white rounded">📄 Página ' . $pageNum . ' de ' . $totalPages . ' (PDF Original)</span>';
+                    $html .= '<span class="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Formato A4 • Layout Preservado</span>';
+                    $html .= '</div>';
+                    $html .= '<div class="pdf-page-body">' . $pageContentHtml . '</div>';
                     $html .= '</div>';
                 }
             }
