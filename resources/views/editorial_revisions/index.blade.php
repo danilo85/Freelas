@@ -7,18 +7,18 @@
 }">
 
     <!-- Banner Superior / Título e Ação Principal -->
-    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-6 rounded-[5px] shadow-sm">
-        <div class="space-y-1">
-            <div class="flex items-center gap-2">
-                <span class="text-2xl">✍️</span>
-                <h2 class="text-xl font-black font-outfit text-slate-800 dark:text-slate-100 uppercase tracking-tight">Revisão Editorial</h2>
+    <div class="flex flex-col lg:flex-row lg:items-center justify-between gap-4 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-6 rounded-[5px] shadow-sm">
+        <div class="space-y-1 min-w-0">
+            <div class="flex items-center gap-2 min-w-0">
+                <span class="text-2xl shrink-0">✍️</span>
+                <h2 class="text-xl font-black font-outfit text-slate-800 dark:text-slate-100 uppercase tracking-tight truncate">Revisão Editorial</h2>
             </div>
             <p class="text-xs text-slate-500 dark:text-slate-400 font-medium">
                 Gerencie os textos originais, atribua revisores profissionais e responda dúvidas de autores antes da diagramação.
             </p>
         </div>
 
-        <div class="flex items-center gap-3">
+        <div class="flex items-center gap-3 flex-wrap shrink-0">
             <a href="{{ route('revisoes-editoriais.revisores.index') }}" class="px-4 py-2.5 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 text-slate-700 dark:text-slate-200 text-xs font-bold rounded-[5px] transition-all flex items-center gap-2 cursor-pointer uppercase tracking-wider">
                 <span>👥</span> Gerenciar Revisores
             </a>

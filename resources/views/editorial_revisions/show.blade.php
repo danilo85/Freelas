@@ -75,22 +75,22 @@
         <!-- Links Públicos do Projeto (Apenas SVG Icons) -->
         <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
             <!-- Link do Revisor -->
-            <div class="space-y-2 p-4 bg-slate-50 dark:bg-slate-800/40 rounded-[5px] border border-slate-200 dark:border-slate-700">
+            <div class="space-y-2 p-4 bg-slate-50 dark:bg-slate-800/40 rounded-[5px] border border-slate-200 dark:border-slate-700 min-w-0">
                 <label class="text-[10px] font-black text-purple-700 dark:text-purple-400 uppercase tracking-wider block">Workspace do Revisor</label>
-                <div class="flex items-center gap-2">
-                    <input type="text" readonly value="{{ route('public.editorial.revisor.show', $editorialRevision->share_token) }}" class="flex-1 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 text-xs px-3 py-2 rounded-[5px] select-all font-mono">
-                    <a href="{{ route('public.editorial.revisor.show', $editorialRevision->share_token) }}" target="_blank" class="w-9 h-9 bg-purple-600 hover:bg-purple-700 text-white rounded-[5px] flex items-center justify-center transition-all shadow-xs" title="Abrir Workspace do Revisor">
+                <div class="flex items-center gap-2 min-w-0">
+                    <input type="text" readonly value="{{ route('public.editorial.revisor.show', $editorialRevision->share_token) }}" class="flex-1 min-w-0 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 text-xs px-3 py-2 rounded-[5px] select-all font-mono truncate">
+                    <a href="{{ route('public.editorial.revisor.show', $editorialRevision->share_token) }}" target="_blank" class="w-9 h-9 bg-purple-600 hover:bg-purple-700 text-white rounded-[5px] flex items-center justify-center transition-all shadow-xs shrink-0" title="Abrir Workspace do Revisor">
                         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/></svg>
                     </a>
                 </div>
             </div>
 
             <!-- Link do Autor -->
-            <div class="space-y-2 p-4 bg-slate-50 dark:bg-slate-800/40 rounded-[5px] border border-slate-200 dark:border-slate-700">
+            <div class="space-y-2 p-4 bg-slate-50 dark:bg-slate-800/40 rounded-[5px] border border-slate-200 dark:border-slate-700 min-w-0">
                 <label class="text-[10px] font-black text-slate-700 dark:text-slate-300 uppercase tracking-wider block">Link do Autor (Esclarecer Dúvidas)</label>
-                <div class="flex items-center gap-2">
-                    <input type="text" readonly value="{{ route('public.editorial.show', $editorialRevision->share_token) }}" class="flex-1 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 text-xs px-3 py-2 rounded-[5px] select-all font-mono">
-                    <button type="button" @click="copyShareLink('{{ route('public.editorial.show', $editorialRevision->share_token) }}')" class="w-9 h-9 bg-slate-900 hover:bg-slate-800 text-white rounded-[5px] flex items-center justify-center transition-all shadow-xs" title="Copiar Link do Autor">
+                <div class="flex items-center gap-2 min-w-0">
+                    <input type="text" readonly value="{{ route('public.editorial.show', $editorialRevision->share_token) }}" class="flex-1 min-w-0 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 text-xs px-3 py-2 rounded-[5px] select-all font-mono truncate">
+                    <button type="button" @click="copyShareLink('{{ route('public.editorial.show', $editorialRevision->share_token) }}')" class="w-9 h-9 bg-slate-900 hover:bg-slate-800 text-white rounded-[5px] flex items-center justify-center transition-all shadow-xs shrink-0" title="Copiar Link do Autor">
                         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"/></svg>
                     </button>
                 </div>
