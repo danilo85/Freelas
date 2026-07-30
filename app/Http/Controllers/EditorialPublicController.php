@@ -150,19 +150,30 @@ class EditorialPublicController extends Controller
     public function checkLanguageTool(Request $request)
     {
         $request->validate([
-            'text' => 'required|string|max:20000',
+            'text' => 'required|string',
         ]);
+
+        $plainText = trim(strip_tags($request->text));
+        if (mb_strlen($plainText) > 10000) {
+            $plainText = mb_substr($plainText, 0, 10000);
+        }
+
+        if (mb_strlen($plainText) < 2) {
+            return response()->json(['matches' => []]);
+        }
 
         try {
             $response = Http::asForm()->post('https://api.languagetool.org/v2/check', [
-                'text' => $request->text,
+                'text' => $plainText,
                 'language' => 'pt-BR',
             ]);
 
             if ($response->successful()) {
                 return response()->json($response->json());
             }
-        } catch (\Throwable $e) {}
+        } catch (\Throwable $e) {
+            return response()->json(['error' => $e->getMessage(), 'matches' => []]);
+        }
 
         return response()->json(['matches' => []]);
     }

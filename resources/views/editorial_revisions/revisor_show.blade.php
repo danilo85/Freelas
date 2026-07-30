@@ -174,6 +174,11 @@
                 replyMessageInput: '',
                 isSendingChat: false,
 
+                // LanguageTool Modal State
+                openLanguageToolModal: false,
+                languageToolMatches: [],
+                loadingLanguageTool: false,
+
                 // Track Changes state
                 originalContent: '',
                 revisedContent: '',
@@ -619,12 +624,17 @@
                 },
 
                 checkLanguageTool() {
-                    const text = this.revisedContent || this.originalContent;
-                    if (!text || text.length < 5) {
+                    const editor = this.$refs.wordEditor;
+                    const text = editor ? editor.innerText : (this.revisedContent || this.originalContent);
+                    
+                    if (!text || text.trim().length < 5) {
                         this.showToast('Não há texto suficiente para análise ortográfica.');
                         return;
                     }
 
+                    this.loadingLanguageTool = true;
+                    this.openLanguageToolModal = true;
+                    this.languageToolMatches = [];
                     this.showToast('Analisando documento com LanguageTool...');
 
                     fetch('{{ route("public.editorial.revisor.languagetool", $revision->share_token) }}', {
@@ -637,10 +647,12 @@
                     })
                     .then(res => res.json())
                     .then(data => {
+                        this.loadingLanguageTool = false;
                         this.languageToolMatches = data.matches || [];
                         this.showToast('Análise concluída! Encontradas ' + this.languageToolMatches.length + ' sugestões.');
                     })
                     .catch(() => {
+                        this.loadingLanguageTool = false;
                         this.showToast('Falha ao conectar ao serviço de ortografia.');
                     });
                 }
@@ -743,6 +755,13 @@
 
         <div class="h-px bg-slate-200 my-1"></div>
 
+        <button type="button" @click="checkLanguageTool(); showContextMenu = false" class="w-full px-4 py-2 hover:bg-purple-50 text-purple-900 text-left font-bold flex items-center justify-between">
+            <span class="flex items-center gap-2">
+                <svg class="w-3.5 h-3.5 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
+                <span>Verificar Ortografia (LanguageTool)</span>
+            </span>
+        </button>
+
         <button type="button" @click="removeHighlight()" class="w-full px-4 py-2 hover:bg-amber-50 text-amber-800 text-left font-bold flex items-center gap-2">
             <span>⚡ Remove Marcação Amarela</span>
         </button>
@@ -764,12 +783,6 @@
         </div>
 
         <div class="flex items-center gap-2">
-            <button type="button" @click="checkLanguageTool()" class="w-9 h-9 bg-purple-600 hover:bg-purple-700 text-white font-bold rounded-[5px] transition-all flex items-center justify-center shadow-sm" title="Analisar com LanguageTool">
-                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
-                </svg>
-            </button>
-
             <button type="button" @click="copyAuthorLink('{{ route('public.editorial.show', $revision->share_token) }}')" class="w-9 h-9 bg-slate-900 hover:bg-slate-800 text-white font-bold rounded-[5px] transition-all flex items-center justify-center shadow-sm" title="Copiar Link do Autor">
                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1"/>
@@ -1130,6 +1143,75 @@
                         <p class="text-[11px] text-slate-400 max-w-xs mx-auto">Altere a categoria de um apontamento para "Dúvida" para abrir um tópico de conversa com o Autor!</p>
                     </div>
                 </template>
+            </div>
+
+        </div>
+    </div>
+
+    <!-- MODAL ANÁLISE ORTOGRÁFICA (LANGUAGETOOL) -->
+    <div x-show="openLanguageToolModal" x-cloak class="fixed inset-0 z-[999999] flex items-center justify-center p-4 bg-slate-950/60 backdrop-blur-xs select-none">
+        <div @click.away="openLanguageToolModal = false" class="bg-white border border-slate-200 text-slate-800 rounded-xl max-w-xl w-full shadow-2xl flex flex-col max-h-[85vh] overflow-hidden">
+            
+            <div class="p-4 border-b border-slate-200 bg-purple-900 text-white flex items-center justify-between shrink-0">
+                <div class="flex items-center gap-2.5">
+                    <svg class="w-5 h-5 text-purple-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
+                    </svg>
+                    <div>
+                        <h3 class="font-outfit font-black text-sm uppercase tracking-tight">Análise Ortográfica (LanguageTool)</h3>
+                        <p class="text-[10px] text-purple-200">Sugestões inteligentes de ortografia e gramática</p>
+                    </div>
+                </div>
+                <button type="button" @click="openLanguageToolModal = false" class="w-7 h-7 rounded-full bg-purple-800 hover:bg-purple-700 text-purple-200 hover:text-white flex items-center justify-center font-bold text-xs">✕</button>
+            </div>
+
+            <div class="p-5 flex-1 overflow-y-auto space-y-4 bg-slate-50">
+                <template x-if="loadingLanguageTool">
+                    <div class="py-12 text-center text-slate-500 font-medium text-xs space-y-3">
+                        <svg class="animate-spin w-8 h-8 text-purple-600 mx-auto" fill="none" viewBox="0 0 24 24">
+                            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path>
+                        </svg>
+                        <p class="font-bold text-slate-700">Analisando o texto com o motor LanguageTool...</p>
+                    </div>
+                </template>
+
+                <template x-if="!loadingLanguageTool && languageToolMatches.length === 0">
+                    <div class="py-12 text-center text-emerald-700 font-medium text-xs space-y-2 bg-emerald-50 rounded-lg border border-emerald-200">
+                        <div class="w-10 h-10 rounded-full bg-emerald-200 text-emerald-800 flex items-center justify-center mx-auto text-lg font-bold">✓</div>
+                        <p class="font-bold text-sm text-emerald-900">Nenhum erro ortográfico detectado!</p>
+                        <p class="text-xs text-emerald-700">Seu texto está de acordo com as regras de ortografia em Português.</p>
+                    </div>
+                </template>
+
+                <template x-for="(match, idx) in languageToolMatches" :key="idx">
+                    <div class="bg-white border border-slate-200 rounded-lg p-4 shadow-xs space-y-2 text-xs">
+                        <div class="flex items-center justify-between border-b border-slate-100 pb-2">
+                            <span class="font-bold text-purple-900 uppercase text-[10px] bg-purple-100 px-2 py-0.5 rounded" x-text="match.rule ? match.rule.category.name : 'Ortografia'"></span>
+                            <span class="text-[10px] text-slate-400 font-mono" x-text="'Sugestão ' + (idx + 1)"></span>
+                        </div>
+
+                        <p class="text-slate-800 font-medium text-sm" x-text="match.message"></p>
+
+                        <div class="p-2.5 bg-slate-100 border-l-4 border-rose-500 rounded-r text-xs font-serif text-slate-800">
+                            <span class="font-sans font-bold text-[10px] text-rose-700 block uppercase">No Texto:</span>
+                            <span class="line-through text-rose-600 font-bold" x-text="match.context ? match.context.text.substring(match.context.offset, match.context.offset + match.context.length) : ''"></span>
+                        </div>
+
+                        <template x-if="match.replacements && match.replacements.length > 0">
+                            <div class="pt-1 flex items-center gap-1.5 flex-wrap">
+                                <span class="text-[10px] font-bold text-slate-500 uppercase">Sugestões de Correção:</span>
+                                <template x-for="(rep, rIdx) in match.replacements.slice(0, 4)" :key="rIdx">
+                                    <span class="px-2.5 py-1 bg-emerald-100 text-emerald-900 font-bold rounded text-xs border border-emerald-300" x-text="rep.value"></span>
+                                </template>
+                            </div>
+                        </template>
+                    </div>
+                </template>
+            </div>
+
+            <div class="p-4 border-t border-slate-200 bg-white flex justify-end shrink-0">
+                <button type="button" @click="openLanguageToolModal = false" class="px-4 py-2 bg-slate-900 hover:bg-slate-800 text-white font-bold text-xs uppercase tracking-wider rounded">Fechar</button>
             </div>
 
         </div>
