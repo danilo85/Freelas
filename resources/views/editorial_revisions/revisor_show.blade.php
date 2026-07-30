@@ -122,6 +122,19 @@
             display: inline-block;
         }
 
+        /* TAG MODERNA EM DESTAQUE PARA TEXTO NOVO/ALTERADO */
+        mark.edited-text-tag {
+            background-color: #f3e8ff !important;
+            color: #6b21a8 !important;
+            border: 1px solid #c084fc !important;
+            font-weight: 700;
+            padding: 2px 6px;
+            border-radius: 4px;
+            display: inline-block;
+            box-shadow: 0 1px 2px rgba(168, 85, 247, 0.15);
+            margin: 0 2px;
+        }
+
         /* CAPA DE SELEÇÃO E DESTAQUE DE TEXTO SOBRE O PDF ORIGINAL */
         .pdf-text-layer-overlay {
             position: absolute;
@@ -738,6 +751,24 @@
                     }
                 },
 
+                // Controles da Linha do Tempo / Histórico do Trecho
+                paraHistoryMap: {},
+
+                navigateParaHistory(paraNode, direction) {
+                    if (!paraNode || !paraNode.id || !this.paraHistoryMap[paraNode.id]) return;
+                    const history = this.paraHistoryMap[paraNode.id];
+                    let currentIndex = parseInt(paraNode.getAttribute('data-version-index') || (history.length - 1));
+                    let nextIndex = currentIndex + direction;
+
+                    if (nextIndex >= 0 && nextIndex < history.length) {
+                        paraNode.setAttribute('data-version-index', nextIndex);
+                        paraNode.innerHTML = history[nextIndex];
+                        this.syncEditorContent();
+                        this.persistWordContent();
+                        this.showToast('Exibindo Versão ' + (nextIndex + 1) + ' de ' + history.length + ' do trecho!');
+                    }
+                },
+
                 applyLanguageToolCorrection(match, replacementValue) {
                     const editor = this.$refs.wordEditor;
                     if (!match || !match.context) return;
@@ -750,13 +781,15 @@
                         return;
                     }
 
+                    const tagReplacement = `<mark class="edited-text-tag bg-purple-100 text-purple-900 border border-purple-300 font-bold px-1.5 py-0.5 rounded shadow-xs inline-block" title="Texto alterado pelo revisor">${replacementValue}</mark>`;
+
                     // 1. Procura se há uma marcação roxa ativa com a palavra
                     const activePurpleMark = editor.querySelector('.purple-word-mark');
                     let targetElement = null;
 
                     if (activePurpleMark && activePurpleMark.textContent.trim().toLowerCase() === originalWord.toLowerCase()) {
                         targetElement = activePurpleMark.parentNode;
-                        activePurpleMark.replaceWith(document.createTextNode(replacementValue));
+                        activePurpleMark.outerHTML = tagReplacement;
                     } else {
                         // Busca o parágrafo ou item contendo a palavra original
                         const allLeafElements = editor.querySelectorAll('p, li, h3, h4, span');
@@ -766,16 +799,26 @@
                                 targetElement = el;
                                 const escapedText = originalWord.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
                                 const regex = new RegExp('(' + escapedText + ')', 'gi');
-                                el.innerHTML = el.innerHTML.replace(regex, replacementValue);
+                                el.innerHTML = el.innerHTML.replace(regex, tagReplacement);
                                 break;
                             }
                         }
                     }
 
                     if (targetElement) {
+                        // Salva histórico de versões do parágrafo para o slider da linha do tempo
+                        const paraId = targetElement.id || ('para_' + Math.random().toString(36).substr(2, 9));
+                        targetElement.id = paraId;
+
+                        if (!this.paraHistoryMap[paraId]) {
+                            this.paraHistoryMap[paraId] = [targetElement.innerHTML];
+                        }
+                        this.paraHistoryMap[paraId].push(targetElement.innerHTML);
+                        targetElement.setAttribute('data-version-index', this.paraHistoryMap[paraId].length - 1);
+
                         // Aplica o destaque amarelo permanente na linha alterada
                         targetElement.classList.add('edited-line');
-                        targetElement.setAttribute('style', 'background-color: #fef08a !important; color: #713f12 !important; border-left: 4px solid #facc15 !important; padding: 4px 8px; border-radius: 4px; margin-bottom: 8px;');
+                        targetElement.setAttribute('style', 'background-color: #fef08a !important; color: #713f12 !important; border-left: 4px solid #facc15 !important; padding: 6px 10px; border-radius: 4px; margin-bottom: 8px;');
                         targetElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
                     }
 
@@ -786,7 +829,7 @@
                     this.syncEditorContent();
                     this.persistWordContent();
 
-                    this.showToast('✨ Corrigido para "' + replacementValue + '" e salvo no banco!');
+                    this.showToast('✨ Corrigido em tag de destaque e salvo no banco!');
                 }
             }
         }
@@ -851,6 +894,16 @@
         <button type="button" @click="selectCategory('gramatica')" class="px-2.5 py-1 bg-amber-600 hover:bg-amber-700 rounded text-[11px]">Gramática</button>
         <button type="button" @click="selectCategory('duvida')" class="px-2.5 py-1 bg-emerald-600 hover:bg-emerald-700 rounded text-[11px]">Dúvida (Chat)</button>
         <button type="button" @click="selectCategory('padronizacao')" class="px-2.5 py-1 bg-purple-600 hover:bg-purple-700 rounded text-[11px]">Padronização</button>
+        
+        <template x-if="pendingEditedNode && pendingEditedNode.id && paraHistoryMap[pendingEditedNode.id] && paraHistoryMap[pendingEditedNode.id].length > 1">
+            <div class="flex items-center gap-1.5 pl-2 border-l border-slate-700">
+                <span class="text-[10px] text-purple-300 font-mono">Histórico:</span>
+                <button type="button" @click="navigateParaHistory(pendingEditedNode, -1)" class="w-5 h-5 bg-purple-700 hover:bg-purple-600 rounded flex items-center justify-center text-[10px]" title="Versão Anterior">◀</button>
+                <span class="text-[10px] font-mono text-purple-200" x-text="(parseInt(pendingEditedNode.getAttribute('data-version-index') || (paraHistoryMap[pendingEditedNode.id].length - 1)) + 1) + '/' + paraHistoryMap[pendingEditedNode.id].length"></span>
+                <button type="button" @click="navigateParaHistory(pendingEditedNode, 1)" class="w-5 h-5 bg-purple-700 hover:bg-purple-600 rounded flex items-center justify-center text-[10px]" title="Versão Seguinte">▶</button>
+            </div>
+        </template>
+
         <button type="button" @click="showCategoryMenu = false" class="px-1.5 py-1 text-slate-400 hover:text-white">✕</button>
     </div>
 
