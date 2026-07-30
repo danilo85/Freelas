@@ -285,7 +285,10 @@ Route::prefix('revisao-editorial/{token}')->name('public.editorial.')->group(fun
     Route::post('/revisor/version', [\App\Http\Controllers\EditorialPublicController::class, 'storeFileVersionPublic'])->name('revisor.version.store');
     Route::post('/revisor/languagetool', [\App\Http\Controllers\EditorialPublicController::class, 'checkLanguageTool'])->name('revisor.languagetool');
     Route::post('/revisor/file/{fileId}/content', [\App\Http\Controllers\EditorialPublicController::class, 'saveRevisedContent'])->name('revisor.content.save');
-    // Stream    // Download e Stream de Arquivos Públicos
+    Route::get('/revisor/file/{fileId}/export-docx', [\App\Http\Controllers\EditorialPublicController::class, 'exportRevisedDocx'])->name('revisor.file.export-docx');
+    Route::get('/revisor/export-report', [\App\Http\Controllers\EditorialPublicController::class, 'exportCorrectionsReport'])->name('revisor.export-report');
+    
+    // Download e Stream de Arquivos Públicos
     Route::get('/file/{fileId}/stream', [\App\Http\Controllers\EditorialPublicController::class, 'streamFile'])->name('file.stream');
     Route::get('/file/{fileId}/text-content', [\App\Http\Controllers\EditorialPublicController::class, 'getFileTextContent'])->name('file.text-content');
     Route::get('/file/{fileId}/download', [\App\Http\Controllers\EditorialPublicController::class, 'downloadFile'])->name('file.download');

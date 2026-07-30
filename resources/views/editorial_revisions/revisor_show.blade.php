@@ -963,6 +963,14 @@
                 </template>
             </div>
 
+            <!-- Botão de Exportação do Relatório de Apontamentos -->
+            <div class="p-3 border-t border-slate-200 bg-slate-50 shrink-0">
+                <a href="{{ route('public.editorial.revisor.export-report', $revision->share_token) }}" target="_blank" class="w-full py-2 bg-slate-900 hover:bg-slate-800 text-white font-bold text-[11px] uppercase tracking-wider rounded flex items-center justify-center gap-1.5 transition-colors shadow-xs">
+                    <svg class="w-3.5 h-3.5 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+                    <span>Baixar Relatório de Apontamentos</span>
+                </a>
+            </div>
+
         </aside>
 
         <!-- COLUNA 2 (CENTRO - FLEX-1): VIEWPORT DO DOCUMENTO -->
@@ -1030,6 +1038,10 @@
                         </div>
 
                         <div class="flex items-center gap-2">
+                            <a :href="'{{ url("/revisao-editorial/" . $revision->share_token . "/revisor/file") }}/' + selectedFileId + '/export-docx'" target="_blank" class="px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded text-xs transition-all shadow-xs flex items-center gap-1.5" title="Baixar arquivo editado preservando todas as marcações em amarelo">
+                                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/></svg>
+                                <span>Baixar Versão Editada</span>
+                            </a>
                             <button type="button" @click="persistWordContent()" class="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded text-xs transition-all shadow-xs flex items-center gap-1.5">
                                 <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4"/></svg>
                                 <span>Salvar Agora</span>

@@ -410,4 +410,69 @@ class EditorialPublicController extends Controller
 
         return '';
     }
+
+    /**
+     * Exporta o documento editado/revisado com todas as marcações amarelas e alterações preservadas.
+     */
+    public function exportRevisedDocx(string $token, int $fileId)
+    {
+        $revision = EditorialRevision::where('share_token', $token)->firstOrFail();
+        $file = $revision->files()->where('id', $fileId)->firstOrFail();
+
+        $content = $file->extracted_text ?: $this->extractTextFromFile($file, $revision->storage_disk ?: 'public');
+        $cleanFilename = pathinfo($file->filename, PATHINFO_FILENAME) . ' - Versão Revisada com Marcações.html';
+
+        $fullHtml = '<!DOCTYPE html><html><head><meta charset="utf-8"><title>' . e($file->filename) . '</title>';
+        $fullHtml .= '<style>body { font-family: "Georgia", serif; padding: 40px; color: #1e293b; line-height: 1.6; } .edited-line, mark { background-color: #fef08a !important; color: #713f12 !important; padding: 2px 6px; border-radius: 4px; border-left: 4px solid #facc15 !important; } .pdf-page-card { margin-bottom: 40px; padding: 30px; border: 1px solid #cbd5e1; border-radius: 4px; }</style>';
+        $fullHtml .= '</head><body>' . $content . '</body></html>';
+
+        return response($fullHtml)
+            ->header('Content-Type', 'text/html; charset=utf-8')
+            ->header('Content-Disposition', 'attachment; filename="' . $cleanFilename . '"');
+    }
+
+    /**
+     * Exporta o relatório completo de apontamentos e histórico de correções (somente o que mudou por página).
+     */
+    public function exportCorrectionsReport(string $token)
+    {
+        $revision = EditorialRevision::where('share_token', $token)
+            ->with(['files', 'corrections.file', 'corrections.comments'])
+            ->firstOrFail();
+
+        $filename = 'Relatorio_Apontamentos_Revisao_' . \Illuminate\Support\Str::slug($revision->title) . '.csv';
+
+        $headers = [
+            'Content-Type' => 'text/csv; charset=UTF-8',
+            'Content-Disposition' => 'attachment; filename="' . $filename . '"',
+            'Pragma' => 'no-cache',
+            'Cache-Control' => 'must-revalidate, post-check=0, pre-check=0',
+            'Expires' => '0',
+        ];
+
+        $callback = function () use ($revision) {
+            $file = fopen('php://output', 'w');
+            fputs($file, "\xEF\xBB\xBF");
+
+            fputcsv($file, ['ID', 'Arquivo', 'Página', 'Categoria', 'Trecho Original / Edição', 'Sugestão / Ajuste', 'Justificativa / Observação', 'Status', 'Data de Registro'], ';');
+
+            foreach ($revision->corrections as $cor) {
+                fputcsv($file, [
+                    $cor->id,
+                    $cor->file ? $cor->file->filename : 'Documento Geral',
+                    $cor->page_number ?: 'N/A',
+                    strtoupper($cor->category),
+                    $cor->original_text ?: 'Edição no documento',
+                    $cor->suggested_text ?: '',
+                    $cor->justification ?: '',
+                    strtoupper($cor->status),
+                    $cor->created_at->format('d/m/Y H:i'),
+                ], ';');
+            }
+
+            fclose($file);
+        };
+
+        return response()->stream($callback, 200, $headers);
+    }
 }
