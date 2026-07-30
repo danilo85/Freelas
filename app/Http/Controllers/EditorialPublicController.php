@@ -349,15 +349,21 @@ class EditorialPublicController extends Controller
     }
 
     /**
-     * Retorna o HTML rico de um arquivo Word em tempo real via AJAX.
+     * Retorna o HTML rico de um arquivo Word em tempo real via AJAX (prioriza o texto editado salvo no banco).
      */
     public function getFileTextContent(string $token, int $fileId)
     {
         $revision = EditorialRevision::where('share_token', $token)->firstOrFail();
         $file = $revision->files()->where('id', $fileId)->firstOrFail();
 
+        // Se o arquivo já possui texto editado/salvo no banco de dados, retorna as edições do revisor
+        if (!empty($file->extracted_text)) {
+            return response()->json(['content' => $file->extracted_text]);
+        }
+
         if ($file->file_type === 'word') {
             $html = \App\Services\DocxToHtmlConverter::convertToHtml($file->file_path, $revision->storage_disk ?: 'public');
+            $file->update(['extracted_text' => $html]);
             return response()->json(['content' => $html]);
         }
 

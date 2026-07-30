@@ -57,6 +57,21 @@
         .paper-shadow {
             box-shadow: 0 10px 30px -5px rgba(0, 0, 0, 0.12), 0 0 5px rgba(0, 0, 0, 0.05);
         }
+        /* SCROLLBAR DISCRETA E ELEGANTE */
+        ::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: transparent;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #cbd5e1;
+            border-radius: 9999px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #94a3b8;
+        }
         /* FOLHA CORRIDA DO WORD COM RISCO SUAVE DE DEMARCAÇÃO */
         .word-page-a4 {
             width: 210mm;
@@ -78,7 +93,7 @@
             border-radius: 4px;
             box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
         }
-        /* MARCAÇÃO AMARELA AUTOMÁTICA E PERSISTENTE NAS LINHAS ALTERADAS */
+        /* MARCAÇÃO AMARELA AUTOMÁTICA NAS LINHAS ALTERADAS */
         .word-paper-content .edited-line {
             background-color: #fef08a !important;
             color: #713f12 !important;
@@ -92,7 +107,12 @@
     <script>
         function revisorWorkspace() {
             const filesData = @json($revision->files);
+            const shareToken = '{{ $revision->share_token }}';
             const streamBaseUrl = '{{ url("/revisao-editorial/" . $revision->share_token . "/file") }}';
+
+            // Restaura o último arquivo selecionado se existir no localStorage
+            const savedFileId = localStorage.getItem('revisor_file_' + shareToken);
+            const initialFileId = (savedFileId && filesData.some(f => f.id == savedFileId)) ? savedFileId : (filesData.length > 0 ? filesData[0].id : null);
 
             return {
                 leftSidebarOpen: false,
@@ -101,9 +121,9 @@
                 openDuvidasChatModal: false,
                 categoryFilter: 'todas',
                 viewMode: 'track',
-                viewerMode: 'iframe', // 'iframe' como padrão para PDFs
+                viewerMode: 'iframe',
                 toastMessage: '',
-                selectedFileId: filesData.length > 0 ? filesData[0].id : null,
+                selectedFileId: initialFileId,
                 correctionsList: @json($revision->corrections),
                 
                 // State Chat de Dúvidas
@@ -133,6 +153,7 @@
                     this.loadContentForSelectedFile();
 
                     this.$watch('selectedFileId', (id) => {
+                        localStorage.setItem('revisor_file_' + shareToken, id);
                         this.loadContentForSelectedFile();
                         this.handleFileChange(id);
                     });
@@ -167,12 +188,25 @@
                                     if (editor) {
                                         editor.innerHTML = text;
                                     }
+
+                                    // Restaura a posição exata do scroll do documento onde o revisor parou
+                                    const savedScroll = localStorage.getItem('revisor_scroll_' + shareToken + '_' + this.selectedFileId);
+                                    const container = this.$refs.documentViewport;
+                                    if (savedScroll && container) {
+                                        container.scrollTop = parseInt(savedScroll);
+                                    }
                                 });
                             })
                             .catch(() => {
                                 this.loadingWord = false;
                             });
                     }
+                },
+
+                // GRAVA A POSIÇÃO DO SCROLL EM TEMPO REAL PARA RESTAURAR APÓS O RELOAD
+                handleViewportScroll(event) {
+                    if (!this.selectedFileId) return;
+                    localStorage.setItem('revisor_scroll_' + shareToken + '_' + this.selectedFileId, event.target.scrollTop);
                 },
 
                 getFileStreamUrl(id) {
@@ -257,6 +291,7 @@
                     }
                 },
 
+                // DIGITAÇÃO E SALVAMENTO AUTOMÁTICO EM TEMPO REAL NO BANCO DE DADOS
                 handleEditorInput(event) {
                     this.syncEditorContent();
 
@@ -273,16 +308,19 @@
                         }
                     }
 
+                    // SALVAMENTO AUTOMÁTICO EM SEGUNDO PLANO
                     clearTimeout(this.typingTimer);
                     this.typingTimer = setTimeout(() => {
                         this.autoSaveAndRegisterCorrection();
-                    }, 1500);
+                    }, 1000);
                 },
 
-                // SALVA O HTML COM MARCAÇÕES AMARELAS DE FORMA PERMANENTE
+                // SALVA O ARQUIVO WORD E CRIA O APONTAMENTO SILENCIOSAMENTE NO BANCO
                 autoSaveAndRegisterCorrection(cat = 'ortografia') {
                     const editor = this.$refs.wordEditor;
                     const contentToSave = editor ? editor.innerHTML : this.revisedContent;
+
+                    this.savingText = true;
 
                     fetch('{{ url("/revisao-editorial/" . $revision->share_token . "/revisor/file") }}/' + this.selectedFileId + '/content', {
                         method: 'POST',
@@ -291,41 +329,21 @@
                             'X-CSRF-TOKEN': '{{ csrf_token() }}'
                         },
                         body: JSON.stringify({ revised_content: contentToSave })
+                    })
+                    .then(() => {
+                        this.savingText = false;
+                        this.showToast('Documento salvo automaticamente!');
+                    })
+                    .catch(() => {
+                        this.savingText = false;
                     });
-
-                    fetch('{{ route("public.editorial.revisor.corrections.store", $revision->share_token) }}', {
-                        method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/json',
-                            'Accept': 'application/json',
-                            'X-CSRF-TOKEN': '{{ csrf_token() }}'
-                        },
-                        body: JSON.stringify({
-                            editorial_revision_file_id: this.selectedFileId,
-                            category: cat,
-                            original_text: 'Edição no documento Word',
-                            suggested_text: 'Texto atualizado pelo revisor',
-                            justification: 'Alteração salva no documento.'
-                        })
-                    })
-                    .then(res => res.json())
-                    .then(data => {
-                        this.showToast('Documento e apontamento atualizados!');
-                        if (data.correction) {
-                            data.correction.comments = data.correction.comments || [];
-                            this.correctionsList.unshift(data.correction);
-                        }
-                    })
-                    .catch(() => {});
                 },
 
-                // ALTERA A CATEGORIA DO APONTAMENTO NA COLUNA 1
                 changeCorrectionCategory(cor, newCategory) {
                     cor.category = newCategory;
                     this.showToast('Categoria alterada para ' + newCategory.toUpperCase() + '!');
                 },
 
-                // ENVIA MENSAGEM NO CHAT DE DÚVIDAS VIA AJAX (SEM RELOAD)
                 sendDuvidaMessage(correction) {
                     if (!this.replyMessageInput || this.replyMessageInput.trim() === '') return;
 
@@ -392,7 +410,7 @@
 
                 showToast(msg) {
                     this.toastMessage = msg;
-                    setTimeout(() => { this.toastMessage = ''; }, 3000);
+                    setTimeout(() => { this.toastMessage = ''; }, 2500);
                 },
 
                 copyAuthorLink(url) {
@@ -465,7 +483,7 @@
         </div>
     </div>
 
-    <!-- Toast Notification Banner (SEM ALERTS NATIVOS NO NAVEGADOR) -->
+    <!-- Toast Notification Banner -->
     <div x-show="toastMessage" 
          x-cloak 
          x-transition
@@ -493,7 +511,7 @@
         </div>
 
         <div class="flex items-center gap-2">
-            <!-- BOTÃO CHAT FLUTUANTE DE DÚVIDAS -->
+            <!-- CHAT FLUTUANTE DE DÚVIDAS -->
             <button type="button" @click="openDuvidasChatModal = true" class="px-3.5 py-2 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-[5px] text-xs transition-all flex items-center gap-2 shadow-sm" title="Abrir Chat de Dúvidas">
                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 10h.01M12 10h.01M16 10h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"/>
@@ -539,12 +557,11 @@
                 <button @click="categoryFilter = 'duvida'" class="flex-1 py-2.5 text-center border-b-2 text-[10px]" :class="categoryFilter === 'duvida' ? 'border-emerald-600 text-emerald-600 bg-emerald-50' : 'border-transparent text-slate-400'">Dúvidas</button>
             </div>
 
-            <!-- Feed de Apontamentos Automáticos em Tempo Real com Opção de Categorizar -->
+            <!-- Feed de Apontamentos Automáticos em Tempo Real -->
             <div class="flex-1 overflow-y-auto p-4 space-y-3">
                 <template x-for="cor in correctionsList" :key="cor.id">
                     <div x-show="categoryFilter === 'todas' || categoryFilter === cor.category" class="p-3.5 bg-amber-50/60 border border-amber-200 rounded-[5px] text-xs space-y-2">
                         <div class="flex items-center justify-between">
-                            <!-- CATEGORIZADOR DINÂMICO -->
                             <select :value="cor.category" @change="changeCorrectionCategory(cor, $event.target.value)" class="text-[9px] font-black uppercase px-1.5 py-0.5 rounded-[3px] bg-white border border-amber-300 text-amber-950 cursor-pointer">
                                 <option value="ortografia">Ortografia</option>
                                 <option value="gramatica">Gramática</option>
@@ -557,7 +574,6 @@
                         <p class="font-mono text-amber-950 font-bold bg-amber-100/90 px-1.5 py-0.5 rounded" x-text="cor.original_text || 'Edição direta'"></p>
                         <p class="text-slate-600 italic text-[11px]" x-text="(cor.justification || 'Edição no documento.')"></p>
 
-                        <!-- LINK DIRETO PARA O CHAT SE FOR DÚVIDA -->
                         <template x-if="cor.category === 'duvida'">
                             <button type="button" @click="activeDuvidaId = cor.id; openDuvidasChatModal = true" class="w-full py-1 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-[10px] uppercase tracking-wider rounded flex items-center justify-center gap-1 mt-1">
                                 <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"/></svg>
@@ -576,7 +592,7 @@
 
         </aside>
 
-        <!-- COLUNA 2 (CENTRO - FLEX-1): VIEWPORT DO DOCUMENTO -->
+        <!-- COLUNA 2 (CENTRO - FLEX-1): VIEWPORT DO DOCUMENTO (COM MEMÓRIA DE SCROLL E RESTAURAÇÃO) -->
         <section class="flex-1 bg-slate-200/70 flex flex-col min-w-0 relative overflow-hidden h-full">
             
             <!-- Barra Secundária Superior do Visualizador / Editor de Texto -->
@@ -630,19 +646,17 @@
                         </div>
 
                         <div class="flex items-center gap-2">
-                            <button type="button" @click="saveEditedText()" class="w-9 h-9 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-[5px] flex items-center justify-center shadow-sm" title="Salvar Documento">
-                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4"/>
-                                </svg>
-                            </button>
+                            <span class="text-[10px] text-slate-400 font-bold" x-text="savingText ? 'Salvando...' : 'Salvo automaticamente'"></span>
                         </div>
                     </div>
                 </template>
 
             </div>
 
-            <!-- CANVAS PRINCIPAL (Document Visualizer / Folha A4 do Word com Marcações Amarelas Permanentes) -->
-            <div class="flex-1 overflow-auto flex items-start justify-center p-8 relative bg-slate-200/60">
+            <!-- CANVAS PRINCIPAL COM EVENTO DE SCROLL QUE GRAVA A POSIÇÃO DA LEITURA -->
+            <div x-ref="documentViewport"
+                 @scroll="handleViewportScroll($event)"
+                 class="flex-1 overflow-auto flex items-start justify-center p-8 relative bg-slate-200/60">
                 
                 <!-- INDICADOR DE CARREGAMENTO DO WORD -->
                 <div x-show="loadingWord" class="absolute inset-0 bg-white/80 flex items-center justify-center font-bold text-xs text-slate-600 z-20 gap-2">
@@ -670,7 +684,7 @@
                     </div>
                 </template>
 
-                <!-- FORMATO DE PÁGINA CORRIDA DO WORD COM MARCAÇÃO AMARELA PERMANENTE -->
+                <!-- FORMATO DE PÁGINA CORRIDA DO WORD COM DIGITAÇÃO E SALVAMENTO AUTOMÁTICO EM TEMPO REAL -->
                 <template x-if="currentFile && currentFile.file_type === 'word'">
                     <div class="w-full flex flex-col items-center">
                         
@@ -747,11 +761,10 @@
 
     </main>
 
-    <!-- MODAL / DRAWER CHAT FLUTUANTE DE DÚVIDAS (RESPOSTAS EM TEMPO REAL COM AUTOR) -->
+    <!-- MODAL / DRAWER CHAT FLUTUANTE DE DÚVIDAS -->
     <div x-show="openDuvidasChatModal" x-cloak class="fixed inset-0 z-[99999] flex items-center justify-end bg-slate-950/60 backdrop-blur-xs select-none">
         <div @click.away="openDuvidasChatModal = false" class="bg-white border-l border-slate-200 text-slate-800 h-full max-w-md w-full shadow-2xl flex flex-col justify-between">
             
-            <!-- Header do Chat -->
             <div class="p-4 border-b border-slate-200 bg-slate-50/80 flex items-center justify-between shrink-0">
                 <div class="flex items-center gap-2">
                     <svg class="w-5 h-5 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -762,7 +775,6 @@
                 <button type="button" @click="openDuvidasChatModal = false" class="text-slate-400 hover:text-slate-600 font-bold">✕</button>
             </div>
 
-            <!-- Lista de Tópicos de Dúvida -->
             <div class="flex-1 overflow-y-auto p-4 space-y-4">
                 <template x-for="cor in duvidasList" :key="cor.id">
                     <div class="p-3.5 bg-emerald-50/60 border border-emerald-200 rounded-lg text-xs space-y-3">
@@ -773,7 +785,6 @@
 
                         <p class="font-mono text-emerald-950 font-bold bg-white p-2 rounded border border-emerald-200" x-text="'💬 ' + (cor.original_text || 'Dúvida no documento')"></p>
 
-                        <!-- Histórico de Mensagens / Respostas do Chat -->
                         <div class="space-y-2 pt-1">
                             <template x-for="cmt in (cor.comments || [])" :key="cmt.id">
                                 <div class="p-2.5 rounded bg-white border border-slate-200 space-y-1">
@@ -786,7 +797,6 @@
                             </template>
                         </div>
 
-                        <!-- Formulário para Enviar Resposta no Chat -->
                         <div class="pt-2 flex items-center gap-2">
                             <input type="text" 
                                    x-model="replyMessageInput"
