@@ -60,6 +60,7 @@
                 openCorrectionModal: false,
                 openUploadVersionModal: false,
                 categoryFilter: 'todas',
+                viewerMode: 'native', // 'native' ou 'google'
                 toastMessage: '',
                 selectedFileId: filesData.length > 0 ? filesData[0].id : null,
                 languageToolMatches: [],
@@ -112,9 +113,14 @@
                     return streamBaseUrl + '/' + id + '/download';
                 },
 
+                getGoogleDocsViewerUrl(id) {
+                    const fullStreamUrl = window.location.origin + this.getFileStreamUrl(id);
+                    return 'https://docs.google.com/gview?url=' + encodeURIComponent(fullStreamUrl) + '&embedded=true';
+                },
+
                 handleFileChange(id) {
                     const file = this.currentFile;
-                    if (file && file.file_type === 'pdf') {
+                    if (file && file.file_type === 'pdf' && this.viewerMode === 'native') {
                         this.loadPdfDocument();
                     }
                 },
@@ -368,10 +374,10 @@
         <!-- Grid Principal: Leitor e Renderizador (Esquerda) vs Apontamentos (Direita) -->
         <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
 
-            <!-- Coluna Esquerda: Leitor (PDF.js / Extração Word / Imagem) -->
+            <!-- Coluna Esquerda: Leitor (PDF.js / Extração Word / Google Docs Viewer / Imagem) -->
             <div class="lg:col-span-7 space-y-4">
                 
-                <!-- Barra do Leitor: Seletor de Arquivos e Controles de Zoom/Página -->
+                <!-- Barra do Leitor: Seletor de Arquivos e Modos de Visualização -->
                 <div class="bg-white border border-slate-200 rounded-[5px] p-4 shadow-sm space-y-3">
                     <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                         <div class="space-y-1 flex-1">
@@ -383,16 +389,26 @@
                             </select>
                         </div>
 
-                        <!-- Botão de Download do Arquivo Original sem Erro 403 -->
+                        <!-- Alternador de Modo de Leitor (Interno vs Google Docs Viewer) -->
+                        <div class="flex items-center gap-1 shrink-0 bg-slate-100 p-1 rounded-[5px] text-xs font-bold">
+                            <button type="button" @click="viewerMode = 'native'" class="px-3 py-1.5 rounded-[5px] transition-all" :class="viewerMode === 'native' ? 'bg-white shadow-xs text-slate-900' : 'text-slate-500 hover:text-slate-800'">
+                                👁️ Leitor Interno
+                            </button>
+                            <button type="button" @click="viewerMode = 'google'" class="px-3 py-1.5 rounded-[5px] transition-all" :class="viewerMode === 'google' ? 'bg-white shadow-xs text-slate-900' : 'text-slate-500 hover:text-slate-800'">
+                                🌐 Google Docs Viewer
+                            </button>
+                        </div>
+
+                        <!-- Botão de Download do Arquivo Original -->
                         <template x-if="currentFile">
                             <a :href="getFileDownloadUrl(currentFile.id)" target="_blank" class="px-3.5 py-2.5 bg-slate-900 hover:bg-slate-800 text-white font-bold text-xs rounded-[5px] transition-colors flex items-center gap-1.5 shrink-0 uppercase tracking-wider shadow-xs">
-                                <span>⬇️ Baixar Original</span>
+                                <span>⬇️ Baixar</span>
                             </a>
                         </template>
                     </div>
 
                     <!-- Controles Específicos para PDF (Navegação por Página & Zoom) -->
-                    <template x-if="currentFile && currentFile.file_type === 'pdf'">
+                    <template x-if="viewerMode === 'native' && currentFile && currentFile.file_type === 'pdf'">
                         <div class="flex items-center justify-between pt-2 border-t border-slate-100 text-xs font-bold text-slate-600">
                             <div class="flex items-center gap-2">
                                 <button type="button" @click="prevPage()" class="px-3 py-1 bg-slate-100 rounded-[5px] hover:bg-slate-200">◀ Anterior</button>
@@ -407,42 +423,57 @@
                     </template>
                 </div>
 
-                <!-- Canvas de Renderização para PDFs -->
-                <template x-if="currentFile && currentFile.file_type === 'pdf'">
-                    <div class="bg-white border border-slate-200 rounded-[5px] p-4 shadow-sm flex flex-col items-center justify-center min-h-[600px] overflow-auto relative">
-                        <div x-show="renderingPdf" class="absolute inset-0 bg-white/80 flex items-center justify-center font-bold text-xs text-slate-500 z-10">
-                            Renderizando página do PDF...
+                <!-- MODO 1: Google Docs Viewer Embed (Online para Word, PDF, Excel) -->
+                <template x-if="viewerMode === 'google' && currentFile">
+                    <div class="bg-white border border-slate-200 rounded-[5px] p-2 shadow-sm min-h-[650px] flex flex-col space-y-2">
+                        <div class="flex items-center justify-between px-3 py-1.5 text-xs font-bold text-slate-500 border-b border-slate-100">
+                            <span>🌐 Google Docs Viewer Online</span>
+                            <a :href="getGoogleDocsViewerUrl(currentFile.id)" target="_blank" class="text-primary-600 hover:underline">Abrir em nova guia ↗</a>
                         </div>
-                        <canvas id="pdf-canvas" class="max-w-full shadow-md rounded border border-slate-200"></canvas>
-                        
-                        <!-- Fallback Stream URL sem Erro 403 -->
-                        <div class="w-full pt-4 border-t border-slate-100 text-center">
-                            <a :href="getFileStreamUrl(currentFile.id)" target="_blank" class="text-xs text-primary-600 font-bold hover:underline">
-                                🔗 Abrir PDF completo via Stream em nova aba
-                            </a>
-                        </div>
+                        <iframe :src="getGoogleDocsViewerUrl(currentFile.id)" class="w-full h-[600px] rounded border border-slate-150" frameborder="0"></iframe>
                     </div>
                 </template>
 
-                <!-- Leitor de Texto formatado para Documentos Word (.docx) -->
-                <template x-if="currentFile && currentFile.file_type === 'word'">
-                    <div class="bg-white border border-slate-200 rounded-[5px] p-6 shadow-sm space-y-4 min-h-[500px]">
-                        <div class="flex items-center justify-between border-b border-slate-100 pb-3">
-                            <h3 class="font-outfit font-black text-xs uppercase tracking-wider text-slate-400">Texto Extraído do Documento Word</h3>
-                            <span class="text-[10px] text-slate-400 italic">Selecione trechos com o mouse para capturar automaticamente</span>
-                        </div>
+                <!-- MODO 2: Leitor Interno (PDF.js / Word Extracted / Imagem) -->
+                <template x-if="viewerMode === 'native'">
+                    <div class="space-y-4">
+                        <!-- Canvas de Renderização para PDFs -->
+                        <template x-if="currentFile && currentFile.file_type === 'pdf'">
+                            <div class="bg-white border border-slate-200 rounded-[5px] p-4 shadow-sm flex flex-col items-center justify-center min-h-[600px] overflow-auto relative">
+                                <div x-show="renderingPdf" class="absolute inset-0 bg-white/80 flex items-center justify-center font-bold text-xs text-slate-500 z-10">
+                                    Renderizando página do PDF...
+                                </div>
+                                <canvas id="pdf-canvas" class="max-w-full shadow-md rounded border border-slate-200"></canvas>
+                                
+                                <div class="w-full pt-4 border-t border-slate-100 text-center">
+                                    <a :href="getFileStreamUrl(currentFile.id)" target="_blank" class="text-xs text-primary-600 font-bold hover:underline">
+                                        🔗 Abrir PDF completo via Stream em nova aba
+                                    </a>
+                                </div>
+                            </div>
+                        </template>
 
-                        <div class="prose max-w-none text-xs leading-relaxed font-serif text-slate-800 bg-slate-50/50 p-6 rounded-[5px] border border-slate-150 max-h-[600px] overflow-y-auto whitespace-pre-wrap select-text"
-                             @mouseup="captureSelectedText">
-                            <span x-text="extractedText"></span>
-                        </div>
-                    </div>
-                </template>
+                        <!-- Leitor de Texto formatado para Documentos Word (.docx) -->
+                        <template x-if="currentFile && currentFile.file_type === 'word'">
+                            <div class="bg-white border border-slate-200 rounded-[5px] p-6 shadow-sm space-y-4 min-h-[500px]">
+                                <div class="flex items-center justify-between border-b border-slate-100 pb-3">
+                                    <h3 class="font-outfit font-black text-xs uppercase tracking-wider text-slate-400">Texto Extraído do Documento Word</h3>
+                                    <span class="text-[10px] text-slate-400 italic">Selecione trechos com o mouse para capturar automaticamente</span>
+                                </div>
 
-                <!-- Visualizador de Imagens para Scans e Fotografias -->
-                <template x-if="currentFile && currentFile.file_type === 'image'">
-                    <div class="bg-white border border-slate-200 rounded-[5px] p-6 shadow-sm flex items-center justify-center min-h-[500px]">
-                        <img :src="getFileStreamUrl(currentFile.id)" class="max-h-[600px] object-contain rounded shadow-sm">
+                                <div class="prose max-w-none text-xs leading-relaxed font-serif text-slate-800 bg-slate-50/50 p-6 rounded-[5px] border border-slate-150 max-h-[600px] overflow-y-auto whitespace-pre-wrap select-text"
+                                     @mouseup="captureSelectedText">
+                                    <span x-text="extractedText"></span>
+                                </div>
+                            </div>
+                        </template>
+
+                        <!-- Visualizador de Imagens para Scans e Fotografias -->
+                        <template x-if="currentFile && currentFile.file_type === 'image'">
+                            <div class="bg-white border border-slate-200 rounded-[5px] p-6 shadow-sm flex items-center justify-center min-h-[500px]">
+                                <img :src="getFileStreamUrl(currentFile.id)" class="max-h-[600px] object-contain rounded shadow-sm">
+                            </div>
+                        </template>
                     </div>
                 </template>
 
