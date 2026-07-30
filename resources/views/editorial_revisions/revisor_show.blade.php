@@ -310,6 +310,7 @@
                                     const editor = this.$refs.wordEditor;
                                     if (editor) {
                                         editor.innerHTML = text;
+                                        this.sanitizeCorruptedDocumentHtml();
                                     }
 
                                     const savedScroll = localStorage.getItem('revisor_scroll_' + shareToken + '_' + this.selectedFileId);
@@ -728,6 +729,57 @@
                     });
                 },
 
+                replaceInTextNodesOnly(container, searchText, replacementHtml) {
+                    if (!container || !searchText) return false;
+                    const walker = document.createTreeWalker(container, NodeFilter.SHOW_TEXT, null, false);
+                    let node;
+                    const textNodes = [];
+                    while (node = walker.nextNode()) {
+                        if (node.nodeValue && node.nodeValue.toLowerCase().includes(searchText.toLowerCase())) {
+                            textNodes.push(node);
+                        }
+                    }
+
+                    if (textNodes.length === 0) return false;
+
+                    const escapedText = searchText.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+                    const isWordOnly = /^[a-zA-Z0-9áàâãéèêíïóôõöúçñÁÀÂÃÉÈÊÍÏÓÔÕÖÚÇÑ]+$/.test(searchText);
+                    const regex = new RegExp(isWordOnly ? ('\\b(' + escapedText + ')\\b') : ('(' + escapedText + ')'), 'gi');
+
+                    let replacedAny = false;
+                    for (let tNode of textNodes) {
+                        if (regex.test(tNode.nodeValue)) {
+                            const tempDiv = document.createElement('div');
+                            tempDiv.innerHTML = tNode.nodeValue.replace(regex, replacementHtml);
+                            const fragment = document.createDocumentFragment();
+                            while (tempDiv.firstChild) {
+                                fragment.appendChild(tempDiv.firstChild);
+                            }
+                            tNode.parentNode.replaceChild(fragment, tNode);
+                            replacedAny = true;
+                            break;
+                        }
+                    }
+                    return replacedAny;
+                },
+
+                sanitizeCorruptedDocumentHtml() {
+                    const editor = this.$refs.wordEditor;
+                    if (!editor) return;
+                    let html = editor.innerHTML;
+                    if (html.includes('-word-word') || html.includes('border - purple') || html.includes('mark=""')) {
+                        html = html.replace(/-word-word[^>]*>/gi, '');
+                        html = html.replace(/\s*mark=""\s*bg\s*-\s*purple\s*-\s*[0-9]+=""\s*text\s*-\s*purple\s*-\s*[0-9]+=""\s*font\s*-\s*bold=""\s*px\s*-\s*1\.5=""\s*py\s*-\s*0\.5=""\s*rounded=""\s*border=""\s*border\s*-\s*purple\s*-\s*[0-9]+=""\s*inline\s*-\s*block[^>]*>/gi, '');
+                        html = html.replace(/\s*tag\s*bg\s*-\s*purple\s*-\s*[0-9]+\s*text\s*-\s*purple\s*-\s*[0-9]+\s*border\s*border\s*-\s*purple\s*-\s*[0-9]+\s*font\s*-\s*bold\s*px\s*-\s*1\.5\s*py\s*-\s*0\.5\s*rounded\s*shadow\s*-\s*xs\s*inline\s*-\s*block[^>]*>/gi, '');
+                        html = html.replace(/\s*mark=""\s*bg\s*-\s*word\s*-\s*mark=""/gi, '');
+                        html = html.replace(/\s*mark=""/gi, '');
+                        editor.innerHTML = html;
+                        this.syncEditorContent();
+                        this.persistWordContent();
+                        this.showToast('Documento higienizado e tags corrompidas removidas!');
+                    }
+                },
+
                 highlightAndScrollToMatch(match) {
                     const editor = this.$refs.wordEditor;
                     if (!match || !match.context) return;
@@ -750,7 +802,7 @@
                         }
                     });
 
-                    // Procura o parágrafo ou item de lista mais específico contendo a palavra
+                    // Procura o elemento de texto contendo a palavra
                     const allLeafElements = editor.querySelectorAll('p, li, h3, h4, span');
                     let foundElement = null;
 
@@ -765,10 +817,8 @@
                     if (foundElement) {
                         foundElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
 
-                        // Destaca APENAS a palavra exata inteira em roxo (limite de palavra \b)
-                        const escapedText = matchText.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-                        const regex = new RegExp('\\b(' + escapedText + ')\\b', 'gi');
-                        foundElement.innerHTML = foundElement.innerHTML.replace(regex, '<mark class="purple-word-mark bg-purple-200 text-purple-950 font-bold px-1.5 py-0.5 rounded border border-purple-400 inline-block">$1</mark>');
+                        const purpleReplacement = `<mark class="purple-word-mark bg-purple-200 text-purple-950 font-bold px-1.5 py-0.5 rounded border border-purple-400 inline-block">$1</mark>`;
+                        this.replaceInTextNodesOnly(foundElement, matchText, purpleReplacement);
 
                         this.showToast('Palavra "' + matchText + '" destacada em roxo!');
                     } else {
@@ -806,46 +856,60 @@
                         return;
                     }
 
+                    // Limpa destaques roxos residuais antes da substituição
+                    const oldMarks = editor.querySelectorAll('.purple-word-mark');
+                    oldMarks.forEach(m => {
+                        const parentNode = m.parentNode;
+                        if (parentNode) {
+                            m.replaceWith(document.createTextNode(m.textContent));
+                            parentNode.normalize();
+                        }
+                    });
+
                     const tagReplacement = `<mark class="edited-text-tag bg-purple-100 text-purple-900 border border-purple-300 font-bold px-1.5 py-0.5 rounded shadow-xs inline-block" title="Texto alterado pelo revisor">${replacementValue}</mark>`;
 
-                    // 1. Procura se há uma marcação roxa ativa com a palavra
-                    const activePurpleMark = editor.querySelector('.purple-word-mark');
+                    // Busca o parágrafo ou item contendo a palavra original
+                    const allLeafElements = editor.querySelectorAll('p, li, h3, h4, span');
                     let targetElement = null;
 
-                    if (activePurpleMark && activePurpleMark.textContent.trim().toLowerCase() === originalWord.toLowerCase()) {
-                        targetElement = activePurpleMark.parentNode;
-                        activePurpleMark.outerHTML = tagReplacement;
-                    } else {
-                        // Busca o parágrafo ou item contendo a palavra original
-                        const allLeafElements = editor.querySelectorAll('p, li, h3, h4, span');
-                        for (let el of allLeafElements) {
-                            if (el.classList.contains('pdf-page-card') || el.id === 'word-paper-container') continue;
-                            if (el.textContent.toLowerCase().includes(originalWord.toLowerCase())) {
-                                targetElement = el;
-                                const escapedText = originalWord.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-                                const regex = new RegExp('(' + escapedText + ')', 'gi');
-                                el.innerHTML = el.innerHTML.replace(regex, tagReplacement);
-                                break;
-                            }
+                    for (let el of allLeafElements) {
+                        if (el.classList.contains('pdf-page-card') || el.id === 'word-paper-container') continue;
+                        if (el.textContent.toLowerCase().includes(originalWord.toLowerCase())) {
+                            targetElement = el;
+                            break;
                         }
                     }
 
                     if (targetElement) {
-                        // Salva histórico de versões do parágrafo para o slider da linha do tempo
                         const paraId = targetElement.id || ('para_' + Math.random().toString(36).substr(2, 9));
                         targetElement.id = paraId;
 
+                        // Salva o histórico do estado LIMPO original antes da substituição
                         if (!this.paraHistoryMap[paraId]) {
                             this.paraHistoryMap[paraId] = [targetElement.innerHTML];
                         }
-                        this.paraHistoryMap[paraId].push(targetElement.innerHTML);
-                        targetElement.setAttribute('data-version-index', this.paraHistoryMap[paraId].length - 1);
 
-                        // Aplica o destaque amarelo permanente na linha alterada
-                        targetElement.classList.add('edited-line');
-                        targetElement.setAttribute('style', 'background-color: #fef08a !important; color: #713f12 !important; border-left: 4px solid #facc15 !important; padding: 6px 10px; border-radius: 4px; margin-bottom: 8px;');
-                        targetElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                        // Substituição SEGURA apenas nos nós de texto (sem tocar em atributos HTML)
+                        const replaced = this.replaceInTextNodesOnly(targetElement, originalWord, tagReplacement);
+                        
+                        if (replaced) {
+                            this.paraHistoryMap[paraId].push(targetElement.innerHTML);
+                            targetElement.setAttribute('data-version-index', this.paraHistoryMap[paraId].length - 1);
+
+                            // Aplica o destaque amarelo permanente na linha alterada
+                            targetElement.classList.add('edited-line');
+                            targetElement.setAttribute('style', 'background-color: #fef08a !important; color: #713f12 !important; border-left: 4px solid #facc15 !important; padding: 6px 10px; border-radius: 4px; margin-bottom: 8px;');
+                            targetElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
+
+                            this.syncEditorContent();
+                            this.persistWordContent();
+                        }
                     }
+
+                    // Remove o item da lista do LanguageTool
+                    this.languageToolMatches = this.languageToolMatches.filter(m => m !== match);
+                    this.showToast('Correção "' + replacementValue + '" aplicada e salva!');
+                },
 
                     // 2. Remove o item da lista do LanguageTool
                     this.languageToolMatches = this.languageToolMatches.filter(m => m !== match);
