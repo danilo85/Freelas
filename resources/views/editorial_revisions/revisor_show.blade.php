@@ -740,9 +740,9 @@
                     if (foundElement) {
                         foundElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
 
-                        // Destaca APENAS a palavra exata em roxo
+                        // Destaca APENAS a palavra exata inteira em roxo (limite de palavra \b)
                         const escapedText = matchText.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-                        const regex = new RegExp('(' + escapedText + ')', 'gi');
+                        const regex = new RegExp('\\b(' + escapedText + ')\\b', 'gi');
                         foundElement.innerHTML = foundElement.innerHTML.replace(regex, '<mark class="purple-word-mark bg-purple-200 text-purple-950 font-bold px-1.5 py-0.5 rounded border border-purple-400 inline-block">$1</mark>');
 
                         this.showToast('Palavra "' + matchText + '" destacada em roxo!');

@@ -169,7 +169,23 @@ class EditorialPublicController extends Controller
             ]);
 
             if ($response->successful()) {
-                return response()->json($response->json());
+                $data = $response->json();
+                if (!empty($data['matches'])) {
+                    // Filtra falsos-positivos de fragmentos de sílabas de 1 ou 2 letras (como 'va', 'ca', 'ss')
+                    $data['matches'] = array_values(array_filter($data['matches'], function ($match) {
+                        if (isset($match['context']['length']) && $match['context']['length'] <= 2) {
+                            $offset = $match['context']['offset'];
+                            $len = $match['context']['length'];
+                            $word = mb_strtolower(mb_substr($match['context']['text'], $offset, $len));
+                            $validShortWords = ['de', 'em', 'um', 'ou', 'se', 'no', 'na', 'do', 'da', 'ao', 'às', 'os', 'as', 'já', 'há', 'fé', 'pó', 'pá', 'pé', 'nó', 'só', 'eu', 'tu', 'ele', 'nós', 'vós'];
+                            if (!in_array($word, $validShortWords)) {
+                                return false;
+                            }
+                        }
+                        return true;
+                    }));
+                }
+                return response()->json($data);
             }
         } catch (\Throwable $e) {
             return response()->json(['error' => $e->getMessage(), 'matches' => []]);
