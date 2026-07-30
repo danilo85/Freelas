@@ -168,6 +168,44 @@ class EditorialPublicController extends Controller
     }
 
     /**
+     * Permite ao Revisor ou Autor enviar comentários em tempo real no Chat de Dúvidas via AJAX.
+     */
+    public function storeCommentPublic(Request $request, string $token, int $correctionId)
+    {
+        $request->validate([
+            'message' => 'required|string',
+        ]);
+
+        $revision = EditorialRevision::where('share_token', $token)->firstOrFail();
+        $correction = EditorialRevisionCorrection::where('editorial_revision_id', $revision->id)
+            ->findOrFail($correctionId);
+
+        $senderName = auth()->check() ? auth()->user()->name : ($request->get('sender_name') ?: 'Autor(a)');
+
+        $comment = EditorialRevisionComment::create([
+            'editorial_revision_correction_id' => $correction->id,
+            'user_id' => auth()->id(),
+            'author_name' => $senderName,
+            'message' => $request->message,
+        ]);
+
+        $correction->update([
+            'status' => 'respondida',
+        ]);
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Mensagem enviada no chat!',
+            'comment' => [
+                'id' => $comment->id,
+                'author_name' => $comment->author_name,
+                'message' => $comment->message,
+                'created_at' => $comment->created_at->format('d/m/Y H:i'),
+            ]
+        ]);
+    }
+
+    /**
      * Permite ao Revisor criar correções diretamente pelo Portal do Revisor.
      */
     public function storeCorrectionPublic(Request $request, string $token)
