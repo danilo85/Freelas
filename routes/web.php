@@ -249,6 +249,11 @@ Route::middleware(['auth', 'approved'])->prefix('freelas')->group(function () {
             Route::delete('/corrections/{correction}', [\App\Http\Controllers\EditorialRevisionController::class, 'destroyCorrection'])->name('corrections.destroy');
             Route::post('/corrections/{correction}/comments', [\App\Http\Controllers\EditorialRevisionController::class, 'storeComment'])->name('corrections.comments.store');
 
+            // Gestão de Arquivos e Alteração de Revisor
+            Route::post('/{editorialRevision}/files', [\App\Http\Controllers\EditorialRevisionController::class, 'uploadFile'])->name('files.upload');
+            Route::delete('/files/{file}', [\App\Http\Controllers\EditorialRevisionController::class, 'destroyFile'])->name('files.destroy');
+            Route::patch('/{editorialRevision}/revisor', [\App\Http\Controllers\EditorialRevisionController::class, 'changeRevisor'])->name('revisor.change');
+
             // Glossário
             Route::post('/{editorialRevision}/glossary', [\App\Http\Controllers\EditorialRevisionController::class, 'storeGlossary'])->name('glossary.store');
             Route::delete('/glossary/{glossary}', [\App\Http\Controllers\EditorialRevisionController::class, 'destroyGlossary'])->name('glossary.destroy');

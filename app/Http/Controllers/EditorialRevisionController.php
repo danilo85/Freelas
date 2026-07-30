@@ -208,14 +208,95 @@ class EditorialRevisionController extends Controller
             'glossaries'
         ]);
 
-        // Se o revisor abrir a página, atualiza status para 'em_revisao'
         if (auth()->id() === $editorialRevision->revisor_id && $editorialRevision->status === 'aguardando_revisor') {
             $editorialRevision->update(['status' => 'em_revisao']);
         }
 
         $correctionsByCategory = $editorialRevision->corrections->groupBy('category');
+        $revisores = User::where('role', 'revisor')->orWhere('is_approved', true)->get();
 
-        return view('editorial_revisions.show', compact('editorialRevision', 'correctionsByCategory'));
+        return view('editorial_revisions.show', compact('editorialRevision', 'correctionsByCategory', 'revisores'));
+    }
+
+    /**
+     * Upload de novos arquivos no projeto pelo Admin.
+     */
+    public function uploadFile(Request $request, EditorialRevision $editorialRevision)
+    {
+        $request->validate([
+            'files' => 'required|array|min:1',
+            'files.*' => 'file|max:1048576',
+        ]);
+
+        $disk = $editorialRevision->storage_disk ?: 'public';
+
+        foreach ($request->file('files') as $file) {
+            $mime = $file->getClientMimeType();
+            $ext = strtolower($file->getClientOriginalExtension());
+            $fileType = in_array($ext, ['doc', 'docx', 'txt', 'rtf', 'odt']) ? 'word' : ($ext === 'pdf' ? 'pdf' : 'image');
+            $path = $file->store('editorial_revisions', $disk);
+
+            EditorialRevisionFile::create([
+                'editorial_revision_id' => $editorialRevision->id,
+                'filename' => $file->getClientOriginalName(),
+                'file_path' => $path,
+                'file_size' => $file->getSize(),
+                'mime_type' => $mime,
+                'file_type' => $fileType,
+                'version' => 1,
+            ]);
+
+            if ($fileType === 'pdf') {
+                $docxPath = \App\Services\PdfToDocxConverter::convert($path, $disk);
+                if ($docxPath) {
+                    $docxFilename = pathinfo($file->getClientOriginalName(), PATHINFO_FILENAME) . ' (Word Editável).docx';
+                    $docxSize = Storage::disk($disk)->exists($docxPath) ? Storage::disk($disk)->size($docxPath) : $file->getSize();
+
+                    EditorialRevisionFile::create([
+                        'editorial_revision_id' => $editorialRevision->id,
+                        'filename' => $docxFilename,
+                        'file_path' => $docxPath,
+                        'file_size' => $docxSize,
+                        'mime_type' => 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+                        'file_type' => 'word',
+                        'version' => 1,
+                    ]);
+                }
+            }
+        }
+
+        return back()->with('success', 'Novo(s) arquivo(s) adicionado(s) com sucesso ao projeto!');
+    }
+
+    /**
+     * Remove um arquivo do projeto de revisão.
+     */
+    public function destroyFile(EditorialRevisionFile $file)
+    {
+        try {
+            if (Storage::disk('public')->exists($file->file_path)) {
+                Storage::disk('public')->delete($file->file_path);
+            }
+        } catch (\Throwable $e) {}
+
+        $file->delete();
+        return back()->with('success', 'Arquivo removido com sucesso!');
+    }
+
+    /**
+     * Altera o Revisor atribuído ao projeto.
+     */
+    public function changeRevisor(Request $request, EditorialRevision $editorialRevision)
+    {
+        $request->validate([
+            'revisor_id' => 'required|exists:users,id',
+        ]);
+
+        $editorialRevision->update([
+            'revisor_id' => $request->revisor_id,
+        ]);
+
+        return back()->with('success', 'Revisor alterado com sucesso!');
     }
 
     /**
