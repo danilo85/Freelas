@@ -748,9 +748,10 @@
 
                     let replacedAny = false;
                     for (let tNode of textNodes) {
-                        if (regex.test(tNode.nodeValue)) {
-                            const tempDiv = document.createElement('div');
-                            tempDiv.innerHTML = tNode.nodeValue.replace(regex, replacementHtml);
+                        const tempDiv = document.createElement('div');
+                        const newHtml = tNode.nodeValue.replace(regex, replacementHtml);
+                        if (newHtml !== tNode.nodeValue) {
+                            tempDiv.innerHTML = newHtml;
                             const fragment = document.createDocumentFragment();
                             while (tempDiv.firstChild) {
                                 fragment.appendChild(tempDiv.firstChild);
