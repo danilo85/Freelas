@@ -968,14 +968,14 @@
             <div class="p-4 border-b border-slate-200 bg-slate-900 text-white flex items-center justify-between shrink-0 shadow-md">
                 <div class="flex items-center gap-3">
                     <div class="relative">
-                        <div class="w-9 h-9 rounded-full bg-emerald-600 flex items-center justify-center font-bold text-xs text-white">
+                        <div class="w-10 h-10 rounded-full bg-emerald-600 flex items-center justify-center font-bold text-sm text-white">
                             💬
                         </div>
                         <span class="absolute bottom-0 right-0 w-2.5 h-2.5 bg-emerald-400 border-2 border-slate-900 rounded-full"></span>
                     </div>
                     <div>
-                        <h3 class="font-outfit font-black text-sm uppercase tracking-tight">Chat de Dúvidas</h3>
-                        <p class="text-[10px] text-slate-400">Revisor & Autor em tempo real</p>
+                        <h3 class="font-outfit font-black text-base uppercase tracking-tight">Chat de Dúvidas</h3>
+                        <p class="text-xs text-slate-400">Revisor & Autor em tempo real</p>
                     </div>
                 </div>
                 <button type="button" @click="openDuvidasChatModal = false" class="w-8 h-8 rounded-full bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white flex items-center justify-center font-bold text-sm">✕</button>
@@ -984,17 +984,17 @@
             <!-- Lista de Tópicos e Balões de Fala -->
             <div x-ref="chatMessagesBox" class="flex-1 overflow-y-auto p-4 space-y-5 bg-slate-50/70">
                 <template x-for="cor in duvidasList" :key="cor.id">
-                    <div class="bg-white border border-slate-200 rounded-2xl p-4 shadow-xs space-y-3">
+                    <div class="bg-white border border-slate-200 rounded-2xl p-4 shadow-xs space-y-3.5">
                         
                         <!-- Cabeçalho da Dúvida no Documento -->
                         <div class="flex items-center justify-between border-b border-slate-100 pb-2">
-                            <span class="text-[10px] font-black uppercase px-2.5 py-0.5 rounded-full bg-emerald-100 text-emerald-800">Dúvida Marcada</span>
-                            <span class="text-[9px] font-bold text-slate-400" x-text="cor.status"></span>
+                            <span class="text-xs font-black uppercase px-3 py-1 rounded-full bg-emerald-100 text-emerald-800">Dúvida Marcada</span>
+                            <span class="text-xs font-bold text-slate-400" x-text="cor.status"></span>
                         </div>
 
                         <!-- Citação do Texto no Arquivo -->
-                        <div @click="scrollToCorrection(cor)" class="p-2.5 bg-slate-100 border-l-4 border-emerald-500 rounded-r-lg text-xs font-serif italic text-slate-700 cursor-pointer hover:bg-slate-200/80 transition-colors" title="Clique para ir até este ponto no documento">
-                            <span class="font-sans font-bold text-[10px] text-emerald-800 uppercase block not-italic mb-0.5">Trecho Citado:</span>
+                        <div @click="scrollToCorrection(cor)" class="p-3 bg-slate-100 border-l-4 border-emerald-500 rounded-r-lg text-sm font-serif italic text-slate-700 cursor-pointer hover:bg-slate-200/80 transition-colors" title="Clique para ir até este ponto no documento">
+                            <span class="font-sans font-bold text-xs text-emerald-800 uppercase block not-italic mb-1">Trecho Citado:</span>
                             <span x-text="'“' + (cor.original_text || 'Dúvida no documento') + '”'"></span>
                         </div>
 
@@ -1004,17 +1004,17 @@
                                 <div class="flex flex-col" :class="(cmt.author_name === 'Revisor' || cmt.user_id) ? 'items-end' : 'items-start'">
                                     
                                     <!-- Balão de Fala do Revisor (Direita - Azul) / Autor (Esquerda - Cinza) -->
-                                    <div class="max-w-[85%] p-3 text-xs leading-relaxed shadow-xs transition-all"
+                                    <div class="max-w-[85%] p-3.5 text-sm leading-relaxed shadow-xs transition-all"
                                          :class="(cmt.author_name === 'Revisor' || cmt.user_id) 
                                                  ? 'bg-blue-600 text-white rounded-2xl rounded-tr-xs' 
                                                  : 'bg-slate-200 text-slate-800 rounded-2xl rounded-tl-xs border border-slate-300'">
                                         
-                                        <div class="flex items-center justify-between gap-3 text-[9px] font-bold mb-1 opacity-80 border-b border-current/20 pb-0.5">
+                                        <div class="flex items-center justify-between gap-4 text-[11px] font-bold mb-1 opacity-90 border-b border-current/20 pb-0.5">
                                             <span x-text="cmt.author_name || 'Usuário'"></span>
                                             <span x-text="cmt.created_at || ''"></span>
                                         </div>
 
-                                        <p class="whitespace-pre-wrap font-sans text-xs" x-text="cmt.message"></p>
+                                        <p class="whitespace-pre-wrap font-sans text-sm font-medium" x-text="cmt.message"></p>
                                     </div>
                                 </div>
                             </template>
@@ -1023,10 +1023,10 @@
                         <!-- ANIMAÇÃO DE PONTINHOS DE DIGITAÇÃO AO ENVIAR -->
                         <template x-if="isSendingChat">
                             <div class="flex justify-end pt-1">
-                                <div class="px-3 py-2 bg-blue-100 rounded-2xl rounded-tr-xs flex items-center gap-1.5 shadow-xs">
-                                    <span class="w-1.5 h-1.5 bg-blue-600 rounded-full animate-bounce"></span>
-                                    <span class="w-1.5 h-1.5 bg-blue-600 rounded-full animate-bounce [animation-delay:0.2s]"></span>
-                                    <span class="w-1.5 h-1.5 bg-blue-600 rounded-full animate-bounce [animation-delay:0.4s]"></span>
+                                <div class="px-3.5 py-2.5 bg-blue-100 rounded-2xl rounded-tr-xs flex items-center gap-1.5 shadow-xs">
+                                    <span class="w-2 h-2 bg-blue-600 rounded-full animate-bounce"></span>
+                                    <span class="w-2 h-2 bg-blue-600 rounded-full animate-bounce [animation-delay:0.2s]"></span>
+                                    <span class="w-2 h-2 bg-blue-600 rounded-full animate-bounce [animation-delay:0.4s]"></span>
                                 </div>
                             </div>
                         </template>
@@ -1036,9 +1036,9 @@
                             <input type="text" 
                                    x-model="replyMessageInput"
                                    @keydown.enter="sendDuvidaMessage(cor)"
-                                   placeholder="Responder dúvida..."
-                                   class="flex-1 px-3.5 py-2 border border-slate-200 rounded-full text-xs focus:ring-2 focus:ring-emerald-500 focus:outline-none bg-slate-50">
-                            <button type="button" @click="sendDuvidaMessage(cor)" class="w-9 h-9 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-full flex items-center justify-center shadow-sm transition-all transform hover:scale-105">
+                                   placeholder="Escreva sua resposta..."
+                                   class="flex-1 px-4 py-2.5 border border-slate-200 rounded-full text-sm font-medium focus:ring-2 focus:ring-emerald-500 focus:outline-none bg-slate-50">
+                            <button type="button" @click="sendDuvidaMessage(cor)" class="w-10 h-10 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-full flex items-center justify-center shadow-sm transition-all transform hover:scale-105">
                                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"/></svg>
                             </button>
                         </div>
