@@ -28,7 +28,7 @@ class PdfToHtmlConverter
 
     /**
      * Extrai o texto completo E AS IMAGENS EMBUTIDAS de cada página de um PDF,
-     * incorporando-as no HTML rico de cada Folha A4 do editor.
+     * incorporando-as como Data URIs Base64 100% seguras (sem dependência de symlinks).
      */
     public static function convertToHtml(string $filePath, string $diskName = 'public'): string
     {
@@ -53,20 +53,14 @@ class PdfToHtmlConverter
             $totalPages = count($pages);
             $html = '';
 
-            // Diretório para salvar as imagens extraídas do PDF
-            $fileHash = md5($filePath);
-            $imgDirRel = "editorial_revisions/pdf_images/{$fileHash}";
-            Storage::disk('public')->makeDirectory($imgDirRel);
-
             foreach ($pages as $index => $page) {
                 $pageNum = $index + 1;
                 $text = trim($page->getText());
                 
-                // Extrai Imagens XObjects da Página
+                // Extrai Imagens XObjects da Página e converte em Base64 Data URI
                 $pageImagesHtml = '';
                 try {
                     $xobjects = $page->getXObjects();
-                    $imgCount = 0;
                     $processedHashes = [];
 
                     foreach ($xobjects as $name => $xobj) {
@@ -75,27 +69,25 @@ class PdfToHtmlConverter
                             $content = $xobj->getContent();
                             if (empty($content) || strlen($content) < 100) continue;
 
+                            // Valida se os bytes correspondem a uma imagem válida (JPEG / PNG / GIF / WEBP)
+                            $imgInfo = @getimagesizefromstring($content);
+                            if (!$imgInfo || empty($imgInfo['mime'])) continue;
+
                             // Evita duplicatas da mesma imagem na página
                             $contentHash = md5($content);
                             if (in_array($contentHash, $processedHashes)) continue;
                             $processedHashes[] = $contentHash;
 
-                            $imgCount++;
-                            $imgFileName = "p{$pageNum}_img{$imgCount}_{$contentHash}.jpg";
-                            $imgRelPath = "{$imgDirRel}/{$imgFileName}";
+                            $mime = $imgInfo['mime'];
+                            $base64Data = 'data:' . $mime . ';base64,' . base64_encode($content);
 
-                            if (!Storage::disk('public')->exists($imgRelPath)) {
-                                Storage::disk('public')->put($imgRelPath, $content);
-                            }
-
-                            $imgUrl = asset("storage/{$imgRelPath}");
                             $pageImagesHtml .= '<div class="my-4 text-center select-none">';
-                            $pageImagesHtml .= '<img src="' . $imgUrl . '" class="max-w-full rounded shadow-sm border border-slate-200 mx-auto block my-2" style="max-height: 380px; object-fit: contain;" alt="Imagem da Página ' . $pageNum . '">';
+                            $pageImagesHtml .= '<img src="' . $base64Data . '" class="max-w-full rounded shadow-sm border border-slate-200 mx-auto block my-3" style="max-height: 380px; object-fit: contain;" alt="Imagem da Página ' . $pageNum . '">';
                             $pageImagesHtml .= '</div>';
                         }
                     }
                 } catch (\Throwable $eImg) {
-                    // Ignora erros individuais na extração de imagens
+                    // Ignora erros de imagens não-padrão
                 }
 
                 if (empty($text) && empty($pageImagesHtml)) continue;
