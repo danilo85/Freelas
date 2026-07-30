@@ -13,6 +13,7 @@ class EditorialRevisionFile extends Model
         'file_size',
         'mime_type',
         'file_type',
+        'extracted_text',
         'version',
         'is_final',
     ];
