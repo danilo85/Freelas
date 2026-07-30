@@ -111,6 +111,16 @@
             100% { background-color: #fef08a; }
         }
 
+        /* MARCAÇÃO DE ERRO DO LANGUAGETOOL EM ROXO */
+        .purple-highlight-target {
+            background-color: #f3e8ff !important;
+            color: #6b21a8 !important;
+            border-left: 4px solid #a855f7 !important;
+            padding: 4px 8px;
+            border-radius: 4px;
+            transition: all 0.3s ease;
+        }
+
         /* CAPA DE SELEÇÃO E DESTAQUE DE TEXTO SOBRE O PDF ORIGINAL */
         .pdf-text-layer-overlay {
             position: absolute;
@@ -655,6 +665,38 @@
                         this.loadingLanguageTool = false;
                         this.showToast('Falha ao conectar ao serviço de ortografia.');
                     });
+                },
+
+                highlightAndScrollToMatch(match) {
+                    const editor = this.$refs.wordEditor;
+                    if (!match || !match.context) return;
+
+                    const matchText = match.context.text.substring(match.context.offset, match.context.offset + match.context.length).trim();
+                    if (!matchText || matchText.length < 1) return;
+
+                    if (!editor) {
+                        this.showToast('Abra a edição de texto para localizar o trecho.');
+                        return;
+                    }
+
+                    const allElements = editor.querySelectorAll('p, div, li, mark, h1, h2, h3, span');
+                    let foundElement = null;
+
+                    for (let el of allElements) {
+                        if (el.textContent.toLowerCase().includes(matchText.toLowerCase())) {
+                            foundElement = el;
+                            break;
+                        }
+                    }
+
+                    if (foundElement) {
+                        foundElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                        foundElement.classList.add('purple-highlight-target');
+                        foundElement.setAttribute('style', 'background-color: #f3e8ff !important; color: #6b21a8 !important; border-left: 4px solid #a855f7 !important; padding: 4px 8px; border-radius: 4px; transition: all 0.3s ease;');
+                        this.showToast('Rolou até "' + matchText + '" e destacou em roxo!');
+                    } else {
+                        this.showToast('Trecho "' + matchText + '" não localizado no layout ativo.');
+                    }
                 }
             }
         }
@@ -1148,73 +1190,75 @@
         </div>
     </div>
 
-    <!-- MODAL ANÁLISE ORTOGRÁFICA (LANGUAGETOOL) -->
-    <div x-show="openLanguageToolModal" x-cloak class="fixed inset-0 z-[999999] flex items-center justify-center p-4 bg-slate-950/60 backdrop-blur-xs select-none">
-        <div @click.away="openLanguageToolModal = false" class="bg-white border border-slate-200 text-slate-800 rounded-xl max-w-xl w-full shadow-2xl flex flex-col max-h-[85vh] overflow-hidden">
-            
-            <div class="p-4 border-b border-slate-200 bg-purple-900 text-white flex items-center justify-between shrink-0">
-                <div class="flex items-center gap-2.5">
-                    <svg class="w-5 h-5 text-purple-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
-                    </svg>
-                    <div>
-                        <h3 class="font-outfit font-black text-sm uppercase tracking-tight">Análise Ortográfica (LanguageTool)</h3>
-                        <p class="text-[10px] text-purple-200">Sugestões inteligentes de ortografia e gramática</p>
-                    </div>
+    <!-- PAINEL FLUTUANTE LATERAL DE ANÁLISE ORTOGRÁFICA (LANGUAGETOOL) -->
+    <div x-show="openLanguageToolModal" x-cloak class="fixed top-20 right-80 z-[9999] w-96 max-h-[82vh] bg-white border border-purple-200 rounded-2xl shadow-2xl flex flex-col overflow-hidden select-none">
+        
+        <div class="p-3.5 border-b border-purple-200 bg-purple-900 text-white flex items-center justify-between shrink-0">
+            <div class="flex items-center gap-2.5">
+                <div class="w-8 h-8 rounded-full bg-purple-800 flex items-center justify-center font-bold text-xs">
+                    🔍
                 </div>
-                <button type="button" @click="openLanguageToolModal = false" class="w-7 h-7 rounded-full bg-purple-800 hover:bg-purple-700 text-purple-200 hover:text-white flex items-center justify-center font-bold text-xs">✕</button>
+                <div>
+                    <h3 class="font-outfit font-black text-xs uppercase tracking-tight">Análise Ortográfica</h3>
+                    <p class="text-[10px] text-purple-200" x-text="loadingLanguageTool ? 'Analisando documento...' : languageToolMatches.length + ' sugestões encontradas'"></p>
+                </div>
             </div>
+            <button type="button" @click="openLanguageToolModal = false" class="w-7 h-7 rounded-full bg-purple-800 hover:bg-purple-700 text-purple-200 hover:text-white flex items-center justify-center font-bold text-xs">✕</button>
+        </div>
 
-            <div class="p-5 flex-1 overflow-y-auto space-y-4 bg-slate-50">
-                <template x-if="loadingLanguageTool">
-                    <div class="py-12 text-center text-slate-500 font-medium text-xs space-y-3">
-                        <svg class="animate-spin w-8 h-8 text-purple-600 mx-auto" fill="none" viewBox="0 0 24 24">
-                            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-                            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path>
-                        </svg>
-                        <p class="font-bold text-slate-700">Analisando o texto com o motor LanguageTool...</p>
+        <div class="p-3.5 flex-1 overflow-y-auto space-y-3 bg-purple-50/40">
+            <template x-if="loadingLanguageTool">
+                <div class="py-12 text-center text-slate-500 font-medium text-xs space-y-3">
+                    <svg class="animate-spin w-8 h-8 text-purple-600 mx-auto" fill="none" viewBox="0 0 24 24">
+                        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                        <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path>
+                    </svg>
+                    <p class="font-bold text-slate-700">Verificando erros no documento...</p>
+                </div>
+            </template>
+
+            <template x-if="!loadingLanguageTool && languageToolMatches.length === 0">
+                <div class="py-10 text-center text-emerald-700 font-medium text-xs space-y-2 bg-emerald-50 rounded-xl border border-emerald-200 p-4">
+                    <div class="w-10 h-10 rounded-full bg-emerald-200 text-emerald-800 flex items-center justify-center mx-auto text-lg font-bold">✓</div>
+                    <p class="font-bold text-sm text-emerald-900">Nenhum erro ortográfico detectado!</p>
+                    <p class="text-xs text-emerald-700">Seu texto está de acordo com as regras de ortografia em Português.</p>
+                </div>
+            </template>
+
+            <template x-for="(match, idx) in languageToolMatches" :key="idx">
+                <div @click="highlightAndScrollToMatch(match)" 
+                     class="bg-white border border-purple-200 hover:border-purple-500 rounded-xl p-3.5 shadow-xs space-y-2 text-xs cursor-pointer hover:bg-purple-50/60 transition-all group">
+                    
+                    <div class="flex items-center justify-between border-b border-purple-100 pb-1.5">
+                        <span class="font-black text-purple-900 uppercase text-[9px] bg-purple-100 px-2 py-0.5 rounded-full" x-text="match.rule ? match.rule.category.name : 'Ortografia'"></span>
+                        <span class="text-[10px] text-purple-600 group-hover:text-purple-800 font-bold flex items-center gap-1">
+                            <span>Ir para o texto</span>
+                            <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3"/></svg>
+                        </span>
                     </div>
-                </template>
 
-                <template x-if="!loadingLanguageTool && languageToolMatches.length === 0">
-                    <div class="py-12 text-center text-emerald-700 font-medium text-xs space-y-2 bg-emerald-50 rounded-lg border border-emerald-200">
-                        <div class="w-10 h-10 rounded-full bg-emerald-200 text-emerald-800 flex items-center justify-center mx-auto text-lg font-bold">✓</div>
-                        <p class="font-bold text-sm text-emerald-900">Nenhum erro ortográfico detectado!</p>
-                        <p class="text-xs text-emerald-700">Seu texto está de acordo com as regras de ortografia em Português.</p>
-                    </div>
-                </template>
+                    <p class="text-slate-800 font-medium text-xs leading-relaxed" x-text="match.message"></p>
 
-                <template x-for="(match, idx) in languageToolMatches" :key="idx">
-                    <div class="bg-white border border-slate-200 rounded-lg p-4 shadow-xs space-y-2 text-xs">
-                        <div class="flex items-center justify-between border-b border-slate-100 pb-2">
-                            <span class="font-bold text-purple-900 uppercase text-[10px] bg-purple-100 px-2 py-0.5 rounded" x-text="match.rule ? match.rule.category.name : 'Ortografia'"></span>
-                            <span class="text-[10px] text-slate-400 font-mono" x-text="'Sugestão ' + (idx + 1)"></span>
-                        </div>
-
-                        <p class="text-slate-800 font-medium text-sm" x-text="match.message"></p>
-
-                        <div class="p-2.5 bg-slate-100 border-l-4 border-rose-500 rounded-r text-xs font-serif text-slate-800">
-                            <span class="font-sans font-bold text-[10px] text-rose-700 block uppercase">No Texto:</span>
+                    <div class="p-2 bg-purple-50 border-l-4 border-purple-500 rounded-r text-xs font-serif text-slate-900 flex items-center justify-between">
+                        <div>
+                            <span class="font-sans font-bold text-[9px] text-purple-800 uppercase block">No Texto:</span>
                             <span class="line-through text-rose-600 font-bold" x-text="match.context ? match.context.text.substring(match.context.offset, match.context.offset + match.context.length) : ''"></span>
                         </div>
-
-                        <template x-if="match.replacements && match.replacements.length > 0">
-                            <div class="pt-1 flex items-center gap-1.5 flex-wrap">
-                                <span class="text-[10px] font-bold text-slate-500 uppercase">Sugestões de Correção:</span>
-                                <template x-for="(rep, rIdx) in match.replacements.slice(0, 4)" :key="rIdx">
-                                    <span class="px-2.5 py-1 bg-emerald-100 text-emerald-900 font-bold rounded text-xs border border-emerald-300" x-text="rep.value"></span>
-                                </template>
-                            </div>
-                        </template>
                     </div>
-                </template>
-            </div>
 
-            <div class="p-4 border-t border-slate-200 bg-white flex justify-end shrink-0">
-                <button type="button" @click="openLanguageToolModal = false" class="px-4 py-2 bg-slate-900 hover:bg-slate-800 text-white font-bold text-xs uppercase tracking-wider rounded">Fechar</button>
-            </div>
+                    <template x-if="match.replacements && match.replacements.length > 0">
+                        <div class="pt-1 flex items-center gap-1.5 flex-wrap">
+                            <span class="text-[9px] font-bold text-slate-400 uppercase">Sugestões:</span>
+                            <template x-for="(rep, rIdx) in match.replacements.slice(0, 3)" :key="rIdx">
+                                <span class="px-2 py-0.5 bg-emerald-100 text-emerald-900 font-bold rounded text-[11px] border border-emerald-300" x-text="rep.value"></span>
+                            </template>
+                        </div>
+                    </template>
 
+                </div>
+            </template>
         </div>
+
     </div>
 
 </body>
