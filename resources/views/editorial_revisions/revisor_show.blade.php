@@ -714,6 +714,57 @@
                     } else {
                         this.showToast('Trecho "' + matchText + '" não localizado no layout ativo.');
                     }
+                },
+
+                applyLanguageToolCorrection(match, replacementValue) {
+                    const editor = this.$refs.wordEditor;
+                    if (!match || !match.context) return;
+
+                    const originalWord = match.context.text.substring(match.context.offset, match.context.offset + match.context.length).trim();
+                    if (!originalWord || originalWord.length < 1) return;
+
+                    if (!editor) {
+                        this.showToast('Abra a edição de texto para aplicar a correção.');
+                        return;
+                    }
+
+                    // 1. Procura se há uma marcação roxa ativa com a palavra
+                    const activePurpleMark = editor.querySelector('.purple-word-mark');
+                    let targetElement = null;
+
+                    if (activePurpleMark && activePurpleMark.textContent.trim().toLowerCase() === originalWord.toLowerCase()) {
+                        targetElement = activePurpleMark.parentNode;
+                        activePurpleMark.replaceWith(document.createTextNode(replacementValue));
+                    } else {
+                        // Busca o parágrafo ou item contendo a palavra original
+                        const allLeafElements = editor.querySelectorAll('p, li, h3, h4, span');
+                        for (let el of allLeafElements) {
+                            if (el.classList.contains('pdf-page-card') || el.id === 'word-paper-container') continue;
+                            if (el.textContent.toLowerCase().includes(originalWord.toLowerCase())) {
+                                targetElement = el;
+                                const escapedText = originalWord.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+                                const regex = new RegExp('(' + escapedText + ')', 'gi');
+                                el.innerHTML = el.innerHTML.replace(regex, replacementValue);
+                                break;
+                            }
+                        }
+                    }
+
+                    if (targetElement) {
+                        // Aplica o destaque amarelo permanente na linha alterada
+                        targetElement.classList.add('edited-line');
+                        targetElement.setAttribute('style', 'background-color: #fef08a !important; color: #713f12 !important; border-left: 4px solid #facc15 !important; padding: 4px 8px; border-radius: 4px; margin-bottom: 8px;');
+                        targetElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                    }
+
+                    // 2. Remove o item da lista do LanguageTool
+                    this.languageToolMatches = this.languageToolMatches.filter(m => m !== match);
+
+                    // 3. Sincroniza e AUTO-SALVA no banco de dados imediatamente
+                    this.syncEditorContent();
+                    this.persistWordContent();
+
+                    this.showToast('✨ Corrigido para "' + replacementValue + '" e salvo no banco!');
                 }
             }
         }
@@ -1265,9 +1316,15 @@
 
                     <template x-if="match.replacements && match.replacements.length > 0">
                         <div class="pt-1 flex items-center gap-1.5 flex-wrap">
-                            <span class="text-[9px] font-bold text-slate-400 uppercase">Sugestões:</span>
-                            <template x-for="(rep, rIdx) in match.replacements.slice(0, 3)" :key="rIdx">
-                                <span class="px-2 py-0.5 bg-emerald-100 text-emerald-900 font-bold rounded text-[11px] border border-emerald-300" x-text="rep.value"></span>
+                            <span class="text-[9px] font-bold text-slate-400 uppercase w-full block mb-0.5">Sugestões de Correção (Clique para aplicar):</span>
+                            <template x-for="(rep, rIdx) in match.replacements.slice(0, 4)" :key="rIdx">
+                                <button type="button" 
+                                        @click.stop="applyLanguageToolCorrection(match, rep.value)" 
+                                        class="px-2.5 py-1 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-md text-xs border border-emerald-500 shadow-xs transition-all transform hover:scale-105 flex items-center gap-1 cursor-pointer"
+                                        title="Clique para aplicar esta correção no texto e salvar no banco">
+                                    <span>✓</span>
+                                    <span x-text="rep.value"></span>
+                                </button>
                             </template>
                         </div>
                     </template>
