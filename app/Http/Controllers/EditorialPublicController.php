@@ -311,45 +311,17 @@ class EditorialPublicController extends Controller
     }
 
     /**
-     * Método auxiliar nativo em PHP para extrair texto formatado preservando parágrafos de arquivos Word (.docx).
+     * Método auxiliar para extrair HTML rico preservando formatação, fontes, tamanhos e imagens de arquivos Word (.docx).
      */
     protected function extractTextFromFile(EditorialRevisionFile $file, string $disk)
     {
-        try {
-            $disksToTry = array_unique([$disk, 'public', 'local']);
-            $filePath = null;
+        if ($file->extracted_text) {
+            return $file->extracted_text;
+        }
 
-            foreach ($disksToTry as $d) {
-                if (Storage::disk($d)->exists($file->file_path)) {
-                    $filePath = Storage::disk($d)->path($file->file_path);
-                    break;
-                }
-            }
-
-            if (!$filePath || !file_exists($filePath)) {
-                $filePath = storage_path('app/public/' . $file->file_path);
-            }
-
-            if ($file->file_type === 'word' && file_exists($filePath)) {
-                $zip = new \ZipArchive();
-                if ($zip->open($filePath) === true) {
-                    if (($index = $zip->locateName('word/document.xml')) !== false) {
-                        $data = $zip->getFromIndex($index);
-                        $zip->close();
-
-                        // Processa XML do Word preservando a diagramação de parágrafos <w:p> e quebras <w:br>
-                        $data = str_replace(['</w:p>', '<w:br/>', '<w:br>', '</w:tr>'], ["\n\n", "\n", "\n", "\n"], $data);
-                        $data = str_replace('<w:tab/>', "\t", $data);
-
-                        $text = trim(strip_tags($data));
-                        // Normaliza linhas em branco duplas sem colar tudo num parágrafo só
-                        $text = preg_replace("/\n{3,}/", "\n\n", $text);
-                        return $text;
-                    }
-                    $zip->close();
-                }
-            }
-        } catch (\Throwable $e) {}
+        if ($file->file_type === 'word') {
+            return \App\Services\DocxToHtmlConverter::convertToHtml($file->file_path, $disk);
+        }
 
         return 'Conteúdo do arquivo disponível para leitura e download.';
     }

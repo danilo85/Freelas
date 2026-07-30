@@ -10,7 +10,7 @@
     <!-- Google Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800;900&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800;900&family=Inter:wght@300;400;500;600;700&family=Lora:ital,wght@0,400;0,600;1,400&display=swap" rel="stylesheet">
 
     <!-- Tailwind CSS CDN -->
     <script src="https://cdn.tailwindcss.com"></script>
@@ -21,6 +21,7 @@
                     fontFamily: {
                         sans: ['Inter', 'sans-serif'],
                         outfit: ['Outfit', 'sans-serif'],
+                        serif: ['Lora', 'Georgia', 'serif'],
                     },
                     colors: {
                         primary: {
@@ -53,7 +54,22 @@
             backdrop-filter: blur(10px);
         }
         .paper-shadow {
-            box-shadow: 0 10px 30px -5px rgba(0, 0, 0, 0.1), 0 0 5px rgba(0, 0, 0, 0.05);
+            box-shadow: 0 15px 35px -5px rgba(0, 0, 0, 0.15), 0 0 10px rgba(0, 0, 0, 0.05);
+        }
+        .word-page-a4 {
+            width: 210mm;
+            min-height: 297mm;
+            padding: 25mm 20mm;
+            background: #ffffff;
+            margin: 20px auto;
+            box-sizing: border-box;
+        }
+        .word-paper-content img {
+            max-width: 100%;
+            height: auto;
+            display: block;
+            margin: 1rem auto;
+            border-radius: 4px;
         }
     </style>
 
@@ -70,7 +86,7 @@
                 openUploadVersionModal: false,
                 categoryFilter: 'todas',
                 viewMode: 'track', // 'track', 'original', 'final'
-                viewerMode: 'native', // 'native' ou 'google'
+                viewerMode: 'native', // 'native' ou 'iframe'
                 toastMessage: '',
                 selectedFileId: filesData.length > 0 ? filesData[0].id : null,
                 languageToolMatches: [],
@@ -92,7 +108,6 @@
                 totalPages: 1,
                 pdfScale: 1.2,
                 renderingPdf: false,
-                pdfError: '',
 
                 // Modal Correction State
                 modalCategory: 'ortografia',
@@ -134,11 +149,6 @@
                     return streamBaseUrl + '/' + id + '/download';
                 },
 
-                getGoogleDocsViewerUrl(id) {
-                    const fullStreamUrl = window.location.origin + this.getFileStreamUrl(id);
-                    return 'https://docs.google.com/gview?url=' + encodeURIComponent(fullStreamUrl) + '&embedded=true';
-                },
-
                 handleFileChange(id) {
                     const file = this.currentFile;
                     if (file && file.file_type === 'pdf' && this.viewerMode === 'native') {
@@ -150,26 +160,18 @@
                     if (!this.currentFile) return;
                     const url = this.getFileStreamUrl(this.currentFile.id);
                     this.renderingPdf = true;
-                    this.pdfError = '';
 
-                    // Busca o ArrayBuffer diretamente para garantir leitura total sem bloqueio CORS/Worker
                     fetch(url)
-                        .then(res => {
-                            if (!res.ok) throw new Error('Falha HTTP ao carregar PDF (' + res.status + ')');
-                            return res.arrayBuffer();
-                        })
-                        .then(buffer => {
-                            return pdfjsLib.getDocument({ data: buffer }).promise;
-                        })
+                        .then(res => res.arrayBuffer())
+                        .then(buffer => pdfjsLib.getDocument({ data: buffer }).promise)
                         .then(pdf => {
                             this.pdfDoc = pdf;
                             this.totalPages = pdf.numPages;
                             this.currentPage = 1;
                             this.renderPdfPage(1);
                         })
-                        .catch(err => {
+                        .catch(() => {
                             this.renderingPdf = false;
-                            this.pdfError = 'Não foi possível carregar a prévia do PDF. Utilize o botão de download ou a visualização externa.';
                         });
                 },
 
@@ -186,12 +188,7 @@
                         canvas.height = viewport.height;
                         canvas.width = viewport.width;
 
-                        const renderContext = {
-                            canvasContext: ctx,
-                            viewport: viewport
-                        };
-
-                        page.render(renderContext).promise.then(() => {
+                        page.render({ canvasContext: ctx, viewport: viewport }).promise.then(() => {
                             this.renderingPdf = false;
                             this.modalPageNumber = num;
                         });
@@ -215,9 +212,19 @@
                     this.renderPdfPage(this.currentPage);
                 },
 
+                execCmd(command, value = null) {
+                    document.execCommand(command, false, value);
+                    const editor = document.getElementById('word-paper-editor');
+                    if (editor) {
+                        this.revisedContent = editor.innerHTML;
+                    }
+                },
+
                 saveEditedText() {
                     if (!this.currentFile) return;
                     this.savingText = true;
+                    const editor = document.getElementById('word-paper-editor');
+                    const contentToSave = editor ? editor.innerHTML : this.revisedContent;
 
                     fetch('{{ url("/revisao-editorial/" . $revision->share_token . "/revisor/file") }}/' + this.currentFile.id + '/content', {
                         method: 'POST',
@@ -225,12 +232,12 @@
                             'Content-Type': 'application/json',
                             'X-CSRF-TOKEN': '{{ csrf_token() }}'
                         },
-                        body: JSON.stringify({ revised_content: this.revisedContent })
+                        body: JSON.stringify({ revised_content: contentToSave })
                     })
                     .then(res => res.json())
                     .then(data => {
                         this.savingText = false;
-                        this.showToast('Alterações do texto salvas com sucesso!');
+                        this.showToast('Alterações do texto salvas com sucesso no documento Word!');
                     })
                     .catch(() => {
                         this.savingText = false;
@@ -281,17 +288,17 @@
 
                 copyAuthorLink(url) {
                     navigator.clipboard.writeText(url);
-                    this.showToast('Link do Autor copiado com sucesso para a área de transferência!');
+                    this.showToast('Link do Autor copiado com sucesso!');
                 },
 
                 checkLanguageTool() {
                     const text = this.revisedContent || this.originalContent;
                     if (!text || text.length < 5) {
-                        this.showToast('Não há texto suficiente extraído para análise ortográfica.');
+                        this.showToast('Não há texto suficiente para análise ortográfica.');
                         return;
                     }
 
-                    this.showToast('Analisando texto com LanguageTool...');
+                    this.showToast('Analisando documento com LanguageTool...');
 
                     fetch('{{ route("public.editorial.revisor.languagetool", $revision->share_token) }}', {
                         method: 'POST',
@@ -309,18 +316,6 @@
                     .catch(() => {
                         this.showToast('Falha ao conectar ao serviço de ortografia.');
                     });
-                },
-
-                applyLanguageToolMatch(match) {
-                    const text = this.revisedContent;
-                    const orig = text.substring(match.offset, match.offset + match.length);
-                    const replacement = (match.replacements && match.replacements.length > 0) ? match.replacements[0].value : '';
-
-                    this.modalCategory = 'ortografia';
-                    this.modalOriginalText = orig;
-                    this.modalSuggestedText = replacement;
-                    this.modalJustification = 'Sugestão do LanguageTool: ' + match.message;
-                    this.openCorrectionModal = true;
                 }
             }
         }
@@ -369,7 +364,7 @@
         <button type="button" @click="toastMessage = ''" class="text-slate-400 hover:text-white ml-2">✕</button>
     </div>
 
-    <!-- HEADER SUPERIOR (Igual ao Painel de Provas do Autor) -->
+    <!-- HEADER SUPERIOR DE REVISÃO EDITORIAL -->
     <header class="h-16 border-b border-slate-200 glassmorphism px-6 flex items-center justify-between z-30 shrink-0 select-none">
         <div class="flex items-center gap-3">
             <span class="font-outfit font-black text-sm tracking-tight text-slate-800">
@@ -466,108 +461,104 @@
         <!-- COLUNA 2 (CENTRO - FLEX-1): VIEWPORT DO DOCUMENTO -->
         <section class="flex-1 bg-slate-200/70 flex flex-col min-w-0 relative overflow-hidden h-full">
             
-            <!-- Barra Secundária Superior do Visualizador -->
+            <!-- Barra Secundária Superior do Visualizador / Editor de Texto -->
             <div class="h-12 border-b border-slate-200 bg-white px-4 flex items-center justify-between shrink-0 z-10 shadow-xs">
                 
-                <!-- Ferramentas de Visualização (Modo Leitor Interno vs Google Docs Viewer) -->
-                <div class="flex items-center gap-2">
-                    <div class="flex items-center gap-1 bg-slate-100 p-1 rounded-[5px] text-xs font-bold">
-                        <button type="button" @click="viewerMode = 'native'" class="px-3 py-1 rounded-[3px] transition-all" :class="viewerMode === 'native' ? 'bg-white text-slate-900 shadow-xs' : 'text-slate-500 hover:text-slate-800'">
-                            👁️ Leitor/Editor Interno
-                        </button>
-                        <button type="button" @click="viewerMode = 'google'" class="px-3 py-1 rounded-[3px] transition-all" :class="viewerMode === 'google' ? 'bg-white text-slate-900 shadow-xs' : 'text-slate-500 hover:text-slate-800'">
-                            🌐 Google Docs Viewer
-                        </button>
-                    </div>
+                <!-- Ferramentas para PDF -->
+                <template x-if="currentFile && currentFile.file_type === 'pdf'">
+                    <div class="flex items-center gap-3 text-xs font-bold text-slate-600">
+                        <div class="flex items-center gap-1 bg-slate-100 p-1 rounded-[5px]">
+                            <button type="button" @click="viewerMode = 'native'" class="px-3 py-1 rounded-[3px]" :class="viewerMode === 'native' ? 'bg-white text-slate-900 shadow-xs' : 'text-slate-500'">
+                                📄 PDF Canvas
+                            </button>
+                            <button type="button" @click="viewerMode = 'iframe'" class="px-3 py-1 rounded-[3px]" :class="viewerMode === 'iframe' ? 'bg-white text-slate-900 shadow-xs' : 'text-slate-500'">
+                                🖥️ Leitor Nativo Navegador
+                            </button>
+                        </div>
 
-                    <!-- Controles para PDF (Navegação & Zoom) -->
-                    <template x-if="viewerMode === 'native' && currentFile && currentFile.file_type === 'pdf'">
-                        <div class="flex items-center gap-2 text-xs font-bold text-slate-600 pl-4 border-l border-slate-200">
-                            <button type="button" @click="prevPage()" class="px-2.5 py-1 bg-slate-100 hover:bg-slate-200 rounded-[3px]">◀</button>
+                        <div class="flex items-center gap-2 pl-3 border-l border-slate-200">
+                            <button type="button" @click="prevPage()" class="px-2 py-1 bg-slate-100 hover:bg-slate-200 rounded-[3px]">◀</button>
                             <span>PÁG. <span x-text="currentPage"></span> DE <span x-text="totalPages"></span></span>
-                            <button type="button" @click="nextPage()" class="px-2.5 py-1 bg-slate-100 hover:bg-slate-200 rounded-[3px]">▶</button>
+                            <button type="button" @click="nextPage()" class="px-2 py-1 bg-slate-100 hover:bg-slate-200 rounded-[3px]">▶</button>
                             <button type="button" @click="zoomPdf(-0.1)" class="px-2 py-1 bg-slate-100 hover:bg-slate-200 rounded-[3px] ml-2">🔍-</button>
                             <button type="button" @click="zoomPdf(0.1)" class="px-2 py-1 bg-slate-100 hover:bg-slate-200 rounded-[3px]">🔍+</button>
                         </div>
-                    </template>
-                </div>
+                    </div>
+                </template>
 
-                <!-- Ferramentas do Track Changes (Para Documentos Word) -->
-                <template x-if="viewerMode === 'native' && currentFile && currentFile.file_type === 'word'">
-                    <div class="flex items-center gap-2 text-xs font-bold">
+                <!-- BARRA DE FERRAMENTAS WYSIWYG PARA DOCUMENTOS WORD -->
+                <template x-if="currentFile && currentFile.file_type === 'word'">
+                    <div class="flex items-center gap-2 text-xs font-bold w-full justify-between">
                         <div class="flex items-center gap-1 bg-slate-100 p-1 rounded-[5px]">
-                            <button type="button" @click="viewMode = 'track'" class="px-2.5 py-1 rounded-[3px]" :class="viewMode === 'track' ? 'bg-blue-600 text-white' : 'text-slate-500'">✨ Track Changes</button>
-                            <button type="button" @click="viewMode = 'original'" class="px-2.5 py-1 rounded-[3px]" :class="viewMode === 'original' ? 'bg-rose-600 text-white' : 'text-slate-500'">🔴 Versão Antiga</button>
-                            <button type="button" @click="viewMode = 'final'" class="px-2.5 py-1 rounded-[3px]" :class="viewMode === 'final' ? 'bg-emerald-600 text-white' : 'text-slate-500'">🟢 Versão Final</button>
+                            <button type="button" @click="execCmd('bold')" class="px-2.5 py-1 hover:bg-white rounded font-black text-slate-800" title="Negrito">B</button>
+                            <button type="button" @click="execCmd('italic')" class="px-2.5 py-1 hover:bg-white rounded italic text-slate-800" title="Itálico">I</button>
+                            <button type="button" @click="execCmd('underline')" class="px-2.5 py-1 hover:bg-white rounded underline text-slate-800" title="Sublinhado">U</button>
+                            <span class="h-4 w-px bg-slate-300 mx-1"></span>
+                            <button type="button" @click="execCmd('justifyLeft')" class="px-2 py-1 hover:bg-white rounded text-slate-700" title="Esquerda">⬅️</button>
+                            <button type="button" @click="execCmd('justifyCenter')" class="px-2 py-1 hover:bg-white rounded text-slate-700" title="Centro">⏹️</button>
+                            <button type="button" @click="execCmd('justifyRight')" class="px-2 py-1 hover:bg-white rounded text-slate-700" title="Direita">➡️</button>
+                            <button type="button" @click="execCmd('justifyFull')" class="px-2 py-1 hover:bg-white rounded text-slate-700" title="Justificado">↔️</button>
                         </div>
 
-                        <button type="button" @click="saveEditedText()" class="px-3 py-1 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-[5px] uppercase tracking-wider transition-all flex items-center gap-1">
-                            <span>💾</span> <span x-text="savingText ? 'Salvando...' : 'Salvar Alterações'">Salvar</span>
-                        </button>
+                        <div class="flex items-center gap-2">
+                            <div class="flex items-center gap-1 bg-slate-100 p-1 rounded-[5px]">
+                                <button type="button" @click="viewMode = 'track'" class="px-2.5 py-1 rounded-[3px]" :class="viewMode === 'track' ? 'bg-blue-600 text-white' : 'text-slate-500'">✨ Track Changes</button>
+                                <button type="button" @click="viewMode = 'original'" class="px-2.5 py-1 rounded-[3px]" :class="viewMode === 'original' ? 'bg-rose-600 text-white' : 'text-slate-500'">🔴 Original</button>
+                                <button type="button" @click="viewMode = 'final'" class="px-2.5 py-1 rounded-[3px]" :class="viewMode === 'final' ? 'bg-emerald-600 text-white' : 'text-slate-500'">🟢 Versão Final</button>
+                            </div>
+
+                            <button type="button" @click="saveEditedText()" class="px-4 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-[5px] uppercase tracking-wider transition-all flex items-center gap-1">
+                                <span>💾</span> <span x-text="savingText ? 'Salvando...' : 'Salvar Alterações'">Salvar</span>
+                            </button>
+                        </div>
                     </div>
                 </template>
 
             </div>
 
-            <!-- CANVAS PRINCIPAL (Document Visualizer na Folha Branca) -->
-            <div class="flex-1 overflow-auto flex items-center justify-center p-6 relative">
+            <!-- CANVAS PRINCIPAL (Document Visualizer / Folha A4 do Word) -->
+            <div class="flex-1 overflow-auto flex items-center justify-center p-6 relative bg-slate-200/60">
                 
-                <!-- CANVAS PDF.JS -->
-                <template x-if="viewerMode === 'native' && currentFile && currentFile.file_type === 'pdf'">
+                <!-- CANVAS PDF.JS NATIVO -->
+                <template x-if="currentFile && currentFile.file_type === 'pdf' && viewerMode === 'native'">
                     <div class="bg-white paper-shadow rounded border border-slate-200 p-4 relative max-w-4xl max-h-full overflow-auto flex flex-col items-center">
                         <div x-show="renderingPdf" class="absolute inset-0 bg-white/80 flex items-center justify-center font-bold text-xs text-slate-500 z-10">
                             Renderizando PDF...
                         </div>
-                        <template x-if="pdfError">
-                            <div class="p-4 bg-rose-50 border border-rose-200 text-rose-700 text-xs font-bold rounded text-center my-auto">
-                                <p x-text="pdfError"></p>
-                                <a :href="getFileStreamUrl(currentFile.id)" target="_blank" class="mt-2 inline-block px-3 py-1.5 bg-slate-900 text-white rounded font-bold uppercase tracking-wider">
-                                    Abrir PDF Direto em Nova Guia ↗
-                                </a>
-                            </div>
-                        </template>
                         <canvas id="pdf-canvas" class="max-w-full block mx-auto shadow-sm border border-slate-200"></canvas>
                     </div>
                 </template>
 
-                <!-- EDITOR WORD TRACK CHANGES (Com Diagramação e Parágrafos Preservados) -->
-                <template x-if="viewerMode === 'native' && currentFile && currentFile.file_type === 'word'">
-                    <div class="w-full max-w-4xl bg-white paper-shadow rounded-[5px] border border-slate-200 p-8 space-y-4 my-auto max-h-full overflow-y-auto">
-                        <div class="flex items-center justify-between border-b border-slate-100 pb-3">
-                            <h4 class="font-outfit font-black text-xs uppercase tracking-wider text-slate-400">Editor Directo do Revisor (Track Changes)</h4>
-                            <span class="text-[10px] text-slate-400 italic">Diagramação de parágrafos preservada do Word</span>
-                        </div>
-
-                        <!-- Modo Track Changes / Edição Direta -->
-                        <div x-show="viewMode === 'track'" class="space-y-2">
-                            <textarea x-model="revisedContent" rows="18" class="w-full bg-slate-50 text-slate-800 font-serif text-sm p-6 border border-slate-200 rounded-[5px] leading-relaxed focus:outline-none focus:ring-1 focus:ring-blue-500 select-text whitespace-pre-wrap" @mouseup="captureSelectedText"></textarea>
-                        </div>
-
-                        <!-- Modo Versão Antiga -->
-                        <div x-show="viewMode === 'original'" class="p-6 bg-rose-50 border border-rose-200 rounded-[5px] text-xs font-serif leading-relaxed text-rose-900 max-h-[500px] overflow-y-auto whitespace-pre-wrap">
-                            <span x-text="originalContent"></span>
-                        </div>
-
-                        <!-- Modo Versão Final -->
-                        <div x-show="viewMode === 'final'" class="p-6 bg-emerald-50 border border-emerald-200 rounded-[5px] text-xs font-serif leading-relaxed text-emerald-900 max-h-[500px] overflow-y-auto whitespace-pre-wrap">
-                            <span x-text="revisedContent"></span>
-                        </div>
+                <!-- PDF EM IFRAME NATIVO DO NAVEGADOR -->
+                <template x-if="currentFile && currentFile.file_type === 'pdf' && viewerMode === 'iframe'">
+                    <div class="w-full max-w-5xl h-full bg-white paper-shadow rounded-[5px] border border-slate-200 p-2 flex flex-col">
+                        <iframe :src="getFileStreamUrl(currentFile.id)" class="w-full h-full rounded border-0" frameborder="0"></iframe>
                     </div>
                 </template>
 
-                <!-- GOOGLE DOCS VIEWER EMBED -->
-                <template x-if="viewerMode === 'google' && currentFile">
-                    <div class="w-full max-w-5xl h-full bg-white paper-shadow rounded-[5px] border border-slate-200 p-2 flex flex-col space-y-2">
-                        <div class="bg-amber-50 border border-amber-200 text-amber-800 p-2.5 rounded text-[11px] font-bold flex items-center justify-between">
-                            <span>ℹ️ O Google Docs Viewer requer um domínio público online (como na Hostinger). Em ambiente local (localhost), utilize o <strong>Leitor/Editor Interno</strong>.</span>
-                            <a :href="getGoogleDocsViewerUrl(currentFile.id)" target="_blank" class="text-amber-900 underline font-black">Abrir ↗</a>
+                <!-- FORMATO DE PÁGINA A4 DE VERDADE DO MICROSOFT WORD (COM MARGENS, IMAGENS E FONTES PRESERVADAS) -->
+                <template x-if="currentFile && currentFile.file_type === 'word'">
+                    <div class="w-full h-full overflow-y-auto p-6 flex flex-col items-center">
+                        
+                        <!-- PÁGINA A4 COM SOMBRA E MARGENS PADRÃO DO WORD -->
+                        <div class="word-page-a4 paper-shadow border border-slate-300 text-slate-900 rounded-[2px] transition-all select-text relative"
+                             id="word-paper-container">
+
+                            <!-- Conteúdo Editável do Word -->
+                            <div id="word-paper-editor"
+                                 contenteditable="true"
+                                 class="word-paper-content focus:outline-none min-h-[250mm]"
+                                 @input="revisedContent = $el.innerHTML"
+                                 @mouseup="captureSelectedText"
+                                 x-html="revisedContent">
+                            </div>
+
                         </div>
-                        <iframe :src="getGoogleDocsViewerUrl(currentFile.id)" class="w-full flex-1 rounded border-0" frameborder="0"></iframe>
                     </div>
                 </template>
 
                 <!-- VISUALIZADOR DE IMAGENS -->
-                <template x-if="viewerMode === 'native' && currentFile && currentFile.file_type === 'image'">
+                <template x-if="currentFile && currentFile.file_type === 'image'">
                     <div class="bg-white paper-shadow rounded p-2 border border-slate-200 max-w-4xl">
                         <img :src="getFileStreamUrl(currentFile.id)" class="max-h-[75vh] object-contain">
                     </div>
@@ -577,7 +568,7 @@
 
         </section>
 
-        <!-- COLUNA 3 (DIREITA - 280px): NAVEGADOR DE ARQUIVOS -->
+        <!-- COLUNA 3 (DIREITA - 280px): NAVEGADOR DE ARQUIVOS COM SELEÇÃO DE PDF E WORD CONVERTIDO -->
         <aside class="w-72 border-l border-slate-200 bg-white flex flex-col justify-between shrink-0 h-full overflow-hidden z-20">
             
             <div class="p-4 border-b border-slate-200 bg-slate-50/50 flex items-center justify-between shrink-0">
@@ -587,12 +578,12 @@
                 </span>
             </div>
 
-            <!-- Lista de Arquivos do Projeto -->
-            <div class="flex-1 overflow-y-auto p-3 space-y-2">
+            <!-- Lista de Arquivos do Projeto (PDFs e Words Editáveis Vinculados) -->
+            <div class="flex-1 overflow-y-auto p-3 space-y-2.5">
                 @foreach($revision->files as $file)
                     <div @click="selectedFileId = {{ $file->id }}" 
-                         class="p-3 rounded-[5px] border transition-all cursor-pointer select-none space-y-1"
-                         :class="selectedFileId == {{ $file->id }} ? 'bg-blue-50/80 border-blue-400 shadow-xs' : 'bg-slate-50/60 border-slate-200 hover:bg-slate-100'">
+                         class="p-3 rounded-[5px] border transition-all cursor-pointer select-none space-y-2"
+                         :class="selectedFileId == {{ $file->id }} ? 'bg-blue-50/90 border-blue-500 shadow-xs' : 'bg-slate-50/60 border-slate-200 hover:bg-slate-100'">
                         
                         <div class="flex items-center justify-between">
                             <span class="text-[9px] font-black uppercase px-2 py-0.5 rounded-[3px]"
@@ -603,7 +594,14 @@
                         </div>
 
                         <h5 class="text-xs font-bold text-slate-800 truncate" title="{{ $file->filename }}">{{ $file->filename }}</h5>
-                        <p class="text-[10px] text-slate-400 font-medium">{{ number_format($file->file_size / 1024, 1) }} KB</p>
+                        
+                        <!-- Badges de troca rápida (PDF vs Word Editável) -->
+                        <div class="flex items-center justify-between pt-1 border-t border-slate-100 text-[10px] font-bold text-slate-500">
+                            <span>{{ number_format($file->file_size / 1024, 1) }} KB</span>
+                            <a :href="getFileDownloadUrl({{ $file->id }})" target="_blank" @click.stop class="text-blue-600 hover:underline">
+                                ⬇️ Baixar
+                            </a>
+                        </div>
                     </div>
                 @endforeach
             </div>
