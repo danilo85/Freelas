@@ -73,10 +73,30 @@ class EditorialRevisionController extends Controller
      */
     public function create()
     {
-        $projects = Project::where('user_id', auth()->id())->latest()->get();
-        $clients = Client::where('user_id', auth()->id())->latest()->get();
-        $revisores = User::where('role', 'revisor')->orWhere('id', auth()->id())->latest()->get();
-        $isGoogleConnected = !empty(env('GOOGLE_DRIVE_REFRESH_TOKEN'));
+        $userId = auth()->id();
+
+        try {
+            $projects = Project::where('user_id', $userId)->latest()->get();
+        } catch (\Throwable $e) {
+            $projects = collect();
+        }
+
+        try {
+            $clients = Client::where('user_id', $userId)->latest()->get();
+        } catch (\Throwable $e) {
+            $clients = collect();
+        }
+
+        try {
+            $revisores = User::where('role', 'revisor')->orWhere('id', $userId)->latest()->get();
+        } catch (\Throwable $e) {
+            $revisores = User::where('id', $userId)->get();
+        }
+
+        $isGoogleConnected = false;
+        try {
+            $isGoogleConnected = !empty(env('GOOGLE_DRIVE_REFRESH_TOKEN'));
+        } catch (\Throwable $e) {}
 
         return view('editorial_revisions.create', compact('projects', 'clients', 'revisores', 'isGoogleConnected'));
     }
