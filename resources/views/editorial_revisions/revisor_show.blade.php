@@ -356,43 +356,19 @@
                             window._activePdfDoc = pdf;
                             this.totalPages = pdf.numPages;
                             this.currentPage = 1;
-                            this.renderPdfPage(1);
+                            this.$nextTick(() => {
+                                this.renderAllPdfPages();
+                            });
                         })
                         .catch(() => {
                             this.renderingPdf = false;
-                            // FALLBACK AUTOMÁTICO SE O PLUGIN PDF.JS FALHAR
                             this.viewerMode = 'iframe';
                             this.showToast('Alternado para o Leitor Nativo do Navegador.');
                         });
                 },
 
-                renderPdfPage(num) {
+                renderAllPdfPages() {
                     if (!window._activePdfDoc) return;
-                    this.renderingPdf = true;
-
-                    window._activePdfDoc.getPage(num).then(page => {
-                        const canvas = document.getElementById('pdf-canvas');
-                        const textLayer = document.getElementById('pdf-text-layer');
-                        if (!canvas) return;
-                        const ctx = canvas.getContext('2d');
-                        const viewport = page.getViewport({ scale: this.pdfScale });
-
-                        canvas.height = viewport.height;
-                        canvas.width = viewport.width;
-
-                        if (textLayer) {
-                            textLayer.style.height = viewport.height + 'px';
-                            textLayer.style.width = viewport.width + 'px';
-                            textLayer.innerHTML = '';
-                        }
-
-                        page.render({ canvasContext: ctx, viewport: viewport }).promise.then(() => {
-                            this.renderingPdf = false;
-
-                            if (textLayer && page.getTextContent) {
-                                page.getTextContent().then(textContent => {
-                                    if (pdfjsLib.renderTextLayer) {
-                                        pdfjsLib.renderTextLayer({
                                             textContent: textContent,
                                             container: textLayer,
                                             viewport: viewport,
@@ -1158,16 +1134,14 @@
                     </div>
                 </template>
 
-                <!-- CANVAS PDF.JS PLUGIN (PRIORIDADE PADRÃO - PRESERVA 100% LAYOUT, FONTES E IMAGENS ORIGINAIS) -->
+                <!-- CANVAS PDF.JS PLUGIN (PÁGINAS CORRIDAS COM SCROLL VERTICAL) -->
                 <template x-if="currentFile && currentFile.file_type === 'pdf' && viewerMode === 'native' && !pdfEditMode">
-                    <div class="bg-white paper-shadow rounded border border-slate-200 p-4 relative max-w-5xl max-h-full overflow-auto flex flex-col items-center my-auto">
-                        <div x-show="renderingPdf" class="absolute inset-0 bg-white/80 flex items-center justify-center font-bold text-xs text-slate-500 z-10">
-                            Renderizando PDF via Plugin PDF.js...
+                    <div class="w-full flex flex-col items-center relative py-4">
+                        <div x-show="renderingPdf" class="fixed top-24 z-20 bg-slate-900/90 text-white px-4 py-2 rounded-full font-bold text-xs shadow-xl flex items-center gap-2">
+                            <svg class="animate-spin w-4 h-4 text-blue-400" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path></svg>
+                            <span>Renderizando Páginas do PDF...</span>
                         </div>
-                        <div class="relative inline-block">
-                            <canvas id="pdf-canvas" class="max-w-full block mx-auto shadow-sm border border-slate-200"></canvas>
-                            <div id="pdf-text-layer" class="pdf-text-layer-overlay"></div>
-                        </div>
+                        <div id="pdf-continuous-container" class="w-full max-w-5xl flex flex-col items-center space-y-6"></div>
                     </div>
                 </template>
 

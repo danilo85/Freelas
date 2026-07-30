@@ -157,14 +157,14 @@ class PdfToHtmlConverter
                     $cleanLine = trim($line);
                     if ($cleanLine === '') continue;
 
-                    // Formata Cartões de Cores e Desafios de Vetores PDF em Cards Elegantes
+                    // Formata Cartões de Cores e Desafios de Vetores PDF em Texto Limpo
                     if (preg_match('/^(?:Vermelho|Azul|Verde|Amarelo|Laranja|Roxo|Rosa|Preto|Branco|Marrom)\b/i', $cleanLine)) {
-                        $pageContentHtml .= '<div class="my-3 p-3 bg-slate-50 border border-slate-200 rounded-lg text-slate-800 font-bold text-sm flex items-center gap-2 shadow-xs">' . e($cleanLine) . '</div>';
+                        $pageContentHtml .= '<p class="my-2 text-slate-900 font-bold text-sm">' . e($cleanLine) . '</p>';
                         continue;
                     }
 
                     if (preg_match('/^CARTA\s*\d+/i', $cleanLine)) {
-                        $pageContentHtml .= '<h4 class="font-outfit font-black text-slate-900 text-base mt-5 mb-2 pb-1 border-b border-slate-200 flex items-center gap-2">🃏 ' . e($cleanLine) . '</h4>';
+                        $pageContentHtml .= '<h4 class="font-outfit font-bold text-slate-900 text-base mt-4 mb-2 pb-1 border-b border-slate-200">' . e($cleanLine) . '</h4>';
                         continue;
                     }
 
@@ -183,13 +183,11 @@ class PdfToHtmlConverter
                         $inList = false;
                     }
 
-                    // Títulos principais (Banner azul no original)
+                    // Títulos principais sem fundo azul pesado
                     if (mb_strlen($cleanLine) < 90 && (preg_match('/Memória Estratégica|Versão Cores|Instruções|Modelo dos Cartões/i', $cleanLine) || (mb_strtoupper($cleanLine) === $cleanLine && preg_match('/[A-Z]/', $cleanLine)))) {
-                        $pageContentHtml .= '<div class="bg-gradient-to-r from-blue-600 to-sky-600 text-white font-outfit p-5 rounded-xl my-4 shadow-md text-center">';
-                        $pageContentHtml .= '<h3 class="font-black text-xl tracking-tight uppercase mb-1">' . e($cleanLine) . '</h3>';
-                        $pageContentHtml .= '</div>';
+                        $pageContentHtml .= '<h3 class="font-outfit font-black text-xl text-slate-900 my-4 pb-1 border-b border-slate-200 uppercase tracking-tight">' . e($cleanLine) . '</h3>';
                     } elseif (preg_match('/^(?:Objetivos|Materiais|Sessão|Capítulo|Introdução|Conclusão|Nível\s*\d+):/i', $cleanLine)) {
-                        $pageContentHtml .= '<h4 class="font-bold text-slate-800 text-base mt-4 mb-2 bg-blue-50/80 px-3 py-1.5 rounded border-l-4 border-blue-500">' . e($cleanLine) . '</h4>';
+                        $pageContentHtml .= '<h4 class="font-bold text-slate-800 text-base mt-4 mb-2 pb-1 border-b border-slate-200">' . e($cleanLine) . '</h4>';
                     } else {
                         $pageContentHtml .= '<p class="mb-3.5 leading-relaxed text-slate-900 font-serif text-base text-justify">' . e($cleanLine) . '</p>';
                     }
