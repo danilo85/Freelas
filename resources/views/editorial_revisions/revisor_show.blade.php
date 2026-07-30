@@ -185,10 +185,32 @@
                 replyMessageInput: '',
                 isSendingChat: false,
 
-                // LanguageTool Modal State
+                // LanguageTool Modal & Draggable State
                 openLanguageToolModal: false,
                 languageToolMatches: [],
                 loadingLanguageTool: false,
+                langToolPos: { x: window.innerWidth > 768 ? window.innerWidth - 420 : 10, y: 80 },
+                isDraggingLangTool: false,
+                dragOffset: { x: 0, y: 0 },
+
+                startLangToolDrag(e) {
+                    this.isDraggingLangTool = true;
+                    this.dragOffset.x = e.clientX - this.langToolPos.x;
+                    this.dragOffset.y = e.clientY - this.langToolPos.y;
+                    
+                    const onMove = (evt) => {
+                        if (!this.isDraggingLangTool) return;
+                        this.langToolPos.x = Math.max(10, Math.min(window.innerWidth - 390, evt.clientX - this.dragOffset.x));
+                        this.langToolPos.y = Math.max(10, Math.min(window.innerHeight - 120, evt.clientY - this.dragOffset.y));
+                    };
+                    const onUp = () => {
+                        this.isDraggingLangTool = false;
+                        window.removeEventListener('mousemove', onMove);
+                        window.removeEventListener('mouseup', onUp);
+                    };
+                    window.addEventListener('mousemove', onMove);
+                    window.addEventListener('mouseup', onUp);
+                },
 
                 // Track Changes state
                 originalContent: '',
@@ -893,6 +915,11 @@
         </div>
 
         <div class="flex items-center gap-2">
+            <a :href="'{{ url("/revisao-editorial/" . $revision->share_token . "/revisor/file") }}/' + selectedFileId + '/export-docx'" target="_blank" class="px-3.5 py-2 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-[5px] text-xs transition-all shadow-xs flex items-center gap-2" title="Baixar arquivo editado preservando todas as marcações em amarelo">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/></svg>
+                <span class="hidden sm:inline">Baixar Versão Editada</span>
+            </a>
+
             <button type="button" @click="copyAuthorLink('{{ route('public.editorial.show', $revision->share_token) }}')" class="w-9 h-9 bg-slate-900 hover:bg-slate-800 text-white font-bold rounded-[5px] transition-all flex items-center justify-center shadow-sm" title="Copiar Link do Autor">
                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1"/>
@@ -1009,6 +1036,10 @@
 
                         <template x-if="pdfEditMode">
                             <div class="flex items-center gap-2">
+                                <a :href="'{{ url("/revisao-editorial/" . $revision->share_token . "/revisor/file") }}/' + selectedFileId + '/export-docx'" target="_blank" class="px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded text-xs transition-all shadow-xs flex items-center gap-1.5" title="Baixar PDF editado preservando todas as marcações em amarelo">
+                                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/></svg>
+                                    <span>Baixar PDF Editado</span>
+                                </a>
                                 <button type="button" @click="persistWordContent()" class="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded text-xs transition-all shadow-xs flex items-center gap-1.5">
                                     <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4"/></svg>
                                     <span>Salvar Edição do PDF</span>
@@ -1270,16 +1301,22 @@
         </div>
     </div>
 
-    <!-- PAINEL FLUTUANTE LATERAL DE ANÁLISE ORTOGRÁFICA (LANGUAGETOOL) -->
-    <div x-show="openLanguageToolModal" x-cloak class="fixed top-20 right-80 z-[9999] w-96 max-h-[82vh] bg-white border border-purple-200 rounded-2xl shadow-2xl flex flex-col overflow-hidden select-none">
+    <!-- PAINEL FLUTUANTE LATERAL MÓVEL DE ANÁLISE ORTOGRÁFICA (LANGUAGETOOL) -->
+    <div x-show="openLanguageToolModal"
+         x-cloak
+         class="fixed z-[99999] w-96 max-h-[82vh] bg-white border border-purple-300 rounded-2xl shadow-2xl flex flex-col overflow-hidden select-none"
+         :style="'left: ' + langToolPos.x + 'px; top: ' + langToolPos.y + 'px;'">
         
-        <div class="p-3.5 border-b border-purple-200 bg-purple-900 text-white flex items-center justify-between shrink-0">
+        <div @mousedown="startLangToolDrag($event)" class="p-3.5 border-b border-purple-200 bg-purple-900 text-white flex items-center justify-between shrink-0 cursor-move" title="Clique e arraste para mover esta janela na tela">
             <div class="flex items-center gap-2.5">
                 <div class="w-8 h-8 rounded-full bg-purple-800 flex items-center justify-center font-bold text-xs">
                     🔍
                 </div>
                 <div>
-                    <h3 class="font-outfit font-black text-xs uppercase tracking-tight">Análise Ortográfica</h3>
+                    <h3 class="font-outfit font-black text-xs uppercase tracking-tight flex items-center gap-1.5">
+                        <span>Análise Ortográfica</span>
+                        <span class="text-[9px] bg-purple-800 text-purple-200 px-1.5 py-0.5 rounded font-mono">Arraste aqui ✋</span>
+                    </h3>
                     <p class="text-[10px] text-purple-200" x-text="loadingLanguageTool ? 'Analisando documento...' : languageToolMatches.length + ' sugestões encontradas'"></p>
                 </div>
             </div>
