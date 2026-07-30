@@ -110,6 +110,30 @@
             0% { background-color: #60a5fa; }
             100% { background-color: #fef08a; }
         }
+
+        /* CAPA DE SELEÇÃO E DESTAQUE DE TEXTO SOBRE O PDF ORIGINAL */
+        .pdf-text-layer-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            color: transparent;
+            line-height: 1;
+            pointer-events: auto;
+            user-select: text;
+            -webkit-user-select: text;
+        }
+        .pdf-text-layer-overlay span {
+            color: transparent;
+            position: absolute;
+            white-space: pre;
+            cursor: text;
+        }
+        .pdf-text-layer-overlay ::selection {
+            background-color: rgba(250, 204, 21, 0.6) !important;
+            color: transparent;
+        }
     </style>
 
     <script>
@@ -297,6 +321,7 @@
 
                     window._activePdfDoc.getPage(num).then(page => {
                         const canvas = document.getElementById('pdf-canvas');
+                        const textLayer = document.getElementById('pdf-text-layer');
                         if (!canvas) return;
                         const ctx = canvas.getContext('2d');
                         const viewport = page.getViewport({ scale: this.pdfScale });
@@ -304,8 +329,27 @@
                         canvas.height = viewport.height;
                         canvas.width = viewport.width;
 
+                        if (textLayer) {
+                            textLayer.style.height = viewport.height + 'px';
+                            textLayer.style.width = viewport.width + 'px';
+                            textLayer.innerHTML = '';
+                        }
+
                         page.render({ canvasContext: ctx, viewport: viewport }).promise.then(() => {
                             this.renderingPdf = false;
+
+                            if (textLayer && page.getTextContent) {
+                                page.getTextContent().then(textContent => {
+                                    if (pdfjsLib.renderTextLayer) {
+                                        pdfjsLib.renderTextLayer({
+                                            textContent: textContent,
+                                            container: textLayer,
+                                            viewport: viewport,
+                                            textDivs: []
+                                        });
+                                    }
+                                });
+                            }
                         });
                     });
                 },
@@ -895,13 +939,16 @@
                     </div>
                 </template>
 
-                <!-- CANVAS PDF.JS PLUGIN (PRIORIDADE PADRÃO) -->
+                <!-- CANVAS PDF.JS PLUGIN (PRIORIDADE PADRÃO - PRESERVA 100% LAYOUT, FONTES E IMAGENS ORIGINAIS) -->
                 <template x-if="currentFile && currentFile.file_type === 'pdf' && viewerMode === 'native' && !pdfEditMode">
-                    <div class="bg-white paper-shadow rounded border border-slate-200 p-4 relative max-w-4xl max-h-full overflow-auto flex flex-col items-center my-auto">
+                    <div class="bg-white paper-shadow rounded border border-slate-200 p-4 relative max-w-5xl max-h-full overflow-auto flex flex-col items-center my-auto">
                         <div x-show="renderingPdf" class="absolute inset-0 bg-white/80 flex items-center justify-center font-bold text-xs text-slate-500 z-10">
                             Renderizando PDF via Plugin PDF.js...
                         </div>
-                        <canvas id="pdf-canvas" class="max-w-full block mx-auto shadow-sm border border-slate-200"></canvas>
+                        <div class="relative inline-block">
+                            <canvas id="pdf-canvas" class="max-w-full block mx-auto shadow-sm border border-slate-200"></canvas>
+                            <div id="pdf-text-layer" class="pdf-text-layer-overlay"></div>
+                        </div>
                     </div>
                 </template>
 
