@@ -202,9 +202,15 @@
                 openLanguageToolModal: false,
                 languageToolMatches: [],
                 loadingLanguageTool: false,
+                langToolLevel: 'default',
                 langToolPos: { x: window.innerWidth > 768 ? window.innerWidth - 420 : 10, y: 80 },
                 isDraggingLangTool: false,
                 dragOffset: { x: 0, y: 0 },
+
+                ignoreLanguageToolMatch(match) {
+                    this.languageToolMatches = this.languageToolMatches.filter(m => m !== match);
+                    this.showToast('Sugestão ignorada.');
+                },
 
                 startLangToolDrag(e) {
                     this.isDraggingLangTool = true;
@@ -685,7 +691,10 @@
                     this.showToast('Link do Autor copiado com sucesso!');
                 },
 
-                checkLanguageTool() {
+                checkLanguageTool(customLevel = null) {
+                    if (customLevel) {
+                        this.langToolLevel = customLevel;
+                    }
                     const editor = this.$refs.wordEditor;
                     const text = editor ? editor.innerText : (this.revisedContent || this.originalContent);
                     
@@ -697,7 +706,7 @@
                     this.loadingLanguageTool = true;
                     this.openLanguageToolModal = true;
                     this.languageToolMatches = [];
-                    this.showToast('Analisando documento com LanguageTool...');
+                    this.showToast('Analisando documento (Nível: ' + (this.langToolLevel === 'picky' ? 'Exigente/Acadêmico' : 'Padrão') + ')...');
 
                     fetch('{{ route("public.editorial.revisor.languagetool", $revision->share_token) }}', {
                         method: 'POST',
@@ -705,7 +714,7 @@
                             'Content-Type': 'application/json',
                             'X-CSRF-TOKEN': '{{ csrf_token() }}'
                         },
-                        body: JSON.stringify({ text: text })
+                        body: JSON.stringify({ text: text, level: this.langToolLevel })
                     })
                     .then(res => res.json())
                     .then(data => {
