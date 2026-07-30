@@ -44,22 +44,33 @@ class EditorialPublicController extends Controller
     {
         $file = EditorialRevisionFile::findOrFail($fileId);
         $revision = $file->editorialRevision;
-        $disk = Storage::disk($revision->storage_disk);
 
-        if (!$disk->exists($file->file_path)) {
-            abort(404, 'Arquivo não encontrado no servidor.');
+        $disksToTry = array_unique([$revision->storage_disk, 'public', 'local']);
+
+        foreach ($disksToTry as $diskName) {
+            if (!$diskName) continue;
+            try {
+                $disk = Storage::disk($diskName);
+                if ($disk->exists($file->file_path)) {
+                    $filePath = $disk->path($file->file_path);
+                    if (file_exists($filePath)) {
+                        return response()->file($filePath, [
+                            'Content-Disposition' => 'inline; filename="' . $file->filename . '"',
+                        ]);
+                    }
+                }
+            } catch (\Throwable $e) {}
         }
 
-        try {
-            $filePath = $disk->path($file->file_path);
-            if (file_exists($filePath)) {
-                return response()->file($filePath, [
-                    'Content-Disposition' => 'inline; filename="' . $file->filename . '"',
-                ]);
-            }
-        } catch (\Throwable $e) {}
+        // Checagem direta de caminho no storage
+        $directPath = storage_path('app/public/' . $file->file_path);
+        if (file_exists($directPath)) {
+            return response()->file($directPath, [
+                'Content-Disposition' => 'inline; filename="' . $file->filename . '"',
+            ]);
+        }
 
-        return $disk->download($file->file_path, $file->filename);
+        abort(404, 'Arquivo não encontrado no servidor.');
     }
 
     /**

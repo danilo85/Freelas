@@ -112,8 +112,8 @@ class EditorialRevisionController extends Controller
             $revisorId = $newRevisor->id;
         }
 
-        // Escolha de disco de armazenamento
-        $userChoice = $request->get('storage_disk', 'google');
+        // Escolha de disco de armazenamento (padrão 'public' no servidor local para máxima velocidade e renderização 100% confiável)
+        $userChoice = $request->get('storage_disk', 'public');
         $hasGoogle = !empty(env('GOOGLE_DRIVE_REFRESH_TOKEN'));
         $disk = ($userChoice === 'google' && $hasGoogle) ? 'google' : 'public';
 
