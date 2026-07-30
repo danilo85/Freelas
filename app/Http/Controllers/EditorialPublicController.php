@@ -162,10 +162,13 @@ class EditorialPublicController extends Controller
             return response()->json(['matches' => []]);
         }
 
+        $level = $request->input('level', 'default');
+
         try {
             $response = Http::asForm()->post('https://api.languagetool.org/v2/check', [
                 'text' => $plainText,
                 'language' => 'pt-BR',
+                'level' => in_array($level, ['default', 'picky']) ? $level : 'default',
             ]);
 
             if ($response->successful()) {

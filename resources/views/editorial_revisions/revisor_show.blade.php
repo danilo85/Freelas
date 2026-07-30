@@ -1341,10 +1341,6 @@
                 </template>
 
                 <template x-if="duvidasList.length === 0">
-                    <div class="text-center text-slate-400 py-16 text-xs font-medium space-y-2">
-                        <div class="w-12 h-12 rounded-full bg-slate-200 flex items-center justify-center mx-auto text-xl text-slate-400">
-                            💬
-                        </div>
                         <p class="font-bold text-slate-600">Nenhuma dúvida no momento</p>
                         <p class="text-[11px] text-slate-400 max-w-xs mx-auto">Altere a categoria de um apontamento para "Dúvida" para abrir um tópico de conversa com o Autor!</p>
                     </div>
@@ -1368,12 +1364,31 @@
                 <div>
                     <h3 class="font-outfit font-black text-xs uppercase tracking-tight flex items-center gap-1.5">
                         <span>Análise Ortográfica</span>
-                        <span class="text-[9px] bg-purple-800 text-purple-200 px-1.5 py-0.5 rounded font-mono">Arraste aqui ✋</span>
+                        <span class="text-[9px] bg-purple-800 text-purple-200 px-1.5 py-0.5 rounded font-mono">Arraste ✋</span>
                     </h3>
                     <p class="text-[10px] text-purple-200" x-text="loadingLanguageTool ? 'Analisando documento...' : languageToolMatches.length + ' sugestões encontradas'"></p>
                 </div>
             </div>
             <button type="button" @click="openLanguageToolModal = false" class="w-7 h-7 rounded-full bg-purple-800 hover:bg-purple-700 text-purple-200 hover:text-white flex items-center justify-center font-bold text-xs">✕</button>
+        </div>
+
+        <!-- Seletor de Nível de Análise (Padrão vs Acadêmico/Exigente) -->
+        <div class="px-3.5 py-2 bg-purple-950 border-b border-purple-800 flex items-center justify-between text-[11px] text-purple-200 shrink-0">
+            <span class="font-bold uppercase tracking-wider text-[9px] text-purple-300">Nível de Análise:</span>
+            <div class="flex items-center gap-1 bg-purple-900 p-0.5 rounded">
+                <button type="button" 
+                        @click="checkLanguageTool('default')" 
+                        class="px-2.5 py-0.5 rounded font-bold" 
+                        :class="langToolLevel === 'default' ? 'bg-purple-600 text-white' : 'text-purple-300 hover:text-white'">
+                    Padrão
+                </button>
+                <button type="button" 
+                        @click="checkLanguageTool('picky')" 
+                        class="px-2.5 py-0.5 rounded font-bold" 
+                        :class="langToolLevel === 'picky' ? 'bg-purple-600 text-white' : 'text-purple-300 hover:text-white'">
+                    Acadêmico / Estilo (Exigente)
+                </button>
+            </div>
         </div>
 
         <div class="p-3.5 flex-1 overflow-y-auto space-y-3 bg-purple-50/40">
@@ -1391,20 +1406,28 @@
                 <div class="py-10 text-center text-emerald-700 font-medium text-xs space-y-2 bg-emerald-50 rounded-xl border border-emerald-200 p-4">
                     <div class="w-10 h-10 rounded-full bg-emerald-200 text-emerald-800 flex items-center justify-center mx-auto text-lg font-bold">✓</div>
                     <p class="font-bold text-sm text-emerald-900">Nenhum erro ortográfico detectado!</p>
-                    <p class="text-xs text-emerald-700">Seu texto está de acordo com as regras de ortografia em Português.</p>
+                    <p class="text-xs text-emerald-700">Seu texto está de acordo com as regras de ortografia em Português neste nível.</p>
                 </div>
             </template>
 
             <template x-for="(match, idx) in languageToolMatches" :key="idx">
                 <div @click="highlightAndScrollToMatch(match)" 
-                     class="bg-white border border-purple-200 hover:border-purple-500 rounded-xl p-3.5 shadow-xs space-y-2 text-xs cursor-pointer hover:bg-purple-50/60 transition-all group">
+                     class="bg-white border border-purple-200 hover:border-purple-400 rounded-xl p-3.5 shadow-xs space-y-2 text-xs cursor-pointer">
                     
                     <div class="flex items-center justify-between border-b border-purple-100 pb-1.5">
                         <span class="font-black text-purple-900 uppercase text-[9px] bg-purple-100 px-2 py-0.5 rounded-full" x-text="match.rule ? match.rule.category.name : 'Ortografia'"></span>
-                        <span class="text-[10px] text-purple-600 group-hover:text-purple-800 font-bold flex items-center gap-1">
-                            <span>Ir para o texto</span>
-                            <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3"/></svg>
-                        </span>
+                        <div class="flex items-center gap-2">
+                            <span class="text-[10px] text-purple-600 font-bold flex items-center gap-1">
+                                <span>Ir para o texto</span>
+                                <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3"/></svg>
+                            </span>
+                            <button type="button" 
+                                    @click.stop="ignoreLanguageToolMatch(match)" 
+                                    class="px-2 py-0.5 bg-slate-100 hover:bg-slate-200 text-slate-600 font-bold rounded text-[10px] border border-slate-300 cursor-pointer"
+                                    title="Ignorar esta sugestão">
+                                🚫 Ignorar
+                            </button>
+                        </div>
                     </div>
 
                     <p class="text-slate-800 font-medium text-xs leading-relaxed" x-text="match.message"></p>
@@ -1418,11 +1441,11 @@
 
                     <template x-if="match.replacements && match.replacements.length > 0">
                         <div class="pt-1 flex items-center gap-1.5 flex-wrap">
-                            <span class="text-[9px] font-bold text-slate-400 uppercase w-full block mb-0.5">Sugestões de Correção (Clique para aplicar):</span>
+                            <span class="text-[9px] font-bold text-slate-400 uppercase w-full block mb-0.5">Sugestões de Correção:</span>
                             <template x-for="(rep, rIdx) in match.replacements.slice(0, 4)" :key="rIdx">
                                 <button type="button" 
                                         @click.stop="applyLanguageToolCorrection(match, rep.value)" 
-                                        class="px-2.5 py-1 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-md text-xs border border-emerald-500 shadow-xs transition-all transform hover:scale-105 flex items-center gap-1 cursor-pointer"
+                                        class="px-2.5 py-1 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-md text-xs border border-emerald-500 shadow-xs flex items-center gap-1 cursor-pointer"
                                         title="Clique para aplicar esta correção no texto e salvar no banco">
                                     <span>✓</span>
                                     <span x-text="rep.value"></span>
