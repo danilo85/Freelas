@@ -265,10 +265,17 @@ Route::middleware(['auth', 'approved'])->prefix('freelas')->group(function () {
 // Callback do Google Drive (compatível com redirecionamento de/para a raiz ou com prefixo)
 Route::middleware(['auth'])->get('/google-drive/callback', [\App\Http\Controllers\GoogleDriveController::class, 'callback']);
 
-// Rota pública para a Revisão Editorial (Portal do Autor)
+// Rota pública para a Revisão Editorial (Portal do Autor e Portal do Revisor)
 Route::prefix('revisao-editorial/{token}')->name('public.editorial.')->group(function () {
+    // Portal do Autor
     Route::get('/', [\App\Http\Controllers\EditorialPublicController::class, 'show'])->name('show');
     Route::post('/correction/{correctionId}/reply', [\App\Http\Controllers\EditorialPublicController::class, 'replyCorrection'])->name('reply');
+
+    // Portal do Revisor (Workspace dedicado do Revisor com leitor de arquivo e LanguageTool)
+    Route::get('/revisor', [\App\Http\Controllers\EditorialPublicController::class, 'revisorShow'])->name('revisor.show');
+    Route::post('/revisor/corrections', [\App\Http\Controllers\EditorialPublicController::class, 'storeCorrectionPublic'])->name('revisor.corrections.store');
+    Route::post('/revisor/glossary', [\App\Http\Controllers\EditorialPublicController::class, 'storeGlossaryPublic'])->name('revisor.glossary.store');
+    Route::post('/revisor/languagetool', [\App\Http\Controllers\EditorialPublicController::class, 'checkLanguageTool'])->name('revisor.languagetool');
 });
 
 // Rotas públicas de orçamentos (propostas) para aprovação e rejeição pelo cliente final

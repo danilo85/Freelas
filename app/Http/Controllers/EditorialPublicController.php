@@ -5,12 +5,37 @@ namespace App\Http\Controllers;
 use App\Models\EditorialRevision;
 use App\Models\EditorialRevisionCorrection;
 use App\Models\EditorialRevisionComment;
+use App\Models\EditorialRevisionFile;
+use App\Models\EditorialRevisionGlossary;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Storage;
 
 class EditorialPublicController extends Controller
 {
     /**
-     * Tela pública do Autor para visualizar o projeto de revisão, dúvidas e observações.
+     * Portal do Revisor (Acesso via Token Público do Revisor).
+     * O Revisor trabalha nesta página dedicada para ler/renderizar os arquivos,
+     * extrair textos, rodar a verificação ortográfica (LanguageTool), baixar originais,
+     * criar apontamentos por categorias e gerar o link do Autor.
+     */
+    public function revisorShow(string $token)
+    {
+        $revision = EditorialRevision::where('share_token', $token)
+            ->with(['files', 'corrections.comments', 'glossaries', 'revisor'])
+            ->firstOrFail();
+
+        // Extrai texto de amostra dos arquivos Word/PDF para renderização rápida no editor
+        $extractedTexts = [];
+        foreach ($revision->files as $file) {
+            $extractedTexts[$file->id] = $this->extractTextFromFile($file, $revision->storage_disk);
+        }
+
+        return view('editorial_revisions.revisor_show', compact('revision', 'extractedTexts'));
+    }
+
+    /**
+     * Portal do Autor (Visualização e Resposta às Dúvidas do Revisor).
      */
     public function show(string $token)
     {
@@ -18,10 +43,83 @@ class EditorialPublicController extends Controller
             ->with(['files', 'corrections.comments', 'glossaries'])
             ->firstOrFail();
 
-        // Se o autor abrir a página e houver status 'em_revisao', atualiza se houver dúvidas
         $duvidasCount = $revision->corrections->where('category', 'duvida')->count();
 
         return view('editorial_revisions.public_show', compact('revision', 'duvidasCount'));
+    }
+
+    /**
+     * Chama a API REST do LanguageTool para sugestões de ortografia e gramática.
+     */
+    public function checkLanguageTool(Request $request)
+    {
+        $request->validate([
+            'text' => 'required|string|max:20000',
+        ]);
+
+        try {
+            $response = Http::asForm()->post('https://api.languagetool.org/v2/check', [
+                'text' => $request->text,
+                'language' => 'pt-BR',
+            ]);
+
+            if ($response->successful()) {
+                return response()->json($response->json());
+            }
+        } catch (\Throwable $e) {}
+
+        return response()->json(['matches' => []]);
+    }
+
+    /**
+     * Permite ao Revisor criar correções diretamente pelo Portal do Revisor.
+     */
+    public function storeCorrectionPublic(Request $request, string $token)
+    {
+        $revision = EditorialRevision::where('share_token', $token)->firstOrFail();
+
+        $request->validate([
+            'category' => 'required|string',
+            'original_text' => 'nullable|string',
+            'suggested_text' => 'nullable|string',
+            'justification' => 'nullable|string',
+        ]);
+
+        EditorialRevisionCorrection::create([
+            'editorial_revision_id' => $revision->id,
+            'editorial_revision_file_id' => $request->editorial_revision_file_id,
+            'page_number' => $request->page_number,
+            'original_text' => $request->original_text,
+            'suggested_text' => $request->suggested_text,
+            'justification' => $request->justification,
+            'category' => $request->category,
+            'priority' => $request->get('priority', 'media'),
+            'status' => 'pendente',
+            'source' => 'revisor',
+        ]);
+
+        return back()->with('success', 'Apontamento registrado com sucesso no projeto!');
+    }
+
+    /**
+     * Permite ao Revisor adicionar termos ao glossário diretamente pelo portal.
+     */
+    public function storeGlossaryPublic(Request $request, string $token)
+    {
+        $revision = EditorialRevision::where('share_token', $token)->firstOrFail();
+
+        $request->validate([
+            'correct_term' => 'required|string|max:255',
+        ]);
+
+        EditorialRevisionGlossary::create([
+            'editorial_revision_id' => $revision->id,
+            'correct_term' => $request->correct_term,
+            'incorrect_terms' => $request->incorrect_terms,
+            'description' => $request->description,
+        ]);
+
+        return back()->with('success', 'Termo adicionado ao Glossário do projeto!');
     }
 
     /**
@@ -42,7 +140,7 @@ class EditorialPublicController extends Controller
 
         EditorialRevisionComment::create([
             'editorial_revision_correction_id' => $correction->id,
-            'user_id' => null,
+            'user_id' => auth()->id(),
             'author_name' => $name,
             'message' => $request->message,
         ]);
@@ -52,5 +150,32 @@ class EditorialPublicController extends Controller
         ]);
 
         return back()->with('success', 'Sua resposta foi enviada ao revisor com sucesso!');
+    }
+
+    /**
+     * Método auxiliar nativo em PHP para extrair texto legível de arquivos Word (.docx) ou PDF.
+     */
+    protected function extractTextFromFile(EditorialRevisionFile $file, string $disk)
+    {
+        try {
+            $filePath = Storage::disk($disk)->path($file->file_path);
+            
+            // Se o arquivo for .docx, lê o XML interno do arquivo ZIP
+            if ($file->file_type === 'word' && file_exists($filePath)) {
+                $zip = new \ZipArchive();
+                if ($zip->open($filePath) === true) {
+                    if (($index = $zip->locateName('word/document.xml')) !== false) {
+                        $data = $zip->getFromIndex($index);
+                        $zip->close();
+                        $xml = new \DOMDocument();
+                        @$xml->loadXML($data, LIBXML_NOENT | LIBXML_XINCLUDE | LIBXML_NOERROR | LIBXML_NOWARNING);
+                        return strip_tags($xml->saveXML());
+                    }
+                    $zip->close();
+                }
+            }
+        } catch (\Throwable $e) {}
+
+        return 'Conteúdo disponível para download em formato original.';
     }
 }

@@ -49,6 +49,12 @@
 
             <!-- Botões de Ação Principal -->
             <div class="flex items-center gap-2 flex-wrap">
+                <a href="{{ route('public.editorial.revisor.show', $editorialRevision->share_token) }}" 
+                   target="_blank"
+                   class="px-4 py-2.5 bg-purple-600 hover:bg-purple-700 text-white text-xs font-bold rounded-[5px] transition-colors shadow-xs flex items-center gap-1.5 cursor-pointer uppercase tracking-wider">
+                    <span>🔍</span> Abrir Workspace do Revisor
+                </a>
+
                 <button type="button" 
                         @click="copyShareLink('{{ route('public.editorial.show', $editorialRevision->share_token) }}')" 
                         class="px-4 py-2.5 bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold rounded-[5px] transition-colors shadow-xs flex items-center gap-1.5 cursor-pointer uppercase tracking-wider">
