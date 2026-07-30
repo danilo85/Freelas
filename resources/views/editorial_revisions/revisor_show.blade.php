@@ -94,12 +94,12 @@
             box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
         }
         /* MARCAÇÃO AMARELA PERMANENTE NAS LINHAS ALTERADAS */
-        .word-paper-content .edited-line, mark.edited-line {
+        .word-paper-content .edited-line, mark.edited-line, [style*="fef08a"] {
             background-color: #fef08a !important;
             color: #713f12 !important;
             padding: 2px 6px;
             border-radius: 4px;
-            border-left: 4px solid #facc15;
+            border-left: 4px solid #facc15 !important;
             transition: all 0.2s ease;
         }
         .pulse-highlight-target {
@@ -115,6 +115,7 @@
     <script>
         function revisorWorkspace() {
             const filesData = @json($revision->files);
+            const initialTexts = @json($extractedTexts);
             const shareToken = '{{ $revision->share_token }}';
             const streamBaseUrl = '{{ url("/revisao-editorial/" . $revision->share_token . "/file") }}';
 
@@ -199,6 +200,18 @@
                     const file = this.currentFile;
                     if (file && file.file_type === 'word') {
                         this.loadingWord = true;
+                        
+                        // Inicializa imediatamente com o texto pré-carregado se existir
+                        if (initialTexts && initialTexts[this.selectedFileId]) {
+                            const preText = initialTexts[this.selectedFileId];
+                            this.originalContent = preText;
+                            this.revisedContent = preText;
+                            this.$nextTick(() => {
+                                const editor = this.$refs.wordEditor;
+                                if (editor) editor.innerHTML = preText;
+                            });
+                        }
+
                         const url = streamBaseUrl + '/' + this.selectedFileId + '/text-content';
 
                         fetch(url)
@@ -347,17 +360,18 @@
                     }, 1000);
                 },
 
-                // APLICA CATEGORIA, MARCA EM AMARELO E PERSISTE O HTML NO BANCO DE DADOS IMEDIATAMENTE
+                // APLICA CATEGORIA, DESTACA EM AMARELO COM ESTILO INLINE E SALVA NO BANCO DE DADOS
                 selectCategory(cat) {
                     this.showCategoryMenu = false;
 
                     if (this.pendingEditedNode) {
                         this.pendingEditedNode.classList.add('edited-line');
+                        this.pendingEditedNode.setAttribute('style', 'background-color: #fef08a !important; color: #713f12 !important; border-left: 4px solid #facc15 !important; padding: 4px 8px; border-radius: 4px; margin-bottom: 8px;');
                     }
 
                     this.syncEditorContent();
                     
-                    // 1. Salva o HTML com as marcações amarelas no banco de dados de forma síncrona
+                    // 1. Salva o HTML editado com a marcação amarela síncrona no banco
                     this.persistWordContent();
 
                     // 2. Salva o apontamento na Coluna 1
@@ -378,7 +392,7 @@
                     })
                     .then(res => res.json())
                     .then(data => {
-                        this.showToast('Marcado em amarelo e salvo permanentemente!');
+                        this.showToast('Salvo em amarelo e adicionado em ' + cat.toUpperCase() + '!');
                         if (data.correction) {
                             data.correction.comments = data.correction.comments || [];
                             this.correctionsList.unshift(data.correction);
@@ -392,7 +406,7 @@
                     if (!editor || !cor.original_text) return;
 
                     const searchText = cor.original_text.toLowerCase().trim();
-                    const allElements = editor.querySelectorAll('.edited-line, p, div, li, mark');
+                    const allElements = editor.querySelectorAll('.edited-line, p, div, li, mark, [style*="fef08a"]');
 
                     let foundElement = null;
                     for (let el of allElements) {
@@ -403,7 +417,7 @@
                     }
 
                     if (!foundElement) {
-                        foundElement = editor.querySelector('.edited-line');
+                        foundElement = editor.querySelector('.edited-line, [style*="fef08a"]');
                     }
 
                     if (foundElement) {
@@ -413,12 +427,10 @@
                             foundElement.classList.remove('pulse-highlight-target');
                         }, 2000);
                         this.showToast('Rolou até a marcação no documento!');
-                    } else {
-                        this.showToast('Trecho correspondente no documento.');
                     }
                 },
 
-                // SALVA O CONTEÚDO HTML DO WORD COM TODAS AS MARCAÇÕES AMARELAS PERMANENTES
+                // SALVA O CONTEÚDO HTML DO WORD NO BANCO DE DADOS
                 persistWordContent() {
                     const editor = this.$refs.wordEditor;
                     if (!editor || !this.selectedFileId) return;
@@ -435,9 +447,10 @@
                         },
                         body: JSON.stringify({ revised_content: contentToSave })
                     })
-                    .then(() => {
+                    .then(res => res.json())
+                    .then(data => {
                         this.savingText = false;
-                        this.showToast('Documento e marcações salvas!');
+                        this.showToast('Alterações e marcações salvas no banco!');
                     })
                     .catch(() => {
                         this.savingText = false;
@@ -460,8 +473,9 @@
                     if (sel && sel.anchorNode) {
                         let node = sel.anchorNode.nodeType === 3 ? sel.anchorNode.parentNode : sel.anchorNode;
                         while (node && node !== this.$refs.wordEditor) {
-                            if (node.classList.contains('edited-line')) {
+                            if (node.classList.contains('edited-line') || node.hasAttribute('style')) {
                                 node.classList.remove('edited-line');
+                                node.removeAttribute('style');
                             }
                             node = node.parentNode;
                         }
@@ -824,7 +838,11 @@
                         </div>
 
                         <div class="flex items-center gap-2">
-                            <span class="text-[10px] text-slate-400 font-bold" x-text="savingText ? 'Salvando...' : 'Salvo no banco de dados'"></span>
+                            <button type="button" @click="persistWordContent()" class="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded text-xs transition-all shadow-xs flex items-center gap-1.5">
+                                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4"/></svg>
+                                <span>Salvar Agora</span>
+                            </button>
+                            <span class="text-[10px] text-slate-400 font-bold" x-text="savingText ? 'Salvando...' : 'Salvo no banco'"></span>
                         </div>
                     </div>
                 </template>
