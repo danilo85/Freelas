@@ -93,8 +93,8 @@
             border-radius: 4px;
             box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
         }
-        /* MARCAÇÃO AMARELA AUTOMÁTICA NAS LINHAS ALTERADAS */
-        .word-paper-content .edited-line {
+        /* MARCAÇÃO AMARELA PERMANENTE NAS LINHAS ALTERADAS */
+        .word-paper-content .edited-line, mark.edited-line {
             background-color: #fef08a !important;
             color: #713f12 !important;
             padding: 2px 6px;
@@ -110,7 +110,6 @@
             const shareToken = '{{ $revision->share_token }}';
             const streamBaseUrl = '{{ url("/revisao-editorial/" . $revision->share_token . "/file") }}';
 
-            // Restaura o último arquivo selecionado se existir no localStorage
             const savedFileId = localStorage.getItem('revisor_file_' + shareToken);
             const initialFileId = (savedFileId && filesData.some(f => f.id == savedFileId)) ? savedFileId : (filesData.length > 0 ? filesData[0].id : null);
 
@@ -126,6 +125,16 @@
                 selectedFileId: initialFileId,
                 correctionsList: @json($revision->corrections),
                 
+                // POPUP DE CATEGORIZAÇÃO AO EDITAR/SELECIONAR
+                showCategoryMenu: false,
+                categoryMenuPos: { x: 0, y: 0 },
+                pendingEditedNode: null,
+                pendingSelectedText: '',
+
+                // MENU DE BOTÃO DIREITO DO MOUSE (CONTEXT MENU)
+                showContextMenu: false,
+                contextMenuPos: { x: 0, y: 0 },
+
                 // State Chat de Dúvidas
                 activeDuvidaId: null,
                 replyMessageInput: '',
@@ -156,6 +165,16 @@
                         localStorage.setItem('revisor_file_' + shareToken, id);
                         this.loadContentForSelectedFile();
                         this.handleFileChange(id);
+                    });
+
+                    // Oculta menus ao clicar fora
+                    document.addEventListener('click', (e) => {
+                        if (!e.target.closest('#category-popover-menu')) {
+                            this.showCategoryMenu = false;
+                        }
+                        if (!e.target.closest('#custom-context-menu')) {
+                            this.showContextMenu = false;
+                        }
                     });
                 },
 
@@ -189,7 +208,6 @@
                                         editor.innerHTML = text;
                                     }
 
-                                    // Restaura a posição exata do scroll do documento onde o revisor parou
                                     const savedScroll = localStorage.getItem('revisor_scroll_' + shareToken + '_' + this.selectedFileId);
                                     const container = this.$refs.documentViewport;
                                     if (savedScroll && container) {
@@ -203,7 +221,6 @@
                     }
                 },
 
-                // GRAVA A POSIÇÃO DO SCROLL EM TEMPO REAL PARA RESTAURAR APÓS O RELOAD
                 handleViewportScroll(event) {
                     if (!this.selectedFileId) return;
                     localStorage.setItem('revisor_scroll_' + shareToken + '_' + this.selectedFileId, event.target.scrollTop);
@@ -282,6 +299,7 @@
                 execCmd(command, value = null) {
                     document.execCommand(command, false, value);
                     this.syncEditorContent();
+                    this.persistWordContent();
                 },
 
                 syncEditorContent() {
@@ -291,7 +309,7 @@
                     }
                 },
 
-                // DIGITAÇÃO E SALVAMENTO AUTOMÁTICO EM TEMPO REAL NO BANCO DE DADOS
+                // PEQUENO MENU FLUTUANTE AO EDITAR/SELECIONAR
                 handleEditorInput(event) {
                     this.syncEditorContent();
 
@@ -299,27 +317,76 @@
                     if (sel && sel.anchorNode) {
                         let node = sel.anchorNode.nodeType === 3 ? sel.anchorNode.parentNode : sel.anchorNode;
                         
-                        while (node && node !== this.$refs.wordEditor && !['P', 'DIV', 'LI', 'H1', 'H2', 'H3'].includes(node.nodeName)) {
+                        while (node && node !== this.$refs.wordEditor && !['P', 'DIV', 'LI', 'H1', 'H2', 'H3', 'MARK'].includes(node.nodeName)) {
                             node = node.parentNode;
                         }
 
                         if (node && node !== this.$refs.wordEditor) {
-                            node.classList.add('edited-line');
+                            this.pendingEditedNode = node;
+                            this.pendingSelectedText = sel.toString().trim() || node.textContent.trim().substring(0, 60);
+
+                            // Exibe o pequeno menu de categorização próximo ao cursor
+                            if (event.clientX && event.clientY) {
+                                this.categoryMenuPos = { x: Math.min(event.clientX, window.innerWidth - 300), y: Math.max(event.clientY - 50, 80) };
+                            } else {
+                                const rect = node.getBoundingClientRect();
+                                this.categoryMenuPos = { x: Math.min(rect.left, window.innerWidth - 300), y: Math.max(rect.top - 45, 80) };
+                            }
+                            this.showCategoryMenu = true;
                         }
                     }
 
-                    // SALVAMENTO AUTOMÁTICO EM SEGUNDO PLANO
+                    // Salva alterações no banco em segundo plano de forma contínua
                     clearTimeout(this.typingTimer);
                     this.typingTimer = setTimeout(() => {
-                        this.autoSaveAndRegisterCorrection();
+                        this.persistWordContent();
                     }, 1000);
                 },
 
-                // SALVA O ARQUIVO WORD E CRIA O APONTAMENTO SILENCIOSAMENTE NO BANCO
-                autoSaveAndRegisterCorrection(cat = 'ortografia') {
-                    const editor = this.$refs.wordEditor;
-                    const contentToSave = editor ? editor.innerHTML : this.revisedContent;
+                // APLICA A CATEGORIA ESCOLHIDA NO MENU FLUTUANTE, MARCA EM AMARELO E CRIA O APONTAMENTO
+                selectCategory(cat) {
+                    this.showCategoryMenu = false;
 
+                    if (this.pendingEditedNode) {
+                        this.pendingEditedNode.classList.add('edited-line');
+                    }
+
+                    this.syncEditorContent();
+                    this.persistWordContent();
+
+                    // Cria o apontamento na Coluna 1
+                    fetch('{{ route("public.editorial.revisor.corrections.store", $revision->share_token) }}', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'Accept': 'application/json',
+                            'X-CSRF-TOKEN': '{{ csrf_token() }}'
+                        },
+                        body: JSON.stringify({
+                            editorial_revision_file_id: this.selectedFileId,
+                            category: cat,
+                            original_text: this.pendingSelectedText || 'Edição no documento',
+                            suggested_text: 'Texto atualizado',
+                            justification: 'Alteração categorizada como ' + cat.toUpperCase()
+                        })
+                    })
+                    .then(res => res.json())
+                    .then(data => {
+                        this.showToast('Marcado em amarelo e adicionado à categoria ' + cat.toUpperCase() + '!');
+                        if (data.correction) {
+                            data.correction.comments = data.correction.comments || [];
+                            this.correctionsList.unshift(data.correction);
+                        }
+                    });
+                },
+
+                // SALVA O CONTEÚDO HTML DO WORD COM TODAS AS MARCAÇÕES AMARELAS PERMANENTES
+                persistWordContent() {
+                    const editor = this.$refs.wordEditor;
+                    if (!editor || !this.selectedFileId) return;
+
+                    const contentToSave = editor.innerHTML;
+                    this.revisedContent = contentToSave;
                     this.savingText = true;
 
                     fetch('{{ url("/revisao-editorial/" . $revision->share_token . "/revisor/file") }}/' + this.selectedFileId + '/content', {
@@ -332,16 +399,39 @@
                     })
                     .then(() => {
                         this.savingText = false;
-                        this.showToast('Documento salvo automaticamente!');
+                        this.showToast('Documento salvo no banco de dados!');
                     })
                     .catch(() => {
                         this.savingText = false;
                     });
                 },
 
-                changeCorrectionCategory(cor, newCategory) {
-                    cor.category = newCategory;
-                    this.showToast('Categoria alterada para ' + newCategory.toUpperCase() + '!');
+                // MENU DE BOTÃO DIREITO DO MOUSE (CONTEXT MENU)
+                openContextMenu(event) {
+                    event.preventDefault();
+                    this.contextMenuPos = { 
+                        x: Math.min(event.clientX, window.innerWidth - 220), 
+                        y: Math.min(event.clientY, window.innerHeight - 280) 
+                    };
+                    this.showContextMenu = true;
+                },
+
+                // DESFAZ A MARCAÇÃO AMARELA DA LINHA OU SELEÇÃO
+                removeHighlight() {
+                    this.showContextMenu = false;
+                    const sel = window.getSelection();
+                    if (sel && sel.anchorNode) {
+                        let node = sel.anchorNode.nodeType === 3 ? sel.anchorNode.parentNode : sel.anchorNode;
+                        while (node && node !== this.$refs.wordEditor) {
+                            if (node.classList.contains('edited-line')) {
+                                node.classList.remove('edited-line');
+                            }
+                            node = node.parentNode;
+                        }
+                    }
+                    this.syncEditorContent();
+                    this.persistWordContent();
+                    this.showToast('Marcação amarela removida!');
                 },
 
                 sendDuvidaMessage(correction) {
@@ -377,7 +467,7 @@
                 },
 
                 saveEditedText() {
-                    this.autoSaveAndRegisterCorrection();
+                    this.persistWordContent();
                 },
 
                 submitRevisorLogin() {
@@ -495,6 +585,59 @@
         <button type="button" @click="toastMessage = ''" class="text-slate-400 hover:text-white ml-2">✕</button>
     </div>
 
+    <!-- PEQUENO MENU FLUTUANTE DE CATEGORIZAÇÃO AO EDITAR/SELECIONAR (POPUP) -->
+    <div id="category-popover-menu"
+         x-show="showCategoryMenu"
+         x-cloak
+         class="fixed z-[99999] bg-slate-900 text-white p-1.5 rounded-lg shadow-2xl flex items-center gap-1 border border-slate-700 text-xs font-bold transition-all"
+         :style="'left: ' + categoryMenuPos.x + 'px; top: ' + categoryMenuPos.y + 'px;'">
+        
+        <span class="text-[10px] text-slate-400 uppercase tracking-wider px-2 border-r border-slate-700">Categorizar:</span>
+        <button type="button" @click="selectCategory('ortografia')" class="px-2.5 py-1 bg-rose-600 hover:bg-rose-700 rounded text-[11px]">Ortografia</button>
+        <button type="button" @click="selectCategory('gramatica')" class="px-2.5 py-1 bg-amber-600 hover:bg-amber-700 rounded text-[11px]">Gramática</button>
+        <button type="button" @click="selectCategory('duvida')" class="px-2.5 py-1 bg-emerald-600 hover:bg-emerald-700 rounded text-[11px]">Dúvida (Chat)</button>
+        <button type="button" @click="selectCategory('padronizacao')" class="px-2.5 py-1 bg-purple-600 hover:bg-purple-700 rounded text-[11px]">Padronização</button>
+        <button type="button" @click="showCategoryMenu = false" class="px-1.5 py-1 text-slate-400 hover:text-white">✕</button>
+    </div>
+
+    <!-- MENU DE BOTÃO DIREITO DO MOUSE (CUSTOM CONTEXT MENU) -->
+    <div id="custom-context-menu"
+         x-show="showContextMenu"
+         x-cloak
+         class="fixed z-[99999] bg-white border border-slate-200 text-slate-800 rounded-lg shadow-2xl py-1.5 w-52 text-xs font-medium"
+         :style="'left: ' + contextMenuPos.x + 'px; top: ' + contextMenuPos.y + 'px;'">
+        
+        <button type="button" @click="execCmd('undo'); showContextMenu = false" class="w-full px-4 py-2 hover:bg-slate-100 text-left flex items-center justify-between">
+            <span>↩️ Desfazer</span>
+            <span class="text-[10px] text-slate-400">Ctrl+Z</span>
+        </button>
+
+        <button type="button" @click="execCmd('redo'); showContextMenu = false" class="w-full px-4 py-2 hover:bg-slate-100 text-left flex items-center justify-between">
+            <span>↪️ Refazer</span>
+            <span class="text-[10px] text-slate-400">Ctrl+Y</span>
+        </button>
+
+        <div class="h-px bg-slate-200 my-1"></div>
+
+        <button type="button" @click="execCmd('bold'); showContextMenu = false" class="w-full px-4 py-2 hover:bg-slate-100 text-left font-black">
+            B Negrito
+        </button>
+
+        <button type="button" @click="execCmd('italic'); showContextMenu = false" class="w-full px-4 py-2 hover:bg-slate-100 text-left italic">
+            I Itálico
+        </button>
+
+        <button type="button" @click="execCmd('underline'); showContextMenu = false" class="w-full px-4 py-2 hover:bg-slate-100 text-left underline">
+            U Sublinhado
+        </button>
+
+        <div class="h-px bg-slate-200 my-1"></div>
+
+        <button type="button" @click="removeHighlight()" class="w-full px-4 py-2 hover:bg-amber-50 text-amber-800 text-left font-bold flex items-center gap-2">
+            <span>⚡ Remove Marcação Amarela</span>
+        </button>
+    </div>
+
     <!-- HEADER SUPERIOR DE REVISÃO EDITORIAL -->
     <header class="h-16 border-b border-slate-200 glassmorphism px-6 flex items-center justify-between z-30 shrink-0 select-none">
         <div class="flex items-center gap-3">
@@ -537,7 +680,7 @@
     <!-- CORPO PRINCIPAL DE 3 COLUNAS COM ALTURA FLUIDA 100% -->
     <main class="flex-1 flex overflow-hidden min-h-0">
 
-        <!-- COLUNA 1 (ESQUERDA - 320px): LISTA DE APONTAMENTOS E CATEGORIZAÇÃO -->
+        <!-- COLUNA 1 (ESQUERDA - 320px): LISTA DE APONTAMENTOS SEM SELECT NOS CARDS -->
         <aside class="w-80 border-r border-slate-200 bg-white flex flex-col justify-between shrink-0 h-full overflow-hidden z-20">
             
             <!-- Informação do Arquivo Selecionado -->
@@ -557,17 +700,18 @@
                 <button @click="categoryFilter = 'duvida'" class="flex-1 py-2.5 text-center border-b-2 text-[10px]" :class="categoryFilter === 'duvida' ? 'border-emerald-600 text-emerald-600 bg-emerald-50' : 'border-transparent text-slate-400'">Dúvidas</button>
             </div>
 
-            <!-- Feed de Apontamentos Automáticos em Tempo Real -->
+            <!-- Feed de Apontamentos Automáticos sem Selects Indesejados -->
             <div class="flex-1 overflow-y-auto p-4 space-y-3">
                 <template x-for="cor in correctionsList" :key="cor.id">
                     <div x-show="categoryFilter === 'todas' || categoryFilter === cor.category" class="p-3.5 bg-amber-50/60 border border-amber-200 rounded-[5px] text-xs space-y-2">
                         <div class="flex items-center justify-between">
-                            <select :value="cor.category" @change="changeCorrectionCategory(cor, $event.target.value)" class="text-[9px] font-black uppercase px-1.5 py-0.5 rounded-[3px] bg-white border border-amber-300 text-amber-950 cursor-pointer">
-                                <option value="ortografia">Ortografia</option>
-                                <option value="gramatica">Gramática</option>
-                                <option value="duvida">Dúvida (Chat)</option>
-                                <option value="padronizacao">Padronização</option>
-                            </select>
+                            <span class="text-[9px] font-black uppercase px-2 py-0.5 rounded text-white"
+                                  :class="{
+                                      'bg-rose-600': cor.category === 'ortografia',
+                                      'bg-amber-600': cor.category === 'gramatica',
+                                      'bg-emerald-600': cor.category === 'duvida',
+                                      'bg-purple-600': cor.category === 'padronizacao'
+                                  }" x-text="cor.category"></span>
                             <span class="text-[10px] text-slate-400 font-bold">Apontamento</span>
                         </div>
 
@@ -585,14 +729,14 @@
 
                 <template x-if="correctionsList.length === 0">
                     <div class="text-center text-slate-400 py-12 font-semibold text-xs border border-dashed border-slate-200 rounded-[5px]">
-                        Nenhum apontamento marcado. Altere o texto no Word para destacar em amarelo e salvar automaticamente!
+                        Nenhum apontamento marcado. Altere o texto no Word para destacar em amarelo e categorizar!
                     </div>
                 </template>
             </div>
 
         </aside>
 
-        <!-- COLUNA 2 (CENTRO - FLEX-1): VIEWPORT DO DOCUMENTO (COM MEMÓRIA DE SCROLL E RESTAURAÇÃO) -->
+        <!-- COLUNA 2 (CENTRO - FLEX-1): VIEWPORT DO DOCUMENTO (COM MENU CONTEXTUAL DE BOTÃO DIREITO) -->
         <section class="flex-1 bg-slate-200/70 flex flex-col min-w-0 relative overflow-hidden h-full">
             
             <!-- Barra Secundária Superior do Visualizador / Editor de Texto -->
@@ -646,16 +790,17 @@
                         </div>
 
                         <div class="flex items-center gap-2">
-                            <span class="text-[10px] text-slate-400 font-bold" x-text="savingText ? 'Salvando...' : 'Salvo automaticamente'"></span>
+                            <span class="text-[10px] text-slate-400 font-bold" x-text="savingText ? 'Salvando...' : 'Salvo no banco de dados'"></span>
                         </div>
                     </div>
                 </template>
 
             </div>
 
-            <!-- CANVAS PRINCIPAL COM EVENTO DE SCROLL QUE GRAVA A POSIÇÃO DA LEITURA -->
+            <!-- CANVAS PRINCIPAL (COM MENU DE BOTÃO DIREITO HABILITADO VIA @contextmenu.prevent) -->
             <div x-ref="documentViewport"
                  @scroll="handleViewportScroll($event)"
+                 @contextmenu.prevent="openContextMenu($event)"
                  class="flex-1 overflow-auto flex items-start justify-center p-8 relative bg-slate-200/60">
                 
                 <!-- INDICADOR DE CARREGAMENTO DO WORD -->
@@ -684,7 +829,7 @@
                     </div>
                 </template>
 
-                <!-- FORMATO DE PÁGINA CORRIDA DO WORD COM DIGITAÇÃO E SALVAMENTO AUTOMÁTICO EM TEMPO REAL -->
+                <!-- FORMATO DE PÁGINA CORRIDA DO WORD COM DIGITAÇÃO E SALVAMENTO EM TEMPO REAL -->
                 <template x-if="currentFile && currentFile.file_type === 'word'">
                     <div class="w-full flex flex-col items-center">
                         
