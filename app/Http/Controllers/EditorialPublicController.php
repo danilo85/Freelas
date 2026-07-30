@@ -98,21 +98,6 @@ class EditorialPublicController extends Controller
     }
 
     /**
-     * Download direto do arquivo bruto.
-     */
-    public function downloadFile(int $fileId)
-    {
-        $file = EditorialRevisionFile::findOrFail($fileId);
-        $revision = $file->editorialRevision;
-
-        if (!Storage::disk($revision->storage_disk)->exists($file->file_path)) {
-            abort(404, 'Arquivo não encontrado para download.');
-        }
-
-        return Storage::disk($revision->storage_disk)->download($file->file_path, $file->filename);
-    }
-
-    /**
      * Login rápido do Revisor no portal público com e-mail e senha fornecidos.
      */
     public function revisorLogin(Request $request, string $token)
