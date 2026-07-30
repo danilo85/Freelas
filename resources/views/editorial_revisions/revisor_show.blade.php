@@ -45,6 +45,7 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.min.js"></script>
     <script>
         pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.worker.min.js';
+        window._activePdfDoc = null;
     </script>
 
     <style>
@@ -79,7 +80,7 @@
         }
         /* MARCAÇÃO AMARELA AUTOMÁTICA NAS LINHAS ALTERADAS */
         .word-paper-content .edited-line {
-            background-color: #fef08a !important; /* Amarelo suave */
+            background-color: #fef08a !important;
             color: #713f12 !important;
             padding: 2px 6px;
             border-radius: 4px;
@@ -99,8 +100,8 @@
                 rightSidebarOpen: false,
                 openUploadVersionModal: false,
                 categoryFilter: 'todas',
-                viewMode: 'track', // 'track', 'original', 'final'
-                viewerMode: 'iframe', // 'iframe' como padrão para PDFs (renderização 100% fiel)
+                viewMode: 'track',
+                viewerMode: 'iframe', // 'iframe' como padrão para PDFs (renderiza 100% de layout, cores e orientação)
                 toastMessage: '',
                 selectedFileId: filesData.length > 0 ? filesData[0].id : null,
                 correctionsList: @json($revision->corrections),
@@ -118,7 +119,6 @@
                 loginError: '',
 
                 // PDF.js State
-                pdfDoc: null,
                 currentPage: 1,
                 totalPages: 1,
                 pdfScale: 1.2,
@@ -138,7 +138,8 @@
                 },
 
                 loadContentForSelectedFile() {
-                    const text = textsData[this.selectedFileId] || '';
+                    if (!this.selectedFileId) return;
+                    const text = textsData[this.selectedFileId] || textsData[String(this.selectedFileId)] || '';
                     this.originalContent = text;
                     this.revisedContent = text;
 
@@ -165,6 +166,7 @@
                     }
                 },
 
+                // PDF.JS SEM ERROS DE PROXY (UTILIZA INSTÂNCIA BRUTA WINDOW._ACTIVEPDFDOC)
                 loadPdfDocument() {
                     if (!this.currentFile) return;
                     const url = this.getFileStreamUrl(this.currentFile.id);
@@ -174,7 +176,7 @@
                         .then(res => res.arrayBuffer())
                         .then(buffer => pdfjsLib.getDocument({ data: buffer }).promise)
                         .then(pdf => {
-                            this.pdfDoc = pdf;
+                            window._activePdfDoc = pdf;
                             this.totalPages = pdf.numPages;
                             this.currentPage = 1;
                             this.renderPdfPage(1);
@@ -185,10 +187,10 @@
                 },
 
                 renderPdfPage(num) {
-                    if (!this.pdfDoc) return;
+                    if (!window._activePdfDoc) return;
                     this.renderingPdf = true;
 
-                    this.pdfDoc.getPage(num).then(page => {
+                    window._activePdfDoc.getPage(num).then(page => {
                         const canvas = document.getElementById('pdf-canvas');
                         if (!canvas) return;
                         const ctx = canvas.getContext('2d');
@@ -487,19 +489,18 @@
             <!-- Barra Secundária Superior do Visualizador / Editor de Texto -->
             <div class="h-12 border-b border-slate-200 bg-white px-4 flex items-center justify-between shrink-0 z-10 shadow-xs">
                 
-                <!-- Ferramentas para PDF com Seletor de Modo (Leitor Nativo vs Plugin PDF.js Canvas) -->
+                <!-- Ferramentas para PDF -->
                 <template x-if="currentFile && currentFile.file_type === 'pdf'">
                     <div class="flex items-center gap-3 text-xs font-bold text-slate-600">
                         <div class="flex items-center gap-1 bg-slate-100 p-1 rounded-[5px]">
                             <button type="button" @click="viewerMode = 'iframe'" class="px-3 py-1 rounded-[3px]" :class="viewerMode === 'iframe' ? 'bg-white text-slate-900 shadow-xs' : 'text-slate-500'">
-                                🖥️ Leitor Nativo Navegador
+                                🖥️ Leitor Nativo Navegador (Preserva 100% de Layout e Cores)
                             </button>
                             <button type="button" @click="viewerMode = 'native'; loadPdfDocument()" class="px-3 py-1 rounded-[3px]" :class="viewerMode === 'native' ? 'bg-white text-slate-900 shadow-xs' : 'text-slate-500'">
                                 📄 Plugin PDF.js Canvas
                             </button>
                         </div>
 
-                        <!-- Controles de Navegação para o Plugin PDF.js Canvas -->
                         <template x-if="viewerMode === 'native'">
                             <div class="flex items-center gap-2 pl-3 border-l border-slate-200">
                                 <button type="button" @click="prevPage()" class="px-2 py-1 bg-slate-100 hover:bg-slate-200 rounded-[3px]">◀</button>
@@ -546,7 +547,7 @@
                     </div>
                 </template>
 
-                <!-- CANVAS PDF.JS PLUGIN -->
+                <!-- CANVAS PDF.JS PLUGIN (SEM ERROS DE PROXY DE CLASSE) -->
                 <template x-if="currentFile && currentFile.file_type === 'pdf' && viewerMode === 'native'">
                     <div class="bg-white paper-shadow rounded border border-slate-200 p-4 relative max-w-4xl max-h-full overflow-auto flex flex-col items-center my-auto">
                         <div x-show="renderingPdf" class="absolute inset-0 bg-white/80 flex items-center justify-center font-bold text-xs text-slate-500 z-10">
@@ -563,7 +564,7 @@
                         <div class="word-page-a4 paper-shadow border border-slate-300 text-slate-900 rounded-[2px] transition-all select-text relative"
                              id="word-paper-container">
 
-                            <!-- Conteúdo Editável do Word -->
+                            <!-- Conteúdo Editável do Word com Injeção Segura e $refs -->
                             <div x-ref="wordEditor"
                                  contenteditable="true"
                                  class="word-paper-content focus:outline-none min-h-[250mm]"
