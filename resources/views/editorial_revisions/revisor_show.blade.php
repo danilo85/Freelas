@@ -1,10 +1,10 @@
 <!DOCTYPE html>
-<html lang="pt-BR" class="h-full bg-slate-50">
+<html lang="pt-BR" class="h-full bg-slate-900">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="csrf-token" content="{{ csrf_token() }}">
-    <title>Workspace do Revisor - {{ $revision->title }}</title>
+    <title>Workspace de Revisão Editorial | {{ $revision->title }}</title>
     <link rel="icon" type="image/png" href="{{ asset('storage/freela/freela-03.png') }}">
 
     <!-- Google Fonts -->
@@ -48,6 +48,8 @@
 
     <style>
         [x-cloak] { display: none !important; }
+        .track-added { background-color: #d1fae5; color: #065f46; font-weight: bold; text-decoration: none; padding: 0 4px; border-radius: 3px; }
+        .track-removed { background-color: #ffe4e6; color: #9f1239; text-decoration: line-through; padding: 0 4px; border-radius: 3px; }
     </style>
 
     <script>
@@ -60,11 +62,18 @@
                 openCorrectionModal: false,
                 openUploadVersionModal: false,
                 categoryFilter: 'todas',
+                viewMode: 'track', // 'track', 'original', 'final'
                 viewerMode: 'native', // 'native' ou 'google'
                 toastMessage: '',
                 selectedFileId: filesData.length > 0 ? filesData[0].id : null,
                 languageToolMatches: [],
                 
+                // Track Changes state
+                originalContent: '',
+                revisedContent: '',
+                isEditingText: false,
+                savingText: false,
+
                 // Auth State
                 isAuth: @json($isAuthenticated),
                 loginEmail: '',
@@ -86,7 +95,10 @@
                 modalPageNumber: 1,
 
                 init() {
+                    this.loadContentForSelectedFile();
+
                     this.$watch('selectedFileId', (id) => {
+                        this.loadContentForSelectedFile();
                         this.handleFileChange(id);
                     });
 
@@ -101,8 +113,10 @@
                     return filesData.find(f => f.id == this.selectedFileId) || null;
                 },
 
-                get extractedText() {
-                    return textsData[this.selectedFileId] || 'Conteúdo disponível para leitura e download no formato original.';
+                loadContentForSelectedFile() {
+                    const text = textsData[this.selectedFileId] || '';
+                    this.originalContent = text;
+                    this.revisedContent = text;
                 },
 
                 getFileStreamUrl(id) {
@@ -182,6 +196,29 @@
                     this.renderPdfPage(this.currentPage);
                 },
 
+                saveEditedText() {
+                    if (!this.currentFile) return;
+                    this.savingText = true;
+
+                    fetch('{{ url("/revisao-editorial/" . $revision->share_token . "/revisor/file") }}/' + this.currentFile.id + '/content', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'X-CSRF-TOKEN': '{{ csrf_token() }}'
+                        },
+                        body: JSON.stringify({ revised_content: this.revisedContent })
+                    })
+                    .then(res => res.json())
+                    .then(data => {
+                        this.savingText = false;
+                        this.showToast('Alterações do texto salvas com sucesso!');
+                    })
+                    .catch(() => {
+                        this.savingText = false;
+                        this.showToast('Erro ao salvar alterações no servidor.');
+                    });
+                },
+
                 submitRevisorLogin() {
                     if (!this.loginEmail || !this.loginPassword) {
                         this.loginError = 'Por favor, preencha e-mail e senha.';
@@ -229,7 +266,7 @@
                 },
 
                 checkLanguageTool() {
-                    const text = this.extractedText;
+                    const text = this.revisedContent || this.originalContent;
                     if (!text || text.length < 5) {
                         this.showToast('Não há texto suficiente extraído para análise ortográfica.');
                         return;
@@ -256,43 +293,44 @@
                 },
 
                 applyLanguageToolMatch(match) {
-                    const orig = this.extractedText.substring(match.offset, match.offset + match.length);
+                    const text = this.revisedContent;
+                    const orig = text.substring(match.offset, match.offset + match.length);
                     const replacement = (match.replacements && match.replacements.length > 0) ? match.replacements[0].value : '';
-                    
+
                     this.modalCategory = 'ortografia';
                     this.modalOriginalText = orig;
                     this.modalSuggestedText = replacement;
-                    this.modalJustification = 'Sugestão automática do LanguageTool: ' + match.message;
+                    this.modalJustification = 'Sugestão do LanguageTool: ' + match.message;
                     this.openCorrectionModal = true;
                 }
             }
         }
     </script>
 </head>
-<body class="font-sans antialiased bg-slate-50 text-slate-800 min-h-full flex flex-col justify-between" x-data="revisorWorkspace()">
+<body class="font-sans antialiased bg-slate-900 text-slate-100 min-h-full flex flex-col justify-between" x-data="revisorWorkspace()">
 
-    <!-- Modal de Autenticação / Login do Revisor (Se não estiver logado) -->
-    <div x-show="!isAuth" x-cloak class="fixed inset-0 z-[999999] flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-sm select-none">
-        <div class="bg-white border border-slate-200 text-slate-800 rounded-xl p-8 shadow-2xl max-w-md w-full space-y-6">
+    <!-- Modal de Autenticação / Login do Revisor -->
+    <div x-show="!isAuth" x-cloak class="fixed inset-0 z-[999999] flex items-center justify-center p-4 bg-slate-950/90 backdrop-blur-sm select-none">
+        <div class="bg-slate-800 border border-slate-700 text-slate-100 rounded-xl p-8 shadow-2xl max-w-md w-full space-y-6">
             <div class="text-center space-y-2">
                 <span class="text-4xl block">🔐</span>
-                <h3 class="font-outfit font-black text-xl uppercase tracking-tight text-slate-900">Acesso Restrito ao Revisor</h3>
-                <p class="text-xs text-slate-500 font-medium">Digite os seus dados de acesso para desbloquear o Workspace do projeto <strong class="text-slate-700">{{ $revision->title }}</strong>.</p>
+                <h3 class="font-outfit font-black text-xl uppercase tracking-tight text-white">Acesso Restrito ao Revisor</h3>
+                <p class="text-xs text-slate-400 font-medium">Digite os seus dados de acesso para desbloquear o Workspace do projeto <strong class="text-slate-200">{{ $revision->title }}</strong>.</p>
             </div>
 
             <template x-if="loginError">
-                <div class="bg-rose-50 border border-rose-200 text-rose-700 p-3 rounded-[5px] text-xs font-bold" x-text="loginError"></div>
+                <div class="bg-rose-900/50 border border-rose-700 text-rose-200 p-3 rounded-[5px] text-xs font-bold" x-text="loginError"></div>
             </template>
 
             <form @submit.prevent="submitRevisorLogin" class="space-y-4 text-xs">
                 <div>
-                    <label class="font-bold block mb-1 uppercase tracking-wider text-slate-500">E-mail do Revisor</label>
-                    <input type="email" x-model="loginEmail" required placeholder="revisora@exemplo.com" class="w-full px-4 py-3 border rounded-[5px] bg-slate-50 font-medium text-sm">
+                    <label class="font-bold block mb-1 uppercase tracking-wider text-slate-400">E-mail do Revisor</label>
+                    <input type="email" x-model="loginEmail" required placeholder="revisora@exemplo.com" class="w-full px-4 py-3 border border-slate-700 rounded-[5px] bg-slate-900 text-white font-medium text-sm">
                 </div>
 
                 <div>
-                    <label class="font-bold block mb-1 uppercase tracking-wider text-slate-500">Senha de Acesso</label>
-                    <input type="password" x-model="loginPassword" required placeholder="••••••••" class="w-full px-4 py-3 border rounded-[5px] bg-slate-50 font-medium text-sm">
+                    <label class="font-bold block mb-1 uppercase tracking-wider text-slate-400">Senha de Acesso</label>
+                    <input type="password" x-model="loginPassword" required placeholder="••••••••" class="w-full px-4 py-3 border border-slate-700 rounded-[5px] bg-slate-900 text-white font-medium text-sm">
                 </div>
 
                 <button type="submit" class="w-full py-3.5 bg-primary-600 hover:bg-primary-700 text-white font-bold text-xs uppercase tracking-wider rounded-[5px] shadow-md transition-all">
@@ -306,36 +344,19 @@
     <div x-show="toastMessage" 
          x-cloak 
          x-transition
-         class="fixed bottom-24 right-6 z-[99999] bg-slate-900 text-white px-5 py-3.5 rounded-[5px] shadow-2xl flex items-center gap-3 text-xs font-bold border border-slate-700">
+         class="fixed bottom-24 right-6 z-[99999] bg-emerald-600 text-white px-5 py-3.5 rounded-[5px] shadow-2xl flex items-center gap-3 text-xs font-bold border border-emerald-500">
         <span class="text-lg">✨</span>
         <span x-text="toastMessage"></span>
-        <button type="button" @click="toastMessage = ''" class="text-slate-400 hover:text-white ml-2">✕</button>
+        <button type="button" @click="toastMessage = ''" class="text-emerald-200 hover:text-white ml-2">✕</button>
     </div>
 
-    <!-- Botões Flutuantes (Canto Inferior Direito) -->
-    <div class="fixed bottom-6 right-6 z-40 flex flex-col items-end gap-3" x-show="isAuth">
-        <button type="button" 
-                @click="checkLanguageTool()" 
-                class="bg-purple-600 hover:bg-purple-700 text-white font-bold text-xs uppercase tracking-wider px-4 py-3 rounded-full shadow-lg hover:shadow-xl transition-all flex items-center gap-2 cursor-pointer transform hover:scale-105 border-2 border-white">
-            <span class="text-base">🔍</span>
-            <span>Verificar Ortografia (LanguageTool)</span>
-        </button>
-
-        <button type="button" 
-                @click="openCorrectionModal = true" 
-                class="bg-emerald-600 hover:bg-emerald-700 text-white font-black text-xs uppercase tracking-wider px-5 py-3.5 rounded-full shadow-xl hover:shadow-2xl transition-all flex items-center gap-2.5 cursor-pointer transform hover:scale-105 border-2 border-white">
-            <span class="text-lg leading-none">➕</span>
-            <span>Novo Apontamento</span>
-        </button>
-    </div>
-
-    <!-- Topo / Cabeçalho do Workspace -->
-    <header class="bg-white border-b border-slate-200 shadow-xs py-4 px-6 sticky top-0 z-50">
+    <!-- Topo Escuro Moderno (Igual ao Portal do Autor de Revisão) -->
+    <header class="bg-slate-950 border-b border-slate-800 shadow-md py-4 px-6 sticky top-0 z-50">
         <div class="max-w-7xl mx-auto flex flex-col md:flex-row md:items-center justify-between gap-4">
             <div class="flex items-center gap-3">
                 <span class="text-2xl">✍️</span>
                 <div>
-                    <h1 class="text-base font-black font-outfit uppercase tracking-tight text-slate-900">Workspace de Revisão Editorial</h1>
+                    <h1 class="text-base font-black font-outfit uppercase tracking-tight text-white">Workspace de Revisão Editorial</h1>
                     <p class="text-[11px] text-slate-400 font-medium">{{ $revision->title }}</p>
                 </div>
             </div>
@@ -343,14 +364,14 @@
             <div class="flex items-center gap-3 flex-wrap">
                 <button type="button" 
                         @click="openUploadVersionModal = true" 
-                        class="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold rounded-[5px] transition-colors border border-slate-200 flex items-center gap-1.5 cursor-pointer uppercase tracking-wider">
+                        class="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-bold rounded-[5px] transition-colors border border-slate-700 flex items-center gap-1.5 cursor-pointer uppercase tracking-wider">
                     <span>📤</span> Salvar Nova Versão
                 </button>
 
                 <button type="button" 
                         @click="copyAuthorLink('{{ route('public.editorial.show', $revision->share_token) }}')" 
-                        class="px-4 py-2 bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold rounded-[5px] transition-colors shadow-xs flex items-center gap-1.5 cursor-pointer uppercase tracking-wider">
-                    <span>🔗</span> Link do Autor
+                        class="px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white text-xs font-bold rounded-[5px] transition-colors shadow-xs flex items-center gap-1.5 cursor-pointer uppercase tracking-wider">
+                    <span>🔗</span> Link para o Autor
                 </button>
 
                 <button type="button" 
@@ -365,133 +386,115 @@
     <!-- Conteúdo Principal do Revisor -->
     <main class="max-w-7xl mx-auto px-4 py-8 w-full flex-1 space-y-6">
 
-        @if(session('success'))
-            <div class="bg-emerald-50 border border-emerald-200 text-emerald-800 p-4 rounded-[5px] text-xs font-bold shadow-xs">
-                ✅ {{ session('success') }}
-            </div>
-        @endif
-
-        <!-- Grid Principal: Leitor e Renderizador (Esquerda) vs Apontamentos (Direita) -->
+        <!-- Grid Principal: Leitor/Editor Interativo (Esquerda) vs Apontamentos (Direita) -->
         <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
 
-            <!-- Coluna Esquerda: Leitor (PDF.js / Extração Word / Google Docs Viewer / Imagem) -->
+            <!-- Coluna Esquerda: Editor de Texto com Track Changes / PDF / Imagem (7 Colunas) -->
             <div class="lg:col-span-7 space-y-4">
                 
-                <!-- Barra do Leitor: Seletor de Arquivos e Modos de Visualização -->
-                <div class="bg-white border border-slate-200 rounded-[5px] p-4 shadow-sm space-y-3">
+                <!-- Barra de Ferramentas de Edição e Alternador de Visão (Track Changes) -->
+                <div class="bg-slate-800 border border-slate-700 rounded-[5px] p-4 shadow-sm space-y-3">
                     <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                         <div class="space-y-1 flex-1">
                             <span class="text-[9px] font-bold text-slate-400 uppercase tracking-wider block">Arquivo Selecionado</span>
-                            <select x-model="selectedFileId" class="w-full px-3 py-2 border border-slate-200 rounded-[5px] text-xs font-bold bg-slate-50 text-slate-800 focus:outline-none">
+                            <select x-model="selectedFileId" class="w-full px-3 py-2 border border-slate-700 rounded-[5px] text-xs font-bold bg-slate-900 text-white focus:outline-none">
                                 @foreach($revision->files as $file)
                                     <option value="{{ $file->id }}">{{ $file->filename }} ({{ strtoupper($file->file_type) }} - v{{ $file->version }})</option>
                                 @endforeach
                             </select>
                         </div>
 
-                        <!-- Alternador de Modo de Leitor (Interno vs Google Docs Viewer) -->
-                        <div class="flex items-center gap-1 shrink-0 bg-slate-100 p-1 rounded-[5px] text-xs font-bold">
-                            <button type="button" @click="viewerMode = 'native'" class="px-3 py-1.5 rounded-[5px] transition-all" :class="viewerMode === 'native' ? 'bg-white shadow-xs text-slate-900' : 'text-slate-500 hover:text-slate-800'">
-                                👁️ Leitor Interno
+                        <!-- Alternador Leitor Interno vs Google Docs Viewer -->
+                        <div class="flex items-center gap-1 shrink-0 bg-slate-900 p-1 rounded-[5px] text-xs font-bold border border-slate-700">
+                            <button type="button" @click="viewerMode = 'native'" class="px-3 py-1.5 rounded-[5px] transition-all" :class="viewerMode === 'native' ? 'bg-primary-600 text-white' : 'text-slate-400 hover:text-white'">
+                                👁️ Editor Interno
                             </button>
-                            <button type="button" @click="viewerMode = 'google'" class="px-3 py-1.5 rounded-[5px] transition-all" :class="viewerMode === 'google' ? 'bg-white shadow-xs text-slate-900' : 'text-slate-500 hover:text-slate-800'">
+                            <button type="button" @click="viewerMode = 'google'" class="px-3 py-1.5 rounded-[5px] transition-all" :class="viewerMode === 'google' ? 'bg-primary-600 text-white' : 'text-slate-400 hover:text-white'">
                                 🌐 Google Docs Viewer
                             </button>
                         </div>
-
-                        <!-- Botão de Download do Arquivo Original -->
-                        <template x-if="currentFile">
-                            <a :href="getFileDownloadUrl(currentFile.id)" target="_blank" class="px-3.5 py-2.5 bg-slate-900 hover:bg-slate-800 text-white font-bold text-xs rounded-[5px] transition-colors flex items-center gap-1.5 shrink-0 uppercase tracking-wider shadow-xs">
-                                <span>⬇️ Baixar</span>
-                            </a>
-                        </template>
                     </div>
 
-                    <!-- Controles Específicos para PDF (Navegação por Página & Zoom) -->
-                    <template x-if="viewerMode === 'native' && currentFile && currentFile.file_type === 'pdf'">
-                        <div class="flex items-center justify-between pt-2 border-t border-slate-100 text-xs font-bold text-slate-600">
-                            <div class="flex items-center gap-2">
-                                <button type="button" @click="prevPage()" class="px-3 py-1 bg-slate-100 rounded-[5px] hover:bg-slate-200">◀ Anterior</button>
-                                <span>Página <span x-text="currentPage"></span> de <span x-text="totalPages"></span></span>
-                                <button type="button" @click="nextPage()" class="px-3 py-1 bg-slate-100 rounded-[5px] hover:bg-slate-200">Próxima ▶</button>
-                            </div>
+                    <!-- Ferramentas do Track Changes (Modos Antes / Alterações / Depois) -->
+                    <template x-if="viewerMode === 'native' && currentFile && currentFile.file_type === 'word'">
+                        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pt-3 border-t border-slate-700 text-xs font-bold">
                             <div class="flex items-center gap-1">
-                                <button type="button" @click="zoomPdf(-0.2)" class="px-2.5 py-1 bg-slate-100 rounded-[5px] hover:bg-slate-200">🔍-</button>
-                                <button type="button" @click="zoomPdf(0.2)" class="px-2.5 py-1 bg-slate-100 rounded-[5px] hover:bg-slate-200">🔍+</button>
+                                <button type="button" @click="viewMode = 'track'" class="px-2.5 py-1 rounded-[5px]" :class="viewMode === 'track' ? 'bg-emerald-600 text-white' : 'bg-slate-900 text-slate-400 hover:text-white'">✨ Edição com Marcas</button>
+                                <button type="button" @click="viewMode = 'original'" class="px-2.5 py-1 rounded-[5px]" :class="viewMode === 'original' ? 'bg-rose-600 text-white' : 'bg-slate-900 text-slate-400 hover:text-white'">🔴 Versão Antiga</button>
+                                <button type="button" @click="viewMode = 'final'" class="px-2.5 py-1 rounded-[5px]" :class="viewMode === 'final' ? 'bg-blue-600 text-white' : 'bg-slate-900 text-slate-400 hover:text-white'">🟢 Versão Atualizada</button>
                             </div>
+
+                            <button type="button" @click="saveEditedText()" class="px-3.5 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-[5px] uppercase tracking-wider transition-all shadow-sm flex items-center gap-1.5">
+                                <span>💾</span> <span x-text="savingText ? 'Salvando...' : 'Salvar Alterações'">Salvar Alterações</span>
+                            </button>
                         </div>
                     </template>
                 </div>
 
-                <!-- MODO 1: Google Docs Viewer Embed (Online para Word, PDF, Excel) -->
-                <template x-if="viewerMode === 'google' && currentFile">
-                    <div class="bg-white border border-slate-200 rounded-[5px] p-2 shadow-sm min-h-[650px] flex flex-col space-y-2">
-                        <div class="flex items-center justify-between px-3 py-1.5 text-xs font-bold text-slate-500 border-b border-slate-100">
-                            <span>🌐 Google Docs Viewer Online</span>
-                            <a :href="getGoogleDocsViewerUrl(currentFile.id)" target="_blank" class="text-primary-600 hover:underline">Abrir em nova guia ↗</a>
+                <!-- EDITOR INTERATIVO DO REVISOR (Para Word / Text) -->
+                <template x-if="viewerMode === 'native' && currentFile && currentFile.file_type === 'word'">
+                    <div class="bg-slate-800 border border-slate-700 rounded-[5px] p-6 shadow-sm space-y-4 min-h-[550px]">
+                        <div class="flex items-center justify-between border-b border-slate-700 pb-3">
+                            <h3 class="font-outfit font-black text-xs uppercase tracking-wider text-slate-400">Editor de Texto Directo (Track Changes)</h3>
+                            <button type="button" @click="checkLanguageTool()" class="text-xs font-bold text-purple-400 hover:text-purple-300 flex items-center gap-1">
+                                🔍 LanguageTool Spellcheck
+                            </button>
                         </div>
-                        <iframe :src="getGoogleDocsViewerUrl(currentFile.id)" class="w-full h-[600px] rounded border border-slate-150" frameborder="0"></iframe>
+
+                        <!-- Modo 1: Edição Direta com Controle de Alterações -->
+                        <div x-show="viewMode === 'track'" class="space-y-3">
+                            <textarea x-model="revisedContent" rows="16" class="w-full bg-slate-900 text-slate-100 font-serif text-sm p-5 border border-slate-700 rounded-[5px] leading-relaxed focus:outline-none focus:border-primary-500 select-text" @mouseup="captureSelectedText"></textarea>
+                            <p class="text-[11px] text-slate-400 italic">💡 Altere o texto diretamente na caixa acima. As palavras adicionadas ou corrigidas serão destacadas no projeto.</p>
+                        </div>
+
+                        <!-- Modo 2: Visualização de Versão Antiga (Original) -->
+                        <div x-show="viewMode === 'original'" class="p-5 bg-rose-950/40 border border-rose-900/60 rounded-[5px] text-xs font-serif leading-relaxed text-rose-200 max-h-[500px] overflow-y-auto whitespace-pre-wrap">
+                            <span x-text="originalContent"></span>
+                        </div>
+
+                        <!-- Modo 3: Visualização da Versão Final Atualizada -->
+                        <div x-show="viewMode === 'final'" class="p-5 bg-emerald-950/40 border border-emerald-900/60 rounded-[5px] text-xs font-serif leading-relaxed text-emerald-200 max-h-[500px] overflow-y-auto whitespace-pre-wrap">
+                            <span x-text="revisedContent"></span>
+                        </div>
                     </div>
                 </template>
 
-                <!-- MODO 2: Leitor Interno (PDF.js / Word Extracted / Imagem) -->
-                <template x-if="viewerMode === 'native'">
-                    <div class="space-y-4">
-                        <!-- Canvas de Renderização para PDFs -->
-                        <template x-if="currentFile && currentFile.file_type === 'pdf'">
-                            <div class="bg-white border border-slate-200 rounded-[5px] p-4 shadow-sm flex flex-col items-center justify-center min-h-[600px] overflow-auto relative">
-                                <div x-show="renderingPdf" class="absolute inset-0 bg-white/80 flex items-center justify-center font-bold text-xs text-slate-500 z-10">
-                                    Renderizando página do PDF...
-                                </div>
-                                <canvas id="pdf-canvas" class="max-w-full shadow-md rounded border border-slate-200"></canvas>
-                                
-                                <div class="w-full pt-4 border-t border-slate-100 text-center">
-                                    <a :href="getFileStreamUrl(currentFile.id)" target="_blank" class="text-xs text-primary-600 font-bold hover:underline">
-                                        🔗 Abrir PDF completo via Stream em nova aba
-                                    </a>
-                                </div>
-                            </div>
-                        </template>
-
-                        <!-- Leitor de Texto formatado para Documentos Word (.docx) -->
-                        <template x-if="currentFile && currentFile.file_type === 'word'">
-                            <div class="bg-white border border-slate-200 rounded-[5px] p-6 shadow-sm space-y-4 min-h-[500px]">
-                                <div class="flex items-center justify-between border-b border-slate-100 pb-3">
-                                    <h3 class="font-outfit font-black text-xs uppercase tracking-wider text-slate-400">Texto Extraído do Documento Word</h3>
-                                    <span class="text-[10px] text-slate-400 italic">Selecione trechos com o mouse para capturar automaticamente</span>
-                                </div>
-
-                                <div class="prose max-w-none text-xs leading-relaxed font-serif text-slate-800 bg-slate-50/50 p-6 rounded-[5px] border border-slate-150 max-h-[600px] overflow-y-auto whitespace-pre-wrap select-text"
-                                     @mouseup="captureSelectedText">
-                                    <span x-text="extractedText"></span>
-                                </div>
-                            </div>
-                        </template>
-
-                        <!-- Visualizador de Imagens para Scans e Fotografias -->
-                        <template x-if="currentFile && currentFile.file_type === 'image'">
-                            <div class="bg-white border border-slate-200 rounded-[5px] p-6 shadow-sm flex items-center justify-center min-h-[500px]">
-                                <img :src="getFileStreamUrl(currentFile.id)" class="max-h-[600px] object-contain rounded shadow-sm">
-                            </div>
-                        </template>
+                <!-- MODO GOOGLE DOCS VIEWER -->
+                <template x-if="viewerMode === 'google' && currentFile">
+                    <div class="bg-slate-800 border border-slate-700 rounded-[5px] p-2 shadow-sm min-h-[650px] flex flex-col space-y-2">
+                        <div class="flex items-center justify-between px-3 py-1.5 text-xs font-bold text-slate-400 border-b border-slate-700">
+                            <span>🌐 Google Docs Viewer Online</span>
+                            <a :href="getGoogleDocsViewerUrl(currentFile.id)" target="_blank" class="text-primary-400 hover:underline">Abrir em nova guia ↗</a>
+                        </div>
+                        <iframe :src="getGoogleDocsViewerUrl(currentFile.id)" class="w-full h-[600px] rounded border border-slate-700 bg-white" frameborder="0"></iframe>
                     </div>
                 </template>
 
-                <!-- Painel de Sugestões Automáticas do LanguageTool -->
-                <div x-show="languageToolMatches.length > 0" x-cloak class="bg-purple-50/60 border border-purple-200 rounded-[5px] p-5 space-y-3">
+                <!-- RENDERIZADOR DE PDF -->
+                <template x-if="viewerMode === 'native' && currentFile && currentFile.file_type === 'pdf'">
+                    <div class="bg-slate-800 border border-slate-700 rounded-[5px] p-4 shadow-sm flex flex-col items-center justify-center min-h-[600px] overflow-auto relative">
+                        <div x-show="renderingPdf" class="absolute inset-0 bg-slate-900/80 flex items-center justify-center font-bold text-xs text-slate-400 z-10">
+                            Renderizando página do PDF...
+                        </div>
+                        <canvas id="pdf-canvas" class="max-w-full shadow-md rounded border border-slate-700"></canvas>
+                    </div>
+                </template>
+
+                <!-- Sugestões da Verificação Ortográfica -->
+                <div x-show="languageToolMatches.length > 0" x-cloak class="bg-purple-950/60 border border-purple-800 rounded-[5px] p-5 space-y-3">
                     <div class="flex items-center justify-between">
-                        <h4 class="font-outfit font-black text-xs uppercase tracking-wider text-purple-800 flex items-center gap-2">
+                        <h4 class="font-outfit font-black text-xs uppercase tracking-wider text-purple-300 flex items-center gap-2">
                             <span>🔍</span> Sugestões Ortográficas do LanguageTool (<span x-text="languageToolMatches.length"></span>)
                         </h4>
-                        <button type="button" @click="languageToolMatches = []" class="text-purple-400 hover:text-purple-700 font-bold text-xs">Fechar</button>
+                        <button type="button" @click="languageToolMatches = []" class="text-purple-400 hover:text-purple-200 font-bold text-xs">Fechar</button>
                     </div>
 
                     <div class="space-y-2 max-h-60 overflow-y-auto">
                         <template x-for="(match, index) in languageToolMatches" :key="index">
-                            <div class="p-3 bg-white rounded-[5px] border border-purple-100 text-xs space-y-1">
-                                <p class="font-bold text-purple-950" x-text="match.message"></p>
-                                <p class="text-[11px] text-slate-500">
-                                    Sugestões: <strong class="text-emerald-700" x-text="match.replacements ? match.replacements.slice(0, 3).map(r => r.value).join(', ') : ''"></strong>
+                            <div class="p-3 bg-slate-900 rounded-[5px] border border-purple-800 text-xs space-y-1">
+                                <p class="font-bold text-purple-200" x-text="match.message"></p>
+                                <p class="text-[11px] text-slate-400">
+                                    Sugestões: <strong class="text-emerald-400" x-text="match.replacements ? match.replacements.slice(0, 3).map(r => r.value).join(', ') : ''"></strong>
                                 </p>
                                 <button type="button" @click="applyLanguageToolMatch(match)" class="mt-1 px-2.5 py-1 bg-purple-600 text-white font-bold text-[10px] rounded-[5px] uppercase tracking-wider">
                                     + Criar Apontamento desta Sugestão
@@ -506,20 +509,20 @@
             <!-- Coluna Direita: Painel de Apontamentos por Categoria (5 Colunas) -->
             <div class="lg:col-span-5 space-y-4">
                 
-                <div class="bg-white border border-slate-200 rounded-[5px] p-5 shadow-sm space-y-4">
-                    <div class="flex items-center justify-between border-b border-slate-100 pb-3">
-                        <h3 class="font-outfit font-black text-slate-900 text-sm uppercase tracking-tight">Apontamentos Cadastrados</h3>
-                        <span class="px-2.5 py-0.5 bg-slate-100 text-slate-700 text-[10px] font-bold rounded-full">
+                <div class="bg-slate-800 border border-slate-700 rounded-[5px] p-5 shadow-sm space-y-4">
+                    <div class="flex items-center justify-between border-b border-slate-700 pb-3">
+                        <h3 class="font-outfit font-black text-white text-sm uppercase tracking-tight">Apontamentos Cadastrados</h3>
+                        <span class="px-2.5 py-0.5 bg-slate-900 text-slate-300 text-[10px] font-bold rounded-full border border-slate-700">
                             {{ $revision->corrections->count() }} Registros
                         </span>
                     </div>
 
                     <!-- Filtro por Categoria -->
                     <div class="flex items-center gap-1.5 flex-wrap text-xs">
-                        <button type="button" @click="categoryFilter = 'todas'" class="px-2.5 py-1 rounded-full text-[10px] font-bold uppercase" :class="categoryFilter === 'todas' ? 'bg-slate-900 text-white' : 'bg-slate-100 text-slate-600'">Todas</button>
-                        <button type="button" @click="categoryFilter = 'ortografia'" class="px-2.5 py-1 rounded-full text-[10px] font-bold uppercase" :class="categoryFilter === 'ortografia' ? 'bg-rose-600 text-white' : 'bg-rose-50 text-rose-700'">Ortografia</button>
-                        <button type="button" @click="categoryFilter = 'gramatica'" class="px-2.5 py-1 rounded-full text-[10px] font-bold uppercase" :class="categoryFilter === 'gramatica' ? 'bg-amber-600 text-white' : 'bg-amber-50 text-amber-700'">Gramática</button>
-                        <button type="button" @click="categoryFilter = 'duvida'" class="px-2.5 py-1 rounded-full text-[10px] font-bold uppercase" :class="categoryFilter === 'duvida' ? 'bg-blue-600 text-white' : 'bg-blue-50 text-blue-700'">Dúvidas</button>
+                        <button type="button" @click="categoryFilter = 'todas'" class="px-2.5 py-1 rounded-full text-[10px] font-bold uppercase" :class="categoryFilter === 'todas' ? 'bg-white text-slate-900' : 'bg-slate-900 text-slate-400'">Todas</button>
+                        <button type="button" @click="categoryFilter = 'ortografia'" class="px-2.5 py-1 rounded-full text-[10px] font-bold uppercase" :class="categoryFilter === 'ortografia' ? 'bg-rose-600 text-white' : 'bg-rose-950/60 text-rose-300'">Ortografia</button>
+                        <button type="button" @click="categoryFilter = 'gramatica'" class="px-2.5 py-1 rounded-full text-[10px] font-bold uppercase" :class="categoryFilter === 'gramatica' ? 'bg-amber-600 text-white' : 'bg-amber-950/60 text-amber-300'">Gramática</button>
+                        <button type="button" @click="categoryFilter = 'duvida'" class="px-2.5 py-1 rounded-full text-[10px] font-bold uppercase" :class="categoryFilter === 'duvida' ? 'bg-blue-600 text-white' : 'bg-blue-950/60 text-blue-300'">Dúvidas</button>
                     </div>
 
                     <!-- Lista de Correções -->
@@ -527,14 +530,14 @@
                         @forelse($revision->corrections as $cor)
                             @php
                                 $badgeClass = match($cor->category) {
-                                    'ortografia' => 'bg-rose-100 text-rose-800',
-                                    'gramatica' => 'bg-amber-100 text-amber-800',
-                                    'duvida' => 'bg-blue-100 text-blue-800',
-                                    'padronizacao' => 'bg-purple-100 text-purple-800',
-                                    default => 'bg-slate-100 text-slate-800',
+                                    'ortografia' => 'bg-rose-900/60 text-rose-200 border border-rose-700',
+                                    'gramatica' => 'bg-amber-900/60 text-amber-200 border border-amber-700',
+                                    'duvida' => 'bg-blue-900/60 text-blue-200 border border-blue-700',
+                                    'padronizacao' => 'bg-purple-900/60 text-purple-200 border border-purple-700',
+                                    default => 'bg-slate-700 text-slate-200',
                                 };
                             @endphp
-                            <div x-show="categoryFilter === 'todas' || categoryFilter === '{{ $cor->category }}'" class="p-3.5 bg-slate-50 border border-slate-200 rounded-[5px] text-xs space-y-2">
+                            <div x-show="categoryFilter === 'todas' || categoryFilter === '{{ $cor->category }}'" class="p-3.5 bg-slate-900 border border-slate-700 rounded-[5px] text-xs space-y-2">
                                 <div class="flex items-center justify-between">
                                     <span class="text-[9px] font-black uppercase px-2 py-0.5 rounded-[5px] {{ $badgeClass }}">
                                         {{ ucfirst($cor->category) }}
@@ -543,19 +546,19 @@
                                 </div>
 
                                 @if($cor->original_text)
-                                    <p class="font-mono text-slate-700 line-through">"{{ $cor->original_text }}"</p>
+                                    <p class="font-mono text-slate-400 line-through">"{{ $cor->original_text }}"</p>
                                 @endif
 
                                 @if($cor->suggested_text)
-                                    <p class="font-mono text-emerald-800 font-bold">➔ {{ $cor->suggested_text }}</p>
+                                    <p class="font-mono text-emerald-400 font-bold">➔ {{ $cor->suggested_text }}</p>
                                 @endif
 
                                 @if($cor->justification)
-                                    <p class="text-slate-500 italic">💡 {{ $cor->justification }}</p>
+                                    <p class="text-slate-400 italic">💡 {{ $cor->justification }}</p>
                                 @endif
                             </div>
                         @empty
-                            <div class="text-center text-slate-400 py-8 font-semibold text-xs border border-dashed border-slate-200 rounded-[5px]">
+                            <div class="text-center text-slate-500 py-8 font-semibold text-xs border border-dashed border-slate-700 rounded-[5px]">
                                 Nenhum apontamento cadastrado ainda.
                             </div>
                         @endforelse
@@ -569,12 +572,12 @@
 
     </main>
 
-    <!-- Modal Criar Apontamento no Portal do Revisor -->
-    <div x-show="openCorrectionModal" x-cloak class="fixed inset-0 z-[99999] flex items-center justify-center p-4 bg-slate-950/60 backdrop-blur-xs select-none">
-        <div @click.away="openCorrectionModal = false" class="bg-white border border-slate-200 text-slate-800 rounded-xl p-6 shadow-2xl max-w-lg w-full space-y-4">
-            <div class="flex items-center justify-between border-b border-slate-100 pb-3">
-                <h3 class="font-outfit font-black text-slate-900 text-md uppercase">➕ Novo Apontamento de Revisão</h3>
-                <button type="button" @click="openCorrectionModal = false" class="text-slate-400 hover:text-slate-600 font-bold">✕</button>
+    <!-- Modal Criar Apontamento -->
+    <div x-show="openCorrectionModal" x-cloak class="fixed inset-0 z-[99999] flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-xs select-none">
+        <div @click.away="openCorrectionModal = false" class="bg-slate-800 border border-slate-700 text-slate-100 rounded-xl p-6 shadow-2xl max-w-lg w-full space-y-4">
+            <div class="flex items-center justify-between border-b border-slate-700 pb-3">
+                <h3 class="font-outfit font-black text-white text-md uppercase">➕ Novo Apontamento de Revisão</h3>
+                <button type="button" @click="openCorrectionModal = false" class="text-slate-400 hover:text-white font-bold">✕</button>
             </div>
 
             <form action="{{ route('public.editorial.revisor.corrections.store', $revision->share_token) }}" method="POST" class="space-y-3 text-xs">
@@ -584,7 +587,7 @@
                 <div class="grid grid-cols-2 gap-3">
                     <div>
                         <label class="font-bold block mb-1">Categoria</label>
-                        <select name="category" x-model="modalCategory" required class="w-full px-3 py-2 border rounded-[5px]">
+                        <select name="category" x-model="modalCategory" required class="w-full px-3 py-2 border border-slate-700 rounded-[5px] bg-slate-900 text-white">
                             <option value="ortografia">Ortografia</option>
                             <option value="gramatica">Gramática</option>
                             <option value="pontuacao">Pontuação</option>
@@ -598,39 +601,39 @@
 
                     <div>
                         <label class="font-bold block mb-1">Página (Opcional)</label>
-                        <input type="number" name="page_number" x-model="modalPageNumber" placeholder="Ex: 5" class="w-full px-3 py-2 border rounded-[5px]">
+                        <input type="number" name="page_number" x-model="modalPageNumber" placeholder="Ex: 5" class="w-full px-3 py-2 border border-slate-700 rounded-[5px] bg-slate-900 text-white">
                     </div>
                 </div>
 
                 <div>
                     <label class="font-bold block mb-1">Texto Original do Autor</label>
-                    <textarea name="original_text" x-model="modalOriginalText" rows="2" placeholder="Trecho extraído do texto..." class="w-full px-3 py-2 border rounded-[5px]"></textarea>
+                    <textarea name="original_text" x-model="modalOriginalText" rows="2" placeholder="Trecho extraído do texto..." class="w-full px-3 py-2 border border-slate-700 rounded-[5px] bg-slate-900 text-white"></textarea>
                 </div>
 
                 <div>
                     <label class="font-bold block mb-1">Sugestão de Correção</label>
-                    <textarea name="suggested_text" x-model="modalSuggestedText" rows="2" placeholder="Digite a correção sugerida..." class="w-full px-3 py-2 border rounded-[5px]"></textarea>
+                    <textarea name="suggested_text" x-model="modalSuggestedText" rows="2" placeholder="Digite a correção sugerida..." class="w-full px-3 py-2 border border-slate-700 rounded-[5px] bg-slate-900 text-white"></textarea>
                 </div>
 
                 <div>
                     <label class="font-bold block mb-1">Justificativa / Comentário</label>
-                    <input type="text" name="justification" x-model="modalJustification" placeholder="Explicação da regra ou orientação..." class="w-full px-3 py-2 border rounded-[5px]">
+                    <input type="text" name="justification" x-model="modalJustification" placeholder="Explicação da regra ou orientação..." class="w-full px-3 py-2 border border-slate-700 rounded-[5px] bg-slate-900 text-white">
                 </div>
 
-                <div class="flex justify-end gap-2 pt-2 border-t border-slate-100">
-                    <button type="button" @click="openCorrectionModal = false" class="px-4 py-2 bg-slate-100 text-slate-600 font-bold rounded-[5px]">Cancelar</button>
+                <div class="flex justify-end gap-2 pt-2 border-t border-slate-700">
+                    <button type="button" @click="openCorrectionModal = false" class="px-4 py-2 bg-slate-700 text-slate-200 font-bold rounded-[5px]">Cancelar</button>
                     <button type="submit" class="px-4 py-2 bg-emerald-600 text-white font-bold rounded-[5px]">Salvar Apontamento</button>
                 </div>
             </form>
         </div>
     </div>
 
-    <!-- Modal Upload de Nova Versão Revisada (Histórico de Versões) -->
-    <div x-show="openUploadVersionModal" x-cloak class="fixed inset-0 z-[99999] flex items-center justify-center p-4 bg-slate-950/60 backdrop-blur-xs select-none">
-        <div @click.away="openUploadVersionModal = false" class="bg-white border border-slate-200 text-slate-800 rounded-xl p-6 shadow-2xl max-w-md w-full space-y-4">
-            <div class="flex items-center justify-between border-b border-slate-100 pb-3">
-                <h3 class="font-outfit font-black text-slate-900 text-md uppercase">📤 Salvar Nova Versão Revisada</h3>
-                <button type="button" @click="openUploadVersionModal = false" class="text-slate-400 hover:text-slate-600 font-bold">✕</button>
+    <!-- Modal Upload de Nova Versão -->
+    <div x-show="openUploadVersionModal" x-cloak class="fixed inset-0 z-[99999] flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-xs select-none">
+        <div @click.away="openUploadVersionModal = false" class="bg-slate-800 border border-slate-700 text-slate-100 rounded-xl p-6 shadow-2xl max-w-md w-full space-y-4">
+            <div class="flex items-center justify-between border-b border-slate-700 pb-3">
+                <h3 class="font-outfit font-black text-white text-md uppercase">📤 Salvar Nova Versão Revisada</h3>
+                <button type="button" @click="openUploadVersionModal = false" class="text-slate-400 hover:text-white font-bold">✕</button>
             </div>
 
             <form action="{{ route('public.editorial.revisor.version.store', $revision->share_token) }}" method="POST" enctype="multipart/form-data" class="space-y-3 text-xs">
@@ -639,12 +642,12 @@
 
                 <div>
                     <label class="font-bold block mb-1">Arquivo Revisado (Word / PDF / Imagem)</label>
-                    <input type="file" name="file" required class="w-full px-3 py-2 border rounded-[5px]">
+                    <input type="file" name="file" required class="w-full px-3 py-2 border border-slate-700 rounded-[5px] bg-slate-900 text-white">
                     <p class="text-[10px] text-slate-400 mt-1">Este arquivo criará uma nova versão no histórico (ex: Versão 2).</p>
                 </div>
 
-                <div class="flex justify-end gap-2 pt-2 border-t border-slate-100">
-                    <button type="button" @click="openUploadVersionModal = false" class="px-4 py-2 bg-slate-100 text-slate-600 font-bold rounded-[5px]">Cancelar</button>
+                <div class="flex justify-end gap-2 pt-2 border-t border-slate-700">
+                    <button type="button" @click="openUploadVersionModal = false" class="px-4 py-2 bg-slate-700 text-slate-200 font-bold rounded-[5px]">Cancelar</button>
                     <button type="submit" class="px-4 py-2 bg-primary-600 text-white font-bold rounded-[5px]">Salvar Nova Versão</button>
                 </div>
             </form>

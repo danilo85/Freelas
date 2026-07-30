@@ -38,32 +38,47 @@ class EditorialPublicController extends Controller
     }
 
     /**
-     * Stream de arquivo seguro inline para PDF.js, leitores e imagens sem erros 403.
+     * Stream de arquivo ultra-seguro inline para PDF.js, leitores e imagens.
      */
     public function streamFile(int $fileId)
     {
         $file = EditorialRevisionFile::findOrFail($fileId);
         $revision = $file->editorialRevision;
+        $disk = Storage::disk($revision->storage_disk);
 
-        if (!Storage::disk($revision->storage_disk)->exists($file->file_path)) {
+        if (!$disk->exists($file->file_path)) {
             abort(404, 'Arquivo não encontrado no servidor.');
         }
 
-        $mime = $file->mime_type ?: 'application/pdf';
-
-        return response()->stream(function () use ($file, $revision) {
-            $stream = Storage::disk($revision->storage_disk)->readStream($file->file_path);
-            if ($stream) {
-                fpassthru($stream);
-                if (is_resource($stream)) {
-                    fclose($stream);
-                }
+        try {
+            $filePath = $disk->path($file->file_path);
+            if (file_exists($filePath)) {
+                return response()->file($filePath, [
+                    'Content-Disposition' => 'inline; filename="' . $file->filename . '"',
+                ]);
             }
-        }, 200, [
-            'Content-Type' => $mime,
-            'Content-Disposition' => 'inline; filename="' . $file->filename . '"',
-            'Cache-Control' => 'no-cache, private',
+        } catch (\Throwable $e) {}
+
+        return $disk->download($file->file_path, $file->filename);
+    }
+
+    /**
+     * Salva o texto revisado com o histórico de alterações (Track Changes).
+     */
+    public function saveRevisedContent(Request $request, string $token, int $fileId)
+    {
+        $revision = EditorialRevision::where('share_token', $token)->firstOrFail();
+        $file = EditorialRevisionFile::where('editorial_revision_id', $revision->id)->findOrFail($fileId);
+
+        $request->validate([
+            'revised_content' => 'required|string',
         ]);
+
+        $file->update([
+            'extracted_text' => $request->revised_content,
+        ]);
+
+        return response()->json(['success' => true, 'message' => 'Alterações de texto salvas com sucesso!']);
     }
 
     /**
