@@ -32,6 +32,11 @@ class User extends Authenticatable
     {
         return $this->role === 'revisor';
     }
+
+    public function revisionsAsRevisor(): HasMany
+    {
+        return $this->hasMany(EditorialRevision::class, 'revisor_id');
+    }
     /** @use HasFactory<UserFactory> */
     use HasFactory, Notifiable;
 

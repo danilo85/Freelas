@@ -19,6 +19,9 @@
         </div>
 
         <div class="flex items-center gap-3">
+            <a href="{{ route('revisoes-editoriais.revisores.index') }}" class="px-4 py-2.5 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 text-slate-700 dark:text-slate-200 text-xs font-bold rounded-[5px] transition-all flex items-center gap-2 cursor-pointer uppercase tracking-wider">
+                <span>👥</span> Gerenciar Revisores
+            </a>
             <a href="{{ route('revisoes-editoriais.create') }}" class="px-5 py-2.5 bg-primary-600 hover:bg-primary-700 text-white text-xs font-bold rounded-[5px] transition-all shadow-md flex items-center gap-2 cursor-pointer uppercase tracking-wider">
                 <span>➕</span> Nova Revisão Editorial
             </a>

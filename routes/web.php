@@ -252,6 +252,12 @@ Route::middleware(['auth', 'approved'])->prefix('freelas')->group(function () {
             // Glossário
             Route::post('/{editorialRevision}/glossary', [\App\Http\Controllers\EditorialRevisionController::class, 'storeGlossary'])->name('glossary.store');
             Route::delete('/glossary/{glossary}', [\App\Http\Controllers\EditorialRevisionController::class, 'destroyGlossary'])->name('glossary.destroy');
+
+            // Gerenciamento de Revisores Cadastrados
+            Route::get('/gerenciamento/revisores', [\App\Http\Controllers\EditorialRevisionController::class, 'revisoresIndex'])->name('revisores.index');
+            Route::post('/gerenciamento/revisores', [\App\Http\Controllers\EditorialRevisionController::class, 'revisoresStore'])->name('revisores.store');
+            Route::put('/gerenciamento/revisores/{user}', [\App\Http\Controllers\EditorialRevisionController::class, 'revisoresUpdate'])->name('revisores.update');
+            Route::delete('/gerenciamento/revisores/{user}', [\App\Http\Controllers\EditorialRevisionController::class, 'revisoresDestroy'])->name('revisores.destroy');
         });
     });
 });

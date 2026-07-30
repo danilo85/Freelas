@@ -351,4 +351,64 @@ class EditorialRevisionController extends Controller
         $i = Math.floor(Math.log($bytes) / Math.log($k));
         return parseFloat(($bytes / Math.pow($k, $i)).toFixed($decimals)) + ' ' + $sizes[$i];
     }
+
+    /**
+     * Gerenciamento de Revisores Cadastrados.
+     */
+    public function revisoresIndex()
+    {
+        $revisores = User::where('role', 'revisor')->withCount(['revisionsAsRevisor'])->latest()->get();
+        return view('editorial_revisions.revisores', compact('revisores'));
+    }
+
+    public function revisoresStore(Request $request)
+    {
+        $request->validate([
+            'name' => 'required|string|max:255',
+            'email' => 'required|email|unique:users,email',
+            'password' => 'required|string|min:6',
+        ]);
+
+        User::create([
+            'name' => $request->name,
+            'email' => $request->email,
+            'password' => Hash::make($request->password),
+            'role' => 'revisor',
+            'is_approved' => true,
+        ]);
+
+        return back()->with('success', 'Revisor cadastrado com sucesso!');
+    }
+
+    public function revisoresUpdate(Request $request, User $user)
+    {
+        $request->validate([
+            'name' => 'required|string|max:255',
+            'email' => 'required|email|unique:users,email,' . $user->id,
+            'password' => 'nullable|string|min:6',
+        ]);
+
+        $data = [
+            'name' => $request->name,
+            'email' => $request->email,
+        ];
+
+        if ($request->filled('password')) {
+            $data['password'] = Hash::make($request->password);
+        }
+
+        $user->update($data);
+
+        return back()->with('success', 'Dados do revisor atualizados com sucesso!');
+    }
+
+    public function revisoresDestroy(User $user)
+    {
+        if ($user->role === 'revisor') {
+            $user->delete();
+            return back()->with('success', 'Revisor excluído do sistema.');
+        }
+
+        return back()->with('error', 'Não é possível excluir este usuário.');
+    }
 }
