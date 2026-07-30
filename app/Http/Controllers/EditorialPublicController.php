@@ -257,6 +257,26 @@ class EditorialPublicController extends Controller
             'is_final' => true,
         ]);
 
+        // Se for PDF, gera versão em Word (.docx) automaticamente
+        if ($fileType === 'pdf') {
+            $docxPath = \App\Services\PdfToDocxConverter::convert($path, $revision->storage_disk);
+            if ($docxPath) {
+                $docxFilename = pathinfo($file->getClientOriginalName(), PATHINFO_FILENAME) . ' (Word Editável v' . ($parentFile->version + 1) . ').docx';
+                $docxSize = Storage::disk($revision->storage_disk)->exists($docxPath) ? Storage::disk($revision->storage_disk)->size($docxPath) : $file->getSize();
+
+                EditorialRevisionFile::create([
+                    'editorial_revision_id' => $revision->id,
+                    'filename' => $docxFilename,
+                    'file_path' => $docxPath,
+                    'file_size' => $docxSize,
+                    'mime_type' => 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+                    'file_type' => 'word',
+                    'version' => $parentFile->version + 1,
+                    'is_final' => true,
+                ]);
+            }
+        }
+
         return back()->with('success', 'Nova versão do arquivo salva com sucesso (Versão ' . $newVersion->version . ')!');
     }
 

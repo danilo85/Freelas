@@ -150,7 +150,7 @@ class EditorialRevisionController extends Controller
 
             $path = $file->store('editorial_revisions', $disk);
 
-            EditorialRevisionFile::create([
+            $revisionFile = EditorialRevisionFile::create([
                 'editorial_revision_id' => $revision->id,
                 'filename' => $file->getClientOriginalName(),
                 'file_path' => $path,
@@ -159,6 +159,25 @@ class EditorialRevisionController extends Controller
                 'file_type' => $fileType,
                 'version' => 1,
             ]);
+
+            // Se o arquivo for PDF, converte automaticamente para Word (.docx) preservando fontes, layout e imagens
+            if ($fileType === 'pdf') {
+                $docxPath = \App\Services\PdfToDocxConverter::convert($path, $disk);
+                if ($docxPath) {
+                    $docxFilename = pathinfo($file->getClientOriginalName(), PATHINFO_FILENAME) . ' (Word Editável).docx';
+                    $docxSize = Storage::disk($disk)->exists($docxPath) ? Storage::disk($disk)->size($docxPath) : $file->getSize();
+
+                    EditorialRevisionFile::create([
+                        'editorial_revision_id' => $revision->id,
+                        'filename' => $docxFilename,
+                        'file_path' => $docxPath,
+                        'file_size' => $docxSize,
+                        'mime_type' => 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+                        'file_type' => 'word',
+                        'version' => 1,
+                    ]);
+                }
+            }
         }
 
         if ($request->wantsJson() || $request->ajax()) {
