@@ -909,18 +909,8 @@
                     // Remove o item da lista do LanguageTool
                     this.languageToolMatches = this.languageToolMatches.filter(m => m !== match);
                     this.showToast('Correção "' + replacementValue + '" aplicada e salva!');
-                },
-
-                    // 2. Remove o item da lista do LanguageTool
-                    this.languageToolMatches = this.languageToolMatches.filter(m => m !== match);
-
-                    // 3. Sincroniza e AUTO-SALVA no banco de dados imediatamente
-                    this.syncEditorContent();
-                    this.persistWordContent();
-
-                    this.showToast('✨ Corrigido em tag de destaque e salvo no banco!');
                 }
-            }
+            };
         }
     </script>
 </head>
