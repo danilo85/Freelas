@@ -8,6 +8,7 @@ use App\Models\EditorialRevisionComment;
 use App\Models\EditorialRevisionFile;
 use App\Models\EditorialRevisionGlossary;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Storage;
 
@@ -15,9 +16,9 @@ class EditorialPublicController extends Controller
 {
     /**
      * Portal do Revisor (Acesso via Token Público do Revisor).
-     * O Revisor trabalha nesta página dedicada para ler/renderizar os arquivos,
+     * O Revisor trabalha nesta página dedicada para ler/renderizar os arquivos (PDFs, Word, Imagens),
      * extrair textos, rodar a verificação ortográfica (LanguageTool), baixar originais,
-     * criar apontamentos por categorias e gerar o link do Autor.
+     * criar apontamentos por categorias, salvar histórico de versões e gerar o link do Autor.
      */
     public function revisorShow(string $token)
     {
@@ -25,13 +26,37 @@ class EditorialPublicController extends Controller
             ->with(['files', 'corrections.comments', 'glossaries', 'revisor'])
             ->firstOrFail();
 
-        // Extrai texto de amostra dos arquivos Word/PDF para renderização rápida no editor
+        // Extrai texto dos arquivos Word/PDF para renderização legível no editor
         $extractedTexts = [];
         foreach ($revision->files as $file) {
             $extractedTexts[$file->id] = $this->extractTextFromFile($file, $revision->storage_disk);
         }
 
-        return view('editorial_revisions.revisor_show', compact('revision', 'extractedTexts'));
+        $isAuthenticated = auth()->check() || session()->has('revisor_authenticated_' . $revision->id);
+
+        return view('editorial_revisions.revisor_show', compact('revision', 'extractedTexts', 'isAuthenticated'));
+    }
+
+    /**
+     * Login rápido do Revisor no portal público com e-mail e senha fornecidos.
+     */
+    public function revisorLogin(Request $request, string $token)
+    {
+        $revision = EditorialRevision::where('share_token', $token)->firstOrFail();
+
+        $request->validate([
+            'email' => 'required|email',
+            'password' => 'required|string',
+        ]);
+
+        $credentials = $request->only('email', 'password');
+
+        if (Auth::attempt($credentials)) {
+            session(['revisor_authenticated_' . $revision->id => true]);
+            return response()->json(['success' => true, 'message' => 'Autenticado com sucesso!']);
+        }
+
+        return response()->json(['success' => false, 'message' => 'E-mail ou senha inválidos.'], 401);
     }
 
     /**
@@ -120,6 +145,48 @@ class EditorialPublicController extends Controller
         ]);
 
         return back()->with('success', 'Termo adicionado ao Glossário do projeto!');
+    }
+
+    /**
+     * Upload de nova versão do arquivo pelo Revisor (Histórico de Versões).
+     */
+    public function storeFileVersionPublic(Request $request, string $token)
+    {
+        $revision = EditorialRevision::where('share_token', $token)->firstOrFail();
+
+        $request->validate([
+            'file' => 'required|file|max:1048576',
+            'parent_file_id' => 'required|integer',
+        ]);
+
+        $parentFile = EditorialRevisionFile::where('editorial_revision_id', $revision->id)
+            ->findOrFail($request->parent_file_id);
+
+        $file = $request->file('file');
+        $ext = strtolower($file->getClientOriginalExtension());
+        $mime = $file->getClientMimeType();
+
+        $fileType = 'image';
+        if (in_array($ext, ['doc', 'docx', 'txt', 'rtf', 'odt'])) {
+            $fileType = 'word';
+        } elseif ($ext === 'pdf') {
+            $fileType = 'pdf';
+        }
+
+        $path = $file->store('editorial_revisions', $revision->storage_disk);
+
+        $newVersion = EditorialRevisionFile::create([
+            'editorial_revision_id' => $revision->id,
+            'filename' => $file->getClientOriginalName(),
+            'file_path' => $path,
+            'file_size' => $file->getSize(),
+            'mime_type' => $mime,
+            'file_type' => $fileType,
+            'version' => $parentFile->version + 1,
+            'is_final' => true,
+        ]);
+
+        return back()->with('success', 'Nova versão do arquivo salva com sucesso (Versão ' . $newVersion->version . ')!');
     }
 
     /**

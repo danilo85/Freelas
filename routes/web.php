@@ -273,8 +273,10 @@ Route::prefix('revisao-editorial/{token}')->name('public.editorial.')->group(fun
 
     // Portal do Revisor (Workspace dedicado do Revisor com leitor de arquivo e LanguageTool)
     Route::get('/revisor', [\App\Http\Controllers\EditorialPublicController::class, 'revisorShow'])->name('revisor.show');
+    Route::post('/revisor/login', [\App\Http\Controllers\EditorialPublicController::class, 'revisorLogin'])->name('revisor.login');
     Route::post('/revisor/corrections', [\App\Http\Controllers\EditorialPublicController::class, 'storeCorrectionPublic'])->name('revisor.corrections.store');
     Route::post('/revisor/glossary', [\App\Http\Controllers\EditorialPublicController::class, 'storeGlossaryPublic'])->name('revisor.glossary.store');
+    Route::post('/revisor/version', [\App\Http\Controllers\EditorialPublicController::class, 'storeFileVersionPublic'])->name('revisor.version.store');
     Route::post('/revisor/languagetool', [\App\Http\Controllers\EditorialPublicController::class, 'checkLanguageTool'])->name('revisor.languagetool');
 });
 
