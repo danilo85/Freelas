@@ -233,11 +233,37 @@ Route::middleware(['auth', 'approved'])->prefix('freelas')->group(function () {
         Route::get('/google-drive/connect', [\App\Http\Controllers\GoogleDriveController::class, 'connect'])->name('google.connect');
         Route::get('/google-drive/callback', [\App\Http\Controllers\GoogleDriveController::class, 'callback'])->name('google.callback');
         Route::post('/google-drive/disconnect', [\App\Http\Controllers\GoogleDriveController::class, 'disconnect'])->name('google.disconnect');
+
+        // Utilidades - Revisão Editorial
+        Route::prefix('utilidades/revisao-editorial')->name('revisoes-editoriais.')->group(function () {
+            Route::get('/', [\App\Http\Controllers\EditorialRevisionController::class, 'index'])->name('index');
+            Route::get('/novo', [\App\Http\Controllers\EditorialRevisionController::class, 'create'])->name('create');
+            Route::post('/', [\App\Http\Controllers\EditorialRevisionController::class, 'store'])->name('store');
+            Route::get('/{editorialRevision}', [\App\Http\Controllers\EditorialRevisionController::class, 'show'])->name('show');
+            Route::put('/{editorialRevision}', [\App\Http\Controllers\EditorialRevisionController::class, 'update'])->name('update');
+            Route::delete('/{editorialRevision}', [\App\Http\Controllers\EditorialRevisionController::class, 'destroy'])->name('destroy');
+            
+            // Apontamentos / Correções
+            Route::post('/{editorialRevision}/corrections', [\App\Http\Controllers\EditorialRevisionController::class, 'storeCorrection'])->name('corrections.store');
+            Route::patch('/corrections/{correction}/status', [\App\Http\Controllers\EditorialRevisionController::class, 'updateCorrectionStatus'])->name('corrections.update-status');
+            Route::delete('/corrections/{correction}', [\App\Http\Controllers\EditorialRevisionController::class, 'destroyCorrection'])->name('corrections.destroy');
+            Route::post('/corrections/{correction}/comments', [\App\Http\Controllers\EditorialRevisionController::class, 'storeComment'])->name('corrections.comments.store');
+
+            // Glossário
+            Route::post('/{editorialRevision}/glossary', [\App\Http\Controllers\EditorialRevisionController::class, 'storeGlossary'])->name('glossary.store');
+            Route::delete('/glossary/{glossary}', [\App\Http\Controllers\EditorialRevisionController::class, 'destroyGlossary'])->name('glossary.destroy');
+        });
     });
 });
 
 // Callback do Google Drive (compatível com redirecionamento de/para a raiz ou com prefixo)
 Route::middleware(['auth'])->get('/google-drive/callback', [\App\Http\Controllers\GoogleDriveController::class, 'callback']);
+
+// Rota pública para a Revisão Editorial (Portal do Autor)
+Route::prefix('revisao-editorial/{token}')->name('public.editorial.')->group(function () {
+    Route::get('/', [\App\Http\Controllers\EditorialPublicController::class, 'show'])->name('show');
+    Route::post('/correction/{correctionId}/reply', [\App\Http\Controllers\EditorialPublicController::class, 'replyCorrection'])->name('reply');
+});
 
 // Rotas públicas de orçamentos (propostas) para aprovação e rejeição pelo cliente final
 Route::prefix('proposal/{hash}')->name('proposal.')->group(function () {

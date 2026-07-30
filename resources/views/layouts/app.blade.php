@@ -534,6 +534,9 @@
                         <a href="{{ route('revisoes.index') }}" class="block py-2 px-3 text-xs font-semibold rounded-[5px] transition-colors {{ request()->routeIs('revisoes.index') || request()->routeIs('revisoes.show') ? 'text-white bg-slate-850' : 'text-slate-400 hover:text-white' }}">
                             Revisão de Trabalhos
                         </a>
+                        <a href="{{ route('revisoes-editoriais.index') }}" class="block py-2 px-3 text-xs font-semibold rounded-[5px] transition-colors {{ request()->routeIs('revisoes-editoriais.*') ? 'text-white bg-slate-850' : 'text-slate-400 hover:text-white' }}">
+                            ✍️ Revisão Editorial
+                        </a>
                         <a href="{{ route('revisoes.shares.index') }}" class="block py-2 px-3 text-xs font-semibold rounded-[5px] transition-colors {{ request()->routeIs('revisoes.shares.*') ? 'text-white bg-slate-850' : 'text-slate-400 hover:text-white' }}">
                             Compartilhar Arquivos
                         </a>
