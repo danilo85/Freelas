@@ -278,13 +278,40 @@
                 },
 
                 get duvidasList() {
-                    if (!this.selectedFileId) return this.correctionsList.filter(c => c.category === 'duvida');
-                    return this.correctionsList.filter(c => c.category === 'duvida' && (!c.editorial_revision_file_id || parseInt(c.editorial_revision_file_id) === parseInt(this.selectedFileId)));
+                    if (!this.selectedFileId) return [];
+                    const activeId = parseInt(this.selectedFileId);
+                    return this.correctionsList.filter(c => {
+                        if (c.category !== 'duvida') return false;
+                        if (c.editorial_revision_file_id) {
+                            return parseInt(c.editorial_revision_file_id) === activeId;
+                        }
+                        const firstFile = filesData && filesData.length > 0 ? filesData[0].id : null;
+                        return firstFile && parseInt(firstFile) === activeId;
+                    });
                 },
 
                 get fileCorrectionsList() {
-                    if (!this.selectedFileId) return this.correctionsList;
-                    return this.correctionsList.filter(c => !c.editorial_revision_file_id || parseInt(c.editorial_revision_file_id) === parseInt(this.selectedFileId));
+                    if (!this.selectedFileId) return [];
+                    const activeId = parseInt(this.selectedFileId);
+                    return this.correctionsList.filter(c => {
+                        if (c.editorial_revision_file_id) {
+                            return parseInt(c.editorial_revision_file_id) === activeId;
+                        }
+                        const firstFile = filesData && filesData.length > 0 ? filesData[0].id : null;
+                        return firstFile && parseInt(firstFile) === activeId;
+                    });
+                },
+
+                getFileCorrectionsCount(fileId) {
+                    if (!fileId) return 0;
+                    const targetId = parseInt(fileId);
+                    return this.correctionsList.filter(c => {
+                        if (c.editorial_revision_file_id) {
+                            return parseInt(c.editorial_revision_file_id) === targetId;
+                        }
+                        const firstFile = filesData && filesData.length > 0 ? filesData[0].id : null;
+                        return firstFile && parseInt(firstFile) === targetId;
+                    }).length;
                 },
 
                 loadContentForSelectedFile() {
@@ -1575,7 +1602,7 @@
                         <h5 class="text-xs font-bold text-slate-800 truncate" title="{{ $file->filename }}">{{ $file->filename }}</h5>
                         
                         <div class="flex items-center justify-between pt-1 border-t border-slate-100 text-[10px] font-bold text-slate-500">
-                            <span>{{ number_format($file->file_size / 1024, 1) }} KB</span>
+                            <span class="text-rose-600 bg-rose-50 px-1.5 py-0.5 rounded border border-rose-200" x-text="getFileCorrectionsCount({{ $file->id }}) + ' apontamento(s)'"></span>
                             <a :href="getFileDownloadUrl({{ $file->id }})" target="_blank" @click.stop class="text-blue-600 hover:underline flex items-center gap-1">
                                 <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/></svg>
                                 Baixar
