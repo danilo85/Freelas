@@ -197,6 +197,12 @@
                 showDeleteModal: false,
                 correctionToDelete: null,
 
+                // State da Linha do Tempo Discreta no Hover
+                hoveredParaHistory: null,
+                hoveredCurrentIndex: 0,
+                hoveredParaNode: null,
+                hoveredParaPos: { x: 0, y: 0 },
+
                 // State Chat de Dúvidas
                 activeDuvidaId: null,
                 replyMessageInput: '',
@@ -493,10 +499,66 @@
                     }, 1000);
                 },
 
+                handleEditorMouseOver(event) {
+                    let target = event.target;
+                    while (target && target !== this.$refs.wordEditor) {
+                        const paraId = target.id || target.getAttribute('data-para-id');
+                        if (paraId && this.paraHistoryMap[paraId] && this.paraHistoryMap[paraId].length > 0) {
+                            const history = this.paraHistoryMap[paraId];
+                            this.hoveredParaNode = target;
+                            this.hoveredParaHistory = history;
+                            this.hoveredCurrentIndex = parseInt(target.getAttribute('data-version-index') || (history.length - 1));
+                            
+                            const rect = target.getBoundingClientRect();
+                            this.hoveredParaPos = {
+                                x: Math.min(Math.max(20, rect.left), window.innerWidth - 350),
+                                y: Math.max(10, rect.top - 165)
+                            };
+                            return;
+                        }
+                        target = target.parentNode;
+                    }
+                },
+
+                restoreParaOriginal(node) {
+                    if (!node) return;
+                    const paraId = node.id || node.getAttribute('data-para-id');
+                    if (paraId && this.paraHistoryMap[paraId] && this.paraHistoryMap[paraId].length > 0) {
+                        node.innerHTML = this.paraHistoryMap[paraId][0];
+                        node.classList.remove('edited-line');
+                        node.style.backgroundColor = '';
+                        node.style.color = '';
+                        node.style.borderLeft = '';
+                        node.removeAttribute('data-version-index');
+                        this.syncEditorContent();
+                        this.persistWordContent();
+                        this.hoveredParaHistory = null;
+                        this.showToast('Texto restaurado para a versão limpa original!');
+                    }
+                },
+
                 selectCategory(cat) {
                     this.showCategoryMenu = false;
 
                     if (this.pendingEditedNode) {
+                        const paraId = this.pendingEditedNode.id || ('para_' + Math.random().toString(36).substr(2, 9));
+                        this.pendingEditedNode.id = paraId;
+
+                        if (!this.paraHistoryMap[paraId]) {
+                            this.paraHistoryMap[paraId] = [this.pendingEditedNode.innerHTML];
+                        }
+
+                        if (this.pendingSelectedText && this.pendingSelectedText.length > 0 && !this.pendingEditedNode.querySelector('.edited-text-tag')) {
+                            this.replaceInTextNodesOnly(
+                                this.pendingEditedNode,
+                                this.pendingSelectedText,
+                                `<mark class="edited-text-tag bg-purple-100 text-purple-900 border border-purple-300 font-bold px-1.5 py-0.5 rounded shadow-xs inline-block" title="Texto alterado pelo revisor">${this.pendingSelectedText}</mark>`
+                            );
+                        }
+
+                        this.paraHistoryMap[paraId].push(this.pendingEditedNode.innerHTML);
+                        this.pendingEditedNode.setAttribute('data-version-index', this.paraHistoryMap[paraId].length - 1);
+
                         this.pendingEditedNode.classList.add('edited-line');
                         this.pendingEditedNode.setAttribute('style', 'background-color: #fef08a !important; color: #713f12 !important; border-left: 4px solid #facc15 !important; padding: 4px 8px; border-radius: 4px; margin-bottom: 8px;');
                     }
@@ -521,7 +583,7 @@
                     })
                     .then(res => res.json())
                     .then(data => {
-                        this.showToast('Salvo em amarelo e adicionado em ' + cat.toUpperCase() + '!');
+                        this.showToast('Salvo com destaque em roxo e amarelo e adicionado em ' + cat.toUpperCase() + '!');
                         if (data.correction) {
                             data.correction.comments = data.correction.comments || [];
                             this.correctionsList.unshift(data.correction);
@@ -1372,7 +1434,8 @@
                             <div x-ref="wordEditor"
                                  contenteditable="true"
                                  class="word-paper-content focus:outline-none w-full flex flex-col items-center"
-                                 @input="handleEditorInput($event)">
+                                 @input="handleEditorInput($event)"
+                                 @mouseover="handleEditorMouseOver($event)">
                             </div>
                         </div>
                     </div>
@@ -1678,6 +1741,69 @@
                     <span>Sim, Excluir</span>
                 </button>
             </div>
+        </div>
+    </div>
+
+    <!-- LINHA DO TEMPO DISCRETA NO HOVER DE LINHAS EDITADAS -->
+    <div x-show="hoveredParaHistory && hoveredParaHistory.length > 0"
+         x-cloak
+         x-transition:enter="transition ease-out duration-150"
+         x-transition:enter-start="opacity-0 scale-95"
+         x-transition:enter-end="opacity-100 scale-100"
+         x-transition:leave="transition ease-in duration-100"
+         x-transition:leave-start="opacity-100 scale-100"
+         x-transition:leave-end="opacity-0 scale-95"
+         class="fixed z-[99990] bg-slate-900 text-white rounded-xl shadow-2xl p-3.5 border border-slate-700 w-84 text-xs select-none pointer-events-auto"
+         :style="'left: ' + hoveredParaPos.x + 'px; top: ' + hoveredParaPos.y + 'px;'"
+         @mouseleave="hoveredParaHistory = null">
+        
+        <div class="flex items-center justify-between border-b border-slate-800 pb-2 mb-2">
+            <span class="text-[10px] font-black uppercase tracking-wider text-purple-400 flex items-center gap-1.5">
+                <span>🕒</span> Linha do Tempo do Trecho
+            </span>
+            <div class="flex items-center gap-2">
+                <span class="text-[9px] font-bold text-slate-300 bg-slate-800 px-2 py-0.5 rounded-full"
+                      x-text="'Versão ' + (hoveredCurrentIndex + 1) + ' de ' + hoveredParaHistory.length"></span>
+                <button type="button" @click="hoveredParaHistory = null" class="text-slate-400 hover:text-white text-xs">✕</button>
+            </div>
+        </div>
+
+        <!-- Comparativo: Texto Original vs Atual -->
+        <div class="space-y-2 text-[11px]">
+            <div class="bg-slate-950/90 p-2.5 rounded border border-slate-800 space-y-1">
+                <span class="text-[9px] font-bold text-slate-400 uppercase tracking-wider block">Texto Original (Limpo):</span>
+                <div class="text-slate-300 font-mono text-[10px] leading-snug line-through decoration-rose-500/80" x-html="hoveredParaHistory[0]"></div>
+            </div>
+
+            <template x-if="hoveredCurrentIndex > 0">
+                <div class="bg-purple-950/50 p-2.5 rounded border border-purple-800/60 space-y-1">
+                    <span class="text-[9px] font-bold text-purple-300 uppercase tracking-wider block">Texto Alterado Atual:</span>
+                    <div class="text-purple-100 font-medium leading-snug" x-html="hoveredParaHistory[hoveredCurrentIndex]"></div>
+                </div>
+            </template>
+        </div>
+
+        <!-- Controles da Linha do Tempo -->
+        <div class="flex items-center justify-between pt-2.5 mt-2.5 border-t border-slate-800 text-[10px]">
+            <button type="button" 
+                    @click="navigateParaHistory(hoveredParaNode, -1)" 
+                    :disabled="hoveredCurrentIndex <= 0"
+                    class="px-2.5 py-1 bg-slate-800 hover:bg-slate-700 disabled:opacity-30 rounded text-slate-200 font-bold flex items-center gap-1 cursor-pointer transition-colors">
+                <span>◀ Anterior</span>
+            </button>
+            
+            <button type="button" 
+                    @click="restoreParaOriginal(hoveredParaNode)" 
+                    class="text-amber-400 hover:text-amber-300 font-bold underline cursor-pointer">
+                Restaurar Limpo
+            </button>
+
+            <button type="button" 
+                    @click="navigateParaHistory(hoveredParaNode, 1)" 
+                    :disabled="hoveredCurrentIndex >= hoveredParaHistory.length - 1"
+                    class="px-2.5 py-1 bg-purple-600 hover:bg-purple-500 disabled:opacity-30 rounded text-white font-bold flex items-center gap-1 cursor-pointer transition-colors">
+                <span>Próximo ▶</span>
+            </button>
         </div>
     </div>
 
