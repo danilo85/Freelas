@@ -139,13 +139,9 @@
                                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/></svg>
                             </a>
 
-                            <form action="{{ route('revisoes-editoriais.files.destroy', $file->id) }}" method="POST" onsubmit="return confirm('Tem certeza que deseja excluir o arquivo {{ $file->filename }}?')">
-                                @csrf
-                                @method('DELETE')
-                                <button type="submit" class="w-8 h-8 bg-rose-50 hover:bg-rose-100 text-rose-700 dark:bg-rose-950/40 dark:hover:bg-rose-900/60 dark:text-rose-300 rounded-[5px] flex items-center justify-center transition-colors" title="Excluir Arquivo">
-                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
-                                </button>
-                            </form>
+                            <button type="button" @click="confirmDeleteFile({{ $file->id }}, '{{ addslashes($file->filename) }}')" class="w-8 h-8 bg-rose-50 hover:bg-rose-100 text-rose-700 dark:bg-rose-950/40 dark:hover:bg-rose-900/60 dark:text-rose-300 rounded-[5px] flex items-center justify-center transition-colors" title="Excluir Arquivo">
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
+                            </button>
                         </div>
                     </div>
                 @empty
@@ -260,6 +256,34 @@
                 </button>
             </div>
 
+    <!-- Modal Elegante de Confirmação de Exclusão de Arquivo -->
+    <div x-show="showFileDeleteModal" x-cloak class="fixed inset-0 z-[999999] flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-xs select-none">
+        <div @click.away="showFileDeleteModal = false" class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-slate-800 dark:text-slate-100 rounded-xl p-6 shadow-2xl max-w-md w-full space-y-4">
+            
+            <div class="flex items-center gap-3 text-rose-600">
+                <div class="w-10 h-10 rounded-full bg-rose-100 dark:bg-rose-950/50 flex items-center justify-center font-bold shrink-0">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
+                </div>
+                <div>
+                    <h4 class="font-outfit font-black text-base uppercase tracking-tight text-slate-900 dark:text-slate-100">Excluir Arquivo do Projeto</h4>
+                    <p class="text-xs text-slate-500 dark:text-slate-400">Esta ação excluirá o arquivo do servidor.</p>
+                </div>
+            </div>
+
+            <p class="text-xs text-slate-700 dark:text-slate-300 font-medium leading-relaxed bg-slate-50 dark:bg-slate-800/60 p-3.5 rounded border border-slate-200 dark:border-slate-700">
+                Tem certeza que deseja excluir o arquivo <strong class="text-rose-600 dark:text-rose-400 font-mono" x-text="fileToDeleteName"></strong>?
+            </p>
+
+            <form :action="'{{ url('/freelas/utilidades/revisao-editorial/files') }}/' + fileToDeleteId" method="POST" class="flex items-center justify-end gap-2 pt-2">
+                @csrf
+                @method('DELETE')
+                <button type="button" @click="showFileDeleteModal = false" class="px-4 py-2 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 text-slate-700 dark:text-slate-200 text-xs font-bold rounded-[5px] uppercase tracking-wider transition-colors cursor-pointer">
+                    Cancelar
+                </button>
+                <button type="submit" class="px-5 py-2 bg-rose-600 hover:bg-rose-700 text-white text-xs font-bold rounded-[5px] uppercase tracking-wider transition-colors shadow-xs flex items-center gap-1 cursor-pointer">
+                    Sim, Excluir Arquivo
+                </button>
+            </form>
         </div>
     </div>
 
@@ -269,11 +293,20 @@
     function editorialShowWorkspace() {
         return {
             openUploadModal: false,
+            showFileDeleteModal: false,
+            fileToDeleteId: null,
+            fileToDeleteName: '',
             toastMessage: '',
             isDragging: false,
             selectedFiles: [],
             uploading: false,
             uploadProgress: 0,
+
+            confirmDeleteFile(id, filename) {
+                this.fileToDeleteId = id;
+                this.fileToDeleteName = filename;
+                this.showFileDeleteModal = true;
+            },
 
             copyShareLink(url) {
                 navigator.clipboard.writeText(url);
