@@ -185,6 +185,7 @@
                 categoryMenuPos: { x: 0, y: 0 },
                 pendingEditedNode: null,
                 pendingSelectedText: '',
+                savedRange: null,
 
                 // MENU DE BOTÃO DIREITO DO MOUSE
                 showContextMenu: false,
@@ -462,33 +463,43 @@
                 handleEditorInput(event) {
                     this.syncEditorContent();
 
-                    const sel = window.getSelection();
-                    if (sel && sel.anchorNode) {
-                        let node = sel.anchorNode.nodeType === 3 ? sel.anchorNode.parentNode : sel.anchorNode;
-                        
-                        while (node && node !== this.$refs.wordEditor && !['P', 'DIV', 'LI', 'H1', 'H2', 'H3', 'MARK'].includes(node.nodeName)) {
-                            node = node.parentNode;
-                        }
-
-                        if (node && node !== this.$refs.wordEditor) {
-                            this.pendingEditedNode = node;
-                            this.pendingSelectedText = sel.toString().trim() || node.textContent.trim().substring(0, 60);
-
-                            if (event.clientX && event.clientY) {
-                                this.categoryMenuPos = { x: Math.min(event.clientX, window.innerWidth - 300), y: Math.max(event.clientY - 50, 80) };
-                            } else {
-                                const rect = node.getBoundingClientRect();
-                                this.categoryMenuPos = { x: Math.min(rect.left, window.innerWidth - 300), y: Math.max(rect.top - 45, 80) };
-                            }
-                            this.showCategoryMenu = true;
-                        }
-                    }
-
                     clearTimeout(this.typingTimer);
                     this.typingTimer = setTimeout(() => {
                         this.syncEditorContent();
                         this.persistWordContent();
                     }, 800);
+                },
+
+                captureSelection(event) {
+                    const sel = window.getSelection();
+                    if (sel && sel.rangeCount > 0) {
+                        const selectedStr = sel.toString().trim();
+
+                        if (selectedStr.length > 0) {
+                            const range = sel.getRangeAt(0);
+                            let node = range.commonAncestorContainer;
+                            if (node.nodeType === 3) node = node.parentNode;
+
+                            while (node && node !== this.$refs.wordEditor && !['P', 'DIV', 'LI', 'H1', 'H2', 'H3', 'MARK'].includes(node.nodeName)) {
+                                node = node.parentNode;
+                            }
+
+                            if (node && node !== this.$refs.wordEditor) {
+                                this.pendingEditedNode = node;
+                                this.pendingSelectedText = selectedStr;
+                                this.savedRange = range.cloneRange();
+
+                                const rect = range.getBoundingClientRect();
+                                if (rect.width > 0 && rect.height > 0) {
+                                    this.categoryMenuPos = {
+                                        x: Math.min(Math.max(10, rect.left), window.innerWidth - 340),
+                                        y: Math.max(10, rect.top - 45)
+                                    };
+                                    this.showCategoryMenu = true;
+                                }
+                            }
+                        }
+                    }
                 },
 
                 getCategoryTagClass(cat) {
@@ -534,6 +545,30 @@
 
                 selectCategory(cat) {
                     this.showCategoryMenu = false;
+                    let selectedText = this.pendingSelectedText;
+
+                    if (this.savedRange && !this.savedRange.collapsed) {
+                        try {
+                            const selectedStr = this.savedRange.toString().trim();
+                            if (selectedStr.length > 0) {
+                                selectedText = selectedStr;
+                                const colorClasses = this.getCategoryTagClass(cat);
+                                const mark = document.createElement('mark');
+                                mark.className = `category-word-tag ${colorClasses} border font-bold px-1.5 py-0.5 rounded shadow-xs inline-block`;
+                                mark.setAttribute('title', 'Categoria: ' + cat.toUpperCase());
+
+                                try {
+                                    this.savedRange.surroundContents(mark);
+                                } catch (e) {
+                                    const contents = this.savedRange.extractContents();
+                                    mark.appendChild(contents);
+                                    this.savedRange.insertNode(mark);
+                                }
+                            }
+                        } catch (err) {
+                            console.log('Surround range notice:', err);
+                        }
+                    }
 
                     if (this.pendingEditedNode) {
                         const paraId = this.pendingEditedNode.id || ('para_' + Math.random().toString(36).substr(2, 9));
@@ -543,20 +578,8 @@
                             this.paraHistoryMap[paraId] = [this.pendingEditedNode.innerHTML];
                         }
 
-                        const colorClasses = this.getCategoryTagClass(cat);
-                        const tagHtml = `<mark class="category-word-tag ${colorClasses} border font-bold px-1.5 py-0.5 rounded shadow-xs inline-block" title="Categoria: ${cat.toUpperCase()}">${this.pendingSelectedText}</mark>`;
-
-                        if (this.pendingSelectedText && this.pendingSelectedText.length > 0) {
-                            this.replaceInTextNodesOnly(
-                                this.pendingEditedNode,
-                                this.pendingSelectedText,
-                                tagHtml
-                            );
-                        }
-
                         this.paraHistoryMap[paraId].push(this.pendingEditedNode.innerHTML);
                         this.pendingEditedNode.setAttribute('data-version-index', this.paraHistoryMap[paraId].length - 1);
-
                         this.pendingEditedNode.classList.add('edited-line');
                     }
 
@@ -573,19 +596,22 @@
                         body: JSON.stringify({
                             editorial_revision_file_id: this.selectedFileId,
                             category: cat,
-                            original_text: this.pendingSelectedText || 'Edição no documento',
+                            original_text: selectedText || 'Edição no documento',
                             suggested_text: 'Texto atualizado',
                             justification: 'Alteração categorizada como ' + cat.toUpperCase()
                         })
                     })
                     .then(res => res.json())
                     .then(data => {
-                        this.showToast('Salvo com destaque em roxo e amarelo e adicionado em ' + cat.toUpperCase() + '!');
+                        this.showToast('Trecho categorizado como ' + cat.toUpperCase() + '!');
                         if (data.correction) {
                             data.correction.comments = data.correction.comments || [];
                             this.correctionsList.unshift(data.correction);
                         }
                     });
+
+                    this.savedRange = null;
+                    this.pendingSelectedText = '';
                 },
 
                 scrollToCorrection(cor) {
@@ -1431,7 +1457,9 @@
                             <div x-ref="wordEditor"
                                  contenteditable="true"
                                  class="word-paper-content focus:outline-none w-full flex flex-col items-center"
-                                 @input="handleEditorInput($event)">
+                                 @input="handleEditorInput($event)"
+                                 @mouseup="captureSelection($event)"
+                                 @keyup="captureSelection($event)">
                             </div>
                         </div>
                     </div>
