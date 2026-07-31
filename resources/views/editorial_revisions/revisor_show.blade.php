@@ -928,10 +928,10 @@
 
                 // ENVIO DE RESPOSTA NO CHAT COM ANIMAÇÃO DE PONTINHOS E BALÕES ESTILIZADOS
                 sendDuvidaMessage(correction) {
-                    if (!this.replyMessageInput || this.replyMessageInput.trim() === '') return;
+                    const messageText = (correction.replyInput || '').trim();
+                    if (!messageText) return;
 
-                    const messageText = this.replyMessageInput.trim();
-                    this.replyMessageInput = '';
+                    correction.replyInput = '';
                     this.isSendingChat = true;
 
                     fetch('{{ url("/revisao-editorial/" . $revision->share_token . "/revisor/corrections") }}/' + correction.id + '/comments', {
@@ -1780,7 +1780,7 @@
                         <!-- Input para Responder esta Dúvida -->
                         <div class="pt-3 border-t border-slate-100 flex items-center gap-2">
                             <input type="text" 
-                                   x-model="replyMessageInput"
+                                   x-model="cor.replyInput"
                                    @keydown.enter="sendDuvidaMessage(cor)"
                                    placeholder="Escreva sua resposta..."
                                    class="flex-1 px-4 py-2.5 border border-slate-200 rounded-full text-sm font-medium focus:ring-2 focus:ring-emerald-500 focus:outline-none bg-slate-50">
