@@ -463,6 +463,54 @@
                 handleEditorInput(event) {
                     this.syncEditorContent();
 
+                    const sel = window.getSelection();
+                    if (sel && sel.rangeCount > 0) {
+                        const range = sel.getRangeAt(0);
+                        let node = sel.anchorNode;
+                        if (node && node.nodeType === 3) node = node.parentNode;
+
+                        while (node && node !== this.$refs.wordEditor && !['P', 'DIV', 'LI', 'H1', 'H2', 'H3', 'MARK'].includes(node.nodeName)) {
+                            node = node.parentNode;
+                        }
+
+                        if (node && node !== this.$refs.wordEditor) {
+                            this.pendingEditedNode = node;
+                            
+                            let currentText = sel.anchorNode && sel.anchorNode.nodeValue ? sel.anchorNode.nodeValue : node.textContent;
+                            let wordMatch = currentText ? currentText.trim().split(/\s+/).pop() : '';
+                            this.pendingSelectedText = sel.toString().trim() || wordMatch || 'Edição no documento';
+
+                            if (sel.isCollapsed && sel.anchorNode && sel.anchorNode.nodeType === 3) {
+                                const textVal = sel.anchorNode.nodeValue || '';
+                                const offset = sel.anchorOffset;
+                                const lastSpace = textVal.lastIndexOf(' ', offset - 1);
+                                const nextSpace = textVal.indexOf(' ', offset);
+                                const start = lastSpace === -1 ? 0 : lastSpace + 1;
+                                const end = nextSpace === -1 ? textVal.length : nextSpace;
+                                
+                                if (end > start) {
+                                    const wordRange = document.createRange();
+                                    wordRange.setStart(sel.anchorNode, start);
+                                    wordRange.setEnd(sel.anchorNode, end);
+                                    this.savedRange = wordRange;
+                                    this.pendingSelectedText = textVal.substring(start, end).trim();
+                                }
+                            } else {
+                                this.savedRange = range.cloneRange();
+                            }
+
+                            const rect = range.getBoundingClientRect();
+                            const topPos = (rect.top && rect.top > 0) ? rect.top : 120;
+                            const leftPos = (rect.left && rect.left > 0) ? rect.left : 100;
+
+                            this.categoryMenuPos = {
+                                x: Math.min(Math.max(10, leftPos), window.innerWidth - 350),
+                                y: Math.max(10, topPos - 45)
+                            };
+                            this.showCategoryMenu = true;
+                        }
+                    }
+
                     clearTimeout(this.typingTimer);
                     this.typingTimer = setTimeout(() => {
                         this.syncEditorContent();
