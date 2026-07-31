@@ -274,16 +274,14 @@
                 Tem certeza que deseja excluir o arquivo <strong class="text-rose-600 dark:text-rose-400 font-mono" x-text="fileToDeleteName"></strong>?
             </p>
 
-            <form :action="deleteUrlPattern.replace(':id', fileToDeleteId)" method="POST" class="flex items-center justify-end gap-2 pt-2">
-                @csrf
-                @method('DELETE')
+            <div class="flex items-center justify-end gap-2 pt-2">
                 <button type="button" @click="showFileDeleteModal = false" class="px-4 py-2 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 text-slate-700 dark:text-slate-200 text-xs font-bold rounded-[5px] uppercase tracking-wider transition-colors cursor-pointer">
                     Cancelar
                 </button>
-                <button type="submit" class="px-5 py-2 bg-rose-600 hover:bg-rose-700 text-white text-xs font-bold rounded-[5px] uppercase tracking-wider transition-colors shadow-xs flex items-center gap-1 cursor-pointer">
+                <button type="button" @click="submitFileDeleteForm()" class="px-5 py-2 bg-rose-600 hover:bg-rose-700 text-white text-xs font-bold rounded-[5px] uppercase tracking-wider transition-colors shadow-xs flex items-center gap-1 cursor-pointer">
                     Sim, Excluir Arquivo
                 </button>
-            </form>
+            </div>
         </div>
     </div>
 
@@ -307,6 +305,29 @@
                 this.fileToDeleteId = id;
                 this.fileToDeleteName = filename;
                 this.showFileDeleteModal = true;
+            },
+
+            submitFileDeleteForm() {
+                if (!this.fileToDeleteId) return;
+
+                const form = document.createElement('form');
+                form.method = 'POST';
+                form.action = this.deleteUrlPattern.replace(':id', this.fileToDeleteId);
+
+                const csrfInput = document.createElement('input');
+                csrfInput.type = 'hidden';
+                csrfInput.name = '_token';
+                csrfInput.value = '{{ csrf_token() }}';
+                form.appendChild(csrfInput);
+
+                const methodInput = document.createElement('input');
+                methodInput.type = 'hidden';
+                methodInput.name = '_method';
+                methodInput.value = 'DELETE';
+                form.appendChild(methodInput);
+
+                document.body.appendChild(form);
+                form.submit();
             },
 
             copyShareLink(url) {
