@@ -93,13 +93,10 @@
             border-radius: 4px;
             box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
         }
-        /* MARCAÇÃO AMARELA PERMANENTE NAS LINHAS ALTERADAS */
-        .word-paper-content .edited-line, mark.edited-line, [style*="fef08a"] {
-            background-color: #fef08a !important;
-            color: #713f12 !important;
-            padding: 2px 6px;
-            border-radius: 4px;
-            border-left: 4px solid #facc15 !important;
+        /* INDICAÇÃO DISCRETA NAS LINHAS ALTERADAS */
+        .word-paper-content .edited-line {
+            border-left: 3px solid #f43f5e;
+            padding-left: 6px;
             transition: all 0.2s ease;
         }
         .pulse-highlight-target {
@@ -586,7 +583,6 @@
                         this.pendingEditedNode.setAttribute('data-version-index', this.paraHistoryMap[paraId].length - 1);
 
                         this.pendingEditedNode.classList.add('edited-line');
-                        this.pendingEditedNode.setAttribute('style', 'background-color: #fef08a !important; color: #713f12 !important; border-left: 4px solid #facc15 !important; padding: 4px 8px; border-radius: 4px; margin-bottom: 8px;');
                     }
 
                     this.syncEditorContent();
@@ -1093,7 +1089,6 @@
 
                             // Aplica o destaque amarelo permanente na linha alterada
                             targetElement.classList.add('edited-line');
-                            targetElement.setAttribute('style', 'background-color: #fef08a !important; color: #713f12 !important; border-left: 4px solid #facc15 !important; padding: 6px 10px; border-radius: 4px; margin-bottom: 8px;');
                             targetElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
 
                             this.syncEditorContent();
