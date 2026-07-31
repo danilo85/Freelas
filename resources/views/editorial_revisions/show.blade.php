@@ -274,7 +274,7 @@
                 Tem certeza que deseja excluir o arquivo <strong class="text-rose-600 dark:text-rose-400 font-mono" x-text="fileToDeleteName"></strong>?
             </p>
 
-            <form :action="'{{ url('/freelas/utilidades/revisao-editorial/files') }}/' + fileToDeleteId" method="POST" class="flex items-center justify-end gap-2 pt-2">
+            <form :action="deleteUrlPattern.replace(':id', fileToDeleteId)" method="POST" class="flex items-center justify-end gap-2 pt-2">
                 @csrf
                 @method('DELETE')
                 <button type="button" @click="showFileDeleteModal = false" class="px-4 py-2 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 text-slate-700 dark:text-slate-200 text-xs font-bold rounded-[5px] uppercase tracking-wider transition-colors cursor-pointer">
@@ -296,6 +296,7 @@
             showFileDeleteModal: false,
             fileToDeleteId: null,
             fileToDeleteName: '',
+            deleteUrlPattern: '{{ route("revisoes-editoriais.files.destroy", ":id") }}',
             toastMessage: '',
             isDragging: false,
             selectedFiles: [],
