@@ -1718,24 +1718,25 @@
 
                             <!-- MODO EDIÇÃO DO TRECHO & PERGUNTA -->
                             <template x-if="editingDuvidaId === cor.id">
-                                <div class="space-y-2 pt-1">
+                                <div class="space-y-3 pt-1">
                                     <div>
-                                        <label class="block text-[10px] font-bold uppercase text-slate-600 mb-1">Trecho Citado do Manuscrito:</label>
-                                        <input type="text" 
-                                               x-model="cor.original_text" 
-                                               class="w-full px-3 py-1.5 text-xs border border-emerald-300 rounded bg-white text-slate-800 font-serif italic focus:ring-2 focus:ring-emerald-500 focus:outline-none">
+                                        <label class="block text-[10px] font-bold uppercase text-emerald-900 mb-1">Trecho Citado do Manuscrito (Multi-Linha):</label>
+                                        <textarea x-model="cor.original_text" 
+                                                  rows="4"
+                                                  placeholder="Digite ou edite o trecho citado..."
+                                                  class="w-full px-3 py-2 text-sm font-serif italic leading-relaxed border border-emerald-400 rounded-lg bg-white text-slate-900 focus:ring-2 focus:ring-emerald-500 focus:outline-none shadow-2xs"></textarea>
                                     </div>
                                     <div>
-                                        <label class="block text-[10px] font-bold uppercase text-slate-600 mb-1">Pergunta / Escreva sua Dúvida para o Autor:</label>
+                                        <label class="block text-[10px] font-bold uppercase text-emerald-900 mb-1">Pergunta / Escreva sua Dúvida para o Autor:</label>
                                         <textarea x-model="cor.justification" 
-                                                  rows="2"
+                                                  rows="3"
                                                   placeholder="Escreva aqui a sua pergunta ou dúvida para o autor..."
-                                                  class="w-full px-3 py-2 text-xs border border-emerald-300 rounded bg-white text-slate-800 font-medium focus:ring-2 focus:ring-emerald-500 focus:outline-none"></textarea>
+                                                  class="w-full px-3 py-2 text-xs font-sans font-medium leading-relaxed border border-emerald-400 rounded-lg bg-white text-slate-900 focus:ring-2 focus:ring-emerald-500 focus:outline-none shadow-2xs"></textarea>
                                     </div>
                                     <div class="flex justify-end">
                                         <button type="button" 
                                                 @click="saveDuvidaDetails(cor)" 
-                                                class="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs rounded transition-colors shadow-xs flex items-center gap-1">
+                                                class="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs rounded-md transition-all shadow-xs flex items-center gap-1.5 cursor-pointer">
                                             <span>💾 Salvar Alterações</span>
                                         </button>
                                     </div>
