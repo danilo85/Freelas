@@ -685,7 +685,12 @@
                         this.showToast('Trecho categorizado como ' + cat.toUpperCase() + '!');
                         if (data.correction) {
                             data.correction.comments = data.correction.comments || [];
-                            this.correctionsList.unshift(data.correction);
+                            this.correctionsList = [data.correction, ...this.correctionsList];
+
+                            if (cat === 'duvida') {
+                                this.activeDuvidaId = data.correction.id;
+                                this.openDuvidasChatModal = true;
+                            }
                         }
                     });
 

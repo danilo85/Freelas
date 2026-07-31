@@ -249,7 +249,7 @@ class EditorialPublicController extends Controller
             'justification' => 'nullable|string',
         ]);
 
-        EditorialRevisionCorrection::create([
+        $correction = EditorialRevisionCorrection::create([
             'editorial_revision_id' => $revision->id,
             'editorial_revision_file_id' => $request->editorial_revision_file_id,
             'page_number' => $request->page_number,
@@ -261,6 +261,16 @@ class EditorialPublicController extends Controller
             'status' => 'pendente',
             'source' => 'revisor',
         ]);
+
+        $correction->load('comments');
+
+        if ($request->wantsJson() || $request->ajax() || $request->isJson() || $request->header('Accept') === 'application/json') {
+            return response()->json([
+                'success' => true,
+                'message' => 'Apontamento registrado com sucesso!',
+                'correction' => $correction,
+            ]);
+        }
 
         return back()->with('success', 'Apontamento registrado com sucesso no projeto!');
     }
