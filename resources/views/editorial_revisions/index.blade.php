@@ -40,9 +40,6 @@
             <a href="{{ route('revisoes-editoriais.revisores.index') }}" class="px-4 py-2.5 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 text-slate-700 dark:text-slate-200 text-xs font-bold rounded-[5px] transition-all flex items-center gap-2 cursor-pointer uppercase tracking-wider">
                 <span>👥</span> Gerenciar Revisores
             </a>
-            <a href="{{ route('revisoes-editoriais.create') }}" class="px-5 py-2.5 bg-primary-600 hover:bg-primary-700 text-white text-xs font-bold rounded-[5px] transition-all shadow-md flex items-center gap-2 cursor-pointer uppercase tracking-wider">
-                <span>➕</span> Nova Revisão Editorial
-            </a>
         </div>
     </div>
 
@@ -260,6 +257,15 @@
             </div>
         @endforelse
     </div>
+
+    <!-- Botão Flutuante: Nova Revisão Editorial -->
+    <a href="{{ route('revisoes-editoriais.create') }}" 
+       class="fixed bottom-8 right-8 z-40 w-14 h-14 bg-primary-600 hover:bg-primary-700 text-white rounded-full flex items-center justify-center shadow-lg shadow-primary-600/30 hover:shadow-xl hover:scale-110 transition-all duration-300 focus:outline-none focus:ring-4 focus:ring-primary-500/30 cursor-pointer" 
+       title="Nova Revisão Editorial">
+        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 4v16m8-8H4"/>
+        </svg>
+    </a>
 
 </div>
 @endsection
