@@ -278,7 +278,13 @@
                 },
 
                 get duvidasList() {
-                    return this.correctionsList.filter(c => c.category === 'duvida');
+                    if (!this.selectedFileId) return this.correctionsList.filter(c => c.category === 'duvida');
+                    return this.correctionsList.filter(c => c.category === 'duvida' && (!c.editorial_revision_file_id || parseInt(c.editorial_revision_file_id) === parseInt(this.selectedFileId)));
+                },
+
+                get fileCorrectionsList() {
+                    if (!this.selectedFileId) return this.correctionsList;
+                    return this.correctionsList.filter(c => !c.editorial_revision_file_id || parseInt(c.editorial_revision_file_id) === parseInt(this.selectedFileId));
                 },
 
                 loadContentForSelectedFile() {
@@ -793,11 +799,11 @@
 
                     const searchText = (targetText || '').toLowerCase().trim();
 
-                    // 1. Remove/Desfaz todas as tags <mark> que batem com a palavra ou apontamento excluído
+                    // 1. Remove especificamente a tag <mark> que bate com a palavra ou apontamento excluído
                     const marks = editor.querySelectorAll('mark.category-word-tag, mark.edited-red-word, mark.purple-word-mark, mark.edited-text-tag, mark');
                     marks.forEach(mark => {
                         const markText = (mark.textContent || '').toLowerCase().trim();
-                        if (!searchText || markText.includes(searchText) || searchText.includes(markText)) {
+                        if (!searchText || markText === searchText || markText.includes(searchText) || searchText.includes(markText)) {
                             const parent = mark.parentNode;
                             if (parent) {
                                 mark.replaceWith(document.createTextNode(mark.textContent));
@@ -806,25 +812,15 @@
                         }
                     });
 
-                    // 2. Se o parágrafo tinha histórico limpo original salvo em paraHistoryMap, restaura a versão limpa
-                    if (searchText) {
-                        const allElements = editor.querySelectorAll('.edited-line, p, div, li, [data-version-index]');
-                        for (let el of allElements) {
-                            if (el.textContent.toLowerCase().includes(searchText)) {
-                                const paraId = el.id || el.getAttribute('data-para-id');
-                                if (paraId && this.paraHistoryMap[paraId] && this.paraHistoryMap[paraId].length > 0) {
-                                    el.innerHTML = this.paraHistoryMap[paraId][0];
-                                }
-                                el.classList.remove('edited-line');
-                                el.style.backgroundColor = '';
-                                el.style.color = '';
-                                el.style.borderLeft = '';
-                                el.style.padding = '';
-                                el.style.marginBottom = '';
-                                el.removeAttribute('data-version-index');
-                            }
+                    // 2. Se não sobrou nenhuma tag <mark> no parágrafo, remove a classe .edited-line
+                    const editedElements = editor.querySelectorAll('.edited-line');
+                    editedElements.forEach(el => {
+                        if (!el.querySelector('mark')) {
+                            el.classList.remove('edited-line');
+                            el.style.borderLeft = '';
+                            el.removeAttribute('data-version-index');
                         }
-                    }
+                    });
                 },
 
                 removeHighlight() {
@@ -1343,9 +1339,9 @@
                 <button @click="categoryFilter = 'duvida'" class="flex-1 py-2.5 text-center border-b-2 text-[10px]" :class="categoryFilter === 'duvida' ? 'border-emerald-600 text-emerald-600 bg-emerald-50' : 'border-transparent text-slate-400'">Dúvidas</button>
             </div>
 
-            <!-- Feed de Apontamentos Linkados -->
+            <!-- Feed de Apontamentos Linkados por Arquivo -->
             <div class="flex-1 overflow-y-auto p-4 space-y-3">
-                <template x-for="cor in correctionsList" :key="cor.id">
+                <template x-for="cor in fileCorrectionsList" :key="cor.id">
                     <div x-show="categoryFilter === 'todas' || categoryFilter === cor.category" 
                          @click="scrollToCorrection(cor)"
                          class="p-3.5 bg-amber-50/60 border border-amber-200 rounded-[5px] text-xs space-y-2 cursor-pointer hover:bg-amber-100/70 hover:border-amber-400 transition-all group">
@@ -1381,7 +1377,7 @@
                     </div>
                 </template>
 
-                <template x-if="correctionsList.length === 0">
+                <template x-if="fileCorrectionsList.length === 0">
                     <div class="text-center text-slate-400 py-12 font-semibold text-xs border border-dashed border-slate-200 rounded-[5px]">
                         Nenhum apontamento marcado. Altere o texto no Word para destacar em amarelo e categorizar!
                     </div>
