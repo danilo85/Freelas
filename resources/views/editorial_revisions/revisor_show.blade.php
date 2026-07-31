@@ -475,28 +475,21 @@
 
                         if (node && node !== this.$refs.wordEditor) {
                             this.pendingEditedNode = node;
-                            
-                            let currentText = sel.anchorNode && sel.anchorNode.nodeValue ? sel.anchorNode.nodeValue : node.textContent;
-                            let wordMatch = currentText ? currentText.trim().split(/\s+/).pop() : '';
-                            this.pendingSelectedText = sel.toString().trim() || wordMatch || 'Edição no documento';
 
-                            if (sel.isCollapsed && sel.anchorNode && sel.anchorNode.nodeType === 3) {
-                                const textVal = sel.anchorNode.nodeValue || '';
-                                const offset = sel.anchorOffset;
-                                const lastSpace = textVal.lastIndexOf(' ', offset - 1);
-                                const nextSpace = textVal.indexOf(' ', offset);
-                                const start = lastSpace === -1 ? 0 : lastSpace + 1;
-                                const end = nextSpace === -1 ? textVal.length : nextSpace;
-                                
-                                if (end > start) {
-                                    const wordRange = document.createRange();
-                                    wordRange.setStart(sel.anchorNode, start);
-                                    wordRange.setEnd(sel.anchorNode, end);
-                                    this.savedRange = wordRange;
-                                    this.pendingSelectedText = textVal.substring(start, end).trim();
-                                }
-                            } else {
+                            if (!sel.isCollapsed && sel.toString().trim().length > 0) {
                                 this.savedRange = range.cloneRange();
+                                this.pendingSelectedText = sel.toString().trim();
+                            } else if (sel.anchorNode && sel.anchorNode.nodeType === 3) {
+                                const textNode = sel.anchorNode;
+                                const fullText = (textNode.nodeValue || '').trim();
+
+                                if (fullText.length > 0) {
+                                    const wordRange = document.createRange();
+                                    wordRange.setStart(textNode, 0);
+                                    wordRange.setEnd(textNode, textNode.nodeValue.length);
+                                    this.savedRange = wordRange;
+                                    this.pendingSelectedText = fullText;
+                                }
                             }
 
                             const rect = range.getBoundingClientRect();
@@ -1292,10 +1285,6 @@
                 <svg class="w-3.5 h-3.5 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
                 <span>Verificar Ortografia (LanguageTool)</span>
             </span>
-        </button>
-
-        <button type="button" @click="removeHighlight()" class="w-full px-4 py-2 hover:bg-amber-50 text-amber-800 text-left font-bold flex items-center gap-2">
-            <span>⚡ Remove Marcação Amarela</span>
         </button>
 
         <button type="button" @click="deleteSelectedCorrectionOrHighlight()" class="w-full px-4 py-2 hover:bg-rose-50 text-rose-700 text-left font-bold flex items-center gap-2">
