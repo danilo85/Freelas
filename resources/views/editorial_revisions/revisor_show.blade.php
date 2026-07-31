@@ -796,30 +796,58 @@
 
                 restoreOriginalTextInDocument(targetText) {
                     const editor = this.$refs.wordEditor;
-                    if (!editor || !targetText) return;
+                    if (!editor) return;
 
-                    const searchText = targetText.toLowerCase().trim();
-                    const allElements = editor.querySelectorAll('.edited-line, p, div, li, mark, [style*="fef08a"]');
+                    const searchText = (targetText || '').toLowerCase().trim();
 
-                    for (let el of allElements) {
-                        if (el.textContent.toLowerCase().includes(searchText)) {
-                            const paraId = el.id || el.getAttribute('data-para-id');
-                            if (paraId && this.paraHistoryMap[paraId] && this.paraHistoryMap[paraId].length > 0) {
-                                el.innerHTML = this.paraHistoryMap[paraId][0];
+                    // 1. Remove/Desfaz todas as tags <mark> que batem com a palavra ou apontamento excluído
+                    const marks = editor.querySelectorAll('mark.category-word-tag, mark.edited-red-word, mark.purple-word-mark, mark.edited-text-tag, mark');
+                    marks.forEach(mark => {
+                        const markText = (mark.textContent || '').toLowerCase().trim();
+                        if (!searchText || markText.includes(searchText) || searchText.includes(markText)) {
+                            const parent = mark.parentNode;
+                            if (parent) {
+                                mark.replaceWith(document.createTextNode(mark.textContent));
+                                parent.normalize();
                             }
-                            el.classList.remove('edited-line');
-                            el.style.backgroundColor = '';
-                            el.style.color = '';
-                            el.style.borderLeft = '';
-                            el.style.padding = '';
-                            el.style.marginBottom = '';
-                            el.removeAttribute('data-version-index');
+                        }
+                    });
+
+                    // 2. Se o parágrafo tinha histórico limpo original salvo em paraHistoryMap, restaura a versão limpa
+                    if (searchText) {
+                        const allElements = editor.querySelectorAll('.edited-line, p, div, li, [data-version-index]');
+                        for (let el of allElements) {
+                            if (el.textContent.toLowerCase().includes(searchText)) {
+                                const paraId = el.id || el.getAttribute('data-para-id');
+                                if (paraId && this.paraHistoryMap[paraId] && this.paraHistoryMap[paraId].length > 0) {
+                                    el.innerHTML = this.paraHistoryMap[paraId][0];
+                                }
+                                el.classList.remove('edited-line');
+                                el.style.backgroundColor = '';
+                                el.style.color = '';
+                                el.style.borderLeft = '';
+                                el.style.padding = '';
+                                el.style.marginBottom = '';
+                                el.removeAttribute('data-version-index');
+                            }
                         }
                     }
                 },
 
                 removeHighlight() {
                     this.showContextMenu = false;
+                    const editor = this.$refs.wordEditor;
+                    if (editor) {
+                        const marks = editor.querySelectorAll('mark.category-word-tag, mark.edited-red-word, mark.purple-word-mark, mark.edited-text-tag, mark');
+                        marks.forEach(mark => {
+                            const parent = mark.parentNode;
+                            if (parent) {
+                                mark.replaceWith(document.createTextNode(mark.textContent));
+                                parent.normalize();
+                            }
+                        });
+                    }
+
                     const sel = window.getSelection();
                     if (sel && sel.anchorNode) {
                         let node = sel.anchorNode.nodeType === 3 ? sel.anchorNode.parentNode : sel.anchorNode;
@@ -843,7 +871,7 @@
                     }
                     this.syncEditorContent();
                     this.persistWordContent();
-                    this.showToast('Marcação amarela removida e texto restaurado!');
+                    this.showToast('Marcação removida e texto restaurado!');
                 },
 
                 // ENVIO DE RESPOSTA NO CHAT COM ANIMAÇÃO DE PONTINHOS E BALÕES ESTILIZADOS
