@@ -5,6 +5,40 @@
     filterStatus: 'all', 
     searchQuery: '',
     toastMessage: '',
+    showProjectDeleteModal: false,
+    projectToDeleteId: null,
+    projectToDeleteTitle: '',
+    deleteProjectUrlPattern: '{{ route("revisoes-editoriais.destroy", ":id") }}',
+
+    confirmDeleteProject(id, title) {
+        this.projectToDeleteId = id;
+        this.projectToDeleteTitle = title;
+        this.showProjectDeleteModal = true;
+    },
+
+    submitProjectDeleteForm() {
+        if (!this.projectToDeleteId) return;
+
+        const form = document.createElement('form');
+        form.method = 'POST';
+        form.action = this.deleteProjectUrlPattern.replace(':id', this.projectToDeleteId);
+
+        const csrfInput = document.createElement('input');
+        csrfInput.type = 'hidden';
+        csrfInput.name = '_token';
+        csrfInput.value = '{{ csrf_token() }}';
+        form.appendChild(csrfInput);
+
+        const methodInput = document.createElement('input');
+        methodInput.type = 'hidden';
+        methodInput.name = '_method';
+        methodInput.value = 'DELETE';
+        form.appendChild(methodInput);
+
+        document.body.appendChild(form);
+        form.submit();
+    },
+
     copyLink(url, msg = 'Link copiado com sucesso!') {
         navigator.clipboard.writeText(url);
         this.toastMessage = msg;
@@ -238,16 +272,17 @@
                         </svg>
                     </button>
 
-                    <!-- Excluir -->
-                    <form action="{{ route('revisoes-editoriais.destroy', $rev->id) }}" method="POST" onsubmit="return confirm('Deseja realmente excluir este projeto de Revisão Editorial?')">
-                        @csrf
-                        @method('DELETE')
-                        <button type="submit" class="w-8 h-8 flex items-center justify-center text-rose-600 hover:bg-rose-50 rounded-[5px] transition-colors cursor-pointer" title="Excluir Projeto">
-                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
-                            </svg>
-                        </button>
-                    </form>
+                    <!-- Excluir Projeto -->
+                    <button type="button" 
+                            data-project-id="{{ $rev->id }}" 
+                            data-project-title="{{ $rev->title }}" 
+                            @click="confirmDeleteProject($el.dataset.projectId, $el.dataset.projectTitle)" 
+                            class="w-8 h-8 flex items-center justify-center text-rose-600 hover:bg-rose-50 rounded-[5px] transition-colors cursor-pointer" 
+                            title="Excluir Projeto">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
+                        </svg>
+                    </button>
                 </div>
 
             </div>
@@ -266,6 +301,37 @@
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 4v16m8-8H4"/>
         </svg>
     </a>
+
+    <!-- Modal Elegante de Confirmação de Exclusão de Projeto -->
+    <template x-teleport="body">
+        <div x-show="showProjectDeleteModal" x-cloak class="fixed inset-0 z-[999999] flex items-center justify-center p-4 bg-slate-950/70 backdrop-blur-xs select-none">
+            <div @click.away="showProjectDeleteModal = false" class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-slate-800 dark:text-slate-100 rounded-xl p-6 shadow-2xl max-w-md w-full space-y-4">
+                
+                <div class="flex items-center gap-3 text-rose-600">
+                    <div class="w-10 h-10 rounded-full bg-rose-100 dark:bg-rose-950/50 flex items-center justify-center font-bold shrink-0">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
+                    </div>
+                    <div>
+                        <h4 class="font-outfit font-black text-base uppercase tracking-tight text-slate-900 dark:text-slate-100">Excluir Projeto de Revisão</h4>
+                        <p class="text-xs text-slate-500 dark:text-slate-400">Esta ação excluirá o projeto e seus apontamentos.</p>
+                    </div>
+                </div>
+
+                <p class="text-xs text-slate-700 dark:text-slate-300 font-medium leading-relaxed bg-slate-50 dark:bg-slate-800/60 p-3.5 rounded border border-slate-200 dark:border-slate-700">
+                    Deseja realmente excluir o projeto de Revisão Editorial <strong class="text-rose-600 dark:text-rose-400 font-bold" x-text="projectToDeleteTitle"></strong>?
+                </p>
+
+                <div class="flex items-center justify-end gap-2 pt-2">
+                    <button type="button" @click="showProjectDeleteModal = false" class="px-4 py-2 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 text-slate-700 dark:text-slate-200 text-xs font-bold rounded-[5px] uppercase tracking-wider transition-colors cursor-pointer">
+                        Cancelar
+                    </button>
+                    <button type="button" @click="submitProjectDeleteForm()" class="px-5 py-2 bg-rose-600 hover:bg-rose-700 text-white text-xs font-bold rounded-[5px] uppercase tracking-wider transition-colors shadow-xs flex items-center gap-1 cursor-pointer">
+                        Sim, Excluir Projeto
+                    </button>
+                </div>
+            </div>
+        </div>
+    </template>
 
 </div>
 @endsection
