@@ -280,6 +280,7 @@ Route::prefix('revisao-editorial/{token}')->name('public.editorial.')->group(fun
     Route::get('/revisor', [\App\Http\Controllers\EditorialPublicController::class, 'revisorShow'])->name('revisor.show');
     Route::post('/revisor/login', [\App\Http\Controllers\EditorialPublicController::class, 'revisorLogin'])->name('revisor.login');
     Route::post('/revisor/corrections', [\App\Http\Controllers\EditorialPublicController::class, 'storeCorrectionPublic'])->name('revisor.corrections.store');
+    Route::put('/revisor/corrections/{correctionId}', [\App\Http\Controllers\EditorialPublicController::class, 'updateCorrectionPublic'])->name('revisor.corrections.update');
     Route::delete('/revisor/corrections/{correctionId}', [\App\Http\Controllers\EditorialPublicController::class, 'destroyCorrectionPublic'])->name('revisor.corrections.destroy');
     Route::post('/revisor/corrections/{correctionId}/comments', [\App\Http\Controllers\EditorialPublicController::class, 'storeCommentPublic'])->name('revisor.comments.store');
     Route::post('/revisor/glossary', [\App\Http\Controllers\EditorialPublicController::class, 'storeGlossaryPublic'])->name('revisor.glossary.store');

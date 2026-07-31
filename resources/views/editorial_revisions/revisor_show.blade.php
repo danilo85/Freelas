@@ -199,6 +199,7 @@
                 // MODAL DE CONFIRMAÇÃO DE EXCLUSÃO DE APONTAMENTO
                 showDeleteModal: false,
                 correctionToDelete: null,
+                editingDuvidaId: null,
 
                 // State Chat de Dúvidas
                 activeDuvidaId: null,
@@ -898,6 +899,31 @@
                     this.syncEditorContent();
                     this.persistWordContent();
                     this.showToast('Marcação removida e texto restaurado!');
+                },
+
+                saveDuvidaDetails(cor) {
+                    if (!cor || !cor.id) return;
+                    this.editingDuvidaId = null;
+
+                    fetch('{{ url("/revisao-editorial/" . $revision->share_token . "/revisor/corrections") }}/' + cor.id, {
+                        method: 'PUT',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'Accept': 'application/json',
+                            'X-CSRF-TOKEN': '{{ csrf_token() }}'
+                        },
+                        body: JSON.stringify({
+                            original_text: cor.original_text,
+                            justification: cor.justification
+                        })
+                    })
+                    .then(res => res.json())
+                    .then(data => {
+                        this.showToast('Pergunta e Trecho atualizados no Chat!');
+                    })
+                    .catch(err => {
+                        this.showToast('Erro ao salvar atualização da dúvida.');
+                    });
                 },
 
                 // ENVIO DE RESPOSTA NO CHAT COM ANIMAÇÃO DE PONTINHOS E BALÕES ESTILIZADOS
@@ -1664,10 +1690,57 @@
                             <span class="text-xs font-bold text-slate-400" x-text="cor.status"></span>
                         </div>
 
-                        <!-- Citação do Texto no Arquivo -->
-                        <div @click="scrollToCorrection(cor)" class="p-3 bg-slate-100 border-l-4 border-emerald-500 rounded-r-lg text-sm font-serif italic text-slate-700 cursor-pointer hover:bg-slate-200/80 transition-colors" title="Clique para ir até este ponto no documento">
-                            <span class="font-sans font-bold text-xs text-emerald-800 uppercase block not-italic mb-1">Trecho Citado:</span>
-                            <span x-text="'“' + (cor.original_text || 'Dúvida no documento') + '”'"></span>
+                        <!-- Citação do Texto no Arquivo & Pergunta Editável -->
+                        <div class="p-3.5 bg-emerald-50/70 border-l-4 border-emerald-500 rounded-r-xl space-y-2 relative">
+                            <div class="flex items-center justify-between">
+                                <span class="font-sans font-bold text-[10px] text-emerald-900 uppercase tracking-wider">📌 Trecho & Pergunta da Dúvida</span>
+                                <button type="button" 
+                                        @click="editingDuvidaId = (editingDuvidaId === cor.id ? null : cor.id)" 
+                                        class="text-xs font-bold text-emerald-700 hover:text-emerald-950 underline flex items-center gap-1">
+                                    <span x-text="editingDuvidaId === cor.id ? 'Cancelar' : '✏️ Editar Trecho / Pergunta'"></span>
+                                </button>
+                            </div>
+
+                            <!-- MODO VISUALIZAÇÃO -->
+                            <template x-if="editingDuvidaId !== cor.id">
+                                <div class="space-y-1.5 cursor-pointer" @click="scrollToCorrection(cor)" title="Clique para ir até este ponto no documento">
+                                    <p class="font-serif italic text-sm text-slate-800 bg-white/90 p-2 rounded border border-emerald-200">
+                                        “<span x-text="cor.original_text || 'Sem trecho selecionado'"></span>”
+                                    </p>
+                                    <template x-if="cor.justification">
+                                        <div class="text-xs font-medium text-slate-700 bg-emerald-100/70 p-2 rounded border border-emerald-300 flex items-start gap-1">
+                                            <span class="font-bold text-emerald-900 shrink-0">Pergunta:</span>
+                                            <span x-text="cor.justification" class="whitespace-pre-wrap"></span>
+                                        </div>
+                                    </template>
+                                </div>
+                            </template>
+
+                            <!-- MODO EDIÇÃO DO TRECHO & PERGUNTA -->
+                            <template x-if="editingDuvidaId === cor.id">
+                                <div class="space-y-2 pt-1">
+                                    <div>
+                                        <label class="block text-[10px] font-bold uppercase text-slate-600 mb-1">Trecho Citado do Manuscrito:</label>
+                                        <input type="text" 
+                                               x-model="cor.original_text" 
+                                               class="w-full px-3 py-1.5 text-xs border border-emerald-300 rounded bg-white text-slate-800 font-serif italic focus:ring-2 focus:ring-emerald-500 focus:outline-none">
+                                    </div>
+                                    <div>
+                                        <label class="block text-[10px] font-bold uppercase text-slate-600 mb-1">Pergunta / Escreva sua Dúvida para o Autor:</label>
+                                        <textarea x-model="cor.justification" 
+                                                  rows="2"
+                                                  placeholder="Escreva aqui a sua pergunta ou dúvida para o autor..."
+                                                  class="w-full px-3 py-2 text-xs border border-emerald-300 rounded bg-white text-slate-800 font-medium focus:ring-2 focus:ring-emerald-500 focus:outline-none"></textarea>
+                                    </div>
+                                    <div class="flex justify-end">
+                                        <button type="button" 
+                                                @click="saveDuvidaDetails(cor)" 
+                                                class="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs rounded transition-colors shadow-xs flex items-center gap-1">
+                                            <span>💾 Salvar Alterações</span>
+                                        </button>
+                                    </div>
+                                </div>
+                            </template>
                         </div>
 
                         <!-- Mensagens da Dúvida em Formato Balão de Fala -->

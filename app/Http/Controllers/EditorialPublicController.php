@@ -276,6 +276,31 @@ class EditorialPublicController extends Controller
     }
 
     /**
+     * Atualiza os detalhes de uma dúvida/apontamento (trecho e pergunta/justificativa).
+     */
+    public function updateCorrectionPublic(Request $request, string $token, int $correctionId)
+    {
+        $revision = EditorialRevision::where('share_token', $token)->firstOrFail();
+        $correction = EditorialRevisionCorrection::where('editorial_revision_id', $revision->id)->findOrFail($correctionId);
+
+        $request->validate([
+            'original_text' => 'nullable|string',
+            'justification' => 'nullable|string',
+        ]);
+
+        $correction->update([
+            'original_text' => $request->original_text,
+            'justification' => $request->justification,
+        ]);
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Dúvida/Trecho atualizado com sucesso!',
+            'correction' => $correction,
+        ]);
+    }
+
+    /**
      * Permite ao Revisor adicionar termos ao glossário diretamente pelo portal.
      */
     public function storeGlossaryPublic(Request $request, string $token)
