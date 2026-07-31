@@ -122,16 +122,16 @@
             display: inline-block;
         }
 
-        /* TAG MODERNA EM DESTAQUE PARA TEXTO NOVO/ALTERADO */
-        mark.edited-text-tag {
-            background-color: #f3e8ff !important;
-            color: #6b21a8 !important;
-            border: 1px solid #c084fc !important;
+        /* TAG DESTAQUE EM VERMELHO PARA A PALAVRA EDITADA NO MANUSCRITO */
+        mark.edited-red-word, mark.edited-text-tag {
+            background-color: #ffe4e6 !important;
+            color: #9f1239 !important;
+            border: 1px solid #fda4af !important;
             font-weight: 700;
-            padding: 2px 6px;
+            padding: 1px 5px;
             border-radius: 4px;
             display: inline-block;
-            box-shadow: 0 1px 2px rgba(168, 85, 247, 0.15);
+            box-shadow: 0 1px 2px rgba(225, 29, 72, 0.15);
             margin: 0 2px;
         }
 
@@ -537,6 +537,14 @@
                     }
                 },
 
+                getSnippetText(htmlStr) {
+                    if (!htmlStr) return '';
+                    const temp = document.createElement('div');
+                    temp.innerHTML = htmlStr;
+                    const text = (temp.textContent || temp.innerText || '').trim();
+                    return text.length > 35 ? text.substring(0, 35) + '...' : text;
+                },
+
                 selectCategory(cat) {
                     this.showCategoryMenu = false;
 
@@ -548,11 +556,11 @@
                             this.paraHistoryMap[paraId] = [this.pendingEditedNode.innerHTML];
                         }
 
-                        if (this.pendingSelectedText && this.pendingSelectedText.length > 0 && !this.pendingEditedNode.querySelector('.edited-text-tag')) {
+                        if (this.pendingSelectedText && this.pendingSelectedText.length > 0 && !this.pendingEditedNode.querySelector('.edited-red-word')) {
                             this.replaceInTextNodesOnly(
                                 this.pendingEditedNode,
                                 this.pendingSelectedText,
-                                `<mark class="edited-text-tag bg-purple-100 text-purple-900 border border-purple-300 font-bold px-1.5 py-0.5 rounded shadow-xs inline-block" title="Texto alterado pelo revisor">${this.pendingSelectedText}</mark>`
+                                `<mark class="edited-red-word bg-rose-100 text-rose-900 border border-rose-300 font-bold px-1.5 py-0.5 rounded shadow-xs inline-block" title="Texto alterado pelo revisor">${this.pendingSelectedText}</mark>`
                             );
                         }
 
@@ -1035,7 +1043,7 @@
                         }
                     });
 
-                    const tagReplacement = `<mark class="edited-text-tag bg-purple-100 text-purple-900 border border-purple-300 font-bold px-1.5 py-0.5 rounded shadow-xs inline-block" title="Texto alterado pelo revisor">${replacementValue}</mark>`;
+                    const tagReplacement = `<mark class="edited-red-word bg-rose-100 text-rose-900 border border-rose-300 font-bold px-1.5 py-0.5 rounded shadow-xs inline-block" title="Texto alterado pelo revisor">${replacementValue}</mark>`;
 
                     // Busca o parágrafo ou item contendo a palavra original
                     const allLeafElements = editor.querySelectorAll('p, li, h3, h4, span');
@@ -1732,7 +1740,6 @@
             <p class="text-xs text-slate-600 leading-relaxed font-medium">
                 Deseja realmente excluir este apontamento? O trecho no documento será restaurado para o texto original limpo.
             </p>
-
             <div class="flex items-center justify-end gap-2 pt-2 border-t border-slate-100">
                 <button type="button" @click="showDeleteModal = false; correctionToDelete = null" class="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold rounded-[5px] uppercase tracking-wider transition-colors cursor-pointer">
                     Cancelar
@@ -1744,7 +1751,7 @@
         </div>
     </div>
 
-    <!-- LINHA DO TEMPO DISCRETA NO HOVER DE LINHAS EDITADAS -->
+    <!-- LINHA DO TEMPO DISCRETA NO HOVER DE LINHAS EDITADAS (COMPACTA & DISCRETA) -->
     <div x-show="hoveredParaHistory && hoveredParaHistory.length > 0"
          x-cloak
          x-transition:enter="transition ease-out duration-150"
@@ -1753,56 +1760,56 @@
          x-transition:leave="transition ease-in duration-100"
          x-transition:leave-start="opacity-100 scale-100"
          x-transition:leave-end="opacity-0 scale-95"
-         class="fixed z-[99990] bg-slate-900 text-white rounded-xl shadow-2xl p-3.5 border border-slate-700 w-84 text-xs select-none pointer-events-auto"
+         class="fixed z-[99990] bg-slate-950 text-white rounded-lg shadow-2xl p-2.5 border border-slate-800 w-64 text-xs select-none pointer-events-auto"
          :style="'left: ' + hoveredParaPos.x + 'px; top: ' + hoveredParaPos.y + 'px;'"
          @mouseleave="hoveredParaHistory = null">
         
-        <div class="flex items-center justify-between border-b border-slate-800 pb-2 mb-2">
-            <span class="text-[10px] font-black uppercase tracking-wider text-purple-400 flex items-center gap-1.5">
-                <span>🕒</span> Linha do Tempo do Trecho
+        <div class="flex items-center justify-between border-b border-slate-800/80 pb-1.5 mb-1.5">
+            <span class="text-[9px] font-black uppercase tracking-wider text-rose-400 flex items-center gap-1">
+                <span>🕒</span> Histórico do Trecho
             </span>
-            <div class="flex items-center gap-2">
-                <span class="text-[9px] font-bold text-slate-300 bg-slate-800 px-2 py-0.5 rounded-full"
-                      x-text="'Versão ' + (hoveredCurrentIndex + 1) + ' de ' + hoveredParaHistory.length"></span>
-                <button type="button" @click="hoveredParaHistory = null" class="text-slate-400 hover:text-white text-xs">✕</button>
+            <div class="flex items-center gap-1.5">
+                <span class="text-[9px] font-bold text-slate-400"
+                      x-text="(hoveredCurrentIndex + 1) + '/' + hoveredParaHistory.length"></span>
+                <button type="button" @click="hoveredParaHistory = null" class="text-slate-500 hover:text-white text-xs leading-none">✕</button>
             </div>
         </div>
 
-        <!-- Comparativo: Texto Original vs Atual -->
-        <div class="space-y-2 text-[11px]">
-            <div class="bg-slate-950/90 p-2.5 rounded border border-slate-800 space-y-1">
-                <span class="text-[9px] font-bold text-slate-400 uppercase tracking-wider block">Texto Original (Limpo):</span>
-                <div class="text-slate-300 font-mono text-[10px] leading-snug line-through decoration-rose-500/80" x-html="hoveredParaHistory[0]"></div>
+        <!-- Resumo Curto Discreto: Antes x Depois -->
+        <div class="space-y-1 text-[10px]">
+            <div class="flex items-center gap-1.5 text-slate-400 truncate">
+                <span class="font-bold text-rose-400 shrink-0">Antes:</span>
+                <span class="font-mono text-slate-300 truncate line-through decoration-rose-500" x-text="getSnippetText(hoveredParaHistory[0])"></span>
             </div>
 
             <template x-if="hoveredCurrentIndex > 0">
-                <div class="bg-purple-950/50 p-2.5 rounded border border-purple-800/60 space-y-1">
-                    <span class="text-[9px] font-bold text-purple-300 uppercase tracking-wider block">Texto Alterado Atual:</span>
-                    <div class="text-purple-100 font-medium leading-snug" x-html="hoveredParaHistory[hoveredCurrentIndex]"></div>
+                <div class="flex items-center gap-1.5 text-slate-200 truncate font-semibold">
+                    <span class="font-bold text-emerald-400 shrink-0">Atual:</span>
+                    <span class="text-emerald-200 truncate" x-text="getSnippetText(hoveredParaHistory[hoveredCurrentIndex])"></span>
                 </div>
             </template>
         </div>
 
-        <!-- Controles da Linha do Tempo -->
-        <div class="flex items-center justify-between pt-2.5 mt-2.5 border-t border-slate-800 text-[10px]">
+        <!-- Controles Discretos -->
+        <div class="flex items-center justify-between pt-1.5 mt-1.5 border-t border-slate-800/80 text-[9px]">
             <button type="button" 
                     @click="navigateParaHistory(hoveredParaNode, -1)" 
                     :disabled="hoveredCurrentIndex <= 0"
-                    class="px-2.5 py-1 bg-slate-800 hover:bg-slate-700 disabled:opacity-30 rounded text-slate-200 font-bold flex items-center gap-1 cursor-pointer transition-colors">
-                <span>◀ Anterior</span>
+                    class="px-2 py-0.5 bg-slate-800 hover:bg-slate-700 disabled:opacity-30 rounded text-slate-300 font-bold cursor-pointer transition-colors">
+                ◀ Ant.
             </button>
             
             <button type="button" 
                     @click="restoreParaOriginal(hoveredParaNode)" 
-                    class="text-amber-400 hover:text-amber-300 font-bold underline cursor-pointer">
-                Restaurar Limpo
+                    class="text-amber-400 hover:underline font-bold cursor-pointer">
+                Restaurar
             </button>
 
             <button type="button" 
                     @click="navigateParaHistory(hoveredParaNode, 1)" 
                     :disabled="hoveredCurrentIndex >= hoveredParaHistory.length - 1"
-                    class="px-2.5 py-1 bg-purple-600 hover:bg-purple-500 disabled:opacity-30 rounded text-white font-bold flex items-center gap-1 cursor-pointer transition-colors">
-                <span>Próximo ▶</span>
+                    class="px-2 py-0.5 bg-rose-600 hover:bg-rose-500 disabled:opacity-30 rounded text-white font-bold cursor-pointer transition-colors">
+                Próx. ▶
             </button>
         </div>
     </div>
