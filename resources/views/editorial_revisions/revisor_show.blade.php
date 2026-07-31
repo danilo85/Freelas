@@ -193,6 +193,10 @@
                 showContextMenu: false,
                 contextMenuPos: { x: 0, y: 0 },
 
+                // MODAL DE CONFIRMAÇÃO DE EXCLUSÃO DE APONTAMENTO
+                showDeleteModal: false,
+                correctionToDelete: null,
+
                 // State Chat de Dúvidas
                 activeDuvidaId: null,
                 replyMessageInput: '',
@@ -589,22 +593,124 @@
                     this.showContextMenu = true;
                 },
 
+                confirmDeleteCorrection(cor) {
+                    this.correctionToDelete = cor;
+                    this.showDeleteModal = true;
+                },
+
+                deleteSelectedCorrectionOrHighlight() {
+                    this.showContextMenu = false;
+                    const sel = window.getSelection();
+                    let targetText = '';
+                    if (sel && sel.toString().trim().length > 0) {
+                        targetText = sel.toString().trim();
+                    }
+
+                    let matchingCor = null;
+                    if (targetText && this.correctionsList.length > 0) {
+                        matchingCor = this.correctionsList.find(c => c.original_text && c.original_text.toLowerCase().includes(targetText.toLowerCase()));
+                    }
+
+                    if (!matchingCor && this.correctionsList.length > 0) {
+                        let node = sel && sel.anchorNode ? (sel.anchorNode.nodeType === 3 ? sel.anchorNode.parentNode : sel.anchorNode) : null;
+                        if (node) {
+                            const nodeText = node.textContent.trim();
+                            matchingCor = this.correctionsList.find(c => c.original_text && nodeText.toLowerCase().includes(c.original_text.toLowerCase()));
+                        }
+                    }
+
+                    if (matchingCor) {
+                        this.confirmDeleteCorrection(matchingCor);
+                    } else {
+                        this.removeHighlight();
+                    }
+                },
+
+                executeDeleteCorrection() {
+                    const cor = this.correctionToDelete;
+                    this.showDeleteModal = false;
+                    this.correctionToDelete = null;
+
+                    if (cor && cor.id) {
+                        fetch('{{ url("/revisao-editorial/" . $revision->share_token . "/revisor/corrections") }}/' + cor.id, {
+                            method: 'DELETE',
+                            headers: {
+                                'Accept': 'application/json',
+                                'X-CSRF-TOKEN': '{{ csrf_token() }}'
+                            }
+                        })
+                        .then(res => res.json())
+                        .then(data => {
+                            this.correctionsList = this.correctionsList.filter(c => c.id !== cor.id);
+
+                            if (cor.original_text) {
+                                this.restoreOriginalTextInDocument(cor.original_text);
+                            } else {
+                                this.removeHighlight();
+                            }
+
+                            this.syncEditorContent();
+                            this.persistWordContent();
+                            this.showToast('Apontamento excluído e texto original restaurado!');
+                        })
+                        .catch(() => {
+                            this.showToast('Erro ao excluir apontamento.');
+                        });
+                    } else {
+                        this.removeHighlight();
+                    }
+                },
+
+                restoreOriginalTextInDocument(targetText) {
+                    const editor = this.$refs.wordEditor;
+                    if (!editor || !targetText) return;
+
+                    const searchText = targetText.toLowerCase().trim();
+                    const allElements = editor.querySelectorAll('.edited-line, p, div, li, mark, [style*="fef08a"]');
+
+                    for (let el of allElements) {
+                        if (el.textContent.toLowerCase().includes(searchText)) {
+                            const paraId = el.id || el.getAttribute('data-para-id');
+                            if (paraId && this.paraHistoryMap[paraId] && this.paraHistoryMap[paraId].length > 0) {
+                                el.innerHTML = this.paraHistoryMap[paraId][0];
+                            }
+                            el.classList.remove('edited-line');
+                            el.style.backgroundColor = '';
+                            el.style.color = '';
+                            el.style.borderLeft = '';
+                            el.style.padding = '';
+                            el.style.marginBottom = '';
+                            el.removeAttribute('data-version-index');
+                        }
+                    }
+                },
+
                 removeHighlight() {
                     this.showContextMenu = false;
                     const sel = window.getSelection();
                     if (sel && sel.anchorNode) {
                         let node = sel.anchorNode.nodeType === 3 ? sel.anchorNode.parentNode : sel.anchorNode;
                         while (node && node !== this.$refs.wordEditor) {
-                            if (node.classList.contains('edited-line') || node.hasAttribute('style')) {
+                            if (node.classList.contains('edited-line')) {
+                                const paraId = node.id || node.getAttribute('data-para-id');
+                                if (paraId && this.paraHistoryMap[paraId] && this.paraHistoryMap[paraId].length > 0) {
+                                    node.innerHTML = this.paraHistoryMap[paraId][0];
+                                }
                                 node.classList.remove('edited-line');
-                                node.removeAttribute('style');
+                                node.style.backgroundColor = '';
+                                node.style.color = '';
+                                node.style.borderLeft = '';
+                                node.style.padding = '';
+                                node.style.marginBottom = '';
+                                node.removeAttribute('data-version-index');
+                                break;
                             }
                             node = node.parentNode;
                         }
                     }
                     this.syncEditorContent();
                     this.persistWordContent();
-                    this.showToast('Marcação amarela removida!');
+                    this.showToast('Marcação amarela removida e texto restaurado!');
                 },
 
                 // ENVIO DE RESPOSTA NO CHAT COM ANIMAÇÃO DE PONTINHOS E BALÕES ESTILIZADOS
@@ -1030,6 +1136,10 @@
         <button type="button" @click="removeHighlight()" class="w-full px-4 py-2 hover:bg-amber-50 text-amber-800 text-left font-bold flex items-center gap-2">
             <span>⚡ Remove Marcação Amarela</span>
         </button>
+
+        <button type="button" @click="deleteSelectedCorrectionOrHighlight()" class="w-full px-4 py-2 hover:bg-rose-50 text-rose-700 text-left font-bold flex items-center gap-2">
+            <span>🗑️ Excluir Apontamento e Restaurar</span>
+        </button>
     </div>
 
     <!-- HEADER SUPERIOR DE REVISÃO EDITORIAL -->
@@ -1098,10 +1208,15 @@
                                       'bg-emerald-600': cor.category === 'duvida',
                                       'bg-purple-600': cor.category === 'padronizacao'
                                   }" x-text="cor.category"></span>
-                            <span class="text-[10px] text-slate-400 group-hover:text-blue-600 font-bold flex items-center gap-1">
-                                <span>Ir para o texto</span>
-                                <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3"/></svg>
-                            </span>
+                            <div class="flex items-center gap-2">
+                                <span class="text-[10px] text-slate-400 group-hover:text-blue-600 font-bold flex items-center gap-1">
+                                    <span>Ir para o texto</span>
+                                    <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3"/></svg>
+                                </span>
+                                <button type="button" @click.stop="confirmDeleteCorrection(cor)" class="p-1 text-slate-400 hover:text-rose-600 hover:bg-rose-100 rounded transition-colors" title="Excluir Apontamento">
+                                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
+                                </button>
+                            </div>
                         </div>
 
                         <p class="font-mono text-amber-950 font-bold bg-amber-100/90 px-1.5 py-0.5 rounded" x-text="cor.original_text || 'Edição direta'"></p>
@@ -1536,6 +1651,34 @@
             </template>
         </div>
 
+    </div>
+
+    <!-- MODAL DE CONFIRMAÇÃO DE EXCLUSÃO DE APONTAMENTO -->
+    <div x-show="showDeleteModal" x-cloak class="fixed inset-0 z-[999999] flex items-center justify-center p-4 bg-slate-950/70 backdrop-blur-xs select-none">
+        <div @click.away="showDeleteModal = false" class="bg-white border border-slate-200 text-slate-800 rounded-xl p-6 shadow-2xl max-w-md w-full space-y-4">
+            <div class="flex items-center gap-3 text-rose-600 border-b border-slate-100 pb-3">
+                <div class="w-10 h-10 rounded-full bg-rose-100 flex items-center justify-center shrink-0">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
+                </div>
+                <div>
+                    <h3 class="font-outfit font-black text-slate-800 text-base uppercase tracking-tight">Excluir Apontamento</h3>
+                    <p class="text-xs text-slate-500 font-medium">Esta ação não poderá ser desfeita.</p>
+                </div>
+            </div>
+
+            <p class="text-xs text-slate-600 leading-relaxed font-medium">
+                Deseja realmente excluir este apontamento? O trecho no documento será restaurado para o texto original limpo.
+            </p>
+
+            <div class="flex items-center justify-end gap-2 pt-2 border-t border-slate-100">
+                <button type="button" @click="showDeleteModal = false; correctionToDelete = null" class="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold rounded-[5px] uppercase tracking-wider transition-colors cursor-pointer">
+                    Cancelar
+                </button>
+                <button type="button" @click="executeDeleteCorrection()" class="px-5 py-2 bg-rose-600 hover:bg-rose-700 text-white text-xs font-bold rounded-[5px] uppercase tracking-wider transition-colors shadow-xs flex items-center gap-1 cursor-pointer">
+                    <span>Sim, Excluir</span>
+                </button>
+            </div>
+        </div>
     </div>
 
 </body>

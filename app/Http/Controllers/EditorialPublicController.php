@@ -489,9 +489,21 @@ class EditorialPublicController extends Controller
                 ], ';');
             }
 
-            fclose($file);
-        };
-
         return response()->stream($callback, 200, $headers);
+    }
+
+    /**
+     * Exclui um apontamento de revisão no portal público do revisor.
+     */
+    public function destroyCorrectionPublic(string $token, int $correctionId)
+    {
+        $revision = EditorialRevision::where('share_token', $token)->firstOrFail();
+        $correction = EditorialRevisionCorrection::where('editorial_revision_id', $revision->id)
+            ->where('id', $correctionId)
+            ->firstOrFail();
+
+        $correction->delete();
+
+        return response()->json(['success' => true, 'message' => 'Apontamento excluído com sucesso!']);
     }
 }
