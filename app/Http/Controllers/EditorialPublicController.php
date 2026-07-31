@@ -431,7 +431,7 @@ class EditorialPublicController extends Controller
     }
 
     /**
-     * Exporta o documento editado/revisado com todas as marcações amarelas e alterações preservadas.
+     * Exporta o documento editado/revisado como arquivo .doc do Microsoft Word preservando marcações de categoria.
      */
     public function exportRevisedDocx(string $token, int $fileId)
     {
@@ -439,15 +439,30 @@ class EditorialPublicController extends Controller
         $file = $revision->files()->where('id', $fileId)->firstOrFail();
 
         $content = $file->extracted_text ?: $this->extractTextFromFile($file, $revision->storage_disk ?: 'public');
-        $cleanFilename = pathinfo($file->filename, PATHINFO_FILENAME) . ' - Versão Revisada com Marcações.html';
+        $cleanFilename = pathinfo($file->filename, PATHINFO_FILENAME) . ' - Versão Revisada.doc';
 
-        $fullHtml = '<!DOCTYPE html><html><head><meta charset="utf-8"><title>' . e($file->filename) . '</title>';
-        $fullHtml .= '<style>body { font-family: "Georgia", serif; padding: 40px; color: #1e293b; line-height: 1.6; } .edited-line, mark { background-color: #fef08a !important; color: #713f12 !important; padding: 2px 6px; border-radius: 4px; border-left: 4px solid #facc15 !important; } .pdf-page-card { margin-bottom: 40px; padding: 30px; border: 1px solid #cbd5e1; border-radius: 4px; }</style>';
-        $fullHtml .= '</head><body>' . $content . '</body></html>';
+        $wordHtml = '<html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:w="urn:schemas-microsoft-com:office:word" xmlns="http://www.w3.org/TR/REC-html40">';
+        $wordHtml .= '<head><meta charset="utf-8"><title>' . e($file->filename) . '</title>';
+        $wordHtml .= '<!--[if gte mso 9]><xml><w:WordDocument><w:View>Print</w:View><w:Zoom>100</w:Zoom><w:DoNotOptimizeForBrowser/></w:WordDocument></xml><![endif]-->';
+        $wordHtml .= '<style>';
+        $wordHtml .= 'body { font-family: "Calibri", "Segoe UI", Arial, sans-serif; font-size: 11pt; padding: 2cm; line-height: 1.5; color: #1e293b; }';
+        $wordHtml .= 'p { margin-bottom: 10pt; }';
+        $wordHtml .= 'img { max-width: 100%; height: auto; margin: 10pt 0; }';
+        $wordHtml .= 'mark, mark.category-word-tag, mark.edited-red-word { font-weight: bold; padding: 2px 5px; border-radius: 3px; }';
+        $wordHtml .= 'mark.bg-rose-100 { background-color: #fee2e2 !important; color: #9f1239 !important; mso-highlight: red; }';
+        $wordHtml .= 'mark.bg-amber-100 { background-color: #fef3c7 !important; color: #92400e !important; mso-highlight: yellow; }';
+        $wordHtml .= 'mark.bg-cyan-100 { background-color: #cffafe !important; color: #155e75 !important; mso-highlight: cyan; }';
+        $wordHtml .= 'mark.bg-purple-100 { background-color: #f3e8ff !important; color: #6b21a8 !important; mso-highlight: magenta; }';
+        $wordHtml .= 'mark.bg-emerald-100 { background-color: #d1fae5 !important; color: #065f46 !important; mso-highlight: green; }';
+        $wordHtml .= '</style></head><body>';
+        $wordHtml .= $content;
+        $wordHtml .= '</body></html>';
 
-        return response($fullHtml)
-            ->header('Content-Type', 'text/html; charset=utf-8')
-            ->header('Content-Disposition', 'attachment; filename="' . $cleanFilename . '"');
+        return response($wordHtml)
+            ->header('Content-Type', 'application/msword; charset=utf-8')
+            ->header('Content-Disposition', 'attachment; filename="' . $cleanFilename . '"')
+            ->header('Cache-Control', 'must-revalidate, post-check=0, pre-check=0')
+            ->header('Expires', '0');
     }
 
     /**
