@@ -204,93 +204,97 @@
     </div>
 
     <!-- MODAL MODERNO DRAG & DROP DE ARQUIVOS COM BARRA DE PROGRESSO EM TEMPO REAL -->
-    <div x-show="openUploadModal" x-cloak class="fixed top-0 left-0 right-0 bottom-0 w-screen h-screen z-[999999] flex items-center justify-center p-4 bg-slate-950/70 backdrop-blur-xs select-none">
-        <div @click.away="openUploadModal = false" class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-slate-800 dark:text-slate-100 rounded-xl p-6 shadow-2xl max-w-lg w-full space-y-4">
-            
-            <div class="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-3">
-                <h3 class="font-outfit font-black text-md uppercase">Upload Moderno de Arquivos</h3>
-                <button type="button" @click="openUploadModal = false" class="text-slate-400 hover:text-slate-600 font-bold">✕</button>
-            </div>
-
-            <!-- ZONA DE DRAG & DROP -->
-            <div @dragover.prevent="isDragging = true"
-                 @dragleave.prevent="isDragging = false"
-                 @drop.prevent="handleFileDrop($event)"
-                 @click="$refs.fileInput.click()"
-                 class="border-2 border-dashed rounded-xl p-8 text-center cursor-pointer transition-all space-y-3"
-                 :class="isDragging ? 'border-blue-500 bg-blue-50/50 dark:bg-blue-950/30' : 'border-slate-300 dark:border-slate-700 bg-slate-50/50 dark:bg-slate-800/40 hover:bg-slate-100 dark:hover:bg-slate-800'">
+    <template x-teleport="body">
+        <div x-show="openUploadModal" x-cloak class="fixed inset-0 z-[999999] flex items-center justify-center p-4 bg-slate-950/70 backdrop-blur-xs select-none">
+            <div @click.away="openUploadModal = false" class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-slate-800 dark:text-slate-100 rounded-xl p-6 shadow-2xl max-w-lg w-full space-y-4">
                 
-                <input type="file" x-ref="fileInput" @change="handleFileSelect($event)" multiple class="hidden">
-
-                <svg class="w-10 h-10 mx-auto text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"/>
-                </svg>
-                <p class="text-xs font-bold text-slate-700 dark:text-slate-200">
-                    Arraste & Solte seus arquivos aqui ou <span class="text-blue-600 underline">clique para buscar</span>
-                </p>
-                <p class="text-[10px] text-slate-400">PDF, Word (.docx) ou Imagens (Máx: 100MB)</p>
-            </div>
-
-            <!-- LISTA DE ARQUIVOS SELECIONADOS -->
-            <template x-if="selectedFiles.length > 0">
-                <div class="space-y-2 max-h-32 overflow-y-auto">
-                    <template x-for="(file, index) in selectedFiles" :key="index">
-                        <div class="flex items-center justify-between p-2.5 bg-slate-100 dark:bg-slate-800 rounded text-xs font-medium">
-                            <span class="truncate max-w-[240px]" x-text="file.name"></span>
-                            <span class="text-[10px] text-slate-400" x-text="(file.size / 1024 / 1024).toFixed(2) + ' MB'"></span>
-                        </div>
-                    </template>
+                <div class="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-3">
+                    <h3 class="font-outfit font-black text-md uppercase">Upload Moderno de Arquivos</h3>
+                    <button type="button" @click="openUploadModal = false" class="text-slate-400 hover:text-slate-600 font-bold">✕</button>
                 </div>
-            </template>
 
-            <!-- BARRA DE PROGRESSO EM TEMPO REAL COM PORCENTAGEM -->
-            <div x-show="uploading" class="space-y-2 pt-2">
-                <div class="flex items-center justify-between text-xs font-bold text-slate-700 dark:text-slate-200">
-                    <span>Enviando arquivos...</span>
-                    <span x-text="uploadProgress + '%'"></span>
-                </div>
-                <div class="w-full bg-slate-200 dark:bg-slate-700 rounded-full h-3 overflow-hidden">
-                    <div class="bg-blue-600 h-3 rounded-full transition-all duration-150" :style="'width: ' + uploadProgress + '%'"></div>
-                </div>
-            </div>
+                <!-- ZONA DE DRAG & DROP -->
+                <div @dragover.prevent="isDragging = true"
+                     @dragleave.prevent="isDragging = false"
+                     @drop.prevent="handleFileDrop($event)"
+                     @click="$refs.fileInput.click()"
+                     class="border-2 border-dashed rounded-xl p-8 text-center cursor-pointer transition-all space-y-3"
+                     :class="isDragging ? 'border-blue-500 bg-blue-50/50 dark:bg-blue-950/30' : 'border-slate-300 dark:border-slate-700 bg-slate-50/50 dark:bg-slate-800/40 hover:bg-slate-100 dark:hover:bg-slate-800'">
+                    
+                    <input type="file" x-ref="fileInput" @change="handleFileSelect($event)" multiple class="hidden">
 
-            <div class="flex justify-end gap-2 pt-3 border-t border-slate-100 dark:border-slate-800">
-                <button type="button" @click="openUploadModal = false" class="px-4 py-2 bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 font-bold text-xs rounded-[5px]">Cancelar</button>
-                <button type="button" @click="submitUploadWithProgress()" :disabled="selectedFiles.length === 0 || uploading" class="w-9 h-9 bg-blue-600 hover:bg-blue-700 text-white rounded-[5px] flex items-center justify-center text-sm transition-all disabled:opacity-50" title="Iniciar Upload">
-                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3"/></svg>
-                </button>
+                    <svg class="w-10 h-10 mx-auto text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"/>
+                    </svg>
+                    <p class="text-xs font-bold text-slate-700 dark:text-slate-200">
+                        Arraste & Solte seus arquivos aqui ou <span class="text-blue-600 underline">clique para buscar</span>
+                    </p>
+                    <p class="text-[10px] text-slate-400">PDF, Word (.docx) ou Imagens (Máx: 100MB)</p>
+                </div>
+
+                <!-- LISTA DE ARQUIVOS SELECIONADOS -->
+                <template x-if="selectedFiles.length > 0">
+                    <div class="space-y-2 max-h-32 overflow-y-auto">
+                        <template x-for="(file, index) in selectedFiles" :key="index">
+                            <div class="flex items-center justify-between p-2.5 bg-slate-100 dark:bg-slate-800 rounded text-xs font-medium">
+                                <span class="truncate max-w-[240px]" x-text="file.name"></span>
+                                <span class="text-[10px] text-slate-400" x-text="(file.size / 1024 / 1024).toFixed(2) + ' MB'"></span>
+                            </div>
+                        </template>
+                    </div>
+                </template>
+
+                <!-- BARRA DE PROGRESSO EM TEMPO REAL COM PORCENTAGEM -->
+                <div x-show="uploading" class="space-y-2 pt-2">
+                    <div class="flex items-center justify-between text-xs font-bold text-slate-700 dark:text-slate-200">
+                        <span>Enviando arquivos...</span>
+                        <span x-text="uploadProgress + '%'"></span>
+                    </div>
+                    <div class="w-full bg-slate-200 dark:bg-slate-700 rounded-full h-3 overflow-hidden">
+                        <div class="bg-blue-600 h-3 rounded-full transition-all duration-150" :style="'width: ' + uploadProgress + '%'"></div>
+                    </div>
+                </div>
+
+                <div class="flex justify-end gap-2 pt-3 border-t border-slate-100 dark:border-slate-800">
+                    <button type="button" @click="openUploadModal = false" class="px-4 py-2 bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 font-bold text-xs rounded-[5px]">Cancelar</button>
+                    <button type="button" @click="submitUploadWithProgress()" :disabled="selectedFiles.length === 0 || uploading" class="w-9 h-9 bg-blue-600 hover:bg-blue-700 text-white rounded-[5px] flex items-center justify-center text-sm transition-all disabled:opacity-50" title="Iniciar Upload">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3"/></svg>
+                    </button>
+                </div>
             </div>
         </div>
-    </div>
+    </template>
 
     <!-- Modal Elegante de Confirmação de Exclusão de Arquivo -->
-    <div x-show="showFileDeleteModal" x-cloak class="fixed top-0 left-0 right-0 bottom-0 w-screen h-screen z-[999999] flex items-center justify-center p-4 bg-slate-950/70 backdrop-blur-xs select-none">
-        <div @click.away="showFileDeleteModal = false" class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-slate-800 dark:text-slate-100 rounded-xl p-6 shadow-2xl max-w-md w-full space-y-4">
-            
-            <div class="flex items-center gap-3 text-rose-600">
-                <div class="w-10 h-10 rounded-full bg-rose-100 dark:bg-rose-950/50 flex items-center justify-center font-bold shrink-0">
-                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
+    <template x-teleport="body">
+        <div x-show="showFileDeleteModal" x-cloak class="fixed inset-0 z-[999999] flex items-center justify-center p-4 bg-slate-950/70 backdrop-blur-xs select-none">
+            <div @click.away="showFileDeleteModal = false" class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-slate-800 dark:text-slate-100 rounded-xl p-6 shadow-2xl max-w-md w-full space-y-4">
+                
+                <div class="flex items-center gap-3 text-rose-600">
+                    <div class="w-10 h-10 rounded-full bg-rose-100 dark:bg-rose-950/50 flex items-center justify-center font-bold shrink-0">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
+                    </div>
+                    <div>
+                        <h4 class="font-outfit font-black text-base uppercase tracking-tight text-slate-900 dark:text-slate-100">Excluir Arquivo do Projeto</h4>
+                        <p class="text-xs text-slate-500 dark:text-slate-400">Esta ação excluirá o arquivo do servidor.</p>
+                    </div>
                 </div>
-                <div>
-                    <h4 class="font-outfit font-black text-base uppercase tracking-tight text-slate-900 dark:text-slate-100">Excluir Arquivo do Projeto</h4>
-                    <p class="text-xs text-slate-500 dark:text-slate-400">Esta ação excluirá o arquivo do servidor.</p>
+
+                <p class="text-xs text-slate-700 dark:text-slate-300 font-medium leading-relaxed bg-slate-50 dark:bg-slate-800/60 p-3.5 rounded border border-slate-200 dark:border-slate-700">
+                    Tem certeza que deseja excluir o arquivo <strong class="text-rose-600 dark:text-rose-400 font-mono" x-text="fileToDeleteName"></strong>?
+                </p>
+
+                <div class="flex items-center justify-end gap-2 pt-2">
+                    <button type="button" @click="showFileDeleteModal = false" class="px-4 py-2 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 text-slate-700 dark:text-slate-200 text-xs font-bold rounded-[5px] uppercase tracking-wider transition-colors cursor-pointer">
+                        Cancelar
+                    </button>
+                    <button type="button" @click="submitFileDeleteForm()" class="px-5 py-2 bg-rose-600 hover:bg-rose-700 text-white text-xs font-bold rounded-[5px] uppercase tracking-wider transition-colors shadow-xs flex items-center gap-1 cursor-pointer">
+                        Sim, Excluir Arquivo
+                    </button>
                 </div>
-            </div>
-
-            <p class="text-xs text-slate-700 dark:text-slate-300 font-medium leading-relaxed bg-slate-50 dark:bg-slate-800/60 p-3.5 rounded border border-slate-200 dark:border-slate-700">
-                Tem certeza que deseja excluir o arquivo <strong class="text-rose-600 dark:text-rose-400 font-mono" x-text="fileToDeleteName"></strong>?
-            </p>
-
-            <div class="flex items-center justify-end gap-2 pt-2">
-                <button type="button" @click="showFileDeleteModal = false" class="px-4 py-2 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 text-slate-700 dark:text-slate-200 text-xs font-bold rounded-[5px] uppercase tracking-wider transition-colors cursor-pointer">
-                    Cancelar
-                </button>
-                <button type="button" @click="submitFileDeleteForm()" class="px-5 py-2 bg-rose-600 hover:bg-rose-700 text-white text-xs font-bold rounded-[5px] uppercase tracking-wider transition-colors shadow-xs flex items-center gap-1 cursor-pointer">
-                    Sim, Excluir Arquivo
-                </button>
             </div>
         </div>
-    </div>
+    </template>
 
 </div>
 
