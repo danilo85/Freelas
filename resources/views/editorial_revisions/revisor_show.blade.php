@@ -197,12 +197,6 @@
                 showDeleteModal: false,
                 correctionToDelete: null,
 
-                // State da Linha do Tempo Discreta no Hover
-                hoveredParaHistory: null,
-                hoveredCurrentIndex: 0,
-                hoveredParaNode: null,
-                hoveredParaPos: { x: 0, y: 0 },
-
                 // State Chat de Dúvidas
                 activeDuvidaId: null,
                 replyMessageInput: '',
@@ -495,28 +489,53 @@
 
                     clearTimeout(this.typingTimer);
                     this.typingTimer = setTimeout(() => {
+                        this.wrapActiveEditedWordInRedTag();
+                        this.syncEditorContent();
                         this.persistWordContent();
-                    }, 1000);
+                    }, 800);
                 },
 
-                handleEditorMouseOver(event) {
-                    let target = event.target;
-                    while (target && target !== this.$refs.wordEditor) {
-                        const paraId = target.id || target.getAttribute('data-para-id');
-                        if (paraId && this.paraHistoryMap[paraId] && this.paraHistoryMap[paraId].length > 0) {
-                            const history = this.paraHistoryMap[paraId];
-                            this.hoveredParaNode = target;
-                            this.hoveredParaHistory = history;
-                            this.hoveredCurrentIndex = parseInt(target.getAttribute('data-version-index') || (history.length - 1));
-                            
-                            const rect = target.getBoundingClientRect();
-                            this.hoveredParaPos = {
-                                x: Math.min(Math.max(20, rect.left), window.innerWidth - 350),
-                                y: Math.max(10, rect.top - 165)
-                            };
-                            return;
+                wrapActiveEditedWordInRedTag() {
+                    const sel = window.getSelection();
+                    if (!sel || !sel.anchorNode) return;
+
+                    let node = sel.anchorNode;
+                    let parent = node.nodeType === 3 ? node.parentNode : node;
+                    
+                    if (parent && parent.classList && (parent.classList.contains('edited-red-word') || parent.classList.contains('edited-text-tag') || parent.classList.contains('purple-word-mark'))) {
+                        return;
+                    }
+
+                    if (node.nodeType === 3 && node.nodeValue) {
+                        const val = node.nodeValue;
+                        const trimmed = val.trim();
+                        if (trimmed.length >= 2 && !/^\s*$/.test(trimmed)) {
+                            const words = trimmed.split(/\s+/);
+                            const lastWord = words[words.length - 1];
+
+                            if (lastWord && lastWord.length >= 2) {
+                                const range = document.createRange();
+                                const startIdx = val.lastIndexOf(lastWord);
+                                if (startIdx !== -1) {
+                                    range.setStart(node, startIdx);
+                                    range.setEnd(node, startIdx + lastWord.length);
+
+                                    const mark = document.createElement('mark');
+                                    mark.className = 'edited-red-word bg-rose-100 text-rose-900 border border-rose-300 font-bold px-1.5 py-0.5 rounded shadow-xs inline-block';
+                                    mark.setAttribute('title', 'Texto alterado pelo revisor');
+                                    mark.textContent = lastWord;
+
+                                    range.deleteContents();
+                                    range.insertNode(mark);
+
+                                    const newRange = document.createRange();
+                                    newRange.setStartAfter(mark);
+                                    newRange.collapse(true);
+                                    sel.removeAllRanges();
+                                    sel.addRange(newRange);
+                                }
+                            }
                         }
-                        target = target.parentNode;
                     }
                 },
 
@@ -532,7 +551,6 @@
                         node.removeAttribute('data-version-index');
                         this.syncEditorContent();
                         this.persistWordContent();
-                        this.hoveredParaHistory = null;
                         this.showToast('Texto restaurado para a versão limpa original!');
                     }
                 },
@@ -1442,8 +1460,7 @@
                             <div x-ref="wordEditor"
                                  contenteditable="true"
                                  class="word-paper-content focus:outline-none w-full flex flex-col items-center"
-                                 @input="handleEditorInput($event)"
-                                 @mouseover="handleEditorMouseOver($event)">
+                                 @input="handleEditorInput($event)">
                             </div>
                         </div>
                     </div>
@@ -1748,69 +1765,6 @@
                     <span>Sim, Excluir</span>
                 </button>
             </div>
-        </div>
-    </div>
-
-    <!-- LINHA DO TEMPO DISCRETA NO HOVER DE LINHAS EDITADAS (COMPACTA & DISCRETA) -->
-    <div x-show="hoveredParaHistory && hoveredParaHistory.length > 0"
-         x-cloak
-         x-transition:enter="transition ease-out duration-150"
-         x-transition:enter-start="opacity-0 scale-95"
-         x-transition:enter-end="opacity-100 scale-100"
-         x-transition:leave="transition ease-in duration-100"
-         x-transition:leave-start="opacity-100 scale-100"
-         x-transition:leave-end="opacity-0 scale-95"
-         class="fixed z-[99990] bg-slate-950 text-white rounded-lg shadow-2xl p-2.5 border border-slate-800 w-64 text-xs select-none pointer-events-auto"
-         :style="'left: ' + hoveredParaPos.x + 'px; top: ' + hoveredParaPos.y + 'px;'"
-         @mouseleave="hoveredParaHistory = null">
-        
-        <div class="flex items-center justify-between border-b border-slate-800/80 pb-1.5 mb-1.5">
-            <span class="text-[9px] font-black uppercase tracking-wider text-rose-400 flex items-center gap-1">
-                <span>🕒</span> Histórico do Trecho
-            </span>
-            <div class="flex items-center gap-1.5">
-                <span class="text-[9px] font-bold text-slate-400"
-                      x-text="(hoveredCurrentIndex + 1) + '/' + hoveredParaHistory.length"></span>
-                <button type="button" @click="hoveredParaHistory = null" class="text-slate-500 hover:text-white text-xs leading-none">✕</button>
-            </div>
-        </div>
-
-        <!-- Resumo Curto Discreto: Antes x Depois -->
-        <div class="space-y-1 text-[10px]">
-            <div class="flex items-center gap-1.5 text-slate-400 truncate">
-                <span class="font-bold text-rose-400 shrink-0">Antes:</span>
-                <span class="font-mono text-slate-300 truncate line-through decoration-rose-500" x-text="getSnippetText(hoveredParaHistory[0])"></span>
-            </div>
-
-            <template x-if="hoveredCurrentIndex > 0">
-                <div class="flex items-center gap-1.5 text-slate-200 truncate font-semibold">
-                    <span class="font-bold text-emerald-400 shrink-0">Atual:</span>
-                    <span class="text-emerald-200 truncate" x-text="getSnippetText(hoveredParaHistory[hoveredCurrentIndex])"></span>
-                </div>
-            </template>
-        </div>
-
-        <!-- Controles Discretos -->
-        <div class="flex items-center justify-between pt-1.5 mt-1.5 border-t border-slate-800/80 text-[9px]">
-            <button type="button" 
-                    @click="navigateParaHistory(hoveredParaNode, -1)" 
-                    :disabled="hoveredCurrentIndex <= 0"
-                    class="px-2 py-0.5 bg-slate-800 hover:bg-slate-700 disabled:opacity-30 rounded text-slate-300 font-bold cursor-pointer transition-colors">
-                ◀ Ant.
-            </button>
-            
-            <button type="button" 
-                    @click="restoreParaOriginal(hoveredParaNode)" 
-                    class="text-amber-400 hover:underline font-bold cursor-pointer">
-                Restaurar
-            </button>
-
-            <button type="button" 
-                    @click="navigateParaHistory(hoveredParaNode, 1)" 
-                    :disabled="hoveredCurrentIndex >= hoveredParaHistory.length - 1"
-                    class="px-2 py-0.5 bg-rose-600 hover:bg-rose-500 disabled:opacity-30 rounded text-white font-bold cursor-pointer transition-colors">
-                Próx. ▶
-            </button>
         </div>
     </div>
 
