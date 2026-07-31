@@ -3,8 +3,26 @@
 @section('content')
 <div class="space-y-6" x-data="{ 
     filterStatus: 'all', 
-    searchQuery: '' 
+    searchQuery: '',
+    toastMessage: '',
+    copyLink(url, msg = 'Link copiado com sucesso!') {
+        navigator.clipboard.writeText(url);
+        this.toastMessage = msg;
+        setTimeout(() => { this.toastMessage = ''; }, 3000);
+    }
 }">
+
+    <!-- Toast Notification Banner -->
+    <template x-teleport="body">
+        <div x-show="toastMessage" 
+             x-cloak 
+             x-transition
+             class="fixed bottom-10 right-6 z-[999999] bg-slate-900 text-white px-5 py-3.5 rounded-[5px] shadow-2xl flex items-center gap-3 text-xs font-bold border border-slate-700 select-none">
+            <svg class="w-4 h-4 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
+            <span x-text="toastMessage"></span>
+            <button type="button" @click="toastMessage = ''" class="text-slate-400 hover:text-white ml-2">✕</button>
+        </div>
+    </template>
 
     <!-- Banner Superior / Título e Ação Principal -->
     <div class="flex flex-col lg:flex-row lg:items-center justify-between gap-4 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-6 rounded-[5px] shadow-sm">
@@ -198,16 +216,36 @@
                 </div>
 
                 <!-- Ações e Rodapé -->
-                <div class="pt-3 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between gap-2">
-                    <a href="{{ route('revisoes-editoriais.show', $rev->id) }}" class="flex-1 py-2.5 bg-slate-900 hover:bg-slate-800 text-white font-bold text-xs uppercase tracking-wider rounded-[5px] transition-colors text-center shadow-xs flex items-center justify-center gap-1.5">
-                        <span>🔍 Abrir Workspace</span>
+                <div class="pt-3 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between gap-1.5">
+                    <a href="{{ route('revisoes-editoriais.show', $rev->id) }}" class="flex-1 py-2 bg-slate-900 hover:bg-slate-800 text-white font-bold text-xs uppercase tracking-wider rounded-[5px] transition-colors text-center shadow-xs flex items-center justify-center gap-1">
+                        <span>🔍 Abrir</span>
                     </a>
+
+                    <!-- Copiar Link do Revisor -->
+                    <button type="button" 
+                            @click="copyLink('{{ route('public.editorial.revisor.show', $rev->share_token) }}', 'Link do Revisor copiado!')" 
+                            class="w-8 h-8 flex items-center justify-center bg-purple-50 hover:bg-purple-100 text-purple-700 dark:bg-purple-950/40 dark:hover:bg-purple-900/60 dark:text-purple-300 rounded-[5px] transition-colors shrink-0 cursor-pointer" 
+                            title="Copiar Link do Revisor">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"></path>
+                        </svg>
+                    </button>
+
+                    <!-- Copiar Link do Autor -->
+                    <button type="button" 
+                            @click="copyLink('{{ route('public.editorial.show', $rev->share_token) }}', 'Link do Autor copiado!')" 
+                            class="w-8 h-8 flex items-center justify-center bg-blue-50 hover:bg-blue-100 text-blue-700 dark:bg-blue-950/40 dark:hover:bg-blue-900/60 dark:text-blue-300 rounded-[5px] transition-colors shrink-0 cursor-pointer" 
+                            title="Copiar Link do Autor (Esclarecer Dúvidas)">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1"></path>
+                        </svg>
+                    </button>
 
                     <!-- Excluir -->
                     <form action="{{ route('revisoes-editoriais.destroy', $rev->id) }}" method="POST" onsubmit="return confirm('Deseja realmente excluir este projeto de Revisão Editorial?')">
                         @csrf
                         @method('DELETE')
-                        <button type="submit" class="w-9 h-9 flex items-center justify-center text-rose-600 hover:bg-rose-50 rounded-[5px] transition-colors" title="Excluir Projeto">
+                        <button type="submit" class="w-8 h-8 flex items-center justify-center text-rose-600 hover:bg-rose-50 rounded-[5px] transition-colors cursor-pointer" title="Excluir Projeto">
                             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
                             </svg>
