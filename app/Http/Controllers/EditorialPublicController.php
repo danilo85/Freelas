@@ -489,6 +489,9 @@ class EditorialPublicController extends Controller
                 ], ';');
             }
 
+            fclose($file);
+        };
+
         return response()->stream($callback, 200, $headers);
     }
 
