@@ -85,13 +85,18 @@
             box-sizing: border-box;
             border-radius: 2px;
         }
-        .word-paper-content img {
+        .word-paper-content img,
+        #pdf-continuous-container img,
+        #word-paper-container img,
+        .pdf-page-card img,
+        img {
             max-width: 100%;
             height: auto;
             display: block;
             margin: 1.5rem auto;
-            border-radius: 4px;
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+            border-radius: 2px;
+            box-shadow: none !important;
+            filter: none !important;
         }
         /* INDICAÇÃO DISCRETA NAS LINHAS ALTERADAS */
         .word-paper-content .edited-line {
@@ -423,12 +428,12 @@
                     for (let pageNum = 1; pageNum <= pdf.numPages; pageNum++) {
                         const pageWrapper = document.createElement('div');
                         pageWrapper.id = 'pdf-page-wrapper-' + pageNum;
-                        pageWrapper.className = 'my-6 flex flex-col items-center select-text relative shadow-lg bg-white border border-slate-300 rounded-[2px] p-4 w-full max-w-4xl mx-auto';
+                        pageWrapper.className = 'my-6 flex flex-col items-center select-text relative bg-white border border-slate-300 rounded-[2px] p-4 w-full max-w-4xl mx-auto';
                         pageWrapper.setAttribute('data-page', pageNum);
 
                         const canvas = document.createElement('canvas');
                         canvas.id = 'pdf-canvas-page-' + pageNum;
-                        canvas.className = 'max-w-full block mx-auto shadow-xs border border-slate-200';
+                        canvas.className = 'max-w-full block mx-auto border border-slate-200';
 
                         const pageBadge = document.createElement('div');
                         pageBadge.className = 'w-full flex items-center justify-between border-b border-slate-200 pb-2 mb-4 text-[11px] font-bold text-slate-600 select-none';
