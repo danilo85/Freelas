@@ -486,53 +486,25 @@
 
                     clearTimeout(this.typingTimer);
                     this.typingTimer = setTimeout(() => {
-                        this.wrapActiveEditedWordInRedTag();
                         this.syncEditorContent();
                         this.persistWordContent();
                     }, 800);
                 },
 
-                wrapActiveEditedWordInRedTag() {
-                    const sel = window.getSelection();
-                    if (!sel || !sel.anchorNode) return;
-
-                    let node = sel.anchorNode;
-                    let parent = node.nodeType === 3 ? node.parentNode : node;
-                    
-                    if (parent && parent.classList && (parent.classList.contains('edited-red-word') || parent.classList.contains('edited-text-tag') || parent.classList.contains('purple-word-mark'))) {
-                        return;
-                    }
-
-                    if (node.nodeType === 3 && node.nodeValue) {
-                        const val = node.nodeValue;
-                        const trimmed = val.trim();
-                        if (trimmed.length >= 2 && !/^\s*$/.test(trimmed)) {
-                            const words = trimmed.split(/\s+/);
-                            const lastWord = words[words.length - 1];
-
-                            if (lastWord && lastWord.length >= 2) {
-                                const range = document.createRange();
-                                const startIdx = val.lastIndexOf(lastWord);
-                                if (startIdx !== -1) {
-                                    range.setStart(node, startIdx);
-                                    range.setEnd(node, startIdx + lastWord.length);
-
-                                    const mark = document.createElement('mark');
-                                    mark.className = 'edited-red-word bg-rose-100 text-rose-900 border border-rose-300 font-bold px-1.5 py-0.5 rounded shadow-xs inline-block';
-                                    mark.setAttribute('title', 'Texto alterado pelo revisor');
-                                    mark.textContent = lastWord;
-
-                                    range.deleteContents();
-                                    range.insertNode(mark);
-
-                                    const newRange = document.createRange();
-                                    newRange.setStartAfter(mark);
-                                    newRange.collapse(true);
-                                    sel.removeAllRanges();
-                                    sel.addRange(newRange);
-                                }
-                            }
-                        }
+                getCategoryTagClass(cat) {
+                    const category = (cat || '').toLowerCase().trim();
+                    if (category.includes('ortograf')) {
+                        return 'bg-rose-100 text-rose-900 border-rose-300';
+                    } else if (category.includes('gramat') || category.includes('gramát')) {
+                        return 'bg-amber-100 text-amber-900 border-amber-300';
+                    } else if (category.includes('duvida') || category.includes('dúvida') || category.includes('chat')) {
+                        return 'bg-emerald-100 text-emerald-900 border-emerald-300';
+                    } else if (category.includes('padroniz')) {
+                        return 'bg-purple-100 text-purple-900 border-purple-300';
+                    } else if (category.includes('pontua') || category.includes('pontuá')) {
+                        return 'bg-cyan-100 text-cyan-900 border-cyan-300';
+                    } else {
+                        return 'bg-rose-100 text-rose-900 border-rose-300';
                     }
                 },
 
@@ -571,11 +543,14 @@
                             this.paraHistoryMap[paraId] = [this.pendingEditedNode.innerHTML];
                         }
 
-                        if (this.pendingSelectedText && this.pendingSelectedText.length > 0 && !this.pendingEditedNode.querySelector('.edited-red-word')) {
+                        const colorClasses = this.getCategoryTagClass(cat);
+                        const tagHtml = `<mark class="category-word-tag ${colorClasses} border font-bold px-1.5 py-0.5 rounded shadow-xs inline-block" title="Categoria: ${cat.toUpperCase()}">${this.pendingSelectedText}</mark>`;
+
+                        if (this.pendingSelectedText && this.pendingSelectedText.length > 0) {
                             this.replaceInTextNodesOnly(
                                 this.pendingEditedNode,
                                 this.pendingSelectedText,
-                                `<mark class="edited-red-word bg-rose-100 text-rose-900 border border-rose-300 font-bold px-1.5 py-0.5 rounded shadow-xs inline-block" title="Texto alterado pelo revisor">${this.pendingSelectedText}</mark>`
+                                tagHtml
                             );
                         }
 
@@ -1161,8 +1136,9 @@
         <span class="text-[10px] text-slate-400 uppercase tracking-wider px-2 border-r border-slate-700">Categorizar:</span>
         <button type="button" @click="selectCategory('ortografia')" class="px-2.5 py-1 bg-rose-600 hover:bg-rose-700 rounded text-[11px]">Ortografia</button>
         <button type="button" @click="selectCategory('gramatica')" class="px-2.5 py-1 bg-amber-600 hover:bg-amber-700 rounded text-[11px]">Gramática</button>
-        <button type="button" @click="selectCategory('duvida')" class="px-2.5 py-1 bg-emerald-600 hover:bg-emerald-700 rounded text-[11px]">Dúvida (Chat)</button>
+        <button type="button" @click="selectCategory('pontuacao')" class="px-2.5 py-1 bg-cyan-600 hover:bg-cyan-700 rounded text-[11px]">Pontuação</button>
         <button type="button" @click="selectCategory('padronizacao')" class="px-2.5 py-1 bg-purple-600 hover:bg-purple-700 rounded text-[11px]">Padronização</button>
+        <button type="button" @click="selectCategory('duvida')" class="px-2.5 py-1 bg-emerald-600 hover:bg-emerald-700 rounded text-[11px]">Dúvida (Chat)</button>
         
         <template x-if="pendingEditedNode && pendingEditedNode.id && paraHistoryMap[pendingEditedNode.id] && paraHistoryMap[pendingEditedNode.id].length > 1">
             <div class="flex items-center gap-1.5 pl-2 border-l border-slate-700">
