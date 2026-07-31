@@ -204,7 +204,7 @@
     </div>
 
     <!-- MODAL MODERNO DRAG & DROP DE ARQUIVOS COM BARRA DE PROGRESSO EM TEMPO REAL -->
-    <div x-show="openUploadModal" x-cloak class="fixed inset-0 z-[99999] flex items-center justify-center p-4 bg-slate-950/60 backdrop-blur-xs select-none">
+    <div x-show="openUploadModal" x-cloak class="fixed top-0 left-0 right-0 bottom-0 w-screen h-screen z-[999999] flex items-center justify-center p-4 bg-slate-950/70 backdrop-blur-xs select-none">
         <div @click.away="openUploadModal = false" class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-slate-800 dark:text-slate-100 rounded-xl p-6 shadow-2xl max-w-lg w-full space-y-4">
             
             <div class="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-3">
@@ -264,7 +264,7 @@
     </div>
 
     <!-- Modal Elegante de Confirmação de Exclusão de Arquivo -->
-    <div x-show="showFileDeleteModal" x-cloak class="fixed inset-0 z-[999999] flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-xs select-none">
+    <div x-show="showFileDeleteModal" x-cloak class="fixed top-0 left-0 right-0 bottom-0 w-screen h-screen z-[999999] flex items-center justify-center p-4 bg-slate-950/70 backdrop-blur-xs select-none">
         <div @click.away="showFileDeleteModal = false" class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-slate-800 dark:text-slate-100 rounded-xl p-6 shadow-2xl max-w-md w-full space-y-4">
             
             <div class="flex items-center gap-3 text-rose-600">
