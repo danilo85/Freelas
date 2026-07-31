@@ -439,6 +439,37 @@ class EditorialPublicController extends Controller
         $file = $revision->files()->where('id', $fileId)->firstOrFail();
 
         $content = $file->extracted_text ?: $this->extractTextFromFile($file, $revision->storage_disk ?: 'public');
+
+        // Transforma todas as tags <mark> em elementos com estilos inline reconhecidos nativamente pelo Microsoft Word
+        $content = preg_replace_callback('/<mark([^>]*)>(.*?)<\/mark>/is', function($matches) {
+            $attrs = $matches[1];
+            $inner = $matches[2];
+            
+            $bgColor = '#fee2e2'; // Rose/Red padrão (Ortografia)
+            $textColor = '#9f1239';
+            $msoColor = 'red';
+
+            if (str_contains($attrs, 'bg-amber-100') || str_contains(strtolower($attrs), 'gramat')) {
+                $bgColor = '#fef3c7'; // Amarelo/Laranja (Gramática)
+                $textColor = '#92400e';
+                $msoColor = 'yellow';
+            } elseif (str_contains($attrs, 'bg-cyan-100') || str_contains(strtolower($attrs), 'pontua')) {
+                $bgColor = '#cffafe'; // Ciano/Azul (Pontuação)
+                $textColor = '#155e75';
+                $msoColor = 'cyan';
+            } elseif (str_contains($attrs, 'bg-purple-100') || str_contains(strtolower($attrs), 'padroniz')) {
+                $bgColor = '#f3e8ff'; // Roxo (Padronização)
+                $textColor = '#6b21a8';
+                $msoColor = 'magenta';
+            } elseif (str_contains($attrs, 'bg-emerald-100') || str_contains(strtolower($attrs), 'duvida')) {
+                $bgColor = '#d1fae5'; // Verde (Dúvida/Chat)
+                $textColor = '#065f46';
+                $msoColor = 'green';
+            }
+
+            return '<span style="background-color: ' . $bgColor . '; color: ' . $textColor . '; font-weight: bold; padding: 2px 5px; mso-highlight: ' . $msoColor . ';">' . $inner . '</span>';
+        }, $content);
+
         $cleanFilename = pathinfo($file->filename, PATHINFO_FILENAME) . ' - Versão Revisada.doc';
 
         $wordHtml = '<html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:w="urn:schemas-microsoft-com:office:word" xmlns="http://www.w3.org/TR/REC-html40">';
@@ -448,12 +479,7 @@ class EditorialPublicController extends Controller
         $wordHtml .= 'body { font-family: "Calibri", "Segoe UI", Arial, sans-serif; font-size: 11pt; padding: 2cm; line-height: 1.5; color: #1e293b; }';
         $wordHtml .= 'p { margin-bottom: 10pt; }';
         $wordHtml .= 'img { max-width: 100%; height: auto; margin: 10pt 0; }';
-        $wordHtml .= 'mark, mark.category-word-tag, mark.edited-red-word { font-weight: bold; padding: 2px 5px; border-radius: 3px; }';
-        $wordHtml .= 'mark.bg-rose-100 { background-color: #fee2e2 !important; color: #9f1239 !important; mso-highlight: red; }';
-        $wordHtml .= 'mark.bg-amber-100 { background-color: #fef3c7 !important; color: #92400e !important; mso-highlight: yellow; }';
-        $wordHtml .= 'mark.bg-cyan-100 { background-color: #cffafe !important; color: #155e75 !important; mso-highlight: cyan; }';
-        $wordHtml .= 'mark.bg-purple-100 { background-color: #f3e8ff !important; color: #6b21a8 !important; mso-highlight: magenta; }';
-        $wordHtml .= 'mark.bg-emerald-100 { background-color: #d1fae5 !important; color: #065f46 !important; mso-highlight: green; }';
+        $wordHtml .= 'mark, span[style*="mso-highlight"] { font-weight: bold; padding: 2px 5px; }';
         $wordHtml .= '</style></head><body>';
         $wordHtml .= $content;
         $wordHtml .= '</body></html>';
