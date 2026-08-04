@@ -100,6 +100,7 @@ Route::middleware(['auth', 'approved'])->prefix('freelas')->group(function () {
     Route::resource('finances', \App\Http\Controllers\FinanceController::class)->except(['show']);
     Route::post('/finances/batch-destroy', [\App\Http\Controllers\FinanceController::class, 'batchDestroy'])->name('finances.batch-destroy');
     Route::post('/finances/{transaction}/duplicate', [\App\Http\Controllers\FinanceController::class, 'duplicate'])->name('finances.duplicate');
+    Route::post('/finances/{transaction}/make-recurring', [\App\Http\Controllers\FinanceController::class, 'makeRecurring'])->name('finances.make-recurring');
     Route::post('/finances/{transaction}/toggle-status', [\App\Http\Controllers\FinanceController::class, 'toggleStatus'])->name('finances.toggle-status');
     Route::get('/finances/{transaction}/download-attachment', [\App\Http\Controllers\FinanceController::class, 'downloadAttachment'])->name('finances.download-attachment');
     Route::get('/finances/{transaction}/preview-attachment', [\App\Http\Controllers\FinanceController::class, 'previewAttachment'])->name('finances.preview-attachment');

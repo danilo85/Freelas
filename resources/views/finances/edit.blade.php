@@ -6,14 +6,34 @@
 @section('content')
 <div class="max-w-3xl mx-auto space-y-6" x-data="transactionForm()">
 
-    <!-- Link de Voltar -->
-    <div class="flex items-center justify-between no-print">
+    <!-- Link de Voltar e Ações Rápidas -->
+    <div class="flex items-center justify-between no-print gap-2 flex-wrap">
         <a href="{{ route('finances.index') }}" class="flex items-center gap-2 text-slate-500 hover:text-slate-800 text-sm font-medium transition-colors">
             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7 7-7m8 14l-7-7 7-7"></path>
             </svg>
             Voltar para o Controle Financeiro
         </a>
+
+        <div class="flex items-center gap-2">
+            <!-- Botão Duplicar -->
+            <form action="{{ route('finances.duplicate', $finance->id) }}" method="POST" class="inline">
+                @csrf
+                <button type="submit" class="px-3 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold rounded-[5px] transition-colors flex items-center gap-1.5 cursor-pointer shadow-2xs" title="Duplicar esta transação">
+                    <span>📋</span> Duplicar Lançamento
+                </button>
+            </form>
+
+            @if(!$finance->group_code)
+                <!-- Botão Gerar Recorrência 12 Meses -->
+                <form action="{{ route('finances.make-recurring', $finance->id) }}" method="POST" class="inline" onsubmit="return confirm('Deseja transformar esta conta em um lançamento recorrente mensal para os próximos 12 meses?')">
+                    @csrf
+                    <button type="submit" class="px-3 py-1.5 bg-purple-50 hover:bg-purple-100 text-purple-700 border border-purple-200 text-xs font-bold rounded-[5px] transition-colors flex items-center gap-1.5 cursor-pointer shadow-2xs" title="Gerar recorrência mensal para os próximos 12 meses">
+                        <span>🔄</span> Gerar Recorrência (12 Meses)
+                    </button>
+                </form>
+            @endif
+        </div>
     </div>
 
     <!-- Título Principal -->

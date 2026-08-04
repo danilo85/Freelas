@@ -454,6 +454,55 @@ class FinanceController extends Controller
     }
 
     /**
+     * Transforma um lançamento único em um lançamento recorrente mensal para os próximos 12 meses.
+     */
+    public function makeRecurring(Transaction $transaction)
+    {
+        $userId = auth()->id();
+        abort_if($transaction->user_id !== $userId, 403, 'Ação não autorizada.');
+
+        if ($transaction->group_code) {
+            return back()->with('error', 'Esta transação já faz parte de um grupo de recorrência ou parcelamento.');
+        }
+
+        $groupCode = Str::uuid()->toString();
+
+        $transaction->update([
+            'group_code' => $groupCode,
+            'recurrence' => 'mensal',
+        ]);
+
+        $baseDate = Carbon::parse($transaction->due_date);
+
+        for ($i = 2; $i <= 12; $i++) {
+            $dueDate = $baseDate->copy()->addMonths($i - 1);
+
+            Transaction::create([
+                'user_id' => $userId,
+                'project_id' => $transaction->project_id,
+                'description' => str_contains($transaction->description, '(Recorrente)') ? $transaction->description : $transaction->description . ' (Recorrente)',
+                'category_id' => $transaction->category_id,
+                'bank_account_id' => $transaction->bank_account_id,
+                'credit_card_id' => $transaction->credit_card_id,
+                'type' => $transaction->type,
+                'amount' => $transaction->amount,
+                'due_date' => $dueDate->toDateString(),
+                'paid_at' => null,
+                'status' => 'pendente',
+                'attachment_path' => null,
+                'classification' => $transaction->classification,
+                'group_code' => $groupCode,
+                'recurrence' => 'mensal',
+            ]);
+        }
+
+        return redirect()->route('finances.index', [
+            'month' => $baseDate->month,
+            'year' => $baseDate->year
+        ])->with('success', 'Lançamento convertido em recorrente mensal para os próximos 12 meses com sucesso!');
+    }
+
+    /**
      * Alterna rapidamente o status de Pago <-> Pendente.
      */
     public function toggleStatus(Transaction $transaction)
