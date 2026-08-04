@@ -26,9 +26,9 @@
 
             @if(!$finance->group_code)
                 <!-- Botão Gerar Recorrência 12 Meses -->
-                <form action="{{ route('finances.make-recurring', $finance->id) }}" method="POST" class="inline" onsubmit="return confirm('Deseja transformar esta conta em um lançamento recorrente mensal para os próximos 12 meses?')">
+                <form x-ref="recurringForm" action="{{ route('finances.make-recurring', $finance->id) }}" method="POST" class="inline">
                     @csrf
-                    <button type="submit" class="px-3 py-1.5 bg-purple-50 hover:bg-purple-100 text-purple-700 border border-purple-200 text-xs font-bold rounded-[5px] transition-colors flex items-center gap-1.5 cursor-pointer shadow-2xs" title="Gerar recorrência mensal para os próximos 12 meses">
+                    <button type="button" @click="showRecurringModal = true" class="px-3 py-1.5 bg-purple-50 hover:bg-purple-100 text-purple-700 border border-purple-200 text-xs font-bold rounded-[5px] transition-colors flex items-center gap-1.5 cursor-pointer shadow-2xs" title="Gerar recorrência mensal para os próximos 12 meses">
                         <span>🔄</span> Gerar Recorrência (12 Meses)
                     </button>
                 </form>
@@ -308,7 +308,7 @@
 
         <!-- Ações do Formulário -->
         <div class="flex items-center justify-end gap-3 pt-4 border-t border-slate-100 no-print">
-            <a href="{{ route('finances.index') }}" class="px-4 py-2.5 border border-slate-200 text-slate-650 hover:bg-slate-50 text-sm font-semibold rounded-[5px] transition-colors shadow-sm">
+            <a href="{{ route('finances.index') }}" class="px-4 py-2.5 border border-slate-200 text-slate-655 hover:bg-slate-50 text-sm font-semibold rounded-[5px] transition-colors shadow-sm">
                 Cancelar
             </a>
             <button type="submit" class="px-6 py-2.5 bg-primary-600 hover:bg-primary-700 text-white text-sm font-bold rounded-[5px] transition-colors shadow-sm focus:ring-4 focus:ring-primary-500/20">
@@ -317,6 +317,37 @@
         </div>
 
     </form>
+
+    <!-- Modal Elegante de Confirmação de Gerar Recorrência -->
+    <template x-teleport="body">
+        <div x-show="showRecurringModal" x-cloak class="fixed inset-0 z-[999999] flex items-center justify-center p-4 bg-slate-950/70 backdrop-blur-xs select-none">
+            <div @click.away="showRecurringModal = false" class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-slate-800 dark:text-slate-100 rounded-xl p-6 shadow-2xl max-w-md w-full space-y-4">
+                
+                <div class="flex items-center gap-3 text-purple-600">
+                    <div class="w-10 h-10 rounded-full bg-purple-100 dark:bg-purple-950/50 flex items-center justify-center font-bold shrink-0">
+                        <span class="text-lg">🔄</span>
+                    </div>
+                    <div>
+                        <h4 class="font-outfit font-black text-base uppercase tracking-tight text-slate-900 dark:text-slate-100">Gerar Recorrência Mensal</h4>
+                        <p class="text-xs text-slate-500 dark:text-slate-400">Criar réplicas para os próximos 12 meses.</p>
+                    </div>
+                </div>
+
+                <p class="text-xs text-slate-700 dark:text-slate-300 font-medium leading-relaxed bg-slate-50 dark:bg-slate-800/60 p-3.5 rounded border border-slate-200 dark:border-slate-700">
+                    Deseja transformar este lançamento em uma conta recorrente mensal para os próximos 12 meses?
+                </p>
+
+                <div class="flex items-center justify-end gap-2 pt-2">
+                    <button type="button" @click="showRecurringModal = false" class="px-4 py-2 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 text-slate-700 dark:text-slate-200 text-xs font-bold rounded-[5px] uppercase tracking-wider transition-colors cursor-pointer">
+                        Cancelar
+                    </button>
+                    <button type="button" @click="submitRecurringForm()" class="px-5 py-2 bg-purple-600 hover:bg-purple-700 text-white text-xs font-bold rounded-[5px] uppercase tracking-wider transition-colors shadow-xs flex items-center gap-1 cursor-pointer">
+                        Sim, Gerar Recorrência
+                    </button>
+                </div>
+            </div>
+        </div>
+    </template>
 
 </div>
 
@@ -328,6 +359,12 @@
             destinationType: '{{ $finance->credit_card_id ? 'card' : 'bank' }}',
             amount: '{{ old('amount', 'R$ ' . number_format($finance->amount, 2, ',', '.')) }}',
             status: '{{ $finance->status }}',
+            showRecurringModal: false,
+
+            submitRecurringForm() {
+                this.showRecurringModal = false;
+                this.$refs.recurringForm.submit();
+            },
 
             // File state
             isDragging: false,
