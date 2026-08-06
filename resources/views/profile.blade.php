@@ -341,6 +341,10 @@
                 if (faviconLink) {
                     faviconLink.href = 'data:image/svg+xml;utf8,' + encodeURIComponent(svg);
                 }
+                const sidebarLogo = document.getElementById('sidebar-logo-svg');
+                if (sidebarLogo) {
+                    sidebarLogo.style.color = hex;
+                }
             },
             
             passwordInput: '',

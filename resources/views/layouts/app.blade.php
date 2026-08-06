@@ -400,15 +400,35 @@
                 default: $sidebarBg = 'bg-slate-900'; break;
             }
         }
+        $unreadNotificationsCount = auth()->check() ? \App\Models\Notification::where('user_id', auth()->id())
+            ->whereNull('read_at')
+            ->whereNotIn('type', ['bill_dismissed', 'reminder_dismissed'])
+            ->count() : 0;
     @endphp
     <aside class="fixed inset-y-0 left-0 z-40 w-64 {{ $sidebarBg }} dark:bg-slate-950 text-slate-100 flex flex-col border-r border-slate-800 dark:border-slate-900 transform -translate-x-full transition-transform duration-300 ease-in-out md:sticky md:top-0 md:h-screen md:translate-x-0 md:flex"
            :class="sidebarOpen ? 'translate-x-0' : '-translate-x-full'">
         
-        <!-- Logo -->
+        <!-- Logo do Sidebar com Badge de Notificações -->
         <div class="h-16 flex items-center px-6 border-b border-slate-800 dark:border-slate-900 justify-between">
-            <a href="{{ route('dashboard') }}" class="flex items-center w-full pr-4">
-                <img src="{{ asset('storage/freela/freela_1.svg') }}" class="w-full h-auto max-h-10 object-contain" alt="Gestor Freelas">
-            </a>
+            <div class="flex items-center gap-3">
+                <a href="{{ route('dashboard') }}" class="relative inline-flex items-center group" title="Gestor Freela">
+                    <!-- SVG Logo Sidebar (Acompanha a cor do Tema Visual do Dashboard) -->
+                    <svg id="sidebar-logo-svg" class="h-7 w-auto text-primary-500 transition-colors duration-300" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 890.361 478.897" fill="currentColor">
+                        <path d="M307.679,64.69c-18.667-17.379-40.874-30.68-66.621-39.907-25.747-9.223-53.963-13.84-84.643-13.84-24.676,0-49.513,1.56-74.507,4.668-24.997,3.112-49.297,8.423-72.896,15.931L0,463.449c10.083,1.075,19.954,1.88,29.609,2.413,9.656.538,19.522.805,29.61.805,27.034,0,53.37-2.092,79.011-6.276,25.636-4.183,49.83-10.62,72.574-19.31,22.74-8.689,43.659-19.793,62.758-33.31,19.095-13.518,35.563-29.66,49.402-48.437,13.839-18.772,24.621-40.23,32.346-64.368,7.724-24.138,11.586-51.222,11.586-81.265,0-31.751-5.205-60.183-15.609-85.287-10.41-25.103-24.942-46.344-43.609-63.724ZM234.942,234.299v4.506c-.432,12.446-2.736,24.515-6.919,36.206-4.184,11.698-10.088,22.318-17.702,31.862-7.618,9.55-16.685,17.595-27.195,24.138-10.515,6.548-22.207,10.782-35.08,12.713l12.874-199.54c13.084.432,24.349,3.168,33.792,8.207,9.439,5.043,17.219,11.697,23.334,19.953,6.115,8.263,10.51,17.757,13.195,28.483,2.681,10.732,3.913,21.885,3.701,33.472Z"/>
+                        <polygon points="717.213 0 629.672 225.932 564.016 12.875 398.591 19.311 392.154 464.092 540.843 459.586 541.488 251.035 592.337 430.621 648.981 430.621 715.28 229.794 713.994 478.897 860.753 472.461 890.361 0 717.213 0"/>
+                    </svg>
+
+                    <!-- Badge de Notificações Não Lidas (Estilo App de Celular) -->
+                    @if($unreadNotificationsCount > 0)
+                        <a href="{{ route('notifications.index') }}" 
+                           class="absolute -top-2 -right-3.5 min-w-[18px] h-4.5 px-1 bg-rose-600 hover:bg-rose-700 text-white text-[10px] font-black rounded-full flex items-center justify-center border-2 border-slate-900 shadow-md transition-transform transform hover:scale-110 select-none cursor-pointer" 
+                           title="{{ $unreadNotificationsCount }} {{ $unreadNotificationsCount == 1 ? 'notificação não lida' : 'notificações não lidas' }}">
+                            {{ $unreadNotificationsCount > 99 ? '99+' : $unreadNotificationsCount }}
+                        </a>
+                    @endif
+                </a>
+            </div>
+
             <!-- Botão de Fechar Sidebar (Apenas Mobile) -->
             <button @click="sidebarOpen = false" class="text-slate-400 hover:text-white md:hidden">
                 <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
