@@ -419,14 +419,14 @@
                     </svg>
                 </a>
 
-                <!-- Badge de Notificações Não Lidas Posicionado no Canto da Logo DM -->
-                @if($unreadNotificationsCount > 0)
+                <!-- Badge de Notificações Não Lidas Posicionado no Canto da Logo DM (Atualização em Tempo Real) -->
+                <template x-if="window.Alpine && $store.notifications && $store.notifications.unreadCount > 0">
                     <a href="{{ route('notifications.index') }}" 
                        class="absolute -top-1.5 -right-3 min-w-[18px] h-4.5 px-1 bg-rose-600 hover:bg-rose-700 text-white text-[10px] font-black rounded-full flex items-center justify-center border-2 border-slate-900 shadow-md transition-transform transform hover:scale-110 select-none cursor-pointer z-10" 
-                       title="{{ $unreadNotificationsCount }} {{ $unreadNotificationsCount == 1 ? 'notificação não lida' : 'notificações não lidas' }}">
-                        {{ $unreadNotificationsCount > 99 ? '99+' : $unreadNotificationsCount }}
+                       :title="$store.notifications.unreadCount + ($store.notifications.unreadCount == 1 ? ' notificação não lida' : ' notificações não lidas')">
+                        <span x-text="$store.notifications.unreadCount > 99 ? '99+' : $store.notifications.unreadCount"></span>
                     </a>
-                @endif
+                </template>
             </div>
 
             <!-- Botão de Fechar Sidebar (Apenas Mobile) -->
@@ -1172,6 +1172,20 @@
                 }
             });
         });
+
+        document.addEventListener('alpine:init', () => {
+            if (typeof Alpine !== 'undefined') {
+                Alpine.store('notifications', {
+                    unreadCount: {{ $unreadNotificationsCount }},
+                    setCount(count) {
+                        this.unreadCount = count;
+                    },
+                    decrement() {
+                        if (this.unreadCount > 0) this.unreadCount--;
+                    }
+                });
+            }
+        });
     </script>
 
     <!-- Global Notifications Stack -->
@@ -1234,6 +1248,11 @@
                                 }
                             });
 
+                            // Atualiza a contagem do badge de notificações em tempo real
+                            if (window.Alpine && Alpine.store('notifications')) {
+                                Alpine.store('notifications').setCount(data.length);
+                            }
+
                             if (hasNew) {
                                 this.playChime();
                             }
@@ -1245,6 +1264,9 @@
 
                 async dismissNotification(id) {
                     this.activeNotifications = this.activeNotifications.filter(an => an.id !== id);
+                    if (window.Alpine && Alpine.store('notifications')) {
+                        Alpine.store('notifications').decrement();
+                    }
                     try {
                         const readUrl = "{{ route('lembretes.notifications.read', ':id') }}".replace(':id', id);
                         await fetch(readUrl, {
