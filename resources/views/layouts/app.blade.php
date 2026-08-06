@@ -5,7 +5,18 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>@yield('title', 'Admin Gestor de Freelas')</title>
     <meta name="csrf-token" content="{{ csrf_token() }}">
-    <link rel="icon" type="image/svg+xml" href="{{ asset('storage/assets/logo_DM.svg') }}">
+    @php
+        $userTheme = auth()->check() ? auth()->user()->theme_color : 'green';
+        $faviconColor = match($userTheme) {
+            'blue' => '#2563eb',
+            'purple' => '#9333ea',
+            'indigo' => '#4f46e5',
+            'orange' => '#ea580c',
+            default => '#16a34a',
+        };
+        $svgContent = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1000 1000"><path d="M520.438,340.64l-19.196,297.476c77.583-10.892,131.188-87.4,129.548-163.13,4.058-66.927-37.088-135.165-110.353-134.346Z" fill="' . $faviconColor . '"/><path d="M52.241,59.197l23.939,895.181,871.241-46.593V59.197H52.241ZM280.537,816.606l-15.648-626.755c243.799-89.688,554.57-69.721,562.62,254.427,8.378,298.033-294.6,405.912-546.972,372.329Z" fill="' . $faviconColor . '"/></svg>';
+    @endphp
+    <link id="app-favicon" rel="icon" type="image/svg+xml" href="data:image/svg+xml;utf8,{{ rawurlencode($svgContent) }}">
     
     <!-- Google Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">

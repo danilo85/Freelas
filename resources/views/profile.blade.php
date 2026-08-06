@@ -320,6 +320,28 @@
             logoUrl: '{{ $user->logo ? asset("storage/" . $user->logo) : "" }}',
             dragOver: false,
             dragOverLogo: false,
+
+            init() {
+                this.$watch('selectedTheme', (color) => {
+                    this.updateFaviconColor(color);
+                });
+            },
+
+            updateFaviconColor(color) {
+                const colorMap = {
+                    'blue': '#2563eb',
+                    'purple': '#9333ea',
+                    'indigo': '#4f46e5',
+                    'orange': '#ea580c',
+                    'green': '#16a34a'
+                };
+                const hex = colorMap[color] || '#16a34a';
+                const svg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1000 1000"><path d="M520.438,340.64l-19.196,297.476c77.583-10.892,131.188-87.4,129.548-163.13,4.058-66.927-37.088-135.165-110.353-134.346Z" fill="${hex}"/><path d="M52.241,59.197l23.939,895.181,871.241-46.593V59.197H52.241ZM280.537,816.606l-15.648-626.755c243.799-89.688,554.57-69.721,562.62,254.427,8.378,298.033-294.6,405.912-546.972,372.329Z" fill="${hex}"/></svg>`;
+                const faviconLink = document.getElementById('app-favicon');
+                if (faviconLink) {
+                    faviconLink.href = 'data:image/svg+xml;utf8,' + encodeURIComponent(svg);
+                }
+            },
             
             passwordInput: '',
             showPassword: false,
