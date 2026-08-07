@@ -204,19 +204,55 @@
                     @endif
 
                     <!-- Badges flutuantes -->
-                    <div class="absolute top-3 left-3 flex flex-col gap-1.5 z-20">
-                        <div x-data="{ currentStatus: '{{ $item->status }}', isLoading: false }">
-                            <select @change="updateStatus('{{ $item->id }}', $event.target.value, $data)"
+                    <div class="absolute top-3 left-3 flex flex-col gap-1.5 z-30">
+                        <div x-data="{ 
+                                 currentStatus: '{{ $item->status }}', 
+                                 open: false, 
+                                 isLoading: false 
+                             }" 
+                             class="relative">
+                            
+                            <!-- Botão no Estilo Exato da Tag Original -->
+                            <button type="button" 
+                                    @click="open = !open" 
                                     :disabled="isLoading"
-                                    :class="{
-                                        'bg-emerald-600 text-white border-emerald-500 hover:bg-emerald-700': currentStatus === 'publicado',
-                                        'bg-amber-500 text-white border-amber-400 hover:bg-amber-600': currentStatus === 'rascunho',
-                                        'opacity-60 cursor-wait': isLoading
-                                    }"
-                                    class="px-2 py-0.5 text-[9px] font-black uppercase tracking-wider rounded-[4px] border shadow-sm cursor-pointer focus:outline-none transition-all appearance-none pr-4 relative">
-                                <option value="publicado" class="bg-slate-900 text-emerald-400 font-bold" :selected="currentStatus === 'publicado'">● Publicado</option>
-                                <option value="rascunho" class="bg-slate-900 text-amber-400 font-bold" :selected="currentStatus === 'rascunho'">● Rascunho</option>
-                            </select>
+                                    :class="currentStatus === 'publicado' 
+                                        ? 'bg-emerald-100 text-emerald-800 border-emerald-200 hover:bg-emerald-200' 
+                                        : 'bg-amber-100 text-amber-800 border-amber-200 hover:bg-amber-200'"
+                                    class="px-2 py-0.5 text-[9px] font-black uppercase tracking-wider rounded-[4px] border shadow-sm flex items-center gap-1 cursor-pointer transition-all border-0 focus:outline-none select-none">
+                                <span class="w-1.5 h-1.5 rounded-full" :class="currentStatus === 'publicado' ? 'bg-emerald-600' : 'bg-amber-600'"></span>
+                                <span x-text="currentStatus"></span>
+                                <svg class="w-2.5 h-2.5 opacity-60 transition-transform" :class="open ? 'rotate-180' : ''" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M19 9l-7 7-7-7"></path>
+                                </svg>
+                            </button>
+
+                            <!-- Dropdown de Opções -->
+                            <div x-show="open" 
+                                 @click.away="open = false"
+                                 x-cloak
+                                 class="absolute left-0 mt-1 w-28 bg-white border border-slate-200 rounded-[5px] shadow-lg z-50 overflow-hidden py-1 divide-y divide-slate-100">
+                                
+                                <button type="button" 
+                                        @click="updateStatus('{{ $item->id }}', 'publicado', $data); open = false;"
+                                        class="w-full text-left px-3 py-1.5 text-[10px] font-extrabold uppercase tracking-wider flex items-center justify-between hover:bg-emerald-50 text-emerald-700 transition-colors border-0 cursor-pointer">
+                                    <span class="flex items-center gap-1.5">
+                                        <span class="w-2 h-2 rounded-full bg-emerald-500"></span>
+                                        Publicado
+                                    </span>
+                                    <span x-show="currentStatus === 'publicado'" class="text-emerald-600 font-black">✓</span>
+                                </button>
+
+                                <button type="button" 
+                                        @click="updateStatus('{{ $item->id }}', 'rascunho', $data); open = false;"
+                                        class="w-full text-left px-3 py-1.5 text-[10px] font-extrabold uppercase tracking-wider flex items-center justify-between hover:bg-amber-50 text-amber-700 transition-colors border-0 cursor-pointer">
+                                    <span class="flex items-center gap-1.5">
+                                        <span class="w-2 h-2 rounded-full bg-amber-500"></span>
+                                        Rascunho
+                                    </span>
+                                    <span x-show="currentStatus === 'rascunho'" class="text-amber-600 font-black">✓</span>
+                                </button>
+                            </div>
                         </div>
                         @if($item->is_featured)
                             <span class="px-2 py-0.5 text-[9px] font-black uppercase tracking-wider rounded-[4px] border bg-purple-100 text-purple-800 border-purple-200 flex items-center gap-1.5 shadow-sm">
@@ -415,7 +451,8 @@
             async updateStatus(itemId, newStatus, cardData) {
                 cardData.isLoading = true;
                 try {
-                    const response = await fetch(`/freelas/portfolio/${itemId}/status`, {
+                    const endpoint = "{{ route('portfolio.status', ['portfolio' => ':id']) }}".replace(':id', itemId);
+                    const response = await fetch(endpoint, {
                         method: 'PATCH',
                         headers: {
                             'Content-Type': 'application/json',
