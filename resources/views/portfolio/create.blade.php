@@ -781,12 +781,12 @@
                 <div class="max-w-2xl mx-auto flex flex-col" :style="'gap: ' + gallerySpacing + 'px;'">
                     <!-- Capa -->
                     <template x-if="thumbPreview">
-                        <img :src="thumbPreview" class="w-full h-auto object-cover rounded-none block border border-white/5 shadow-lg">
+                        <img :src="thumbPreview" class="w-full h-auto object-cover rounded-none block m-0 p-0 border-0 outline-none">
                     </template>
 
                     <!-- Fotos da Galeria na Ordem exata -->
                     <template x-for="(item, idx) in galleryFiles" :key="idx">
-                        <img :src="item.url" class="w-full h-auto object-cover rounded-none block border border-white/5 shadow-lg">
+                        <img :src="item.url" class="w-full h-auto object-cover rounded-none block m-0 p-0 border-0 outline-none">
                     </template>
                 </div>
             </div>
