@@ -552,55 +552,6 @@
             </div>
 
         </div>
-                                                    <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M15 19l-7-7 7-7"></path>
-                                                    </svg>
-                                                </button>
-                                                
-                                                <!-- Direita / Baixo -->
-                                                <button type="button" 
-                                                        @click="moveDown(index)"
-                                                        :disabled="index === galleryFiles.length - 1"
-                                                        class="w-5 h-5 rounded bg-slate-800 text-slate-200 flex items-center justify-center hover:bg-slate-700 disabled:opacity-30 disabled:hover:bg-slate-800 transition-colors border-0"
-                                                        title="Mover para Baixo">
-                                                    <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M9 5l7 7-7 7"></path>
-                                                    </svg>
-                                                </button>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </template>
-                            </div>
-                        </template>
-
-                        <div class="p-8 text-center text-slate-400 text-xs italic border border-slate-150 rounded-[5px] bg-slate-50/30" x-show="galleryFiles.length === 0">
-                            Nenhuma imagem extra selecionada ainda.
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Navegação -->
-            <div class="flex flex-col sm:flex-row justify-between gap-3 pt-4 border-t border-slate-100">
-                <button type="button" @click="activeTab = 'geral'" 
-                        class="w-full sm:w-auto justify-center py-2.5 px-4 bg-slate-100 hover:bg-slate-200 text-slate-600 text-xs font-bold rounded-[5px] transition-colors flex items-center gap-1.5">
-                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path>
-                    </svg>
-                    Voltar para Geral
-                </button>
-
-                <button type="button" @click="activeTab = 'seo'" 
-                        class="w-full sm:w-auto justify-center py-2.5 px-5 bg-slate-800 hover:bg-slate-900 text-white text-xs font-bold rounded-[5px] transition-colors shadow-sm flex items-center gap-1.5">
-                    Ir para SEO & IA
-                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>
-                    </svg>
-                </button>
-            </div>
-
-        </div>
 
         <!-- ABA 3: SEO & IA -->
         <div x-show="activeTab === 'seo'" class="bg-white border border-slate-200 p-6 rounded-[5px] shadow-sm space-y-6" x-cloak>
