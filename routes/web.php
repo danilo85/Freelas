@@ -140,6 +140,7 @@ Route::middleware(['auth', 'approved'])->prefix('freelas')->group(function () {
             
         // Portfólio do usuário logado (Tenancy)
         Route::get('/portfolio/pipeline', [PortfolioController::class, 'pipeline'])->name('portfolio.pipeline');
+        Route::patch('/portfolio/{portfolio}/status', [PortfolioController::class, 'updateStatus'])->name('portfolio.status');
         Route::get('/portfolio-settings', [PortfolioController::class, 'settings'])->name('portfolio.settings');
         Route::put('/portfolio-settings', [PortfolioController::class, 'updateSettings'])->name('portfolio.settings.update');
         Route::resource('/portfolio', PortfolioController::class);

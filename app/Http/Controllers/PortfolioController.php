@@ -372,6 +372,33 @@ class PortfolioController extends Controller
     }
 
     /**
+     * Atualiza o status em tempo real via AJAX (rascunho / publicado).
+     */
+    public function updateStatus(Request $request, PortfolioItem $portfolio)
+    {
+        abort_if($portfolio->user_id !== auth()->id(), 403, 'Ação não autorizada.');
+
+        $request->validate([
+            'status' => 'required|in:rascunho,publicado'
+        ]);
+
+        $portfolio->update([
+            'status' => $request->status
+        ]);
+
+        $publishedCount = auth()->user()->portfolioItems()->where('status', 'publicado')->count();
+        $draftsCount = auth()->user()->portfolioItems()->where('status', 'rascunho')->count();
+
+        return response()->json([
+            'success' => true,
+            'status' => $portfolio->status,
+            'publishedCount' => $publishedCount,
+            'draftsCount' => $draftsCount,
+            'message' => 'Status do trabalho atualizado com sucesso!'
+        ]);
+    }
+
+    /**
      * Exibe o formulário de configurações do site de portfólio.
      */
     public function settings()

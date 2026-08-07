@@ -56,7 +56,7 @@
         <div class="bg-emerald-600 rounded-[5px] p-5 shadow-sm flex items-center justify-between hover:shadow-md transition-shadow duration-200">
             <div>
                 <p class="text-xs font-bold text-emerald-100 uppercase tracking-wider">Publicados</p>
-                <h3 class="text-2xl font-extrabold text-white mt-1.5">{{ $publishedCount }}</h3>
+                <h3 class="text-2xl font-extrabold text-white mt-1.5" x-text="publishedCount"></h3>
                 <span class="text-[11px] text-emerald-100/90 font-medium block mt-1">Exibindo no site público</span>
             </div>
             <div class="w-10 h-10 rounded-[5px] bg-white/20 text-white flex items-center justify-center shadow-sm shrink-0">
@@ -71,7 +71,7 @@
         <div class="bg-amber-600 rounded-[5px] p-5 shadow-sm flex items-center justify-between hover:shadow-md transition-shadow duration-200">
             <div>
                 <p class="text-xs font-bold text-amber-100 uppercase tracking-wider">Rascunhos</p>
-                <h3 class="text-2xl font-extrabold text-white mt-1.5">{{ $draftsCount }}</h3>
+                <h3 class="text-2xl font-extrabold text-white mt-1.5" x-text="draftsCount"></h3>
                 <span class="text-[11px] text-amber-100/90 font-medium block mt-1">Aguardando revisão</span>
             </div>
             <div class="w-10 h-10 rounded-[5px] bg-white/20 text-white flex items-center justify-center shadow-sm shrink-0">
@@ -204,11 +204,20 @@
                     @endif
 
                     <!-- Badges flutuantes -->
-                    <div class="absolute top-3 left-3 flex flex-col gap-1.5">
-                        <span class="px-2 py-0.5 text-[9px] font-black uppercase tracking-wider rounded-[4px] border 
-                            {{ $item->status === 'publicado' ? 'bg-emerald-100 text-emerald-800 border-emerald-200' : 'bg-amber-100 text-amber-800 border-amber-200' }}">
-                            {{ $item->status }}
-                        </span>
+                    <div class="absolute top-3 left-3 flex flex-col gap-1.5 z-20">
+                        <div x-data="{ currentStatus: '{{ $item->status }}', isLoading: false }">
+                            <select @change="updateStatus('{{ $item->id }}', $event.target.value, $data)"
+                                    :disabled="isLoading"
+                                    :class="{
+                                        'bg-emerald-600 text-white border-emerald-500 hover:bg-emerald-700': currentStatus === 'publicado',
+                                        'bg-amber-500 text-white border-amber-400 hover:bg-amber-600': currentStatus === 'rascunho',
+                                        'opacity-60 cursor-wait': isLoading
+                                    }"
+                                    class="px-2 py-0.5 text-[9px] font-black uppercase tracking-wider rounded-[4px] border shadow-sm cursor-pointer focus:outline-none transition-all appearance-none pr-4 relative">
+                                <option value="publicado" class="bg-slate-900 text-emerald-400 font-bold" :selected="currentStatus === 'publicado'">● Publicado</option>
+                                <option value="rascunho" class="bg-slate-900 text-amber-400 font-bold" :selected="currentStatus === 'rascunho'">● Rascunho</option>
+                            </select>
+                        </div>
                         @if($item->is_featured)
                             <span class="px-2 py-0.5 text-[9px] font-black uppercase tracking-wider rounded-[4px] border bg-purple-100 text-purple-800 border-purple-200 flex items-center gap-1.5 shadow-sm">
                                 <span>★ Destaque</span>
@@ -395,11 +404,55 @@
     function portfolioList() {
         return {
             itemsList: @json($items),
+            publishedCount: {{ $publishedCount }},
+            draftsCount: {{ $draftsCount }},
             searchQuery: '{{ request('search', '') }}',
             filterCategoryId: '{{ request('category_id', '') }}',
             filterStatus: '{{ request('status', '') }}',
             currentPage: 1,
             perPage: 12,
+
+            async updateStatus(itemId, newStatus, cardData) {
+                cardData.isLoading = true;
+                try {
+                    const response = await fetch(`/freelas/portfolio/${itemId}/status`, {
+                        method: 'PATCH',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'X-CSRF-TOKEN': '{{ csrf_token() }}',
+                            'Accept': 'application/json'
+                        },
+                        body: JSON.stringify({ status: newStatus })
+                    });
+
+                    const data = await response.json();
+                    if (data.success) {
+                        cardData.currentStatus = newStatus;
+                        
+                        // Atualiza status no array de items local para refletir nos filtros
+                        const item = this.itemsList.find(i => i.id == itemId);
+                        if (item) {
+                            item.status = newStatus;
+                        }
+
+                        // Atualiza as métricas dos cards topo
+                        if (data.publishedCount !== undefined) this.publishedCount = data.publishedCount;
+                        if (data.draftsCount !== undefined) this.draftsCount = data.draftsCount;
+
+                        // Toast simples se Alpine/Notify estiver global
+                        if (window.Alpine && window.Alpine.store('toast')) {
+                            window.Alpine.store('toast').show(data.message, 'success');
+                        }
+                    } else {
+                        alert(data.message || 'Erro ao atualizar status.');
+                    }
+                } catch (e) {
+                    console.error(e);
+                    alert('Erro de conexão ao alterar status.');
+                } finally {
+                    cardData.isLoading = false;
+                }
+            },
 
             setCategory(id) {
                 this.filterCategoryId = id;
