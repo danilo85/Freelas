@@ -232,11 +232,13 @@
 
                     <!-- Showcase de Imagens Adicionais -->
                     @if($item->images->count() > 0)
-                        @foreach($item->images->sortBy('order') as $image)
-                            <img src="{{ asset('storage/' . $image->image_path) }}" 
-                                 alt="Galeria - {{ $item->title }}"
-                                 class="w-full h-auto object-cover rounded-none block m-0 p-0 border-t border-white/[0.04]">
-                        @endforeach
+                        <div class="flex flex-col" style="gap: {{ intval($item->gallery_spacing ?? 0) }}px;">
+                            @foreach($item->images->sortBy('order') as $image)
+                                <img src="{{ asset('storage/' . $image->image_path) }}" 
+                                     alt="Galeria - {{ $item->title }}"
+                                     class="w-full h-auto object-cover rounded-none block m-0 p-0 border-t border-white/[0.04]">
+                            @endforeach
+                        </div>
                     @endif
                 </div>
 

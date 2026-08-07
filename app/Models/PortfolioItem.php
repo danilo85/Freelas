@@ -23,6 +23,7 @@ class PortfolioItem extends Model
         'technologies',
         'redirect_url',
         'thumb_path',
+        'gallery_spacing',
         'status',
         'is_featured',
         'meta_title',

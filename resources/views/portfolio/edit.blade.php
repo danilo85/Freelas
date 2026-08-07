@@ -358,172 +358,212 @@
         <!-- ABA 2: GALERIA & IMAGENS -->
         <div x-show="activeTab === 'galeria'" class="bg-white border border-slate-200 p-6 rounded-[5px] shadow-sm space-y-6" x-cloak>
             
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-8 items-start">
+            <!-- Barra Superior de Ações & Configurações da Galeria -->
+            <div class="bg-slate-50 border border-slate-200 p-4 rounded-[5px] flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
                 
-                <!-- Coluna Esquerda: Thumbnail / Capa -->
-                <div class="space-y-4">
-                    <h5 class="text-xs font-bold text-slate-800 uppercase tracking-wider border-b border-slate-100 pb-2">Imagem de Capa (Thumbnail)</h5>
+                <!-- Slider de Espaçamento entre Imagens -->
+                <div class="flex-1 space-y-1.5 min-w-[240px]">
+                    <div class="flex items-center justify-between text-xs">
+                        <label class="font-bold text-slate-700 uppercase tracking-wider flex items-center gap-1.5">
+                            <svg class="w-4 h-4 text-primary-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 8h16M4 16h16"></path>
+                            </svg>
+                            Distância / Espaçamento entre Fotos no Site
+                        </label>
+                        <span class="font-extrabold text-primary-750 bg-primary-50 px-2 py-0.5 rounded text-xs border border-primary-200" x-text="gallerySpacing + ' px'"></span>
+                    </div>
+                    <div class="flex items-center gap-3">
+                        <span class="text-[10px] font-bold text-slate-400">0px</span>
+                        <input type="range" min="0" max="64" step="4" x-model="gallerySpacing" class="w-full h-1.5 bg-slate-200 rounded-lg appearance-none cursor-pointer accent-primary-600">
+                        <span class="text-[10px] font-bold text-slate-400">64px</span>
+                    </div>
+                    <input type="hidden" name="gallery_spacing" :value="gallerySpacing">
+                </div>
+
+                <!-- Botão Modal de Preview -->
+                <button type="button" 
+                        @click="showPreviewModal = true"
+                        class="py-2.5 px-4 bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold rounded-[5px] transition-all flex items-center gap-2 shadow-sm shrink-0 border-0 cursor-pointer">
+                    <svg class="w-4 h-4 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path>
+                    </svg>
+                    <span>✨ Visualizar Sequência no Site</span>
+                </button>
+            </div>
+
+            <!-- Upload Zones Lado a Lado de Tamanho Igual -->
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6 items-start">
+                
+                <!-- Coluna Esquerda: Thumbnail Dropzone -->
+                <div class="space-y-2">
+                    <label class="text-xs font-bold text-slate-800 uppercase tracking-wider block">
+                        Imagem de Capa (Thumbnail)
+                    </label>
                     
-                    <div class="space-y-3">
-                        <!-- Capa / Thumbnail com Drag & Drop -->
-                        <div class="flex items-center justify-center w-full"
-                             x-data="{ dragOver: false }"
-                             @dragover.prevent="dragOver = true"
-                             @dragleave.prevent="dragOver = false"
-                             @drop.prevent="handleThumbDrop($event); dragOver = false">
-                            <label :class="dragOver ? 'border-primary-500 bg-primary-50/20' : 'border-slate-200 bg-slate-50'"
-                                   class="flex flex-col items-center justify-center w-full aspect-video border-2 border-dashed hover:border-primary-500 rounded-[5px] cursor-pointer hover:bg-slate-100/50 transition-colors relative overflow-hidden">
-                                @if($portfolio->thumb_path)
-                                    <img :src="thumbPreview || '{{ asset('storage/' . $portfolio->thumb_path) }}'" class="absolute inset-0 w-full h-full object-cover">
-                                @else
-                                    <div class="flex flex-col items-center justify-center pt-5 pb-6 text-center px-4" x-show="!thumbPreview">
-                                        <svg class="w-8 h-8 text-slate-400 mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <div class="flex items-center justify-center w-full"
+                         x-data="{ dragOver: false }"
+                         @dragover.prevent="dragOver = true"
+                         @dragleave.prevent="dragOver = false"
+                         @drop.prevent="handleThumbDrop($event); dragOver = false">
+                        <label :class="dragOver ? 'border-primary-500 bg-primary-50/20' : 'border-slate-200 bg-slate-50'"
+                               class="flex flex-col items-center justify-center w-full min-h-[110px] border-2 border-dashed hover:border-primary-500 rounded-[5px] cursor-pointer hover:bg-slate-100/50 transition-colors relative overflow-hidden p-3 text-center">
+                            @if($portfolio->thumb_path)
+                                <div class="relative w-full h-24 rounded overflow-hidden">
+                                    <img :src="thumbPreview || '{{ asset('storage/' . $portfolio->thumb_path) }}'" class="w-full h-full object-cover">
+                                    <span class="absolute top-1 right-1 bg-slate-900/80 text-white text-[9px] font-bold px-1.5 py-0.5 rounded">Capa Atual</span>
+                                </div>
+                            @else
+                                <template x-if="!thumbPreview">
+                                    <div class="flex items-center gap-3">
+                                        <svg class="w-6 h-6 text-slate-400 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
                                         </svg>
-                                        <p class="text-xs font-bold text-slate-700">Selecione ou Arraste a Capa Aqui</p>
+                                        <div class="text-left">
+                                            <p class="text-xs font-bold text-slate-700">Selecione ou Arraste a Capa</p>
+                                        </div>
                                     </div>
-                                    <template x-if="thumbPreview">
-                                        <img :src="thumbPreview" class="absolute inset-0 w-full h-full object-cover">
-                                    </template>
-                                @endif
-                                <input type="file" id="thumb-input" name="thumb" class="hidden" @change="handleThumbUpload($event)">
-                            </label>
-                        </div>
-                        <p class="text-[11px] text-slate-400">
-                            Deixe vazio se não quiser alterar a imagem de capa atual.
-                        </p>
+                                </template>
+                                <template x-if="thumbPreview">
+                                    <div class="relative w-full h-24 rounded overflow-hidden">
+                                        <img :src="thumbPreview" class="w-full h-full object-cover">
+                                        <span class="absolute top-1 right-1 bg-slate-900/80 text-white text-[9px] font-bold px-1.5 py-0.5 rounded">Nova Capa</span>
+                                    </div>
+                                </template>
+                            @endif
+                            <input type="file" id="thumb-input" name="thumb" class="hidden" @change="handleThumbUpload($event)">
+                        </label>
                     </div>
                 </div>
 
-                <!-- Coluna Direita: Galeria de Fotos (Existentes + Novas) -->
-                <div class="space-y-6">
-                    <!-- Imagens Existentes na Galeria -->
-                    @if($portfolio->images->count() > 0)
-                        <div class="space-y-3">
-                            <h6 class="text-xs font-bold text-slate-700 uppercase tracking-wider border-b border-slate-100 pb-1.5">Fotos Salvas Atualmente</h6>
-                            
-                            <div class="grid grid-cols-2 sm:grid-cols-3 gap-4 max-h-[250px] overflow-y-auto pr-1">
-                                @foreach($portfolio->images as $img)
-                                    <div class="relative bg-slate-50 border border-slate-200 rounded-[5px] overflow-hidden aspect-video flex flex-col justify-between group shadow-sm transition-opacity">
-                                        <!-- Imagem de Fundo -->
-                                        <img src="{{ asset('storage/' . $img->image_path) }}" class="w-full h-full object-cover absolute inset-0">
-                                        
-                                        <!-- Header da foto com botão de exclusão flutuante -->
-                                        <div class="relative p-1.5 flex justify-end z-10">
-                                            <label class="w-6 h-6 rounded-full bg-slate-900/80 text-white flex items-center justify-center hover:bg-red-600 transition-colors shadow-sm cursor-pointer select-none">
-                                                <input type="checkbox" 
-                                                       name="delete_images[]" 
-                                                       value="{{ $img->id }}"
-                                                       class="hidden"
-                                                       @change="$el.closest('.relative').classList.toggle('opacity-35', $el.checked)">
-                                                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
-                                                </svg>
-                                            </label>
-                                        </div>
+                <!-- Coluna Direita: Galeria Dropzone -->
+                <div class="space-y-2">
+                    <label class="text-xs font-bold text-slate-800 uppercase tracking-wider block">
+                        Adicionar Novas Fotos da Galeria
+                    </label>
 
-                                        <!-- Footer da foto com controle de ordem manual -->
-                                        <div class="relative bg-slate-900/80 text-white px-2 py-1 flex items-center justify-between z-10">
-                                            <span class="text-[10px] font-bold text-slate-300">Pos:</span>
-                                            <input type="number" 
-                                                   name="existing_gallery_orders[{{ $img->id }}]" 
-                                                   value="{{ $img->order }}"
-                                                   class="w-10 px-1 py-0.5 rounded bg-slate-800 border border-slate-700 text-[11px] font-bold text-center text-white focus:outline-none focus:ring-1 focus:ring-primary-500">
-                                        </div>
-                                    </div>
-                                @endforeach
-                            </div>
-                        </div>
-                    @endif
-
-                    <!-- Novas Fotos para Adicionar -->
-                    <div class="space-y-4 pt-2">
-                        <h6 class="text-xs font-bold text-slate-700 uppercase tracking-wider border-b border-slate-100 pb-1.5">Adicionar Novas Fotos</h6>
-                        
-                        <div class="space-y-3">
-                            <!-- Botão upload galeria / Dragzone -->
-                            <div class="flex items-center justify-center w-full"
-                                 x-data="{ dragOver: false }"
-                                 @dragover.prevent="dragOver = true"
-                                 @dragleave.prevent="dragOver = false"
-                                 @drop.prevent="handleGalleryDrop($event); dragOver = false">
-                                <label :class="dragOver ? 'border-primary-500 bg-primary-50/20' : 'border-slate-200 bg-slate-50'"
-                                       class="flex items-center justify-center gap-2 w-full py-4 border border-dashed hover:border-primary-500 rounded-[5px] cursor-pointer hover:bg-slate-100/50 transition-colors text-xs font-bold text-slate-650">
-                                    <svg class="w-4 h-4 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path>
-                                    </svg>
-                                    Adicionar ou Arrastar Fotos da Galeria Aqui
-                                    <input type="file" id="gallery-input" name="gallery[]" multiple class="hidden" @change="handleGalleryUpload($event)">
-                                </label>
-                            </div>
-
-                            <!-- Lista de novas fotos em Cards com ordenação por setas e exclusão -->
-                            <template x-if="galleryFiles.length > 0">
-                                <div class="grid grid-cols-2 sm:grid-cols-3 gap-4 max-h-[250px] overflow-y-auto pr-1">
-                                    <template x-for="(item, index) in galleryFiles" :key="index">
-                                        <div class="relative bg-slate-50 border border-slate-200 rounded-[5px] overflow-hidden aspect-video flex flex-col justify-between group shadow-sm">
-                                            <!-- Imagem de Fundo -->
-                                            <img :src="item.url" class="w-full h-full object-cover absolute inset-0">
-                                            
-                                            <!-- Header da foto com botão de deletar flutuante -->
-                                            <div class="relative p-1.5 flex justify-end z-10">
-                                                <button type="button" 
-                                                        @click="removeGalleryFile(index)" 
-                                                        class="w-6 h-6 rounded-full bg-red-600/90 text-white flex items-center justify-center hover:bg-red-750 transition-colors shadow border-0"
-                                                        title="Remover Imagem">
-                                                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
-                                                    </svg>
-                                                </button>
-                                            </div>
-
-                                            <!-- Footer da foto com controles de ordenação por setas -->
-                                            <div class="relative bg-slate-900/80 text-white px-2 py-1.5 flex items-center justify-between z-10">
-                                                <!-- Indicador de Ordem -->
-                                                <div class="flex items-center gap-1">
-                                                    <span class="text-[10px] font-bold text-slate-300">Pos:</span>
-                                                    <span class="text-xs font-black" x-text="'#' + item.order"></span>
-                                                    <input type="hidden" :name="'gallery_orders[' + index + ']'" :value="item.order">
-                                                </div>
-                                                
-                                                <!-- Setas de Mover -->
-                                                <div class="flex items-center gap-1">
-                                                    <!-- Esquerda / Cima -->
-                                                    <button type="button" 
-                                                            @click="moveUp(index)"
-                                                            :disabled="index === 0"
-                                                            class="w-5 h-5 rounded bg-slate-800 text-slate-200 flex items-center justify-center hover:bg-slate-700 disabled:opacity-30 disabled:hover:bg-slate-800 transition-colors border-0"
-                                                            title="Mover para Cima">
-                                                        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path>
-                                                        </svg>
-                                                    </button>
-                                                    
-                                                    <!-- Direita / Baixo -->
-                                                    <button type="button" 
-                                                            @click="moveDown(index)"
-                                                            :disabled="index === galleryFiles.length - 1"
-                                                            class="w-5 h-5 rounded bg-slate-800 text-slate-200 flex items-center justify-center hover:bg-slate-700 disabled:opacity-30 disabled:hover:bg-slate-800 transition-colors border-0"
-                                                            title="Mover para Baixo">
-                                                        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>
-                                                        </svg>
-                                                    </button>
-                                                </div>
-                                            </div>
-                                        </div>
-                                    </template>
+                    <div class="flex items-center justify-center w-full"
+                         x-data="{ dragOver: false }"
+                         @dragover.prevent="dragOver = true"
+                         @dragleave.prevent="dragOver = false"
+                         @drop.prevent="handleGalleryDrop($event); dragOver = false">
+                        <label :class="dragOver ? 'border-primary-500 bg-primary-50/20' : 'border-slate-200 bg-slate-50'"
+                               class="flex flex-col items-center justify-center w-full min-h-[110px] border-2 border-dashed hover:border-primary-500 rounded-[5px] cursor-pointer hover:bg-slate-100/50 transition-colors text-center p-3">
+                            <div class="flex items-center gap-3">
+                                <svg class="w-6 h-6 text-slate-400 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path>
+                                </svg>
+                                <div class="text-left">
+                                    <p class="text-xs font-bold text-slate-700">Selecione ou Arraste Várias Fotos</p>
+                                    <p class="text-[10px] text-slate-400">Adicione novas fotos ao trabalho</p>
                                 </div>
-                            </template>
-                        </div>
+                            </div>
+                            <input type="file" id="gallery-input" name="gallery[]" multiple class="hidden" @change="handleGalleryUpload($event)">
+                        </label>
                     </div>
+                </div>
+
+            </div>
+
+            <!-- Imagens Existentes na Galeria -->
+            @if($portfolio->images->count() > 0)
+                <div class="space-y-3 pt-2 border-t border-slate-100">
+                    <h6 class="text-xs font-bold text-slate-700 uppercase tracking-wider">Fotos Salvas Atualmente</h6>
+                    
+                    <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4 max-h-[250px] overflow-y-auto p-1">
+                        @foreach($portfolio->images as $img)
+                            <div class="relative bg-slate-50 border border-slate-200 rounded-[5px] overflow-hidden aspect-video flex flex-col justify-between group shadow-sm transition-opacity">
+                                <img src="{{ asset('storage/' . $img->image_path) }}" class="w-full h-full object-cover absolute inset-0">
+                                
+                                <div class="relative p-1.5 flex justify-end z-10">
+                                    <label class="w-6 h-6 rounded-full bg-slate-900/80 text-white flex items-center justify-center hover:bg-red-600 transition-colors shadow-sm cursor-pointer select-none" title="Marcar para remover">
+                                        <input type="checkbox" 
+                                               name="delete_images[]" 
+                                               value="{{ $img->id }}"
+                                               class="hidden"
+                                               @change="$el.closest('.relative').classList.toggle('opacity-35', $el.checked)">
+                                        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
+                                        </svg>
+                                    </label>
+                                </div>
+
+                                <div class="relative bg-slate-900/80 text-white px-2 py-1 flex items-center justify-between z-10">
+                                    <span class="text-[10px] font-bold text-slate-300">Pos:</span>
+                                    <input type="number" 
+                                           name="existing_gallery_orders[{{ $img->id }}]" 
+                                           value="{{ $img->order }}"
+                                           class="w-10 px-1 py-0.5 rounded bg-slate-800 border border-slate-700 text-[11px] font-bold text-center text-white focus:outline-none focus:ring-1 focus:ring-primary-500">
+                                </div>
+                            </div>
+                        @endforeach
+                    </div>
+                </div>
+            @endif
+
+            <!-- Novas Fotos com Drag & Drop Reordering -->
+            <div class="space-y-3 pt-2 border-t border-slate-100">
+                <div class="flex items-center justify-between">
+                    <h5 class="text-xs font-bold text-slate-800 uppercase tracking-wider">
+                        Novas Fotos Selecionadas (Arraste para Reordenar)
+                    </h5>
+                    <span class="text-[10px] text-slate-400 font-medium">
+                        💡 Clique e segure para mover de posição
+                    </span>
+                </div>
+
+                <template x-if="galleryFiles.length > 0">
+                    <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4 max-h-[300px] overflow-y-auto p-1">
+                        <template x-for="(item, index) in galleryFiles" :key="index">
+                            <div draggable="true"
+                                 @dragstart="draggedIndex = index"
+                                 @dragover.prevent="dragOverIndex = index"
+                                 @dragleave="dragOverIndex = null"
+                                 @drop.prevent="swapGalleryFiles(draggedIndex, index)"
+                                 :class="dragOverIndex === index ? 'ring-2 ring-primary-500 scale-105' : ''"
+                                 class="relative bg-slate-50 border border-slate-200 rounded-[5px] overflow-hidden aspect-video flex flex-col justify-between group shadow-sm transition-all cursor-grab active:cursor-grabbing select-none">
+                                
+                                <img :src="item.url" class="w-full h-full object-cover absolute inset-0 pointer-events-none">
+                                
+                                <div class="relative p-1.5 flex justify-between items-center z-10 bg-gradient-to-b from-slate-900/60 to-transparent">
+                                    <span class="bg-primary-600 text-white text-[10px] font-black px-2 py-0.5 rounded shadow" x-text="'#' + item.order"></span>
+                                    
+                                    <button type="button" 
+                                            @click="removeGalleryFile(index)" 
+                                            class="w-6 h-6 rounded-full bg-red-600/90 text-white flex items-center justify-center hover:bg-red-750 transition-colors shadow border-0 cursor-pointer"
+                                            title="Remover Imagem">
+                                        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
+                                        </svg>
+                                    </button>
+                                </div>
+
+                                <div class="relative bg-slate-900/80 text-white px-2 py-1.5 flex items-center justify-between z-10">
+                                    <span class="text-[9px] text-slate-300 font-bold flex items-center gap-1">
+                                        <svg class="w-3 h-3 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 8h16M4 16h16"></path></svg>
+                                        Arraste
+                                    </span>
+                                    
+                                    <div class="flex items-center gap-1">
+                                        <button type="button" @click="moveUp(index)" :disabled="index === 0" class="w-5 h-5 rounded bg-slate-800 text-slate-200 flex items-center justify-center hover:bg-slate-700 disabled:opacity-30 border-0" title="Mover para esquerda">‹</button>
+                                        <button type="button" @click="moveDown(index)" :disabled="index === galleryFiles.length - 1" class="w-5 h-5 rounded bg-slate-800 text-slate-200 flex items-center justify-center hover:bg-slate-700 disabled:opacity-30 border-0" title="Mover para direita">›</button>
+                                    </div>
+                                    <input type="hidden" :name="'gallery_orders[' + index + ']'" :value="item.order">
+                                </div>
+                            </div>
+                        </template>
+                    </div>
+                </template>
+
+                <div class="p-6 text-center text-slate-400 text-xs italic border border-slate-150 rounded-[5px] bg-slate-50/30" x-show="galleryFiles.length === 0">
+                    Nenhuma nova foto selecionada nesta edição.
                 </div>
             </div>
 
             <!-- Navegação -->
             <div class="flex flex-col sm:flex-row justify-between gap-3 pt-4 border-t border-slate-100">
                 <button type="button" @click="activeTab = 'geral'" 
-                        class="w-full sm:w-auto justify-center py-2.5 px-4 bg-slate-100 hover:bg-slate-200 text-slate-600 text-xs font-bold rounded-[5px] transition-colors flex items-center gap-1.5">
+                        class="w-full sm:w-auto justify-center py-2.5 px-4 bg-slate-100 hover:bg-slate-200 text-slate-600 text-xs font-bold rounded-[5px] transition-colors flex items-center gap-1.5 border-0 cursor-pointer">
                     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path>
                     </svg>
@@ -531,7 +571,7 @@
                 </button>
 
                 <button type="button" @click="activeTab = 'seo'" 
-                        class="w-full sm:w-auto justify-center py-2.5 px-5 bg-slate-800 hover:bg-slate-900 text-white text-xs font-bold rounded-[5px] transition-colors shadow-sm flex items-center gap-1.5">
+                        class="w-full sm:w-auto justify-center py-2.5 px-5 bg-slate-800 hover:bg-slate-900 text-white text-xs font-bold rounded-[5px] transition-colors shadow-sm flex items-center gap-1.5 border-0 cursor-pointer">
                     Ir para SEO & IA
                     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>
@@ -729,6 +769,76 @@
 
     </form>
 
+    <!-- Modal de Preview da Sequência de Imagens no Site -->
+    <div x-show="showPreviewModal" class="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/80 backdrop-blur-md p-4" x-cloak>
+        <div class="bg-slate-900 border border-slate-800 rounded-xl max-w-4xl w-full max-h-[90vh] flex flex-col shadow-2xl overflow-hidden">
+            
+            <!-- Header do Modal -->
+            <div class="p-4 border-b border-slate-800 flex items-center justify-between bg-slate-950/50">
+                <div class="flex items-center gap-3">
+                    <span class="w-3 h-3 rounded-full bg-emerald-500 animate-pulse"></span>
+                    <h3 class="text-sm font-bold text-white uppercase tracking-wider">
+                        Pré-visualização do Portfólio no Site Público
+                    </h3>
+                </div>
+                
+                <div class="flex items-center gap-4">
+                    <!-- Ajuste ao vivo no modal -->
+                    <div class="flex items-center gap-2 text-xs text-slate-300">
+                        <span>Espaçamento:</span>
+                        <input type="range" min="0" max="64" step="4" x-model="gallerySpacing" class="w-24 h-1.5 bg-slate-700 rounded appearance-none cursor-pointer accent-primary-500">
+                        <span class="font-mono text-primary-400 font-bold" x-text="gallerySpacing + 'px'"></span>
+                    </div>
+
+                    <button type="button" @click="showPreviewModal = false" class="text-slate-400 hover:text-white text-xl font-bold p-1 border-0 bg-transparent cursor-pointer">×</button>
+                </div>
+            </div>
+
+            <!-- Corpo de Preview Simulando o Site Público -->
+            <div class="flex-1 overflow-y-auto p-6 space-y-6 bg-[#070a13] text-slate-100">
+                
+                <!-- Título Simulado -->
+                <div class="space-y-1 text-center max-w-2xl mx-auto border-b border-white/10 pb-4">
+                    <span class="text-[10px] font-bold uppercase tracking-widest text-primary-400" x-text="getCategoryName()"></span>
+                    <h2 class="text-xl font-extrabold text-white" x-text="title || 'Título do Trabalho'"></h2>
+                </div>
+
+                <!-- Sequência das Imagens com o Espaçamento Selecionado -->
+                <div class="max-w-2xl mx-auto flex flex-col" :style="'gap: ' + gallerySpacing + 'px;'">
+                    <!-- Capa -->
+                    <template x-if="thumbPreview">
+                        <img :src="thumbPreview" class="w-full h-auto object-cover rounded-none block border border-white/5 shadow-lg">
+                    </template>
+                    @if($portfolio->thumb_path)
+                        <template x-if="!thumbPreview">
+                            <img src="{{ asset('storage/' . $portfolio->thumb_path) }}" class="w-full h-auto object-cover rounded-none block border border-white/5 shadow-lg">
+                        </template>
+                    @endif
+
+                    <!-- Imagens Existentes da Galeria -->
+                    @if($portfolio->images->count() > 0)
+                        @foreach($portfolio->images as $img)
+                            <img src="{{ asset('storage/' . $img->image_path) }}" class="w-full h-auto object-cover rounded-none block border border-white/5 shadow-lg">
+                        @endforeach
+                    @endif
+
+                    <!-- Fotos da Galeria Novas Adicionadas na Edição -->
+                    <template x-for="(item, idx) in galleryFiles" :key="idx">
+                        <img :src="item.url" class="w-full h-auto object-cover rounded-none block border border-white/5 shadow-lg">
+                    </template>
+                </div>
+            </div>
+
+            <!-- Footer do Modal -->
+            <div class="p-4 border-t border-slate-800 bg-slate-950 flex justify-end">
+                <button type="button" @click="showPreviewModal = false" class="px-5 py-2 bg-primary-600 hover:bg-primary-700 text-white text-xs font-bold rounded transition-colors border-0 cursor-pointer">
+                    Fechar Pré-visualização
+                </button>
+            </div>
+
+        </div>
+    </div>
+
     <!-- Modal Loader Overlay de Upload -->
     <div x-show="isUploading" class="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 backdrop-blur-sm" x-cloak>
         <div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-lg p-6 max-w-sm w-full mx-4 shadow-2xl text-center space-y-4">
@@ -766,6 +876,10 @@
             // Imagens
             thumbPreview: '',
             galleryFiles: [],
+            gallerySpacing: {{ intval($portfolio->gallery_spacing ?? 0) }},
+            showPreviewModal: false,
+            draggedIndex: null,
+            dragOverIndex: null,
             
             // SEO
             metaTitle: {!! json_encode($portfolio->meta_title ?? "") !!},
@@ -936,6 +1050,17 @@
                         item.order = idx + 1;
                     });
                 }
+            },
+
+            swapGalleryFiles(from, to) {
+                if (from === null || to === null || from === to) return;
+                const item = this.galleryFiles.splice(from, 1)[0];
+                this.galleryFiles.splice(to, 0, item);
+                this.galleryFiles.forEach((f, idx) => {
+                    f.order = idx + 1;
+                });
+                this.draggedIndex = null;
+                this.dragOverIndex = null;
             },
 
             removeGalleryFile(index) {
