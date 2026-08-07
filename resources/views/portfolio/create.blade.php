@@ -669,59 +669,73 @@
                     <div class="space-y-3 text-slate-600 leading-relaxed">
                         <div class="flex items-center justify-between gap-2 border-b border-slate-50 pb-2">
                             <span class="text-slate-400 font-medium">Título:</span>
-                            <div class="flex items-center gap-2">
+                            <div class="flex items-center gap-1.5">
                                 <strong class="text-slate-800 truncate max-w-[180px]" x-text="title || 'Não informado'"></strong>
-                                <button type="button" @click="activeTab = 'geral'" class="text-[10px] text-primary-600 hover:underline font-bold border-0 bg-transparent cursor-pointer">Alterar</button>
+                                <button type="button" @click="activeTab = 'geral'" class="p-1 rounded text-slate-400 hover:text-primary-600 hover:bg-primary-50 transition-colors border-0 bg-transparent cursor-pointer" title="Alterar Título">
+                                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"></path></svg>
+                                </button>
                             </div>
                         </div>
 
                         <div class="flex items-center justify-between gap-2 border-b border-slate-50 pb-2">
                             <span class="text-slate-400 font-medium">Categoria:</span>
-                            <div class="flex items-center gap-2">
+                            <div class="flex items-center gap-1.5">
                                 <span class="bg-slate-100 text-slate-700 text-xs px-2 py-0.5 rounded font-bold" x-text="getCategoryName()"></span>
-                                <button type="button" @click="activeTab = 'geral'" class="text-[10px] text-primary-600 hover:underline font-bold border-0 bg-transparent cursor-pointer">Alterar</button>
+                                <button type="button" @click="activeTab = 'geral'" class="p-1 rounded text-slate-400 hover:text-primary-600 hover:bg-primary-50 transition-colors border-0 bg-transparent cursor-pointer" title="Alterar Categoria">
+                                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"></path></svg>
+                                </button>
                             </div>
                         </div>
 
                         <div class="flex items-center justify-between gap-2 border-b border-slate-50 pb-2">
                             <span class="text-slate-400 font-medium">Cliente:</span>
-                            <div class="flex items-center gap-2">
+                            <div class="flex items-center gap-1.5">
                                 <strong class="text-slate-800" x-text="getClientName()"></strong>
-                                <button type="button" @click="activeTab = 'geral'" class="text-[10px] text-primary-600 hover:underline font-bold border-0 bg-transparent cursor-pointer">Alterar</button>
+                                <button type="button" @click="activeTab = 'geral'" class="p-1 rounded text-slate-400 hover:text-primary-600 hover:bg-primary-50 transition-colors border-0 bg-transparent cursor-pointer" title="Alterar Cliente">
+                                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"></path></svg>
+                                </button>
                             </div>
                         </div>
 
                         <div class="flex items-center justify-between gap-2 border-b border-slate-50 pb-2">
                             <span class="text-slate-400 font-medium">Tecnologias:</span>
-                            <div class="flex items-center gap-2">
+                            <div class="flex items-center gap-1.5">
                                 <strong class="text-slate-800" x-text="technologies || 'Não informada'"></strong>
-                                <button type="button" @click="activeTab = 'geral'" class="text-[10px] text-primary-600 hover:underline font-bold border-0 bg-transparent cursor-pointer">Alterar</button>
+                                <button type="button" @click="activeTab = 'geral'" class="p-1 rounded text-slate-400 hover:text-primary-600 hover:bg-primary-50 transition-colors border-0 bg-transparent cursor-pointer" title="Alterar Tecnologias">
+                                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"></path></svg>
+                                </button>
                             </div>
                         </div>
 
                         <div class="flex items-center justify-between gap-2 border-b border-slate-50 pb-2">
                             <span class="text-slate-400 font-medium">Link do Trabalho:</span>
-                            <div class="flex items-center gap-2">
+                            <div class="flex items-center gap-1.5">
                                 <strong class="text-slate-800 truncate max-w-[180px]" x-text="redirectUrl || 'Não informado'"></strong>
-                                <button type="button" @click="activeTab = 'geral'" class="text-[10px] text-primary-600 hover:underline font-bold border-0 bg-transparent cursor-pointer">Alterar</button>
+                                <button type="button" @click="activeTab = 'geral'" class="p-1 rounded text-slate-400 hover:text-primary-600 hover:bg-primary-50 transition-colors border-0 bg-transparent cursor-pointer" title="Alterar Link">
+                                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"></path></svg>
+                                </button>
                             </div>
                         </div>
 
                         <div class="flex items-center justify-between gap-2 border-b border-slate-50 pb-2">
                             <span class="text-slate-400 font-medium">Destaque do Portfólio:</span>
-                            <div class="flex items-center gap-2">
+                            <div class="flex items-center gap-1.5">
                                 <strong class="text-slate-800" x-text="isFeatured ? 'Sim' : 'Não'"></strong>
-                                <button type="button" @click="activeTab = 'geral'" class="text-[10px] text-primary-600 hover:underline font-bold border-0 bg-transparent cursor-pointer">Alterar</button>
+                                <button type="button" @click="activeTab = 'geral'" class="p-1 rounded text-slate-400 hover:text-primary-600 hover:bg-primary-50 transition-colors border-0 bg-transparent cursor-pointer" title="Alterar Destaque">
+                                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"></path></svg>
+                                </button>
                             </div>
                         </div>
 
                         <div class="flex items-center justify-between gap-2">
                             <span class="text-slate-400 font-medium">Status de Publicação:</span>
-                            <div class="flex items-center gap-2">
+                            <div class="flex items-center gap-1.5">
                                 <span class="px-2 py-0.5 rounded font-bold text-xs uppercase" 
                                       :class="status === 'publicado' ? 'bg-emerald-100 text-emerald-800' : 'bg-amber-100 text-amber-800'"
                                       x-text="status"></span>
-                                <button type="button" @click="activeTab = 'geral'" class="text-[10px] text-primary-600 hover:underline font-bold border-0 bg-transparent cursor-pointer">Alterar</button>
+                                <button type="button" @click="activeTab = 'geral'" class="p-1 rounded text-slate-400 hover:text-primary-600 hover:bg-primary-50 transition-colors border-0 bg-transparent cursor-pointer" title="Alterar Status">
+                                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"></path></svg>
+                                </button>
                             </div>
                         </div>
                     </div>
@@ -739,33 +753,41 @@
                     <div class="space-y-3 text-slate-600">
                         <div class="flex items-center justify-between gap-2 border-b border-slate-50 pb-2">
                             <span class="text-slate-400 font-medium">Imagem de Capa (Thumb):</span>
-                            <div class="flex items-center gap-2">
+                            <div class="flex items-center gap-1.5">
                                 <strong :class="thumbPreview ? 'text-emerald-600' : 'text-red-500'" x-text="thumbPreview ? 'Selecionada' : 'Pendente *'"></strong>
-                                <button type="button" @click="activeTab = 'galeria'" class="text-[10px] text-primary-600 hover:underline font-bold border-0 bg-transparent cursor-pointer">Alterar</button>
+                                <button type="button" @click="activeTab = 'galeria'" class="p-1 rounded text-slate-400 hover:text-primary-600 hover:bg-primary-50 transition-colors border-0 bg-transparent cursor-pointer" title="Alterar Imagem de Capa">
+                                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"></path></svg>
+                                </button>
                             </div>
                         </div>
 
                         <div class="flex items-center justify-between gap-2 border-b border-slate-50 pb-2">
                             <span class="text-slate-400 font-medium">Fotos na Galeria:</span>
-                            <div class="flex items-center gap-2">
+                            <div class="flex items-center gap-1.5">
                                 <strong class="text-slate-800" x-text="galleryFiles.length + ' fotos'"></strong>
-                                <button type="button" @click="activeTab = 'galeria'" class="text-[10px] text-primary-600 hover:underline font-bold border-0 bg-transparent cursor-pointer">Alterar</button>
+                                <button type="button" @click="activeTab = 'galeria'" class="p-1 rounded text-slate-400 hover:text-primary-600 hover:bg-primary-50 transition-colors border-0 bg-transparent cursor-pointer" title="Alterar Fotos da Galeria">
+                                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"></path></svg>
+                                </button>
                             </div>
                         </div>
 
                         <div class="flex items-center justify-between gap-2 border-b border-slate-50 pb-2">
                             <span class="text-slate-400 font-medium">Meta Title (SEO):</span>
-                            <div class="flex items-center gap-2">
+                            <div class="flex items-center gap-1.5">
                                 <strong class="text-slate-800 truncate max-w-[180px]" x-text="metaTitle || 'Não configurado'"></strong>
-                                <button type="button" @click="activeTab = 'seo'" class="text-[10px] text-primary-600 hover:underline font-bold border-0 bg-transparent cursor-pointer">Alterar</button>
+                                <button type="button" @click="activeTab = 'seo'" class="p-1 rounded text-slate-400 hover:text-primary-600 hover:bg-primary-50 transition-colors border-0 bg-transparent cursor-pointer" title="Alterar Meta Title">
+                                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"></path></svg>
+                                </button>
                             </div>
                         </div>
 
                         <div class="flex items-center justify-between gap-2">
                             <span class="text-slate-400 font-medium">Meta Description:</span>
-                            <div class="flex items-center gap-2">
+                            <div class="flex items-center gap-1.5">
                                 <strong class="text-slate-800 truncate max-w-[180px]" x-text="metaDescription || 'Não configurado'"></strong>
-                                <button type="button" @click="activeTab = 'seo'" class="text-[10px] text-primary-600 hover:underline font-bold border-0 bg-transparent cursor-pointer">Alterar</button>
+                                <button type="button" @click="activeTab = 'seo'" class="p-1 rounded text-slate-400 hover:text-primary-600 hover:bg-primary-50 transition-colors border-0 bg-transparent cursor-pointer" title="Alterar Meta Description">
+                                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"></path></svg>
+                                </button>
                             </div>
                         </div>
                     </div>
