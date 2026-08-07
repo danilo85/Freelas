@@ -228,8 +228,8 @@
                              x-cloak>
                             <template x-for="suggestion in filteredSuggestions" :key="suggestion">
                                 <button type="button"
-                                        @click="selectSuggestion(suggestion)"
-                                        class="w-full text-left px-3.5 py-2 text-xs font-bold text-slate-700 hover:bg-primary-50 hover:text-primary-750 transition-colors border-0">
+                                        @mousedown.prevent="selectSuggestion(suggestion)"
+                                        class="w-full text-left px-3.5 py-2 text-xs font-bold text-slate-700 hover:bg-primary-50 hover:text-primary-750 transition-colors border-0 cursor-pointer">
                                     <span x-text="suggestion"></span>
                                 </button>
                             </template>
@@ -326,7 +326,7 @@
                          x-cloak>
                         <template x-for="author in filteredAuthors" :key="author.id">
                             <button type="button"
-                                    @click="selectAuthor(author.id)"
+                                    @mousedown.prevent="selectAuthor(author.id)"
                                     class="w-full text-left px-3.5 py-2.5 text-xs font-medium text-slate-700 hover:bg-primary-50 hover:text-primary-800 transition-colors flex items-center justify-between border-0 cursor-pointer">
                                 <div class="flex items-center gap-2">
                                     <span class="w-6 h-6 rounded-full bg-slate-100 text-slate-600 text-[11px] font-bold flex items-center justify-center uppercase shrink-0" x-text="author.name.substring(0, 1)"></span>
@@ -1009,27 +1009,26 @@
             },
 
             addTag() {
-                const clean = this.inputValue.trim().replace(/,/g, '');
+                const clean = (this.inputValue || '').trim().replace(/,/g, '');
                 if (clean && !this.tags.includes(clean)) {
                     this.tags.push(clean);
-                    this.$parent.technologies = this.tags.join(', ');
+                    if (this.$parent) {
+                        this.$parent.technologies = this.tags.join(', ');
+                    }
                 }
-                this.inputValue = '';
-                if (this.$refs.tagInput) {
-                    this.$refs.tagInput.value = '';
-                }
-                this.showSuggestions = false;
-                this.filterSuggestions();
+                this.clearInput();
             },
 
             removeTag(index) {
                 this.tags.splice(index, 1);
-                this.$parent.technologies = this.tags.join(', ');
+                if (this.$parent) {
+                    this.$parent.technologies = this.tags.join(', ');
+                }
                 this.filterSuggestions();
             },
 
             filterSuggestions() {
-                const search = this.inputValue.toLowerCase().trim();
+                const search = (this.inputValue || '').toLowerCase().trim();
                 this.filteredSuggestions = this.allSuggestions.filter(s => {
                     return s.toLowerCase().includes(search) && !this.tags.includes(s);
                 });
@@ -1038,14 +1037,26 @@
             selectSuggestion(val) {
                 if (!this.tags.includes(val)) {
                     this.tags.push(val);
-                    this.$parent.technologies = this.tags.join(', ');
+                    if (this.$parent) {
+                        this.$parent.technologies = this.tags.join(', ');
+                    }
                 }
+                this.clearInput();
+            },
+
+            clearInput() {
                 this.inputValue = '';
+                this.showSuggestions = false;
                 if (this.$refs.tagInput) {
                     this.$refs.tagInput.value = '';
                 }
-                this.showSuggestions = false;
-                this.filterSuggestions();
+                this.$nextTick(() => {
+                    this.inputValue = '';
+                    if (this.$refs.tagInput) {
+                        this.$refs.tagInput.value = '';
+                    }
+                    this.filterSuggestions();
+                });
             }
         }
     }
@@ -1063,42 +1074,71 @@
             init() {
                 this.filterAuthors();
 
-                // Scanner automático na descrição do trabalho
-                this.$watch('$parent.description', (newVal) => {
-                    this.scanTextForAuthors(newVal);
-                });
+                const checkDescription = () => {
+                    const editorEl = document.querySelector('[x-ref="editor"]') || document.querySelector('.wysiwyg-editor');
+                    const text = editorEl ? editorEl.innerHTML : (this.$parent ? this.$parent.description : '');
+                    if (text) {
+                        this.scanTextForAuthors(text);
+                    }
+                };
 
-                if (this.$parent.description) {
-                    this.scanTextForAuthors(this.$parent.description);
+                checkDescription();
+                setTimeout(checkDescription, 300);
+                setTimeout(checkDescription, 1000);
+
+                if (this.$parent) {
+                    this.$watch('$parent.description', (newVal) => {
+                        this.scanTextForAuthors(newVal);
+                    });
                 }
+
+                document.addEventListener('input', (e) => {
+                    if (e.target && (e.target.getAttribute('x-ref') === 'editor' || e.target.classList.contains('wysiwyg-editor'))) {
+                        this.scanTextForAuthors(e.target.innerHTML);
+                    }
+                });
             },
 
             scanTextForAuthors(htmlContent) {
                 if (!htmlContent) return;
 
-                const plainText = htmlContent.replace(/<[^>]*>/g, ' ').toLowerCase();
+                const tempDiv = document.createElement('div');
+                tempDiv.innerHTML = htmlContent;
+                const plainText = (tempDiv.textContent || tempDiv.innerText || '').toLowerCase().replace(/\s+/g, ' ');
 
+                if (!plainText.trim()) return;
+
+                let addedAny = false;
                 this.allAuthors.forEach(author => {
                     const authorId = parseInt(author.id);
                     if (this.selectedIds.includes(authorId) || this.manuallyRemovedIds.includes(authorId)) {
                         return;
                     }
 
-                    const name = author.name.trim().toLowerCase();
-                    if (!name) return;
+                    const name = author.name.trim().toLowerCase().replace(/\s+/g, ' ');
+                    if (!name || name.length < 3) return;
 
                     if (plainText.includes(name)) {
-                        this.selectAuthor(authorId);
+                        this.selectedIds.push(authorId);
+                        addedAny = true;
                     } else {
-                        const parts = name.split(/\s+/).filter(p => p.length > 2);
+                        const parts = name.split(' ').filter(p => p.length > 2);
                         if (parts.length >= 2) {
                             const firstLast = parts[0] + ' ' + parts[parts.length - 1];
                             if (plainText.includes(firstLast)) {
-                                this.selectAuthor(authorId);
+                                this.selectedIds.push(authorId);
+                                addedAny = true;
                             }
                         }
                     }
                 });
+
+                if (addedAny) {
+                    if (this.$parent) {
+                        this.$parent.selectedAuthors = this.selectedIds;
+                    }
+                    this.filterAuthors();
+                }
             },
 
             getSelectedAuthorObjects() {
@@ -1106,7 +1146,7 @@
             },
 
             filterAuthors() {
-                const q = this.searchQuery.toLowerCase().trim();
+                const q = (this.searchQuery || '').toLowerCase().trim();
                 this.filteredAuthors = this.allAuthors.filter(a => {
                     const isSelected = this.selectedIds.includes(parseInt(a.id));
                     if (isSelected) return false;
@@ -1120,14 +1160,11 @@
                 const numId = parseInt(id);
                 if (!this.selectedIds.includes(numId)) {
                     this.selectedIds.push(numId);
-                    this.$parent.selectedAuthors = this.selectedIds;
+                    if (this.$parent) {
+                        this.$parent.selectedAuthors = this.selectedIds;
+                    }
                 }
-                this.searchQuery = '';
-                if (this.$refs.authorInput) {
-                    this.$refs.authorInput.value = '';
-                }
-                this.showDropdown = false;
-                this.filterAuthors();
+                this.clearInput();
             },
 
             removeAuthor(id) {
@@ -1136,8 +1173,25 @@
                 if (!this.manuallyRemovedIds.includes(numId)) {
                     this.manuallyRemovedIds.push(numId);
                 }
-                this.$parent.selectedAuthors = this.selectedIds;
+                if (this.$parent) {
+                    this.$parent.selectedAuthors = this.selectedIds;
+                }
                 this.filterAuthors();
+            },
+
+            clearInput() {
+                this.searchQuery = '';
+                this.showDropdown = false;
+                if (this.$refs.authorInput) {
+                    this.$refs.authorInput.value = '';
+                }
+                this.$nextTick(() => {
+                    this.searchQuery = '';
+                    if (this.$refs.authorInput) {
+                        this.$refs.authorInput.value = '';
+                    }
+                    this.filterAuthors();
+                });
             }
         }
     }
