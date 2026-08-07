@@ -145,6 +145,22 @@ class PortfolioController extends Controller
             'gallery' => 'nullable|array',
             'gallery.*' => 'image|max:20480',
             'gallery_orders' => 'nullable|array',
+        ], [
+            'title.required' => 'O campo Título do Trabalho é obrigatório.',
+            'title.max' => 'O Título do Trabalho não pode ter mais de 255 caracteres.',
+            'portfolio_category_id.required' => 'O campo Categoria do Trabalho é obrigatório.',
+            'portfolio_category_id.exists' => 'A categoria selecionada é inválida.',
+            'description.required' => 'O campo Descrição do Trabalho é obrigatório.',
+            'thumb.required' => 'A Imagem de Capa (Thumbnail) é obrigatória.',
+            'thumb.image' => 'O arquivo da Imagem de Capa deve ser uma imagem válida.',
+            'thumb.max' => 'A Imagem de Capa não pode exceder 20MB.',
+            'status.required' => 'O campo Status de Publicação é obrigatório.',
+            'status.in' => 'O Status selecionado é inválido.',
+            'client_id.exists' => 'O cliente selecionado é inválido.',
+            'project_id.exists' => 'O projeto selecionado é inválido.',
+            'redirect_url.url' => 'O Link do Trabalho deve ser uma URL válida (ex: https://meusite.com).',
+            'gallery.*.image' => 'Todos os arquivos da galeria devem ser imagens válidas.',
+            'gallery.*.max' => 'As imagens da galeria não podem exceder 20MB cada.',
         ]);
 
         // Trata imagem thumb (capa)
@@ -271,6 +287,20 @@ class PortfolioController extends Controller
             'gallery_orders' => 'nullable|array',
             'existing_gallery_orders' => 'nullable|array',
             'delete_images' => 'nullable|array',
+        ], [
+            'title.required' => 'O campo Título do Trabalho é obrigatório.',
+            'title.max' => 'O Título do Trabalho não pode ter mais de 255 caracteres.',
+            'portfolio_category_id.required' => 'O campo Categoria do Trabalho é obrigatório.',
+            'portfolio_category_id.exists' => 'A categoria selecionada é inválida.',
+            'description.required' => 'O campo Descrição do Trabalho é obrigatório.',
+            'thumb.image' => 'O arquivo da Imagem de Capa deve ser uma imagem válida.',
+            'thumb.max' => 'A Imagem de Capa não pode exceder 20MB.',
+            'status.required' => 'O campo Status de Publicação é obrigatório.',
+            'status.in' => 'O Status selecionado é inválido.',
+            'client_id.exists' => 'O cliente selecionado é inválido.',
+            'redirect_url.url' => 'O Link do Trabalho deve ser uma URL válida (ex: https://meusite.com).',
+            'gallery.*.image' => 'Todos os arquivos da galeria devem ser imagens válidas.',
+            'gallery.*.max' => 'As imagens da galeria não podem exceder 20MB cada.',
         ]);
 
         // Atualiza imagem thumb (capa) se enviado

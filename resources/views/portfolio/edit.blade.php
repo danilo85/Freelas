@@ -685,63 +685,115 @@
                 
                 <!-- Resumo Geral -->
                 <div class="space-y-4 pr-0 md:pr-6">
-                    <h5 class="text-xs font-bold text-slate-800 uppercase tracking-wider pb-2 border-b border-slate-100">Resumo do Trabalho</h5>
+                    <h5 class="text-xs font-bold text-slate-800 uppercase tracking-wider pb-2 border-b border-slate-100 flex items-center justify-between">
+                        <span>Resumo do Trabalho</span>
+                        <button type="button" @click="activeTab = 'geral'" class="text-[10px] font-bold text-primary-600 hover:text-primary-800 bg-primary-50 px-2 py-0.5 rounded border border-primary-200 hover:border-primary-300 transition-colors border-0 cursor-pointer flex items-center gap-1">
+                            ✏️ Editar Dados Gerais
+                        </button>
+                    </h5>
                     
-                    <div class="space-y-2.5 text-slate-600 leading-relaxed">
-                        <p class="flex justify-between">
+                    <div class="space-y-3 text-slate-600 leading-relaxed">
+                        <div class="flex items-center justify-between gap-2 border-b border-slate-50 pb-2">
                             <span class="text-slate-400 font-medium">Título:</span>
-                            <strong class="text-slate-800" x-text="title || 'Não informado'"></strong>
-                        </p>
-                        <p class="flex justify-between">
+                            <div class="flex items-center gap-2">
+                                <strong class="text-slate-800 truncate max-w-[180px]" x-text="title || 'Não informado'"></strong>
+                                <button type="button" @click="activeTab = 'geral'" class="text-[10px] text-primary-600 hover:underline font-bold border-0 bg-transparent cursor-pointer">Alterar</button>
+                            </div>
+                        </div>
+
+                        <div class="flex items-center justify-between gap-2 border-b border-slate-50 pb-2">
                             <span class="text-slate-400 font-medium">Categoria:</span>
-                            <span class="bg-slate-100 text-slate-700 text-xs px-2 py-0.5 rounded font-bold" x-text="getCategoryName()"></span>
-                        </p>
-                        <p class="flex justify-between">
+                            <div class="flex items-center gap-2">
+                                <span class="bg-slate-100 text-slate-700 text-xs px-2 py-0.5 rounded font-bold" x-text="getCategoryName()"></span>
+                                <button type="button" @click="activeTab = 'geral'" class="text-[10px] text-primary-600 hover:underline font-bold border-0 bg-transparent cursor-pointer">Alterar</button>
+                            </div>
+                        </div>
+
+                        <div class="flex items-center justify-between gap-2 border-b border-slate-50 pb-2">
                             <span class="text-slate-400 font-medium">Cliente:</span>
-                            <strong class="text-slate-800" x-text="getClientName()"></strong>
-                        </p>
-                        <p class="flex justify-between">
+                            <div class="flex items-center gap-2">
+                                <strong class="text-slate-800" x-text="getClientName()"></strong>
+                                <button type="button" @click="activeTab = 'geral'" class="text-[10px] text-primary-600 hover:underline font-bold border-0 bg-transparent cursor-pointer">Alterar</button>
+                            </div>
+                        </div>
+
+                        <div class="flex items-center justify-between gap-2 border-b border-slate-50 pb-2">
                             <span class="text-slate-400 font-medium">Tecnologias:</span>
-                            <strong class="text-slate-800" x-text="technologies || 'Não informada'"></strong>
-                        </p>
-                        <p class="flex justify-between">
-                            <span class="text-slate-400 font-medium">Link de Direcionamento:</span>
-                            <strong class="text-slate-800" x-text="redirectUrl || 'Não informado'"></strong>
-                        </p>
-                        <p class="flex justify-between">
+                            <div class="flex items-center gap-2">
+                                <strong class="text-slate-800" x-text="technologies || 'Não informada'"></strong>
+                                <button type="button" @click="activeTab = 'geral'" class="text-[10px] text-primary-600 hover:underline font-bold border-0 bg-transparent cursor-pointer">Alterar</button>
+                            </div>
+                        </div>
+
+                        <div class="flex items-center justify-between gap-2 border-b border-slate-50 pb-2">
+                            <span class="text-slate-400 font-medium">Link do Trabalho:</span>
+                            <div class="flex items-center gap-2">
+                                <strong class="text-slate-800 truncate max-w-[180px]" x-text="redirectUrl || 'Não informado'"></strong>
+                                <button type="button" @click="activeTab = 'geral'" class="text-[10px] text-primary-600 hover:underline font-bold border-0 bg-transparent cursor-pointer">Alterar</button>
+                            </div>
+                        </div>
+
+                        <div class="flex items-center justify-between gap-2 border-b border-slate-50 pb-2">
                             <span class="text-slate-400 font-medium">Destaque do Portfólio:</span>
-                            <strong class="text-slate-800" x-text="isFeatured ? 'Sim' : 'Não'"></strong>
-                        </p>
-                        <p class="flex justify-between">
+                            <div class="flex items-center gap-2">
+                                <strong class="text-slate-800" x-text="isFeatured ? 'Sim' : 'Não'"></strong>
+                                <button type="button" @click="activeTab = 'geral'" class="text-[10px] text-primary-600 hover:underline font-bold border-0 bg-transparent cursor-pointer">Alterar</button>
+                            </div>
+                        </div>
+
+                        <div class="flex items-center justify-between gap-2">
                             <span class="text-slate-400 font-medium">Status de Publicação:</span>
-                            <span class="px-2 py-0.5 rounded font-bold text-xs uppercase" 
-                                  :class="status === 'publicado' ? 'bg-emerald-100 text-emerald-800' : 'bg-amber-100 text-amber-800'"
-                                  x-text="status"></span>
-                        </p>
+                            <div class="flex items-center gap-2">
+                                <span class="px-2 py-0.5 rounded font-bold text-xs uppercase" 
+                                      :class="status === 'publicado' ? 'bg-emerald-100 text-emerald-800' : 'bg-amber-100 text-amber-800'"
+                                      x-text="status"></span>
+                                <button type="button" @click="activeTab = 'geral'" class="text-[10px] text-primary-600 hover:underline font-bold border-0 bg-transparent cursor-pointer">Alterar</button>
+                            </div>
+                        </div>
                     </div>
                 </div>
 
                 <!-- Resumo Galeria & SEO -->
                 <div class="space-y-4 pt-6 md:pt-0 pl-0 md:pl-6">
-                    <h5 class="text-xs font-bold text-slate-800 uppercase tracking-wider pb-2 border-b border-slate-100">Galeria & Metatags</h5>
+                    <h5 class="text-xs font-bold text-slate-800 uppercase tracking-wider pb-2 border-b border-slate-100 flex items-center justify-between">
+                        <span>Galeria & Metatags</span>
+                        <button type="button" @click="activeTab = 'galeria'" class="text-[10px] font-bold text-primary-600 hover:text-primary-800 bg-primary-50 px-2 py-0.5 rounded border border-primary-200 hover:border-primary-300 transition-colors border-0 cursor-pointer flex items-center gap-1">
+                            🖼️ Editar Galeria
+                        </button>
+                    </h5>
                     
                     <div class="space-y-3 text-slate-600">
-                        <p class="flex justify-between">
+                        <div class="flex items-center justify-between gap-2 border-b border-slate-50 pb-2">
                             <span class="text-slate-400 font-medium">Imagem de Capa (Thumb):</span>
-                            <strong class="text-emerald-600">Salva</strong>
-                        </p>
-                        <p class="flex justify-between">
-                            <span class="text-slate-400 font-medium">Novas Fotos:</span>
-                            <strong class="text-slate-800" x-text="galleryFiles.length + ' novas fotos'"></strong>
-                        </p>
-                        <p class="flex justify-between">
+                            <div class="flex items-center gap-2">
+                                <strong class="text-emerald-600" x-text="thumbPreview ? 'Nova capa enviada' : 'Mantida'"></strong>
+                                <button type="button" @click="activeTab = 'galeria'" class="text-[10px] text-primary-600 hover:underline font-bold border-0 bg-transparent cursor-pointer">Alterar</button>
+                            </div>
+                        </div>
+
+                        <div class="flex items-center justify-between gap-2 border-b border-slate-50 pb-2">
+                            <span class="text-slate-400 font-medium">Novas Fotos Adicionadas:</span>
+                            <div class="flex items-center gap-2">
+                                <strong class="text-slate-800" x-text="galleryFiles.length + ' fotos'"></strong>
+                                <button type="button" @click="activeTab = 'galeria'" class="text-[10px] text-primary-600 hover:underline font-bold border-0 bg-transparent cursor-pointer">Alterar</button>
+                            </div>
+                        </div>
+
+                        <div class="flex items-center justify-between gap-2 border-b border-slate-50 pb-2">
                             <span class="text-slate-400 font-medium">Meta Title (SEO):</span>
-                            <strong class="text-slate-800 truncate max-w-[200px]" x-text="metaTitle || 'Não configurado'"></strong>
-                        </p>
-                        <p class="flex justify-between">
+                            <div class="flex items-center gap-2">
+                                <strong class="text-slate-800 truncate max-w-[180px]" x-text="metaTitle || 'Não configurado'"></strong>
+                                <button type="button" @click="activeTab = 'seo'" class="text-[10px] text-primary-600 hover:underline font-bold border-0 bg-transparent cursor-pointer">Alterar</button>
+                            </div>
+                        </div>
+
+                        <div class="flex items-center justify-between gap-2">
                             <span class="text-slate-400 font-medium">Meta Description:</span>
-                            <strong class="text-slate-800 truncate max-w-[200px]" x-text="metaDescription || 'Não configurado'"></strong>
-                        </p>
+                            <div class="flex items-center gap-2">
+                                <strong class="text-slate-800 truncate max-w-[180px]" x-text="metaDescription || 'Não configurado'"></strong>
+                                <button type="button" @click="activeTab = 'seo'" class="text-[10px] text-primary-600 hover:underline font-bold border-0 bg-transparent cursor-pointer">Alterar</button>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>
