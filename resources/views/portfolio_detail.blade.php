@@ -118,6 +118,13 @@
         }
         .hover\:bg-slate-900\/80:hover {
             background-color: rgba(0, 0, 0, 0.03) !important;
+        .project-description-text,
+        .project-description-text *,
+        .project-description-text p,
+        .project-description-text div,
+        .project-description-text span,
+        .project-description-text strong {
+            color: #334155 !important;
         }
         @else
         body {
@@ -129,6 +136,14 @@
             backdrop-filter: blur(12px);
             -webkit-backdrop-filter: blur(12px);
             border: 1px rgba(255, 255, 255, 0.08) solid;
+        }
+        .project-description-text,
+        .project-description-text *,
+        .project-description-text p,
+        .project-description-text div,
+        .project-description-text span,
+        .project-description-text strong {
+            color: #cbd5e1 !important;
         }
         @endif
         
@@ -309,8 +324,8 @@
                     <!-- Descrição -->
                     <div class="space-y-2">
                         <span class="text-[9px] font-bold text-slate-500 uppercase tracking-wider block">Descrição do Projeto</span>
-                        <div class="text-xs text-slate-350 leading-relaxed font-normal text-justify whitespace-pre-line select-text">
-                            {!! $item->description !!}
+                        <div class="project-description-text text-xs text-slate-300 dark:text-slate-300 leading-relaxed font-normal text-justify whitespace-pre-line select-text">
+                            {!! str_replace(['&lt;div&gt;', '&lt;/div&gt;', '&lt;p&gt;', '&lt;/p&gt;', '&lt;br&gt;', '&lt;br/&gt;'], ["\n", "\n", "\n", "\n", "\n", "\n"], $item->description) !!}
                         </div>
                     </div>
 
