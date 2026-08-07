@@ -209,6 +209,7 @@
                             </template>
                             
                             <input type="text"
+                                   x-ref="tagInput"
                                    x-model="inputValue"
                                    @keydown.enter.prevent="addTag()"
                                    @keydown.comma.prevent="addTag()"
@@ -273,24 +274,71 @@
                 </div>
             </div>
 
-            <!-- Autores -->
-            <div class="space-y-3 pt-4 border-t border-slate-100">
-                <span class="text-xs font-semibold text-slate-500 uppercase tracking-wider block">Autores do Trabalho (Citá-los é importante)</span>
+            <!-- Autores do Trabalho (Busca Inteligente + Auto-Detecção na Descrição) -->
+            <div class="space-y-3 pt-4 border-t border-slate-100" 
+                 x-data="authorsInput({
+                    allAuthors: {{ json_encode($authors) }},
+                    initialSelected: selectedAuthors
+                 })">
                 
-                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-                    @foreach($authors as $author)
-                        <label class="flex items-center gap-3 p-3 bg-slate-50 border border-slate-150 rounded-[5px] cursor-pointer hover:bg-slate-100/70 transition-colors select-none">
-                            <input type="checkbox" 
-                                   name="authors[]" 
-                                   value="{{ $author->id }}"
-                                   x-model="selectedAuthors"
-                                   class="w-4 h-4 text-primary-600 border-slate-300 rounded focus:ring-primary-500">
-                            <div class="min-w-0">
-                                <span class="text-xs font-bold text-slate-800 block truncate">{{ $author->name }}</span>
-                                <span class="text-[10px] text-slate-400 block truncate">{{ $author->email }}</span>
-                            </div>
-                        </label>
-                    @endforeach
+                <div class="flex items-center justify-between">
+                    <label class="text-xs font-semibold text-slate-500 uppercase tracking-wider block">
+                        Autores do Trabalho (Citá-los é importante)
+                    </label>
+                    <span class="text-[10px] text-emerald-600 font-bold flex items-center gap-1">
+                        ✨ Detecção automática ativada na descrição
+                    </span>
+                </div>
+
+                <!-- Campos ocultos para submissão dos IDs dos autores -->
+                <template x-for="id in selectedIds" :key="id">
+                    <input type="hidden" name="authors[]" :value="id">
+                </template>
+
+                <!-- Input e Lista de Tags Selecionadas -->
+                <div class="relative">
+                    <div class="flex flex-wrap gap-2 p-2.5 border border-slate-200 rounded-[5px] bg-slate-50 min-h-[46px] focus-within:ring-2 focus-within:ring-primary-500/20 focus-within:border-primary-500 transition-all items-center">
+                        
+                        <!-- Tags dos Autores Selecionados -->
+                        <template x-for="author in getSelectedAuthorObjects()" :key="author.id">
+                            <span class="inline-flex items-center gap-1.5 bg-white text-slate-800 text-xs font-bold px-2.5 py-1 rounded-[5px] border border-slate-200 shadow-sm">
+                                <span class="w-5 h-5 rounded-full bg-primary-100 text-primary-750 text-[10px] font-black flex items-center justify-center uppercase shrink-0" x-text="author.name.substring(0, 1)"></span>
+                                <span x-text="author.name"></span>
+                                <button type="button" @click="removeAuthor(author.id)" class="text-slate-400 hover:text-red-600 font-extrabold focus:outline-none border-0 bg-transparent p-0 leading-none ml-1 cursor-pointer">×</button>
+                            </span>
+                        </template>
+
+                        <!-- Input de Busca -->
+                        <input type="text"
+                               x-ref="authorInput"
+                               x-model="searchQuery"
+                               @focus="showDropdown = true"
+                               @input="filterAuthors()"
+                               @keydown.escape="showDropdown = false"
+                               @click.away="showDropdown = false"
+                               placeholder="Digite para buscar ou adicionar autor..."
+                               class="flex-1 min-w-[180px] bg-transparent border-none p-0 text-sm focus:ring-0 focus:outline-none text-slate-700 placeholder-slate-400">
+                    </div>
+
+                    <!-- Dropdown de Autores Disponíveis -->
+                    <div x-show="showDropdown && filteredAuthors.length > 0"
+                         class="absolute left-0 right-0 mt-1 max-h-48 overflow-y-auto bg-white border border-slate-200 rounded-[5px] shadow-lg z-50 divide-y divide-slate-100"
+                         x-cloak>
+                        <template x-for="author in filteredAuthors" :key="author.id">
+                            <button type="button"
+                                    @click="selectAuthor(author.id)"
+                                    class="w-full text-left px-3.5 py-2.5 text-xs font-medium text-slate-700 hover:bg-primary-50 hover:text-primary-800 transition-colors flex items-center justify-between border-0 cursor-pointer">
+                                <div class="flex items-center gap-2">
+                                    <span class="w-6 h-6 rounded-full bg-slate-100 text-slate-600 text-[11px] font-bold flex items-center justify-center uppercase shrink-0" x-text="author.name.substring(0, 1)"></span>
+                                    <div>
+                                        <span class="font-bold block text-slate-800" x-text="author.name"></span>
+                                        <span class="text-[10px] text-slate-400 block" x-text="author.email"></span>
+                                    </div>
+                                </div>
+                                <span class="text-[10px] font-bold text-primary-600">+ Adicionar</span>
+                            </button>
+                        </template>
+                    </div>
                 </div>
             </div>
 
@@ -964,10 +1012,12 @@
                 const clean = this.inputValue.trim().replace(/,/g, '');
                 if (clean && !this.tags.includes(clean)) {
                     this.tags.push(clean);
-                    // Atualiza a propriedade technologies no escopo pai (portfolioForm)
                     this.$parent.technologies = this.tags.join(', ');
                 }
                 this.inputValue = '';
+                if (this.$refs.tagInput) {
+                    this.$refs.tagInput.value = '';
+                }
                 this.showSuggestions = false;
                 this.filterSuggestions();
             },
@@ -991,8 +1041,103 @@
                     this.$parent.technologies = this.tags.join(', ');
                 }
                 this.inputValue = '';
+                if (this.$refs.tagInput) {
+                    this.$refs.tagInput.value = '';
+                }
                 this.showSuggestions = false;
                 this.filterSuggestions();
+            }
+        }
+    }
+
+    // Componente Alpine.js para Autores com Busca Inteligente e Auto-Detecção na Descrição
+    function authorsInput(config) {
+        return {
+            allAuthors: config.allAuthors || [],
+            selectedIds: (config.initialSelected || []).map(id => parseInt(id)),
+            manuallyRemovedIds: [],
+            searchQuery: '',
+            filteredAuthors: [],
+            showDropdown: false,
+
+            init() {
+                this.filterAuthors();
+
+                // Scanner automático na descrição do trabalho
+                this.$watch('$parent.description', (newVal) => {
+                    this.scanTextForAuthors(newVal);
+                });
+
+                if (this.$parent.description) {
+                    this.scanTextForAuthors(this.$parent.description);
+                }
+            },
+
+            scanTextForAuthors(htmlContent) {
+                if (!htmlContent) return;
+
+                const plainText = htmlContent.replace(/<[^>]*>/g, ' ').toLowerCase();
+
+                this.allAuthors.forEach(author => {
+                    const authorId = parseInt(author.id);
+                    if (this.selectedIds.includes(authorId) || this.manuallyRemovedIds.includes(authorId)) {
+                        return;
+                    }
+
+                    const name = author.name.trim().toLowerCase();
+                    if (!name) return;
+
+                    if (plainText.includes(name)) {
+                        this.selectAuthor(authorId);
+                    } else {
+                        const parts = name.split(/\s+/).filter(p => p.length > 2);
+                        if (parts.length >= 2) {
+                            const firstLast = parts[0] + ' ' + parts[parts.length - 1];
+                            if (plainText.includes(firstLast)) {
+                                this.selectAuthor(authorId);
+                            }
+                        }
+                    }
+                });
+            },
+
+            getSelectedAuthorObjects() {
+                return this.allAuthors.filter(a => this.selectedIds.includes(parseInt(a.id)));
+            },
+
+            filterAuthors() {
+                const q = this.searchQuery.toLowerCase().trim();
+                this.filteredAuthors = this.allAuthors.filter(a => {
+                    const isSelected = this.selectedIds.includes(parseInt(a.id));
+                    if (isSelected) return false;
+
+                    if (!q) return true;
+                    return a.name.toLowerCase().includes(q) || (a.email && a.email.toLowerCase().includes(q));
+                });
+            },
+
+            selectAuthor(id) {
+                const numId = parseInt(id);
+                if (!this.selectedIds.includes(numId)) {
+                    this.selectedIds.push(numId);
+                    this.$parent.selectedAuthors = this.selectedIds;
+                }
+                this.searchQuery = '';
+                if (this.$refs.authorInput) {
+                    this.$refs.authorInput.value = '';
+                }
+                this.showDropdown = false;
+                this.filterAuthors();
+            },
+
+            removeAuthor(id) {
+                const numId = parseInt(id);
+                this.selectedIds = this.selectedIds.filter(i => i !== numId);
+                if (!this.manuallyRemovedIds.includes(numId)) {
+                    this.manuallyRemovedIds.push(numId);
+                }
+                this.$parent.selectedAuthors = this.selectedIds;
+                this.filterAuthors();
             }
         }
     }
