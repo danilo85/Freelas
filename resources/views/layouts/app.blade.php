@@ -321,29 +321,48 @@
     <!-- Tela de Loading de Alta Performance Global -->
     <div id="page-loader" class="fixed inset-0 bg-white dark:bg-slate-950 z-[9999] flex flex-col items-center justify-center transition-opacity duration-300">
         <div class="flex flex-col items-center space-y-6">
-            <!-- Preloader Animated Logo -->
+            <!-- Preloader Animated Logo (logo_sidebar.svg com Construção de Linhas e Preenchimento no Tema) -->
             <div class="relative flex items-center justify-center">
-                <svg id="loader-logo" class="w-20 h-20" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1000 1000">
-                  <style>
-                    #loader-logo .p1 { animation: assemble-p1 1.4s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
-                    #loader-logo .p2 { animation: assemble-p2 1.4s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
-                    #loader-logo .p3 { animation: assemble-p3 1.4s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
-                    @keyframes assemble-p1 {
-                        0% { transform: translate(70px, -70px); opacity: 0; }
-                        100% { transform: translate(0, 0); opacity: 1; }
-                    }
-                    @keyframes assemble-p2 {
-                        0% { transform: translate(-60px, -60px); opacity: 0; }
-                        100% { transform: translate(0, 0); opacity: 1; }
-                    }
-                    @keyframes assemble-p3 {
-                        0% { transform: translate(-80px, 80px); opacity: 0; }
-                        100% { transform: translate(0, 0); opacity: 1; }
-                    }
-                  </style>
-                  <path class="p1" d="M845.889,62.031c-.002,119.208-96.63,215.838-215.84,215.84-42.225,0-168.9,0-168.9,0-48.59-.18-88.42,38.539-91.016,85.611-.516,5.078-.009,240.167-.181,245.677-14.655,16.179-23.579,37.636-23.579,61.179,10.799,119.487-73.309,229.027-192.261,240.943V306.294c0-134.909,109.353-244.263,244.262-244.263h447.515Z" fill="#024e4b"/>
-                  <path class="p2" d="M370.133,363.482c-.516,5.078-.009,240.167-.181,245.677-14.655,16.179-23.579,37.636-23.579,61.179,10.799,119.487-73.309,229.027-192.261,240.943v-404.891c38.543-81.874,120.399-139.371,216.022-142.908Z" fill="#024442"/>
-                  <path class="p3" d="M154.117,937.969h0v-295.821c0-139.966,113.465-253.432,253.432-253.432h311.293c0,119.206-96.635,215.84-215.84,215.84h-15.472c-64.933,0-117.572,52.639-117.572,117.572h0c0,119.206-96.635,215.841-215.84,215.841Z" fill="#01a87e"/>
+                <svg id="loader-logo-svg" class="w-24 h-auto text-primary-500" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 890.361 478.897" fill="currentColor">
+                    <style>
+                        @keyframes lineDrawFillPath {
+                            0% {
+                                stroke-dashoffset: 2500;
+                                fill-opacity: 0;
+                                stroke-opacity: 1;
+                            }
+                            60% {
+                                stroke-dashoffset: 0;
+                                fill-opacity: 0;
+                                stroke-opacity: 1;
+                            }
+                            90%, 100% {
+                                stroke-dashoffset: 0;
+                                fill-opacity: 1;
+                                stroke-opacity: 0;
+                            }
+                        }
+                        .draw-path-1 {
+                            stroke: currentColor;
+                            stroke-width: 14px;
+                            stroke-dasharray: 2500;
+                            stroke-dashoffset: 2500;
+                            stroke-linecap: round;
+                            stroke-linejoin: round;
+                            animation: lineDrawFillPath 1.6s cubic-bezier(0.4, 0, 0.2, 1) infinite alternate;
+                        }
+                        .draw-path-2 {
+                            stroke: currentColor;
+                            stroke-width: 14px;
+                            stroke-dasharray: 2500;
+                            stroke-dashoffset: 2500;
+                            stroke-linecap: round;
+                            stroke-linejoin: round;
+                            animation: lineDrawFillPath 1.6s cubic-bezier(0.4, 0, 0.2, 1) 0.15s infinite alternate;
+                        }
+                    </style>
+                    <path class="draw-path-1" d="M307.679,64.69c-18.667-17.379-40.874-30.68-66.621-39.907-25.747-9.223-53.963-13.84-84.643-13.84-24.676,0-49.513,1.56-74.507,4.668-24.997,3.112-49.297,8.423-72.896,15.931L0,463.449c10.083,1.075,19.954,1.88,29.609,2.413,9.656.538,19.522.805,29.61.805,27.034,0,53.37-2.092,79.011-6.276,25.636-4.183,49.83-10.62,72.574-19.31,22.74-8.689,43.659-19.793,62.758-33.31,19.095-13.518,35.563-29.66,49.402-48.437,13.839-18.772,24.621-40.23,32.346-64.368,7.724-24.138,11.586-51.222,11.586-81.265,0-31.751-5.205-60.183-15.609-85.287-10.41-25.103-24.942-46.344-43.609-63.724ZM234.942,234.299v4.506c-.432,12.446-2.736,24.515-6.919,36.206-4.184,11.698-10.088,22.318-17.702,31.862-7.618,9.55-16.685,17.595-27.195,24.138-10.515,6.548-22.207,10.782-35.08,12.713l12.874-199.54c13.084.432,24.349,3.168,33.792,8.207,9.439,5.043,17.219,11.697,23.334,19.953,6.115,8.263,10.51,17.757,13.195,28.483,2.681,10.732,3.913,21.885,3.701,33.472Z"/>
+                    <polygon class="draw-path-2" points="717.213 0 629.672 225.932 564.016 12.875 398.591 19.311 392.154 464.092 540.843 459.586 541.488 251.035 592.337 430.621 648.981 430.621 715.28 229.794 713.994 478.897 860.753 472.461 890.361 0 717.213 0"/>
                 </svg>
             </div>
             

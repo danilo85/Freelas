@@ -345,6 +345,10 @@
                 if (sidebarLogo) {
                     sidebarLogo.style.color = hex;
                 }
+                const loaderLogo = document.getElementById('loader-logo-svg');
+                if (loaderLogo) {
+                    loaderLogo.style.color = hex;
+                }
             },
             
             passwordInput: '',
