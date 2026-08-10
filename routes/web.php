@@ -241,6 +241,9 @@ Route::middleware(['auth', 'approved'])->prefix('freelas')->group(function () {
         Route::post('/utilidades/instagram/posts', [\App\Http\Controllers\InstagramController::class, 'storePost'])->name('instagram.posts.store');
         Route::delete('/utilidades/instagram/posts/{post}', [\App\Http\Controllers\InstagramController::class, 'destroyPost'])->name('instagram.posts.destroy');
         Route::post('/utilidades/instagram/settings/overlays', [\App\Http\Controllers\InstagramController::class, 'storeOverlayIcons'])->name('instagram.settings.overlays');
+        Route::post('/utilidades/instagram/generate-hashtags', [\App\Http\Controllers\InstagramController::class, 'generateAiHashtags'])->name('instagram.hashtags.generate');
+        Route::post('/utilidades/instagram/themes', [\App\Http\Controllers\InstagramController::class, 'saveHashtagTheme'])->name('instagram.themes.save');
+        Route::delete('/utilidades/instagram/themes/{index}', [\App\Http\Controllers\InstagramController::class, 'deleteHashtagTheme'])->name('instagram.themes.delete');
         Route::delete('/utilidades/notificacoes/limpar', [\App\Http\Controllers\NotificationController::class, 'destroyAll'])->name('notifications.destroy-all');
         Route::delete('/utilidades/notificacoes/{notification}', [\App\Http\Controllers\NotificationController::class, 'destroy'])->name('notifications.destroy');
 

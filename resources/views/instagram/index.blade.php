@@ -179,33 +179,92 @@
                                     <textarea name="caption" x-model="caption" rows="5" placeholder="Escreva uma legenda atraente para o seu post..." class="w-full text-xs text-slate-800 border border-slate-200 rounded-lg p-3 focus:ring-2 focus:ring-purple-500 focus:border-purple-500 outline-none transition-all"></textarea>
                                 </div>
 
-                                <!-- GERADOR INTELIGENTE DE HASHTAGS -->
-                                <div x-show="mediaType !== 'STORY'" class="p-4 bg-purple-50/50 border border-purple-100 rounded-xl space-y-3">
-                                    <div class="flex items-center justify-between">
-                                        <h5 class="text-xs font-extrabold text-purple-900 uppercase tracking-wider flex items-center gap-1.5">
-                                            <svg class="w-4 h-4 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
-                                            Gerador de Hashtags & Em Alta
-                                        </h5>
-                                        <select x-model="hashtagCategory" class="text-xs font-bold text-purple-700 bg-white border border-purple-200 rounded-md px-2 py-1 outline-none">
-                                            <option value="design">🎨 Design & Branding</option>
-                                            <option value="freelance">💻 Freelance & Carreira</option>
-                                            <option value="socialmedia">📲 Social Media</option>
-                                            <option value="ilustracao">✍️ Ilustração Digital</option>
-                                            <option value="trending">🔥 Em Alta / Trending</option>
-                                        </select>
+                                <!-- GERADOR INTELIGENTE DE HASHTAGS & TEMAS PERSONALIZADOS -->
+                                <div x-show="mediaType !== 'STORY'" class="p-4 bg-gradient-to-br from-purple-50/70 via-slate-50 to-purple-50/30 border border-purple-200/80 rounded-xl space-y-4 shadow-sm">
+                                    <div class="flex flex-wrap items-center justify-between gap-2 border-b border-purple-100 pb-3">
+                                        <div>
+                                            <h5 class="text-xs font-extrabold text-purple-900 uppercase tracking-wider flex items-center gap-1.5">
+                                                <svg class="w-4 h-4 text-purple-600 animate-pulse" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
+                                                IA Gerador de Hashtags & Temas
+                                            </h5>
+                                            <p class="text-[11px] text-slate-500">Gere 30 hashtags com base no texto da sua legenda ou escolha temas salvos.</p>
+                                        </div>
+                                        <div class="flex items-center gap-2">
+                                            <button type="button" @click="generateAiHashtags()" :disabled="isGeneratingHashtags" class="px-3 py-1.5 bg-purple-600 hover:bg-purple-700 text-white text-xs font-extrabold rounded-lg shadow-sm transition-all flex items-center gap-1.5 cursor-pointer disabled:opacity-50">
+                                                <template x-if="!isGeneratingHashtags">
+                                                    <span class="flex items-center gap-1">
+                                                        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"/></svg>
+                                                        <span>✨ Gerar 30 Hashtags com IA</span>
+                                                    </span>
+                                                </template>
+                                                <template x-if="isGeneratingHashtags">
+                                                    <span class="flex items-center gap-1">
+                                                        <svg class="w-3.5 h-3.5 animate-spin" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>
+                                                        <span>Analisando Texto...</span>
+                                                    </span>
+                                                </template>
+                                            </button>
+                                        </div>
                                     </div>
 
-                                    <div class="flex flex-wrap gap-1.5">
-                                        <template x-for="tag in hashtags[hashtagCategory]" :key="tag">
-                                            <button type="button" @click="insertHashtag(tag)" class="px-2.5 py-1 bg-white hover:bg-purple-600 hover:text-white text-purple-700 border border-purple-200 text-[11px] font-semibold rounded-md transition-all cursor-pointer">
-                                                <span x-text="tag"></span>
+                                    <!-- Seleção de Categoria Rápida -->
+                                    <div class="space-y-2">
+                                        <div class="flex items-center justify-between">
+                                            <span class="text-[11px] font-extrabold text-slate-700 uppercase tracking-wider">Categorias Rápidas</span>
+                                            <select x-model="hashtagCategory" class="text-xs font-bold text-purple-700 bg-white border border-purple-200 rounded-md px-2 py-1 outline-none">
+                                                <option value="design">🎨 Design & Branding</option>
+                                                <option value="freelance">💻 Freelance & Carreira</option>
+                                                <option value="socialmedia">📲 Social Media</option>
+                                                <option value="ilustracao">✍️ Ilustração Digital</option>
+                                                <option value="trending">🔥 Em Alta / Trending</option>
+                                            </select>
+                                        </div>
+
+                                        <div class="flex flex-wrap gap-1.5">
+                                            <template x-for="tag in hashtags[hashtagCategory]" :key="tag">
+                                                <button type="button" @click="insertHashtag(tag)" class="px-2 py-1 bg-white hover:bg-purple-600 hover:text-white text-purple-700 border border-purple-200 text-[11px] font-semibold rounded-md transition-all cursor-pointer">
+                                                    <span x-text="tag"></span>
+                                                </button>
+                                            </template>
+                                        </div>
+                                    </div>
+
+                                    <!-- TEMAS SALVOS PELO USUÁRIO -->
+                                    <div class="pt-3 border-t border-purple-100 space-y-2">
+                                        <div class="flex items-center justify-between">
+                                            <span class="text-[11px] font-extrabold text-slate-700 uppercase tracking-wider flex items-center gap-1">
+                                                <svg class="w-3.5 h-3.5 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z"/></svg>
+                                                Meus Temas Salvos (<span x-text="savedThemes.length"></span>)
+                                            </span>
+                                            <button type="button" @click="showSaveThemeModal = true" class="text-xs font-extrabold text-purple-700 hover:text-purple-900 underline flex items-center gap-1 cursor-pointer">
+                                                <span>+ Salvar Tema da Legenda</span>
                                             </button>
+                                        </div>
+
+                                        <template x-if="savedThemes.length > 0">
+                                            <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                                                <template x-for="(thm, tIdx) in savedThemes" :key="tIdx">
+                                                    <div class="p-2 bg-white border border-slate-200 rounded-lg flex items-center justify-between gap-2 shadow-2xs">
+                                                        <div class="truncate cursor-pointer" @click="insertThemeTags(thm.hashtags)">
+                                                            <span class="text-xs font-bold text-slate-800 block truncate" x-text="thm.name"></span>
+                                                            <span class="text-[10px] text-slate-400 font-mono block" x-text="(thm.hashtags ? (Array.isArray(thm.hashtags) ? thm.hashtags.length : thm.hashtags.split(' ').length) : 0) + ' hashtags'"></span>
+                                                        </div>
+                                                        <div class="flex items-center gap-1">
+                                                            <button type="button" @click="insertThemeTags(thm.hashtags)" title="Inserir no Post" class="p-1 bg-purple-50 hover:bg-purple-600 hover:text-white text-purple-700 rounded text-[10px] font-bold cursor-pointer">
+                                                                + Inserir
+                                                            </button>
+                                                            <button type="button" @click="deleteTheme(tIdx)" title="Excluir Tema" class="p-1 bg-rose-50 hover:bg-rose-600 hover:text-white text-rose-600 rounded text-[10px] font-bold cursor-pointer">
+                                                                ✕
+                                                            </button>
+                                                        </div>
+                                                    </div>
+                                                </template>
+                                            </div>
+                                        </template>
+                                        <template x-if="savedThemes.length === 0">
+                                            <p class="text-[11px] text-slate-400 italic">Você ainda não possui temas salvos. Escreva suas hashtags na legenda e clique em "+ Salvar Tema da Legenda".</p>
                                         </template>
                                     </div>
-
-                                    <button type="button" @click="insertCategoryHashtags(hashtagCategory)" class="text-xs font-bold text-purple-700 hover:underline flex items-center gap-1 cursor-pointer">
-                                        <span>+ Inserir todas desta categoria na legenda</span>
-                                    </button>
                                 </div>
 
                                 <!-- Ação: Publicar Agora ou Agendar -->
@@ -255,12 +314,45 @@
                                     <span class="text-slate-400 text-xs">•••</span>
                                 </div>
 
-                                <!-- Instagram Image Viewport with Live Overlay Badges -->
-                                <div class="w-full h-[340px] sm:h-[380px] bg-slate-900 relative flex items-center justify-center overflow-hidden">
-                                    <template x-if="imagePreview">
+                                <!-- Instagram Image Viewport with Live Carousel & Overlay Badges -->
+                                <div class="w-full h-[340px] sm:h-[380px] bg-slate-900 relative flex items-center justify-center overflow-hidden group">
+                                    
+                                    <!-- PREVIEW DE FEED ÚNICO OU STORY OU SEM CARROSSEL ATIVO -->
+                                    <template x-if="imagePreview && (mediaType !== 'CAROUSEL' || carouselPreviews.length === 0)">
                                         <img :src="imagePreview" class="w-full h-full object-cover">
                                     </template>
-                                    <template x-if="!imagePreview">
+
+                                    <!-- PREVIEW INTERATIVO DE CARROSSEL AO VIVO -->
+                                    <template x-if="mediaType === 'CAROUSEL' && carouselPreviews.length > 0">
+                                        <div class="w-full h-full relative inset-0">
+                                            <template x-for="(slide, idx) in carouselPreviews" :key="idx">
+                                                <div x-show="currentCarouselIndex === idx"
+                                                     x-transition:enter="transition ease-out duration-300 transform"
+                                                     x-transition:enter-start="opacity-0 scale-105"
+                                                     x-transition:enter-end="opacity-100 scale-100"
+                                                     class="absolute inset-0 w-full h-full">
+                                                    <img :src="slide" class="w-full h-full object-cover">
+                                                </div>
+                                            </template>
+
+                                            <!-- Setas de Navegação do Carrossel na Prévia do Celular -->
+                                            <button type="button" x-show="currentCarouselIndex > 0" @click.stop="currentCarouselIndex--" class="absolute left-2 top-1/2 -translate-y-1/2 z-30 w-7 h-7 rounded-full bg-black/60 text-white font-bold text-xs flex items-center justify-center shadow hover:bg-black/90 cursor-pointer">
+                                                ❮
+                                            </button>
+                                            <button type="button" x-show="currentCarouselIndex < carouselPreviews.length - 1" @click.stop="currentCarouselIndex++" class="absolute right-2 top-1/2 -translate-y-1/2 z-30 w-7 h-7 rounded-full bg-black/60 text-white font-bold text-xs flex items-center justify-center shadow hover:bg-black/90 cursor-pointer">
+                                                ❯
+                                            </button>
+
+                                            <!-- Dots Indicadores na Prévia do Celular -->
+                                            <div class="absolute bottom-2.5 left-0 right-0 z-30 flex items-center justify-center gap-1.5">
+                                                <template x-for="(slide, idx) in carouselPreviews" :key="idx">
+                                                    <span :class="idx === currentCarouselIndex ? 'bg-purple-500 w-2.5 h-2.5 scale-110' : 'bg-white/40 w-1.5 h-1.5'" class="rounded-full transition-all"></span>
+                                                </template>
+                                            </div>
+                                        </div>
+                                    </template>
+
+                                    <template x-if="!imagePreview && carouselPreviews.length === 0">
                                         <div class="text-center p-6 text-slate-600 space-y-2">
                                             <svg class="w-10 h-10 mx-auto text-slate-700" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
                                             <p class="text-xs font-semibold">Sua imagem ou carrossel aparecerá aqui em tempo real</p>
@@ -732,6 +824,43 @@
             </div>
         </div>
     </template>
+    <!-- MODAL DE CONFIRMAÇÃO PARA SALVAR TEMA -->
+    <template x-teleport="body">
+        <div x-show="showSaveThemeModal" 
+             x-cloak 
+             @keydown.escape.window="showSaveThemeModal = false"
+             class="fixed inset-0 top-0 left-0 right-0 bottom-0 w-screen h-screen z-[9999999] flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-md transition-all">
+            
+            <div class="bg-white rounded-2xl p-6 max-w-md w-full shadow-2xl border border-slate-100 space-y-4" @click.outside="showSaveThemeModal = false">
+                <div class="flex items-center justify-between border-b border-slate-100 pb-3">
+                    <h4 class="text-sm font-extrabold text-slate-800 uppercase tracking-wider flex items-center gap-1.5">
+                        <svg class="w-4 h-4 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z"/></svg>
+                        Salvar Novo Tema de Hashtags
+                    </h4>
+                    <button type="button" @click="showSaveThemeModal = false" class="text-slate-400 hover:text-slate-600 font-bold">✕</button>
+                </div>
+                
+                <div class="space-y-3">
+                    <div>
+                        <label class="text-xs font-extrabold text-slate-700 uppercase tracking-wider block mb-1">Nome do Tema</label>
+                        <input type="text" x-model="newThemeName" placeholder="Ex: Posts de Identidade Visual, Motion, etc." class="w-full text-xs text-slate-800 border border-slate-200 rounded-lg p-2.5 outline-none focus:ring-2 focus:ring-purple-500">
+                    </div>
+                    <p class="text-[11px] text-slate-500 leading-relaxed">
+                        Este tema armazenará as hashtags atualmente escritas na sua legenda para reutilização em 1 clique nas próximas postagens.
+                    </p>
+                </div>
+
+                <div class="flex items-center justify-end gap-2 pt-2 border-t border-slate-100">
+                    <button type="button" @click="showSaveThemeModal = false" class="py-2 px-4 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs rounded-lg transition-all cursor-pointer">
+                        Cancelar
+                    </button>
+                    <button type="button" @click="saveTheme()" class="py-2 px-4 bg-purple-600 hover:bg-purple-700 text-white font-extrabold text-xs rounded-lg shadow-md transition-all cursor-pointer">
+                        Salvar Tema
+                    </button>
+                </div>
+            </div>
+        </div>
+    </template>
 </div>
 
 <script>
@@ -754,6 +883,92 @@ document.addEventListener('alpine:init', () => {
             socialmedia: ['#socialmedia', '#marketingdigital', '#midiasociais', '#gestordesocialmedia', '#conteudodigital', '#engajamento', '#instagramdicas', '#estrategiadedados'],
             ilustracao: ['#ilustracao', '#artedigital', '#desenhodigital', '#illustrator', '#procreate', '#vectorart', '#ilustra', '#digitalart'],
             trending: ['#viral', '#reelsbrasil', '#dicas', '#emalta', '#empreendedorismo', '#criatividade', '#portfoliodesign']
+        },
+        savedThemes: @json($settings->saved_themes ?: []),
+        newThemeName: '',
+        showSaveThemeModal: false,
+        isGeneratingHashtags: false,
+        async generateAiHashtags() {
+            this.isGeneratingHashtags = true;
+            try {
+                const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content');
+                const res = await fetch('{{ route('instagram.hashtags.generate') }}', {
+                    method: 'POST',
+                    headers: {
+                        'X-CSRF-TOKEN': csrfToken,
+                        'Content-Type': 'application/json',
+                        'Accept': 'application/json'
+                    },
+                    body: JSON.stringify({ caption: this.caption })
+                });
+                const data = await res.json();
+                if (data.success && data.formatted) {
+                    if (!this.caption.includes('#')) {
+                        this.caption = (this.caption ? this.caption.trim() + '\n\n' : '') + data.formatted;
+                    } else {
+                        const newTags = data.hashtags.filter(t => !this.caption.includes(t));
+                        if (newTags.length > 0) {
+                            this.caption = this.caption.trim() + ' ' + newTags.join(' ');
+                        }
+                    }
+                }
+            } catch (e) {
+                console.error(e);
+            } finally {
+                this.isGeneratingHashtags = false;
+            }
+        },
+        async saveTheme() {
+            if (!this.newThemeName.trim()) return;
+            try {
+                const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content');
+                const res = await fetch('{{ route('instagram.themes.save') }}', {
+                    method: 'POST',
+                    headers: {
+                        'X-CSRF-TOKEN': csrfToken,
+                        'Content-Type': 'application/json',
+                        'Accept': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        name: this.newThemeName,
+                        hashtags: this.caption
+                    })
+                });
+                const data = await res.json();
+                if (data.success) {
+                    this.savedThemes = data.themes;
+                    this.newThemeName = '';
+                    this.showSaveThemeModal = false;
+                }
+            } catch (e) {
+                console.error(e);
+            }
+        },
+        async deleteTheme(index) {
+            try {
+                const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content');
+                const res = await fetch('/utilidades/instagram/themes/' + index, {
+                    method: 'POST',
+                    headers: {
+                        'X-CSRF-TOKEN': csrfToken,
+                        'Content-Type': 'application/json',
+                        'Accept': 'application/json'
+                    },
+                    body: JSON.stringify({ _method: 'DELETE' })
+                });
+                const data = await res.json();
+                if (data.success) {
+                    this.savedThemes = data.themes;
+                }
+            } catch (e) {
+                console.error(e);
+            }
+        },
+        insertThemeTags(tagsArray) {
+            const tagsStr = Array.isArray(tagsArray) ? tagsArray.join(' ') : tagsArray;
+            if (tagsStr && !this.caption.includes(tagsStr)) {
+                this.caption = (this.caption ? this.caption.trim() + '\n\n' : '') + tagsStr;
+            }
         },
         insertHashtag(tag) {
             if (!this.caption.includes(tag)) {

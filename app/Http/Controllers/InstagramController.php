@@ -781,6 +781,118 @@ class InstagramController extends Controller
     }
 
     /**
+     * Gerador Inteligente de Hashtags baseado no texto da Legenda.
+     */
+    public function generateAiHashtags(Request $request)
+    {
+        $caption = strtolower($request->input('caption', ''));
+
+        // Dicionário de tópicos e hashtags de alto alcance
+        $topicsMap = [
+            'design' => ['#designgrafico', '#identidadevisual', '#logodesign', '#designbr', '#designer', '#branding', '#designgraficobr', '#creative', '#graphicdesign', '#visualidentity', '#logoinspiration', '#graficodesign'],
+            'logo' => ['#logodesign', '#logoinspiration', '#logotipo', '#marcadagua', '#marca', '#logotype', '#brandingdesign', '#brandidentity', '#vectorlogo'],
+            'marca' => ['#branding', '#identidadevisual', '#estrategaidebrand', '#posicionamento', '#branddesign', '#brandidentity', '#marcaforte', '#brandingdesign'],
+            'freela' => ['#freelancerbr', '#freelance', '#gestordefreelas', '#vidadefreela', '#trabalhoremoto', '#carreiradesign', '#freelancerlife', '#homeofficebr', '#designindependente'],
+            'social' => ['#socialmedia', '#marketingdigital', '#midiasociais', '#gestordesocialmedia', '#conteudodigital', '#engajamento', '#instagramdicas', '#estrategiadeconteudo'],
+            'marketing' => ['#marketingdigital', '#mkt', '#estrategiademarketing', '#vendas', '#empreendedorismo', '#marketingconteudo', '#crescimento', '#tráfegopago'],
+            'arte' => ['#artedigital', '#ilustracao', '#procreate', '#illustrator', '#desenhodigital', '#vectorart', '#digitalart', '#ilustra', '#artebr'],
+            'feed' => ['#feedorganizado', '#carrossel', '#conteudodigital', '#postdesign', '#reelsbrasil', '#dicasdedesign', '#esteticafeed'],
+            'foto' => ['#fotografia', '#ensaiofotografico', '#edicaodefoto', '#lightroom', '#photoshop', '#fotografiademarketing'],
+            'web' => ['#webdesign', '#uiux', '#uidesign', '#uxdesign', '#site', '#wordpress', '#elementor', '#figmadesign'],
+        ];
+
+        // Hashtags genéricas de alta engajamento
+        $generalTrending = [
+            '#viral', '#dicas', '#emalta', '#criatividade', '#portfoliodesign', '#inspiração',
+            '#sucesso', '#negócios', '#foco', '#inovacao', '#empreendedordigital', '#conhecimento',
+            '#estudantededesign', '#designersdobrasil', '#tecnologia', '#brasil', '#tendencia2026', '#conteudodevalor'
+        ];
+
+        $matchedTags = [];
+
+        // Verifica palavras-chave na legenda
+        foreach ($topicsMap as $keyword => $tags) {
+            if (str_contains($caption, $keyword)) {
+                $matchedTags = array_merge($matchedTags, $tags);
+            }
+        }
+
+        // Se houver poucas combinações diretas, inclui tópicos chave de design e freela
+        if (count($matchedTags) < 15) {
+            $matchedTags = array_merge($matchedTags, $topicsMap['design'], $topicsMap['freela'], $topicsMap['social']);
+        }
+
+        // Adiciona as hashtags em alta até completar 30
+        $matchedTags = array_merge($matchedTags, $generalTrending);
+        $finalHashtags = array_slice(array_unique($matchedTags), 0, 30);
+
+        return response()->json([
+            'success' => true,
+            'count' => count($finalHashtags),
+            'hashtags' => array_values($finalHashtags),
+            'formatted' => implode(' ', $finalHashtags),
+        ]);
+    }
+
+    /**
+     * Salva um novo tema de hashtags personalizado.
+     */
+    public function saveHashtagTheme(Request $request)
+    {
+        $request->validate([
+            'name' => 'required|string|max:100',
+            'hashtags' => 'required|string',
+        ]);
+
+        $settings = InstagramSetting::firstOrCreate(['user_id' => auth()->id()]);
+        $themes = $settings->saved_themes ?: [];
+
+        // Limpa e formata as hashtags
+        $rawTags = preg_split('/[\s,]+/', $request->hashtags);
+        $cleanTags = array_filter(array_map(function($t) {
+            $t = trim($t);
+            if (!$t) return null;
+            return str_starts_with($t, '#') ? $t : '#' . $t;
+        }, $rawTags));
+
+        $themes[] = [
+            'name' => $request->name,
+            'hashtags' => array_values(array_unique($cleanTags)),
+            'created_at' => now()->format('d/m/Y'),
+        ];
+
+        $settings->saved_themes = $themes;
+        $settings->save();
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Tema salvo com sucesso!',
+            'themes' => $themes,
+        ]);
+    }
+
+    /**
+     * Exclui um tema de hashtags personalizado.
+     */
+    public function deleteHashtagTheme(Request $request, $index)
+    {
+        $settings = InstagramSetting::firstOrCreate(['user_id' => auth()->id()]);
+        $themes = $settings->saved_themes ?: [];
+
+        if (isset($themes[$index])) {
+            array_splice($themes, $index, 1);
+            $settings->saved_themes = $themes;
+            $settings->save();
+        }
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Tema excluído!',
+            'themes' => $themes,
+        ]);
+    }
+
+    /**
      * Retorna a URI de redirecionamento do OAuth.
      */
     protected function getRedirectUri()

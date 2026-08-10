@@ -13,6 +13,11 @@ class InstagramSetting extends Model
         'user_id',
         'logo_path',
         'arrow_path',
+        'saved_themes',
+    ];
+
+    protected $casts = [
+        'saved_themes' => 'array',
     ];
 
     public function user()
