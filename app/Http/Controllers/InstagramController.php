@@ -84,7 +84,7 @@ class InstagramController extends Controller
                 'scope' => implode(',', $scopes),
                 'response_type' => 'code',
                 'state' => csrf_token(),
-                'auth_type' => 'rerequest', // Força a tela de seleção de Páginas e Instagram
+                'auth_type' => 'reauthenticate', // Força renovação total da sessão do Facebook
             ]);
             $authUrl = "https://www.facebook.com/v19.0/dialog/oauth?" . $params;
         }
