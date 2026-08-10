@@ -184,6 +184,18 @@ class InstagramController extends Controller
                 }
             }
 
+            // Busca explicitamente a página Danilo Miguel - Design & Ilustração (ID 667853480008070) se omitida
+            if (!collect($pages)->pluck('id')->contains('667853480008070')) {
+                $directPageResp = Http::get("https://graph.facebook.com/v19.0/667853480008070", [
+                    'access_token' => $longToken,
+                    'fields' => 'id,name,access_token,instagram_business_account{id,username,name,profile_picture_url},connected_instagram_account{id,username,name,profile_picture_url}'
+                ]);
+
+                if ($directPageResp->successful() && $directPageResp->json('id')) {
+                    $pages[] = $directPageResp->json();
+                }
+            }
+
             Log::info('Meta Facebook Pages returned: ', $pages);
 
             $connectedCount = 0;
