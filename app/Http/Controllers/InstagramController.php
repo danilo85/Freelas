@@ -150,7 +150,7 @@ class InstagramController extends Controller
 
             $pagesResp = Http::get("https://graph.facebook.com/v19.0/me/accounts", [
                 'access_token' => $longToken,
-                'fields' => 'id,name,access_token,instagram_business_account{id,username,name,profile_picture_url},connected_instagram_account{id,username,name,profile_picture_url}'
+                'fields' => 'id,name,access_token,instagram_business_account{id,username,name,profile_picture_url},connected_instagram_account{id,username,name,profile_picture_url},page_backed_instagram_account{id,username,name,profile_picture_url}'
             ]);
 
             $pages = $pagesResp->json('data', []);
@@ -159,7 +159,7 @@ class InstagramController extends Controller
                 // Tenta fallback via me?fields=accounts
                 $meResp = Http::get("https://graph.facebook.com/v19.0/me", [
                     'access_token' => $longToken,
-                    'fields' => 'accounts{id,name,access_token,instagram_business_account{id,username,name,profile_picture_url},connected_instagram_account{id,username,name,profile_picture_url}}'
+                    'fields' => 'accounts{id,name,access_token,instagram_business_account{id,username,name,profile_picture_url},connected_instagram_account{id,username,name,profile_picture_url},page_backed_instagram_account{id,username,name,profile_picture_url}}'
                 ]);
                 $pages = $meResp->json('accounts.data', []);
             }
@@ -175,19 +175,26 @@ class InstagramController extends Controller
                 if (!$pageId) continue;
                 $pageNames[] = $page['name'] ?? "Página ID {$pageId}";
 
-                $igAccountData = $page['instagram_business_account'] ?? $page['connected_instagram_account'] ?? null;
+                $igAccountData = $page['instagram_business_account'] 
+                    ?? $page['connected_instagram_account'] 
+                    ?? $page['page_backed_instagram_account'] 
+                    ?? null;
                 $pageAccessToken = $page['access_token'] ?? $longToken;
 
                 if (!$igAccountData) {
                     // Tenta buscar a conta do instagram usando o Token de Acesso da própria Página
                     $pageDetailResp = Http::get("https://graph.facebook.com/v19.0/{$pageId}", [
-                        'fields' => 'instagram_business_account{id,username,name,profile_picture_url},connected_instagram_account{id,username,name,profile_picture_url}',
+                        'fields' => 'instagram_business_account{id,username,name,profile_picture_url},connected_instagram_account{id,username,name,profile_picture_url},page_backed_instagram_account{id,username,name,profile_picture_url}',
                         'access_token' => $pageAccessToken,
                     ]);
 
                     if ($pageDetailResp->successful()) {
-                        $igAccountData = $pageDetailResp->json('instagram_business_account')
-                            ?? $pageDetailResp->json('connected_instagram_account');
+                        $json = $pageDetailResp->json();
+                        Log::info("Meta Page {$pageId} details: ", $json);
+                        $igAccountData = $json['instagram_business_account']
+                            ?? $json['connected_instagram_account']
+                            ?? $json['page_backed_instagram_account']
+                            ?? null;
                     }
                 }
 
@@ -198,6 +205,33 @@ class InstagramController extends Controller
                         [
                             'user_id' => auth()->id(),
                             'facebook_page_id' => $pageId,
+                            'username' => $igAccountData['username'] ?? 'instagram_user',
+                            'name' => $igAccountData['name'] ?? null,
+                            'profile_picture_url' => $igAccountData['profile_picture_url'] ?? null,
+                            'access_token' => $longToken,
+                            'token_expires_at' => now()->addDays(60),
+                            'is_active' => true,
+                        ]
+                    );
+                    $connectedCount++;
+                }
+            }
+
+            // Fallback direto no me?fields=instagram_accounts se nenhuma página reportou conta
+            if ($connectedCount === 0) {
+                $meIgResp = Http::get("https://graph.facebook.com/v19.0/me", [
+                    'access_token' => $longToken,
+                    'fields' => 'instagram_accounts{id,username,name,profile_picture_url}'
+                ]);
+
+                $directIgAccounts = $meIgResp->json('instagram_accounts.data', []);
+                foreach ($directIgAccounts as $igAccountData) {
+                    $lastUsername = $igAccountData['username'] ?? '';
+                    InstagramAccount::updateOrCreate(
+                        ['instagram_account_id' => $igAccountData['id']],
+                        [
+                            'user_id' => auth()->id(),
+                            'facebook_page_id' => null,
                             'username' => $igAccountData['username'] ?? 'instagram_user',
                             'name' => $igAccountData['name'] ?? null,
                             'profile_picture_url' => $igAccountData['profile_picture_url'] ?? null,
