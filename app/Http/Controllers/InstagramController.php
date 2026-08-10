@@ -25,9 +25,9 @@ class InstagramController extends Controller
     }
 
     /**
-     * Inicia o fluxo de autorização do Instagram Business Login (Novo OAuth oficial da Meta).
+     * Inicia o fluxo de autorização do Meta / Instagram Graph API.
      */
-    public function connect()
+    public function connect(Request $request)
     {
         $appId = trim(config('services.instagram.client_id') ?: env('INSTAGRAM_CLIENT_ID', ''));
         $appId = str_replace(['"', "'"], '', $appId);
@@ -37,29 +37,43 @@ class InstagramController extends Controller
         }
 
         $redirectUri = $this->getRedirectUri();
+        $authMode = env('INSTAGRAM_AUTH_MODE', 'facebook'); // 'facebook' ou 'instagram'
 
-        // Permissões atuais do Instagram Business Login
-        $scopes = [
-            'instagram_business_basic',
-            'instagram_business_content_publish',
-        ];
-
-        $params = http_build_query([
-            'client_id' => $appId,
-            'redirect_uri' => $redirectUri,
-            'response_type' => 'code',
-            'scope' => implode(',', $scopes),
-            'state' => csrf_token(),
-        ]);
-
-        // URL oficial de OAuth direto do Instagram
-        $authUrl = "https://www.instagram.com/oauth/authorize?" . $params;
+        if ($authMode === 'instagram') {
+            // Fluxo Direto do Instagram API
+            $scopes = ['instagram_business_basic', 'instagram_business_content_publish'];
+            $params = http_build_query([
+                'client_id' => $appId,
+                'redirect_uri' => $redirectUri,
+                'response_type' => 'code',
+                'scope' => implode(',', $scopes),
+                'state' => csrf_token(),
+            ]);
+            $authUrl = "https://www.instagram.com/oauth/authorize?" . $params;
+        } else {
+            // Fluxo Padrão Meta Graph API via Login do Facebook para Empresas
+            $scopes = [
+                'public_profile',
+                'instagram_basic',
+                'instagram_content_publish',
+                'pages_show_list',
+                'pages_read_engagement',
+            ];
+            $params = http_build_query([
+                'client_id' => $appId,
+                'redirect_uri' => $redirectUri,
+                'scope' => implode(',', $scopes),
+                'response_type' => 'code',
+                'state' => csrf_token(),
+            ]);
+            $authUrl = "https://www.facebook.com/v19.0/dialog/oauth?" . $params;
+        }
 
         return redirect()->away($authUrl);
     }
 
     /**
-     * Trata o retorno (callback) da autorização do Instagram.
+     * Trata o retorno (callback) da autorização do Instagram/Facebook.
      */
     public function callback(Request $request)
     {
@@ -76,8 +90,66 @@ class InstagramController extends Controller
             $redirectUri = $this->getRedirectUri();
             $code = $request->get('code');
 
-            // 1. Troca o código de autorização por um Short-Lived Access Token direto da API do Instagram
-            $response = Http::asForm()->post('https://api.instagram.com/oauth/access_token', [
+            // 1. Tenta trocar o código via Meta Graph API (Facebook Login)
+            $response = Http::post('https://graph.facebook.com/v19.0/oauth/access_token', [
+                'client_id' => $appId,
+                'client_secret' => $appSecret,
+                'redirect_uri' => $redirectUri,
+                'code' => $code,
+            ]);
+
+            if ($response->successful()) {
+                $shortToken = $response->json('access_token');
+
+                // Troca por Long-Lived Token (60 dias)
+                $tokenResp = Http::get('https://graph.facebook.com/v19.0/oauth/access_token', [
+                    'grant_type' => 'fb_exchange_token',
+                    'client_id' => $appId,
+                    'client_secret' => $appSecret,
+                    'fb_exchange_token' => $shortToken,
+                ]);
+
+                $longToken = $tokenResp->json('access_token', $shortToken);
+
+                // Busca as páginas do Facebook e conta do Instagram vinculada
+                $pagesResp = Http::get("https://graph.facebook.com/v19.0/me/accounts", [
+                    'access_token' => $longToken,
+                    'fields' => 'id,name,instagram_business_account{id,username,name,profile_picture_url}'
+                ]);
+
+                $pages = $pagesResp->json('data', []);
+                $igAccountData = null;
+                $facebookPageId = null;
+
+                foreach ($pages as $page) {
+                    if (isset($page['instagram_business_account'])) {
+                        $igAccountData = $page['instagram_business_account'];
+                        $facebookPageId = $page['id'];
+                        break;
+                    }
+                }
+
+                if ($igAccountData) {
+                    InstagramAccount::updateOrCreate(
+                        ['instagram_account_id' => $igAccountData['id']],
+                        [
+                            'user_id' => auth()->id(),
+                            'facebook_page_id' => $facebookPageId,
+                            'username' => $igAccountData['username'] ?? 'instagram_user',
+                            'name' => $igAccountData['name'] ?? null,
+                            'profile_picture_url' => $igAccountData['profile_picture_url'] ?? null,
+                            'access_token' => $longToken,
+                            'token_expires_at' => now()->addDays(60),
+                            'is_active' => true,
+                        ]
+                    );
+
+                    return redirect()->route('instagram.index')->with('success', '🎉 Conta do Instagram @' . ($igAccountData['username'] ?? '') . ' conectada com sucesso!');
+                }
+            }
+
+            // 2. Se falhar, tenta o fluxo direto do Instagram API (Instagram Business Login)
+            $responseDirect = Http::asForm()->post('https://api.instagram.com/oauth/access_token', [
                 'client_id' => $appId,
                 'client_secret' => $appSecret,
                 'grant_type' => 'authorization_code',
@@ -85,53 +157,45 @@ class InstagramController extends Controller
                 'code' => $code,
             ]);
 
-            if ($response->failed()) {
-                Log::error('Erro ao trocar código por token Instagram: ' . $response->body());
-                $err = $response->json('error_message', $response->json('error.message', 'Erro ao obter token de acesso do Instagram.'));
-                return redirect()->route('instagram.index')->with('error', $err);
+            if ($responseDirect->successful()) {
+                $shortToken = $responseDirect->json('access_token');
+                $userIgId = $responseDirect->json('user_id');
+
+                $tokenResp = Http::get('https://graph.instagram.com/access_token', [
+                    'grant_type' => 'ig_exchange_token',
+                    'client_secret' => $appSecret,
+                    'access_token' => $shortToken,
+                ]);
+
+                $longToken = $tokenResp->json('access_token', $shortToken);
+
+                $profileResp = Http::get("https://graph.instagram.com/v19.0/me", [
+                    'fields' => 'id,username,name,profile_picture_url',
+                    'access_token' => $longToken,
+                ]);
+
+                $profileData = $profileResp->json();
+                $igAccountId = $profileData['id'] ?? $userIgId;
+                $username = $profileData['username'] ?? 'danilomigueldesigner';
+
+                InstagramAccount::updateOrCreate(
+                    ['instagram_account_id' => $igAccountId],
+                    [
+                        'user_id' => auth()->id(),
+                        'username' => $username,
+                        'name' => $profileData['name'] ?? $username,
+                        'profile_picture_url' => $profileData['profile_picture_url'] ?? null,
+                        'access_token' => $longToken,
+                        'token_expires_at' => now()->addDays(60),
+                        'is_active' => true,
+                    ]
+                );
+
+                return redirect()->route('instagram.index')->with('success', '🎉 Conta do Instagram @' . $username . ' conectada com sucesso!');
             }
 
-            $shortToken = $response->json('access_token');
-            $userIgId = $response->json('user_id');
-
-            // 2. Troca o Short-Lived Token por um Long-Lived Token (válido por ~60 dias)
-            $tokenResp = Http::get('https://graph.instagram.com/access_token', [
-                'grant_type' => 'ig_exchange_token',
-                'client_secret' => $appSecret,
-                'access_token' => $shortToken,
-            ]);
-
-            $longToken = $tokenResp->json('access_token', $shortToken);
-
-            // 3. Consulta as informações do Perfil no Graph Instagram API
-            $profileResp = Http::get("https://graph.instagram.com/v19.0/me", [
-                'fields' => 'id,username,name,profile_picture_url',
-                'access_token' => $longToken,
-            ]);
-
-            $profileData = $profileResp->json();
-            $igAccountId = $profileData['id'] ?? $userIgId;
-            $username = $profileData['username'] ?? 'danilomigueldesigner';
-            $name = $profileData['name'] ?? $username;
-            $profilePic = $profileData['profile_picture_url'] ?? null;
-
-            // 4. Salva ou atualiza a conta conectada no banco do Laravel
-            InstagramAccount::updateOrCreate(
-                [
-                    'instagram_account_id' => $igAccountId,
-                ],
-                [
-                    'user_id' => auth()->id(),
-                    'username' => $username,
-                    'name' => $name,
-                    'profile_picture_url' => $profilePic,
-                    'access_token' => $longToken,
-                    'token_expires_at' => now()->addDays(60),
-                    'is_active' => true,
-                ]
-            );
-
-            return redirect()->route('instagram.index')->with('success', '🎉 Conta do Instagram @' . $username . ' conectada com sucesso!');
+            Log::error('Erro ao trocar código por token Meta/Instagram: ' . $response->body() . ' | ' . $responseDirect->body());
+            return redirect()->route('instagram.index')->with('error', 'Erro ao obter token do Instagram: ' . ($response->json('error.message') ?? $responseDirect->json('error_message', 'Falha na autenticação.')));
 
         } catch (\Exception $e) {
             Log::error('Erro no callback do Instagram: ' . $e->getMessage());
@@ -201,11 +265,20 @@ class InstagramController extends Controller
             $publicImageUrl = asset('storage/' . $post->media_path);
 
             // 1. Criar container de mídia na API do Instagram
-            $containerResp = Http::post("https://graph.instagram.com/v19.0/{$account->instagram_account_id}/media", [
+            $containerResp = Http::post("https://graph.facebook.com/v19.0/{$account->instagram_account_id}/media", [
                 'image_url' => $publicImageUrl,
                 'caption' => $post->caption,
                 'access_token' => $account->access_token,
             ]);
+
+            if ($containerResp->failed()) {
+                // Tenta via Graph Instagram API
+                $containerResp = Http::post("https://graph.instagram.com/v19.0/{$account->instagram_account_id}/media", [
+                    'image_url' => $publicImageUrl,
+                    'caption' => $post->caption,
+                    'access_token' => $account->access_token,
+                ]);
+            }
 
             if ($containerResp->failed()) {
                 $err = $containerResp->json('error.message', 'Erro ao enviar imagem ao Instagram.');
@@ -217,10 +290,17 @@ class InstagramController extends Controller
             $containerId = $containerResp->json('id');
 
             // 2. Publicar container
-            $publishResp = Http::post("https://graph.instagram.com/v19.0/{$account->instagram_account_id}/media_publish", [
+            $publishResp = Http::post("https://graph.facebook.com/v19.0/{$account->instagram_account_id}/media_publish", [
                 'creation_id' => $containerId,
                 'access_token' => $account->access_token,
             ]);
+
+            if ($publishResp->failed()) {
+                $publishResp = Http::post("https://graph.instagram.com/v19.0/{$account->instagram_account_id}/media_publish", [
+                    'creation_id' => $containerId,
+                    'access_token' => $account->access_token,
+                ]);
+            }
 
             if ($publishResp->failed()) {
                 $err = $publishResp->json('error.message', 'Erro ao publicar no Instagram.');
