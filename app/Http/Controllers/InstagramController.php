@@ -108,7 +108,7 @@ class InstagramController extends Controller
             $code = $request->get('code');
 
             // 1. Tenta trocar o código via Meta Graph API (Facebook Login)
-            $response = Http::post('https://graph.facebook.com/v19.0/oauth/access_token', [
+            $response = Http::get('https://graph.facebook.com/v19.0/oauth/access_token', [
                 'client_id' => $appId,
                 'client_secret' => $appSecret,
                 'redirect_uri' => $redirectUri,

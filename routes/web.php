@@ -36,6 +36,10 @@ Route::middleware('auth')->group(function () {
     Route::delete('/api/kanban/columns/{column}', [DashboardController::class, 'deleteColumn'])->name('kanban.columns.destroy');
     Route::patch('/api/projects/{project}/kanban-move', [DashboardController::class, 'moveProject'])->name('projects.kanban-move');
     Route::post('/api/kanban/columns/reorder', [DashboardController::class, 'moveColumnPosition'])->name('kanban.columns.reorder');
+
+    // OAuth Callbacks (Instagram & Google Drive)
+    Route::get('/instagram/callback', [\App\Http\Controllers\InstagramController::class, 'callback'])->name('instagram.callback');
+    Route::get('/google-drive/callback', [\App\Http\Controllers\GoogleDriveController::class, 'callback'])->name('google.callback');
 });
 
 // Rota de Usuário Aguardando Aprovação
