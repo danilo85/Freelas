@@ -476,15 +476,13 @@
                                                 <span>Reutilizar</span>
                                             </button>
                                         @endif
-                                        @if(isset($item['db_id']))
-                                            <form action="{{ route('instagram.posts.destroy', $item['db_id']) }}" method="POST" class="inline">
-                                                @csrf
-                                                @method('DELETE')
-                                                <button type="submit" title="Excluir Mídia" class="py-1.5 px-2 bg-rose-50 hover:bg-rose-600 hover:text-white text-rose-600 font-bold text-[10px] rounded transition-all flex items-center justify-center cursor-pointer">
-                                                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
-                                                </button>
-                                            </form>
-                                        @endif
+                                        <form action="{{ route('instagram.posts.destroy', $item['db_id'] ?? $item['id']) }}" method="POST" class="inline">
+                                            @csrf
+                                            @method('DELETE')
+                                            <button type="submit" title="Excluir Mídia do Instagram" class="py-1.5 px-2 bg-rose-50 hover:bg-rose-600 hover:text-white text-rose-600 font-bold text-[10px] rounded transition-all flex items-center justify-center cursor-pointer">
+                                                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
+                                            </button>
+                                        </form>
                                     </div>
                                 </div>
                             </div>
@@ -672,21 +670,8 @@
 
             <div class="relative flex items-center justify-center w-full max-w-[95vw] md:max-w-4xl" @click.outside="lightboxOpen = false">
 
-                <!-- SLIDE ANTERIOR (ENCOSTADO NA BORDA ESQUERDA DO CELULAR) -->
-                <div x-show="lightboxSlideIndex > 0" 
-                     @click.stop="prevLightboxSlide()"
-                     x-transition:enter="transition ease-out duration-300 transform"
-                     x-transition:enter-start="opacity-0 translate-x-4 scale-90"
-                     x-transition:enter-end="opacity-100 translate-x-0 scale-95"
-                     class="hidden lg:block absolute -left-36 z-10 w-44 h-[420px] rounded-3xl bg-slate-900 border border-white/10 shadow-2xl overflow-hidden cursor-pointer group transition-all duration-300 scale-95 hover:scale-100"
-                     style="mask-image: linear-gradient(to right, transparent 0%, rgba(0,0,0,0.8) 50%, black 100%); -webkit-mask-image: linear-gradient(to right, transparent 0%, rgba(0,0,0,0.8) 50%, black 100%);">
-                    <template x-if="lightboxSlides[lightboxSlideIndex - 1]">
-                        <img :src="lightboxSlides[lightboxSlideIndex - 1]" class="w-full h-full object-cover opacity-60 group-hover:opacity-100 transition-opacity duration-300">
-                    </template>
-                </div>
-
                 <!-- ESTRUTURA DO CELULAR (MOCKUP MODERNO E PROPORCIONAL) -->
-                <div class="w-[320px] sm:w-[360px] bg-black text-white rounded-[48px] p-3.5 shadow-2xl border-4 border-slate-800 relative z-20 overflow-hidden shadow-purple-950/50">
+                <div class="w-[320px] sm:w-[360px] bg-black text-white rounded-[48px] p-3.5 shadow-2xl border-4 border-slate-800 relative z-20 shadow-purple-950/50">
                     
                     <!-- Smartphone Notch Header -->
                     <div class="w-32 h-4 bg-slate-900 rounded-b-xl mx-auto mb-2 flex items-center justify-center">
@@ -710,7 +695,22 @@
                     </div>
 
                     <!-- Instagram Viewport Screen (Altura Moderna Proporcional) -->
-                    <div class="w-full h-[380px] sm:h-[420px] bg-slate-900 relative flex items-center justify-center overflow-hidden group">
+                    <div class="w-full h-[380px] sm:h-[420px] bg-slate-900 relative flex items-center justify-center overflow-visible group">
+                        
+                        <!-- SLIDE ANTERIOR (COLADO NA BORDA ESQUERDA DA IMAGEM DO CENTRO E MESMO TAMANHO) -->
+                        <div x-show="lightboxSlideIndex > 0" 
+                             @click.stop="prevLightboxSlide()"
+                             x-transition:enter="transition ease-out duration-300 transform"
+                             x-transition:enter-start="opacity-0 scale-95"
+                             x-transition:enter-end="opacity-100 scale-100"
+                             class="hidden lg:block absolute top-0 right-full z-10 w-[240px] sm:w-[280px] h-full bg-slate-900 border-y border-l border-white/10 shadow-2xl overflow-hidden cursor-pointer group transition-all duration-300"
+                             style="mask-image: linear-gradient(to right, transparent 0%, rgba(0,0,0,0.7) 40%, black 100%); -webkit-mask-image: linear-gradient(to right, transparent 0%, rgba(0,0,0,0.7) 40%, black 100%);">
+                            <template x-if="lightboxSlides[lightboxSlideIndex - 1]">
+                                <img :src="lightboxSlides[lightboxSlideIndex - 1]" class="w-full h-full object-cover opacity-60 group-hover:opacity-100 transition-opacity duration-300">
+                            </template>
+                        </div>
+
+                        <!-- SLIDE PRINCIPAL ATIVO DO CENTRO -->
                         <template x-for="(slide, idx) in lightboxSlides" :key="idx">
                             <div x-show="lightboxSlideIndex === idx"
                                  x-transition:enter="transition ease-out duration-400 transform"
@@ -719,10 +719,23 @@
                                  x-transition:leave="transition ease-in duration-200 transform"
                                  x-transition:leave-start="opacity-100 scale-100"
                                  x-transition:leave-end="opacity-0 scale-95"
-                                 class="absolute inset-0 w-full h-full">
+                                 class="absolute inset-0 w-full h-full z-20">
                                 <img :src="slide" class="w-full h-full object-cover">
                             </div>
                         </template>
+
+                        <!-- SLIDE PRÓXIMO (COLADO NA BORDA DIREITA DA IMAGEM DO CENTRO E MESMO TAMANHO) -->
+                        <div x-show="lightboxSlideIndex < lightboxSlides.length - 1" 
+                             @click.stop="nextLightboxSlide()"
+                             x-transition:enter="transition ease-out duration-300 transform"
+                             x-transition:enter-start="opacity-0 scale-95"
+                             x-transition:enter-end="opacity-100 scale-100"
+                             class="hidden lg:block absolute top-0 left-full z-10 w-[240px] sm:w-[280px] h-full bg-slate-900 border-y border-r border-white/10 shadow-2xl overflow-hidden cursor-pointer group transition-all duration-300"
+                             style="mask-image: linear-gradient(to left, transparent 0%, rgba(0,0,0,0.7) 40%, black 100%); -webkit-mask-image: linear-gradient(to left, transparent 0%, rgba(0,0,0,0.7) 40%, black 100%);">
+                            <template x-if="lightboxSlides[lightboxSlideIndex + 1]">
+                                <img :src="lightboxSlides[lightboxSlideIndex + 1]" class="w-full h-full object-cover opacity-60 group-hover:opacity-100 transition-opacity duration-300">
+                            </template>
+                        </div>
 
                         <!-- Setas Internas de Navegação -->
                         <button x-show="lightboxSlideIndex > 0" @click.stop="prevLightboxSlide()" class="absolute left-2.5 z-30 w-8 h-8 rounded-full bg-black/60 text-white font-black text-sm flex items-center justify-center shadow hover:bg-black/90 transition-all cursor-pointer">
@@ -743,7 +756,7 @@
                     </div>
 
                     <!-- Instagram Likes & Comments Bar -->
-                    <div class="px-3 py-2 flex items-center justify-between text-slate-300 border-b border-slate-900">
+                    <div class="px-3 py-2 flex items-center justify-between text-slate-300 border-b border-slate-900 relative z-20 bg-black">
                         <div class="flex items-center gap-4 text-xs font-bold">
                             <span class="flex items-center gap-1 text-rose-500">❤️ <span x-text="lightboxPost?.likes || 0"></span></span>
                             <span class="flex items-center gap-1 text-slate-300">💬 <span x-text="lightboxPost?.comments || 0"></span></span>
@@ -752,25 +765,12 @@
                     </div>
 
                     <!-- Instagram Caption Box -->
-                    <div class="px-3 py-3 max-h-28 overflow-y-auto space-y-1 text-xs">
+                    <div class="px-3 py-3 max-h-28 overflow-y-auto space-y-1 text-xs relative z-20 bg-black">
                         <p class="text-slate-200 text-[11px] leading-relaxed break-words">
                             <strong class="text-white font-bold" x-text="'{{ '@' . $account->username }}'"></strong>
                             <span x-text="lightboxPost?.caption || 'Sem legenda'"></span>
                         </p>
                     </div>
-                </div>
-
-                <!-- SLIDE PRÓXIMO (ENCOSTADO NA BORDA DIREITA DO CELULAR) -->
-                <div x-show="lightboxSlideIndex < lightboxSlides.length - 1" 
-                     @click.stop="nextLightboxSlide()"
-                     x-transition:enter="transition ease-out duration-300 transform"
-                     x-transition:enter-start="opacity-0 -translate-x-4 scale-90"
-                     x-transition:enter-end="opacity-100 translate-x-0 scale-95"
-                     class="hidden lg:block absolute -right-36 z-10 w-44 h-[420px] rounded-3xl bg-slate-900 border border-white/10 shadow-2xl overflow-hidden cursor-pointer group transition-all duration-300 scale-95 hover:scale-100"
-                     style="mask-image: linear-gradient(to left, transparent 0%, rgba(0,0,0,0.8) 50%, black 100%); -webkit-mask-image: linear-gradient(to left, transparent 0%, rgba(0,0,0,0.8) 50%, black 100%);">
-                    <template x-if="lightboxSlides[lightboxSlideIndex + 1]">
-                        <img :src="lightboxSlides[lightboxSlideIndex + 1]" class="w-full h-full object-cover opacity-60 group-hover:opacity-100 transition-opacity duration-300">
-                    </template>
                 </div>
 
             </div>

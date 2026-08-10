@@ -444,26 +444,40 @@ class InstagramController extends Controller
     /**
      * Exclui / cancela postagem do banco de dados e da API da Meta se publicada.
      */
-    public function destroyPost(InstagramPost $post)
+    public function destroyPost($id)
     {
-        abort_if($post->user_id !== auth()->id(), 403);
+        $post = InstagramPost::where('user_id', auth()->id())
+            ->where(function($q) use ($id) {
+                $q->where('id', $id)->orWhere('instagram_media_id', $id);
+            })->first();
 
-        // Se o post foi publicado e tem ID de mídia no Instagram, tenta excluir na Meta API
-        if ($post->status === 'publicado' && $post->instagram_media_id && $post->instagramAccount) {
+        $account = InstagramAccount::where('user_id', auth()->id())->first();
+
+        $mediaIdToDelete = $post ? $post->instagram_media_id : (is_numeric($id) && strlen($id) > 10 ? $id : null);
+        if (!$mediaIdToDelete && is_string($id) && strlen($id) > 10) {
+            $mediaIdToDelete = $id;
+        }
+
+        $accessToken = $post && $post->instagramAccount 
+            ? $post->instagramAccount->access_token 
+            : ($account ? $account->access_token : null);
+
+        if ($mediaIdToDelete && $accessToken) {
             try {
-                Http::delete("https://graph.facebook.com/v19.0/{$post->instagram_media_id}", [
-                    'access_token' => $post->instagramAccount->access_token,
+                Http::delete("https://graph.facebook.com/v19.0/{$mediaIdToDelete}", [
+                    'access_token' => $accessToken,
                 ]);
             } catch (\Exception $e) {
                 Log::error('Erro ao excluir mídia na API do Instagram: ' . $e->getMessage());
             }
         }
 
-        if ($post->media_path) {
-            Storage::disk('public')->delete($post->media_path);
+        if ($post) {
+            if ($post->media_path) {
+                Storage::disk('public')->delete($post->media_path);
+            }
+            $post->delete();
         }
-
-        $post->delete();
 
         return redirect()->route('instagram.index')->with('info', 'Postagem excluída com sucesso.');
     }
