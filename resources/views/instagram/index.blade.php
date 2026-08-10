@@ -51,7 +51,7 @@
 
         <div class="shrink-0 flex items-center gap-2">
             @if($account)
-                <form action="{{ route('instagram.disconnect', $account->id) }}" method="POST" onsubmit="return confirm('Deseja desconectar a conta do Instagram?')">
+                <form action="{{ route('instagram.disconnect', $account->id) }}" method="POST">
                     @csrf
                     @method('DELETE')
                     <button type="submit" class="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-bold rounded-[5px] border border-slate-700 transition-colors cursor-pointer">

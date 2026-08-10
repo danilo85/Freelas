@@ -64,7 +64,7 @@
 
         <div class="shrink-0 flex items-center gap-2">
             @if($isGoogleConnected)
-                <form action="{{ route('google.disconnect') }}" method="POST" onsubmit="return confirm('Deseja desconectar a conta do Google Drive?')">
+                <form action="{{ route('google.disconnect') }}" method="POST">
                     @csrf
                     <button type="submit" class="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-bold rounded-[5px] border border-slate-700 transition-colors cursor-pointer">
                         Desconectar
