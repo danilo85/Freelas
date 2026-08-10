@@ -14,14 +14,17 @@ class InstagramController extends Controller
     /**
      * Exibe o painel de gerenciamento do Instagram.
      */
-    public function index()
+    public function index(Request $request)
     {
-        $account = InstagramAccount::where('user_id', auth()->id())->first();
+        $accounts = InstagramAccount::where('user_id', auth()->id())->get();
+        $selectedAccountId = $request->get('account_id', optional($accounts->first())->id);
+        $account = $accounts->where('id', $selectedAccountId)->first() ?: $accounts->first();
+
         $posts = InstagramPost::where('user_id', auth()->id())
             ->orderBy('created_at', 'desc')
             ->get();
 
-        return view('instagram.index', compact('account', 'posts'));
+        return view('instagram.index', compact('accounts', 'account', 'posts'));
     }
 
     /**
@@ -312,13 +315,17 @@ class InstagramController extends Controller
     public function storePost(Request $request)
     {
         $request->validate([
+            'instagram_account_id' => 'nullable|exists:instagram_accounts,id',
             'image' => 'required|image|max:10240',
             'caption' => 'nullable|string',
             'action' => 'required|in:now,schedule',
             'scheduled_at' => 'nullable|required_if:action,schedule|date|after:now',
         ]);
 
-        $account = InstagramAccount::where('user_id', auth()->id())->where('is_active', true)->first();
+        $accountId = $request->input('instagram_account_id');
+        $account = $accountId 
+            ? InstagramAccount::where('id', $accountId)->where('user_id', auth()->id())->first()
+            : InstagramAccount::where('user_id', auth()->id())->where('is_active', true)->first();
 
         if (!$account) {
             return redirect()->route('instagram.index')->with('error', 'Conecte sua conta do Instagram antes de publicar.');
