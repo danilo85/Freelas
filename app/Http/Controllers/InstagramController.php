@@ -28,7 +28,24 @@ class InstagramController extends Controller
             ->orderBy('created_at', 'desc')
             ->get();
 
-        return view('instagram.index', compact('accounts', 'account', 'posts', 'settings'));
+        // Busca o Feed real de posts já publicados no perfil do Instagram
+        $liveInstagramPosts = [];
+        if ($account && $account->access_token && $account->instagram_account_id) {
+            try {
+                $feedResp = Http::get("https://graph.facebook.com/v19.0/{$account->instagram_account_id}/media", [
+                    'fields' => 'id,caption,media_type,media_url,permalink,thumbnail_url,timestamp,like_count,comments_count',
+                    'limit' => 24,
+                    'access_token' => $account->access_token,
+                ]);
+                if ($feedResp->successful()) {
+                    $liveInstagramPosts = $feedResp->json('data', []);
+                }
+            } catch (\Exception $e) {
+                Log::error('Erro ao buscar feed vivo do Instagram: ' . $e->getMessage());
+            }
+        }
+
+        return view('instagram.index', compact('accounts', 'account', 'posts', 'settings', 'liveInstagramPosts'));
     }
 
     /**

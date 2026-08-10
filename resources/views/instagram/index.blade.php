@@ -126,6 +126,9 @@
                     <button @click="tab = 'novo'" :class="tab === 'novo' ? 'bg-purple-600 text-white shadow-sm' : 'bg-white text-slate-600 hover:bg-slate-100 border border-slate-200'" class="px-4 py-2 text-xs font-bold rounded-[5px] transition-all flex items-center gap-2 cursor-pointer">
                         <span>✨</span> Nova Publicação & Prévia
                     </button>
+                    <button @click="tab = 'feed_real'" :class="tab === 'feed_real' ? 'bg-purple-600 text-white shadow-sm' : 'bg-white text-slate-600 hover:bg-slate-100 border border-slate-200'" class="px-4 py-2 text-xs font-bold rounded-[5px] transition-all flex items-center gap-2 cursor-pointer">
+                        <span>📸</span> Posts do Perfil ({{ count($liveInstagramPosts) }})
+                    </button>
                     <button @click="tab = 'calendario'" :class="tab === 'calendario' ? 'bg-purple-600 text-white shadow-sm' : 'bg-white text-slate-600 hover:bg-slate-100 border border-slate-200'" class="px-4 py-2 text-xs font-bold rounded-[5px] transition-all flex items-center gap-2 cursor-pointer">
                         <span>🗓️</span> Calendário de Agendamentos
                     </button>
@@ -346,7 +349,75 @@
                     </div>
                 </div>
 
-                <!-- 2. ABA: CALENDÁRIO VISUAL DE AGENDAMENTOS -->
+                <!-- ABA 2: POSTS PUBLICADOS DIRETO NO INSTAGRAM (@username) -->
+                <div x-show="tab === 'feed_real'" class="space-y-6">
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <h4 class="text-sm font-extrabold text-slate-800 uppercase tracking-wider">📸 Publicações do Perfil {{ '@' . $account->username }}</h4>
+                            <p class="text-xs text-slate-500">Histórico oficial das mídias publicadas diretamente na sua conta do Instagram.</p>
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+                        @forelse($liveInstagramPosts as $item)
+                            @php
+                                $imgUrl = $item['media_url'] ?? ($item['thumbnail_url'] ?? null);
+                                $postUrl = $item['permalink'] ?? '#';
+                                $likes = $item['like_count'] ?? 0;
+                                $comments = $item['comments_count'] ?? 0;
+                                $timestamp = isset($item['timestamp']) ? \Carbon\Carbon::parse($item['timestamp'])->format('d/m/Y H:i') : null;
+                            @endphp
+                            <div class="group bg-white border border-slate-200 rounded-xl overflow-hidden shadow-sm hover:shadow-md transition-all flex flex-col justify-between">
+                                <div class="relative h-60 bg-slate-900 overflow-hidden">
+                                    @if($imgUrl)
+                                        <img src="{{ $imgUrl }}" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300">
+                                    @else
+                                        <div class="w-full h-full flex items-center justify-center text-slate-600 text-3xl">📸</div>
+                                    @endif
+
+                                    <!-- Overlay Badges (Likes & Comments) -->
+                                    <div class="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-4 text-white font-black text-sm">
+                                        <span class="flex items-center gap-1">❤️ {{ $likes }}</span>
+                                        <span class="flex items-center gap-1">💬 {{ $comments }}</span>
+                                    </div>
+
+                                    <span class="absolute top-2 left-2 px-2 py-0.5 text-[9px] font-black uppercase tracking-wider rounded-md text-white bg-purple-600 shadow">
+                                        {{ $item['media_type'] ?? 'POST' }}
+                                    </span>
+                                </div>
+
+                                <div class="p-3 space-y-2.5">
+                                    <p class="text-xs text-slate-700 line-clamp-2 leading-relaxed">
+                                        {{ $item['caption'] ?? 'Sem legenda' }}
+                                    </p>
+                                    
+                                    @if($timestamp)
+                                        <span class="text-[10px] text-slate-400 font-mono block">📅 {{ $timestamp }}</span>
+                                    @endif
+
+                                    <div class="flex items-center gap-2 pt-2 border-t border-slate-100">
+                                        <a href="{{ $postUrl }}" target="_blank" class="flex-1 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 text-center font-bold text-[10px] rounded transition-all flex items-center justify-center gap-1">
+                                            <span>🔗 Ver no Instagram</span>
+                                        </a>
+                                        @if($imgUrl)
+                                            <button type="button" @click="useMediaBankImage('{{ $imgUrl }}')" class="py-1.5 px-3 bg-purple-50 hover:bg-purple-600 hover:text-white text-purple-700 font-bold text-[10px] rounded transition-all cursor-pointer">
+                                                🔄 Reutilizar
+                                            </button>
+                                        @endif
+                                    </div>
+                                </div>
+                            </div>
+                        @empty
+                            <div class="col-span-full p-12 text-center bg-slate-50 border border-slate-200 rounded-xl text-slate-500 text-xs space-y-2">
+                                <span class="text-3xl block">📸</span>
+                                <p class="font-bold text-slate-700">Nenhuma publicação encontrada diretamente no feed do Instagram.</p>
+                                <p class="text-slate-500">Assim que você fizer publicações na conta {{ '@' . $account->username }}, elas aparecerão aqui automaticamente!</p>
+                            </div>
+                        @endforelse
+                    </div>
+                </div>
+
+                <!-- 3. ABA: CALENDÁRIO VISUAL DE AGENDAMENTOS -->
                 <div x-show="tab === 'calendario'" class="space-y-6">
                     <div class="flex items-center justify-between">
                         <div>
