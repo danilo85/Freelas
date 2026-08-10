@@ -18,55 +18,70 @@ class InstagramController extends Controller
      */
     public function index(Request $request)
     {
-        $accounts = InstagramAccount::where('user_id', auth()->id())->get();
-        $selectedAccountId = $request->get('account_id', optional($accounts->first())->id);
-        $account = $accounts->where('id', $selectedAccountId)->first() ?: $accounts->first();
+        try {
+            $accounts = InstagramAccount::where('user_id', auth()->id())->get();
+            $selectedAccountId = $request->get('account_id', optional($accounts->first())->id);
+            $account = $accounts->where('id', $selectedAccountId)->first() ?: $accounts->first();
 
-        $settings = InstagramSetting::firstOrCreate(['user_id' => auth()->id()]);
-
-        $posts = InstagramPost::where('user_id', auth()->id())
-            ->orderBy('created_at', 'desc')
-            ->get();
-
-        // Busca o Feed real de posts já publicados no perfil do Instagram (com paginação completa)
-        $liveInstagramPosts = [];
-        if ($account && $account->access_token && $account->instagram_account_id) {
+            $settings = null;
             try {
-                $nextUrl = "https://graph.facebook.com/v19.0/{$account->instagram_account_id}/media?fields=id,caption,media_type,media_url,permalink,thumbnail_url,timestamp,like_count,comments_count,children{id,media_url,thumbnail_url,media_type}&limit=50&access_token=" . $account->access_token;
-                
-                $maxPages = 4; // Busca até 200 publicações
-                $pageCount = 0;
+                $settings = InstagramSetting::firstOrCreate(['user_id' => auth()->id()]);
+            } catch (\Throwable $tSettings) {
+                Log::error('Erro ao obter InstagramSetting: ' . $tSettings->getMessage());
+            }
 
-                while ($nextUrl && $pageCount < $maxPages) {
-                    $feedResp = Http::withoutVerifying()->timeout(10)->get($nextUrl);
-                    if ($feedResp->failed()) break;
+            $posts = InstagramPost::where('user_id', auth()->id())
+                ->orderBy('created_at', 'desc')
+                ->get();
 
-                    $data = $feedResp->json('data', []);
-                    if (empty($data) || !is_array($data)) break;
+            // Busca o Feed real de posts já publicados no perfil do Instagram (com paginação completa)
+            $liveInstagramPosts = [];
+            if ($account && $account->access_token && $account->instagram_account_id) {
+                try {
+                    $nextUrl = "https://graph.facebook.com/v19.0/{$account->instagram_account_id}/media?fields=id,caption,media_type,media_url,permalink,thumbnail_url,timestamp,like_count,comments_count,children{id,media_url,thumbnail_url,media_type}&limit=50&access_token=" . $account->access_token;
+                    
+                    $maxPages = 4; // Busca até 200 publicações
+                    $pageCount = 0;
 
-                    $liveInstagramPosts = array_merge($liveInstagramPosts, $data);
+                    while ($nextUrl && $pageCount < $maxPages) {
+                        $feedResp = Http::withoutVerifying()->timeout(10)->get($nextUrl);
+                        if ($feedResp->failed()) break;
 
-                    $nextUrl = $feedResp->json('paging.next');
-                    $pageCount++;
-                }
+                        $data = $feedResp->json('data', []);
+                        if (empty($data) || !is_array($data)) break;
 
-                $dbPostMap = $posts->pluck('id', 'instagram_media_id')->toArray();
-                foreach ($liveInstagramPosts as &$item) {
-                    $item['db_id'] = $dbPostMap[$item['id']] ?? null;
+                        $liveInstagramPosts = array_merge($liveInstagramPosts, $data);
 
-                    if (empty($item['media_url']) && !empty($item['children']['data'])) {
-                        $firstChild = $item['children']['data'][0] ?? null;
-                        if ($firstChild) {
-                            $item['media_url'] = $firstChild['media_url'] ?? ($firstChild['thumbnail_url'] ?? null);
+                        $nextUrl = $feedResp->json('paging.next');
+                        $pageCount++;
+                    }
+
+                    $dbPostMap = $posts->pluck('id', 'instagram_media_id')->toArray();
+                    foreach ($liveInstagramPosts as &$item) {
+                        $item['db_id'] = $dbPostMap[$item['id']] ?? null;
+
+                        if (empty($item['media_url']) && !empty($item['children']['data'])) {
+                            $firstChild = $item['children']['data'][0] ?? null;
+                            if ($firstChild) {
+                                $item['media_url'] = $firstChild['media_url'] ?? ($firstChild['thumbnail_url'] ?? null);
+                            }
                         }
                     }
+                } catch (\Throwable $e) {
+                    Log::error('Erro ao buscar feed vivo do Instagram: ' . $e->getMessage());
                 }
-            } catch (\Throwable $e) {
-                Log::error('Erro ao buscar feed vivo do Instagram: ' . $e->getMessage());
             }
-        }
 
-        return view('instagram.index', compact('accounts', 'account', 'posts', 'settings', 'liveInstagramPosts'));
+            return view('instagram.index', compact('accounts', 'account', 'posts', 'settings', 'liveInstagramPosts'));
+        } catch (\Throwable $e) {
+            Log::error('FATAL Error in InstagramController@index: ' . $e->getMessage());
+            $accounts = collect();
+            $account = null;
+            $posts = collect();
+            $settings = null;
+            $liveInstagramPosts = [];
+            return view('instagram.index', compact('accounts', 'account', 'posts', 'settings', 'liveInstagramPosts'));
+        }
     }
 
     /**

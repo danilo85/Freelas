@@ -165,7 +165,7 @@
                                             <span>Aplicar Seta (Rodapé)</span>
                                         </label>
                                     </div>
-                                    @if(!$settings->logo_path && !$settings->arrow_path)
+                                    @if(!optional($settings)->logo_path && !optional($settings)->arrow_path)
                                         <p class="text-[11px] text-amber-600 font-medium">💡 Faça upload dos ícones na aba <strong>"Logo & Seta (Marcas)"</strong> para aplicar automaticamente.</p>
                                     @endif
                                 </div>
@@ -362,8 +362,8 @@
                                     <!-- Live Overlay Badge Logo (Top Right) -->
                                     <template x-if="hasLogoOverlay">
                                         <div class="absolute top-3 right-3 bg-black/60 backdrop-blur-md px-2 py-1 rounded border border-white/20 flex items-center gap-1 shadow-lg">
-                                            @if($settings->logo_path)
-                                                <img src="{{ asset('storage/' . $settings->logo_path) }}" class="h-4 object-contain">
+                                            @if(optional($settings)->logo_path)
+                                                <img src="{{ asset('storage/' . optional($settings)->logo_path) }}" class="h-4 object-contain">
                                             @else
                                                 <span class="text-[9px] font-black uppercase text-amber-300 tracking-wider">LOGO</span>
                                             @endif
@@ -373,8 +373,8 @@
                                     <!-- Live Overlay Badge Arrow (Bottom Right) -->
                                     <template x-if="hasArrowOverlay">
                                         <div class="absolute bottom-3 right-3 bg-purple-600/80 backdrop-blur-md px-2.5 py-1 rounded-full text-white text-[10px] font-bold flex items-center gap-1 shadow-lg animate-bounce">
-                                            @if($settings->arrow_path)
-                                                <img src="{{ asset('storage/' . $settings->arrow_path) }}" class="h-3 object-contain">
+                                            @if(optional($settings)->arrow_path)
+                                                <img src="{{ asset('storage/' . optional($settings)->arrow_path) }}" class="h-3 object-contain">
                                             @else
                                                 <span>Arraste pro lado ➔</span>
                                             @endif
@@ -642,9 +642,9 @@
                                 <svg class="w-4 h-4 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
                                 Ícone da Logo (Marca D'Água Topo)
                             </h5>
-                            @if($settings->logo_path)
+                            @if(optional($settings)->logo_path)
                                 <div class="h-20 bg-slate-900 rounded-lg p-2 flex items-center justify-center border border-slate-700">
-                                    <img src="{{ asset('storage/' . $settings->logo_path) }}" class="h-full object-contain">
+                                    <img src="{{ asset('storage/' . optional($settings)->logo_path) }}" class="h-full object-contain">
                                 </div>
                             @endif
                             <input type="file" name="logo_icon" accept="image/png,image/jpeg" class="w-full text-xs text-slate-600 file:mr-3 file:py-1.5 file:px-3 file:rounded file:border-0 file:text-xs file:font-bold file:bg-purple-50 file:text-purple-700 hover:file:bg-purple-100 border border-slate-200 rounded-lg p-1">
@@ -656,9 +656,9 @@
                                 <svg class="w-4 h-4 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3"/></svg>
                                 Ícone de Seta (Marca D'Água Rodapé)
                             </h5>
-                            @if($settings->arrow_path)
+                            @if(optional($settings)->arrow_path)
                                 <div class="h-20 bg-slate-900 rounded-lg p-2 flex items-center justify-center border border-slate-700">
-                                    <img src="{{ asset('storage/' . $settings->arrow_path) }}" class="h-full object-contain">
+                                    <img src="{{ asset('storage/' . optional($settings)->arrow_path) }}" class="h-full object-contain">
                                 </div>
                             @endif
                             <input type="file" name="arrow_icon" accept="image/png,image/jpeg" class="w-full text-xs text-slate-600 file:mr-3 file:py-1.5 file:px-3 file:rounded file:border-0 file:text-xs file:font-bold file:bg-purple-50 file:text-purple-700 hover:file:bg-purple-100 border border-slate-200 rounded-lg p-1">
