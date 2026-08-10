@@ -341,6 +341,11 @@ class InstagramController extends Controller
         $uri = config('services.instagram.redirect_uri') ?: env('INSTAGRAM_REDIRECT_URI');
         if ($uri) return $uri;
 
+        $host = request()->getHost();
+        if (in_array($host, ['127.0.0.1', 'localhost'])) {
+            return 'http://localhost:8000/instagram/callback';
+        }
+
         $isHttps = request()->isSecure()
             || request()->header('x-forwarded-proto') === 'https'
             || request()->header('X-Forwarded-Proto') === 'https'
