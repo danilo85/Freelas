@@ -434,18 +434,15 @@
                                     $slides[] = $imgUrl;
                                 }
 
-                                $itemJson = json_encode([
-                                    'caption' => $item['caption'] ?? '',
-                                    'likes' => $likes,
-                                    'comments' => $comments,
-                                    'date' => $timestamp,
-                                    'permalink' => $postUrl,
-                                    'media_type' => $item['media_type'] ?? 'POST',
-                                ], JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE);
-                                $slidesJson = json_encode(array_values(array_filter($slides)), JSON_UNESCAPED_SLASHES);
-                            @endphp
                             <div class="group bg-white border border-slate-200 rounded-xl overflow-hidden shadow-sm hover:shadow-md transition-all flex flex-col justify-between cursor-pointer"
-                                 @click="openLightbox({{ $itemJson }}, {{ $slidesJson }})">
+                                 @click="openLightboxFromElement($el)"
+                                 data-caption="{{ e($item['caption'] ?? '') }}"
+                                 data-likes="{{ $likes }}"
+                                 data-comments="{{ $comments }}"
+                                 data-date="{{ $timestamp }}"
+                                 data-permalink="{{ $postUrl }}"
+                                 data-media-type="{{ $item['media_type'] ?? 'FEED' }}"
+                                 data-slides='@json(array_values(array_filter($slides)))'>
                                 <div class="relative h-60 bg-slate-900 overflow-hidden">
                                     @if($imgUrl)
                                         <img src="{{ $imgUrl }}" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300">
@@ -577,9 +574,16 @@
 
                     <div class="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4">
                         @forelse($posts as $p)
-                            <div class="group bg-white border border-slate-200 rounded-xl overflow-hidden shadow-sm hover:shadow-md transition-all flex flex-col justify-between">
-                                <div class="relative h-36 bg-slate-900 overflow-hidden cursor-pointer"
-                                     @click="openLightbox({ caption: '{{ addslashes($p->caption) }}', likes: 0, comments: 0, date: '{{ optional($p->created_at)->format('d/m/Y') }}', media_type: '{{ $p->media_type }}' }, [ '{{ asset('storage/' . $p->media_path) }}' ])">
+                            <div class="group bg-white border border-slate-200 rounded-xl overflow-hidden shadow-sm hover:shadow-md transition-all flex flex-col justify-between cursor-pointer"
+                                 @click="openLightboxFromElement($el)"
+                                 data-caption="{{ e($p->caption ?? '') }}"
+                                 data-likes="0"
+                                 data-comments="0"
+                                 data-date="{{ $p->created_at ? $p->created_at->format('d/m/Y H:i') : '' }}"
+                                 data-permalink=""
+                                 data-media-type="{{ $p->media_type ?? 'FEED' }}"
+                                 data-slides='@json([asset('storage/' . $p->media_path)])'>
+                                <div class="relative h-36 bg-slate-900 overflow-hidden">
                                     @if($p->media_path)
                                         <img src="{{ asset('storage/' . $p->media_path) }}" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300">
                                     @else
@@ -1002,6 +1006,28 @@ document.addEventListener('alpine:init', () => {
         lightboxPost: null,
         lightboxSlides: [],
         lightboxSlideIndex: 0,
+        openLightboxFromElement(el) {
+            const rawSlides = el.getAttribute('data-slides');
+            let slides = [];
+            try {
+                slides = JSON.parse(rawSlides);
+            } catch (e) {
+                console.error(e);
+            }
+
+            this.lightboxPost = {
+                caption: el.getAttribute('data-caption') || '',
+                likes: el.getAttribute('data-likes') || 0,
+                comments: el.getAttribute('data-comments') || 0,
+                date: el.getAttribute('data-date') || '',
+                permalink: el.getAttribute('data-permalink') || '',
+                media_type: el.getAttribute('data-media-type') || 'FEED'
+            };
+
+            this.lightboxSlides = (Array.isArray(slides) && slides.length > 0) ? slides : [];
+            this.lightboxSlideIndex = 0;
+            this.lightboxOpen = true;
+        },
         openLightbox(postData, slidesArray) {
             this.lightboxPost = postData;
             this.lightboxSlides = (slidesArray && slidesArray.length > 0) ? slidesArray : [postData.media_url || postData.media_path];
