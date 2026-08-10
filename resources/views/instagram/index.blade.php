@@ -433,7 +433,7 @@
                                 if (empty($slides) && $imgUrl) {
                                     $slides[] = $imgUrl;
                                 }
-
+                            @endphp
                             <div class="group bg-white border border-slate-200 rounded-xl overflow-hidden shadow-sm hover:shadow-md transition-all flex flex-col justify-between cursor-pointer"
                                  @click="openLightboxFromElement($el)"
                                  data-caption="{{ e($item['caption'] ?? '') }}"
