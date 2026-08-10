@@ -150,6 +150,7 @@ class InstagramController extends Controller
 
             $pagesResp = Http::get("https://graph.facebook.com/v19.0/me/accounts", [
                 'access_token' => $longToken,
+                'limit' => 100,
                 'fields' => 'id,name,access_token,instagram_business_account{id,username,name,profile_picture_url},connected_instagram_account{id,username,name,profile_picture_url},page_backed_instagram_account{id,username,name,profile_picture_url}'
             ]);
 
@@ -159,7 +160,7 @@ class InstagramController extends Controller
                 // Tenta fallback via me?fields=accounts
                 $meResp = Http::get("https://graph.facebook.com/v19.0/me", [
                     'access_token' => $longToken,
-                    'fields' => 'accounts{id,name,access_token,instagram_business_account{id,username,name,profile_picture_url},connected_instagram_account{id,username,name,profile_picture_url},page_backed_instagram_account{id,username,name,profile_picture_url}}'
+                    'fields' => 'accounts.limit(100){id,name,access_token,instagram_business_account{id,username,name,profile_picture_url},connected_instagram_account{id,username,name,profile_picture_url},page_backed_instagram_account{id,username,name,profile_picture_url}}'
                 ]);
                 $pages = $meResp->json('accounts.data', []);
             }
