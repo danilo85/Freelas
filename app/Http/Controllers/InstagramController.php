@@ -150,7 +150,7 @@ class InstagramController extends Controller
 
             $pagesResp = Http::get("https://graph.facebook.com/v19.0/me/accounts", [
                 'access_token' => $longToken,
-                'fields' => 'id,name,access_token,instagram_business_account{id,username,name,profile_picture_url}'
+                'fields' => 'id,name,access_token,instagram_business_account{id,username,name,profile_picture_url},connected_instagram_account{id,username,name,profile_picture_url}'
             ]);
 
             $pages = $pagesResp->json('data', []);
@@ -159,7 +159,7 @@ class InstagramController extends Controller
                 // Tenta fallback via me?fields=accounts
                 $meResp = Http::get("https://graph.facebook.com/v19.0/me", [
                     'access_token' => $longToken,
-                    'fields' => 'accounts{id,name,access_token,instagram_business_account{id,username,name,profile_picture_url}}'
+                    'fields' => 'accounts{id,name,access_token,instagram_business_account{id,username,name,profile_picture_url},connected_instagram_account{id,username,name,profile_picture_url}}'
                 ]);
                 $pages = $meResp->json('accounts.data', []);
             }
@@ -175,18 +175,19 @@ class InstagramController extends Controller
                 if (!$pageId) continue;
                 $pageNames[] = $page['name'] ?? "Página ID {$pageId}";
 
-                $igAccountData = $page['instagram_business_account'] ?? null;
+                $igAccountData = $page['instagram_business_account'] ?? $page['connected_instagram_account'] ?? null;
                 $pageAccessToken = $page['access_token'] ?? $longToken;
 
                 if (!$igAccountData) {
                     // Tenta buscar a conta do instagram usando o Token de Acesso da própria Página
                     $pageDetailResp = Http::get("https://graph.facebook.com/v19.0/{$pageId}", [
-                        'fields' => 'instagram_business_account{id,username,name,profile_picture_url}',
+                        'fields' => 'instagram_business_account{id,username,name,profile_picture_url},connected_instagram_account{id,username,name,profile_picture_url}',
                         'access_token' => $pageAccessToken,
                     ]);
 
-                    if ($pageDetailResp->successful() && $pageDetailResp->json('instagram_business_account')) {
-                        $igAccountData = $pageDetailResp->json('instagram_business_account');
+                    if ($pageDetailResp->successful()) {
+                        $igAccountData = $pageDetailResp->json('instagram_business_account')
+                            ?? $pageDetailResp->json('connected_instagram_account');
                     }
                 }
 
