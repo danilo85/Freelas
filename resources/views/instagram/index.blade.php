@@ -70,6 +70,14 @@
         if (this.lightboxSlideIndex > 0) {
             this.lightboxSlideIndex--;
         }
+    },
+    formatMediaType(type) {
+        if (!type) return 'FEED';
+        if (type.includes('CAROUSEL')) return '🎡 CARROSSEL';
+        if (type.includes('VIDEO') || type.includes('REELS')) return '📹 VÍDEO';
+        if (type.includes('STORY')) return '📸 STORY';
+        if (type === 'IMAGE') return '🖼️ FEED';
+        return type;
     }
 }">
     
@@ -422,8 +430,17 @@
                                         <span class="flex items-center gap-1">💬 {{ $comments }}</span>
                                     </div>
 
-                                    <span class="absolute top-2 left-2 px-2 py-0.5 text-[9px] font-black uppercase tracking-wider rounded-md text-white bg-purple-600 shadow">
-                                        {{ $item['media_type'] ?? 'POST' }}
+                                    @php
+                                        $rawType = $item['media_type'] ?? 'IMAGE';
+                                        $typeLabel = match(true) {
+                                            str_contains($rawType, 'CAROUSEL') => '🎡 CARROSSEL',
+                                            str_contains($rawType, 'VIDEO') || str_contains($rawType, 'REELS') => '📹 VÍDEO',
+                                            str_contains($rawType, 'STORY') => '📸 STORY',
+                                            default => '🖼️ FEED',
+                                        };
+                                    @endphp
+                                    <span class="absolute top-2 left-2 px-2.5 py-1 text-[9px] font-black uppercase tracking-wider rounded-md text-white bg-purple-600 shadow-md">
+                                        {{ $typeLabel }}
                                     </span>
                                 </div>
 
@@ -703,7 +720,7 @@
                         <span class="flex items-center gap-1 text-rose-500">❤️ <span x-text="lightboxPost?.likes || 0"></span></span>
                         <span class="flex items-center gap-1 text-slate-300">💬 <span x-text="lightboxPost?.comments || 0"></span></span>
                     </div>
-                    <span class="text-xs font-black uppercase text-purple-400 tracking-wider" x-text="lightboxPost?.media_type || 'POST'"></span>
+                    <span class="text-xs font-black uppercase text-purple-400 tracking-wider" x-text="formatMediaType(lightboxPost?.media_type)"></span>
                 </div>
 
                 <!-- Instagram Caption Box -->
