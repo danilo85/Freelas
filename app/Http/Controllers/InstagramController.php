@@ -30,7 +30,13 @@ class InstagramController extends Controller
      */
     public function connect()
     {
-        $appId = config('services.instagram.client_id') ?: env('INSTAGRAM_CLIENT_ID');
+        $appId = trim(config('services.instagram.client_id') ?: env('INSTAGRAM_CLIENT_ID', ''));
+        $appId = str_replace(['"', "'"], '', $appId);
+
+        if (empty($appId)) {
+            return redirect()->route('instagram.index')->with('error', 'O ID do aplicativo (INSTAGRAM_CLIENT_ID) não foi encontrado no arquivo .env ou a configuração está em cache. Execute "php artisan config:clear".');
+        }
+
         $redirectUri = $this->getRedirectUri();
 
         $scopes = [
