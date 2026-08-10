@@ -51,6 +51,13 @@ class InstagramController extends Controller
                 $dbPostMap = $posts->pluck('id', 'instagram_media_id')->toArray();
                 foreach ($liveInstagramPosts as &$item) {
                     $item['db_id'] = $dbPostMap[$item['id']] ?? null;
+
+                    if (empty($item['media_url']) && !empty($item['children']['data'])) {
+                        $firstChild = $item['children']['data'][0] ?? null;
+                        if ($firstChild) {
+                            $item['media_url'] = $firstChild['media_url'] ?? ($firstChild['thumbnail_url'] ?? null);
+                        }
+                    }
                 }
             } catch (\Exception $e) {
                 Log::error('Erro ao buscar feed vivo do Instagram: ' . $e->getMessage());

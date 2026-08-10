@@ -418,31 +418,36 @@
                     <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
                         @forelse($liveInstagramPosts as $item)
                             @php
-                                $imgUrl = $item['media_url'] ?? ($item['thumbnail_url'] ?? null);
+                                $slides = [];
+                                if (isset($item['children']['data']) && is_array($item['children']['data'])) {
+                                    foreach ($item['children']['data'] as $child) {
+                                        $url = $child['media_url'] ?? ($child['thumbnail_url'] ?? null);
+                                        if ($url) {
+                                            $slides[] = $url;
+                                        }
+                                    }
+                                }
+                                $imgUrl = $item['media_url'] ?? ($item['thumbnail_url'] ?? ($slides[0] ?? null));
+                                if (empty($slides) && $imgUrl) {
+                                    $slides[] = $imgUrl;
+                                }
                                 $postUrl = $item['permalink'] ?? '#';
                                 $likes = $item['like_count'] ?? 0;
                                 $comments = $item['comments_count'] ?? 0;
                                 $timestamp = isset($item['timestamp']) ? \Carbon\Carbon::parse($item['timestamp'])->format('d/m/Y H:i') : null;
 
-                                $slides = [];
-                                if (isset($item['children']['data']) && is_array($item['children']['data'])) {
-                                    foreach ($item['children']['data'] as $child) {
-                                        $slides[] = $child['media_url'] ?? ($child['thumbnail_url'] ?? null);
-                                    }
-                                }
-                                if (empty($slides) && $imgUrl) {
-                                    $slides[] = $imgUrl;
-                                }
+                                $slidesB64 = base64_encode(json_encode(array_values(array_filter($slides))));
+                                $captionB64 = base64_encode($item['caption'] ?? '');
                             @endphp
                             <div class="group bg-white border border-slate-200 rounded-xl overflow-hidden shadow-sm hover:shadow-md transition-all flex flex-col justify-between cursor-pointer"
                                  @click="openLightboxFromElement($el)"
-                                 data-caption="{{ e($item['caption'] ?? '') }}"
+                                 data-caption="{{ $captionB64 }}"
                                  data-likes="{{ $likes }}"
                                  data-comments="{{ $comments }}"
                                  data-date="{{ $timestamp }}"
                                  data-permalink="{{ $postUrl }}"
                                  data-media-type="{{ $item['media_type'] ?? 'FEED' }}"
-                                 data-slides='@json(array_values(array_filter($slides)))'>
+                                 data-slides="{{ $slidesB64 }}">
                                 <div class="relative h-60 bg-slate-900 overflow-hidden">
                                     @if($imgUrl)
                                         <img src="{{ $imgUrl }}" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300">
@@ -574,15 +579,19 @@
 
                     <div class="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4">
                         @forelse($posts as $p)
+                            @php
+                                $bancoSlidesB64 = base64_encode(json_encode([asset('storage/' . $p->media_path)]));
+                                $bancoCaptionB64 = base64_encode($p->caption ?? '');
+                            @endphp
                             <div class="group bg-white border border-slate-200 rounded-xl overflow-hidden shadow-sm hover:shadow-md transition-all flex flex-col justify-between cursor-pointer"
                                  @click="openLightboxFromElement($el)"
-                                 data-caption="{{ e($p->caption ?? '') }}"
+                                 data-caption="{{ $bancoCaptionB64 }}"
                                  data-likes="0"
                                  data-comments="0"
                                  data-date="{{ $p->created_at ? $p->created_at->format('d/m/Y H:i') : '' }}"
                                  data-permalink=""
                                  data-media-type="{{ $p->media_type ?? 'FEED' }}"
-                                 data-slides='@json([asset('storage/' . $p->media_path)])'>
+                                 data-slides="{{ $bancoSlidesB64 }}">
                                 <div class="relative h-36 bg-slate-900 overflow-hidden">
                                     @if($p->media_path)
                                         <img src="{{ asset('storage/' . $p->media_path) }}" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300">
@@ -1007,16 +1016,30 @@ document.addEventListener('alpine:init', () => {
         lightboxSlides: [],
         lightboxSlideIndex: 0,
         openLightboxFromElement(el) {
-            const rawSlides = el.getAttribute('data-slides');
+            const rawSlidesB64 = el.getAttribute('data-slides');
+            const captionB64 = el.getAttribute('data-caption');
+
             let slides = [];
+            let caption = '';
+
             try {
-                slides = JSON.parse(rawSlides);
+                if (rawSlidesB64) {
+                    slides = JSON.parse(atob(rawSlidesB64));
+                }
             } catch (e) {
-                console.error(e);
+                console.error('Erro ao ler slides b64:', e);
+            }
+
+            try {
+                if (captionB64) {
+                    caption = decodeURIComponent(escape(atob(captionB64)));
+                }
+            } catch (e) {
+                caption = '';
             }
 
             this.lightboxPost = {
-                caption: el.getAttribute('data-caption') || '',
+                caption: caption,
                 likes: el.getAttribute('data-likes') || 0,
                 comments: el.getAttribute('data-comments') || 0,
                 date: el.getAttribute('data-date') || '',
