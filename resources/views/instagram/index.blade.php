@@ -635,14 +635,14 @@
     <div x-show="lightboxOpen" 
          x-cloak 
          @keydown.escape.window="lightboxOpen = false"
-         class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/90 backdrop-blur-xl transition-all">
+         class="fixed top-0 left-0 right-0 bottom-0 w-screen h-screen z-[99999] flex items-center justify-center p-4 bg-slate-950/90 backdrop-blur-xl transition-all">
         
         <!-- Botão Fechar Modal (ESC) -->
-        <button @click="lightboxOpen = false" class="absolute top-6 right-6 w-10 h-10 rounded-full bg-slate-800/80 hover:bg-slate-700 text-white font-black text-lg flex items-center justify-center border border-slate-700 shadow-xl transition-all cursor-pointer z-50">
+        <button @click="lightboxOpen = false" class="absolute top-4 right-4 md:top-6 md:right-6 w-11 h-11 rounded-full bg-slate-800/90 hover:bg-slate-700 text-white font-black text-xl flex items-center justify-center border border-slate-700 shadow-2xl transition-all cursor-pointer z-50">
             ✕
         </button>
 
-        <div class="relative flex items-center justify-center" @click.outside="lightboxOpen = false">
+        <div class="relative flex items-center justify-center w-full max-w-[95vw] md:max-w-4xl" @click.outside="lightboxOpen = false">
 
             <!-- SLIDE ANTERIOR (ENCOSTADO NA BORDA ESQUERDA COM FADE GRADUAL DE OPACIDADE) -->
             <div x-show="lightboxSlideIndex > 0" 
@@ -650,24 +650,24 @@
                  x-transition:enter="transition ease-out duration-300 transform"
                  x-transition:enter-start="opacity-0 -translate-x-6 scale-90"
                  x-transition:enter-end="opacity-100 translate-x-0 scale-95"
-                 class="hidden md:block absolute -left-48 z-10 w-48 h-[340px] rounded-2xl bg-slate-900 border border-white/10 shadow-2xl overflow-hidden cursor-pointer group transition-all duration-300 scale-95 hover:scale-100"
+                 class="hidden lg:block absolute -left-52 z-10 w-52 h-[420px] rounded-3xl bg-slate-900 border border-white/10 shadow-2xl overflow-hidden cursor-pointer group transition-all duration-300 scale-95 hover:scale-100"
                  style="mask-image: linear-gradient(to right, transparent 0%, rgba(0,0,0,0.6) 40%, black 100%); -webkit-mask-image: linear-gradient(to right, transparent 0%, rgba(0,0,0,0.6) 40%, black 100%);">
                 <template x-if="lightboxSlides[lightboxSlideIndex - 1]">
                     <img :src="lightboxSlides[lightboxSlideIndex - 1]" class="w-full h-full object-cover opacity-60 group-hover:opacity-100 transition-opacity duration-300">
                 </template>
             </div>
 
-            <!-- ESTRUTURA DO CELULAR (MOCKUP CENTRALIZADO) -->
-            <div class="w-[340px] md:w-[360px] bg-black text-white rounded-[44px] p-3 shadow-2xl border-4 border-slate-800 relative z-20 overflow-hidden shadow-purple-950/30">
+            <!-- ESTRUTURA DO CELULAR (MOCKUP MODERNO E PROPORCIONAL) -->
+            <div class="w-[320px] sm:w-[360px] md:w-[380px] bg-black text-white rounded-[48px] p-3.5 shadow-2xl border-4 border-slate-800 relative z-20 overflow-hidden shadow-purple-950/40">
                 
                 <!-- Smartphone Notch Header -->
-                <div class="w-28 h-4 bg-slate-900 rounded-b-xl mx-auto mb-2 flex items-center justify-center">
-                    <div class="w-2.5 h-2.5 rounded-full bg-slate-800"></div>
+                <div class="w-32 h-4 bg-slate-900 rounded-b-xl mx-auto mb-2 flex items-center justify-center">
+                    <div class="w-3 h-3 rounded-full bg-slate-800"></div>
                 </div>
 
                 <!-- Instagram App Header -->
                 <div class="flex items-center justify-between px-3 py-2 border-b border-slate-800">
-                    <div class="flex items-center gap-2">
+                    <div class="flex items-center gap-2.5">
                         <img src="{{ $account->profile_picture_url ?: 'https://ui-avatars.com/api/?name=' . urlencode($account->username) }}" class="w-8 h-8 rounded-full border border-purple-500 object-cover">
                         <div>
                             <span class="text-xs font-bold text-white block leading-tight" x-text="'{{ '@' . $account->username }}'"></span>
@@ -681,8 +681,8 @@
                     </template>
                 </div>
 
-                <!-- Instagram Viewport Screen (Com Animação de Transição de Slides) -->
-                <div class="w-full h-[340px] bg-slate-900 relative flex items-center justify-center overflow-hidden group">
+                <!-- Instagram Viewport Screen (Altura Moderna Proporcional) -->
+                <div class="w-full h-[380px] sm:h-[420px] bg-slate-900 relative flex items-center justify-center overflow-hidden group">
                     <template x-for="(slide, idx) in lightboxSlides" :key="idx">
                         <div x-show="lightboxSlideIndex === idx"
                              x-transition:enter="transition ease-out duration-400 transform"
@@ -724,7 +724,7 @@
                 </div>
 
                 <!-- Instagram Caption Box -->
-                <div class="px-3 py-3 max-h-24 overflow-y-auto space-y-1 text-xs">
+                <div class="px-3 py-3 max-h-28 overflow-y-auto space-y-1 text-xs">
                     <p class="text-slate-200 text-[11px] leading-relaxed break-words">
                         <strong class="text-white font-bold" x-text="'{{ '@' . $account->username }}'"></strong>
                         <span x-text="lightboxPost?.caption || 'Sem legenda'"></span>
@@ -738,7 +738,7 @@
                  x-transition:enter="transition ease-out duration-300 transform"
                  x-transition:enter-start="opacity-0 translate-x-6 scale-90"
                  x-transition:enter-end="opacity-100 translate-x-0 scale-95"
-                 class="hidden md:block absolute -right-48 z-10 w-48 h-[340px] rounded-2xl bg-slate-900 border border-white/10 shadow-2xl overflow-hidden cursor-pointer group transition-all duration-300 scale-95 hover:scale-100"
+                 class="hidden lg:block absolute -right-52 z-10 w-52 h-[420px] rounded-3xl bg-slate-900 border border-white/10 shadow-2xl overflow-hidden cursor-pointer group transition-all duration-300 scale-95 hover:scale-100"
                  style="mask-image: linear-gradient(to left, transparent 0%, rgba(0,0,0,0.6) 40%, black 100%); -webkit-mask-image: linear-gradient(to left, transparent 0%, rgba(0,0,0,0.6) 40%, black 100%);">
                 <template x-if="lightboxSlides[lightboxSlideIndex + 1]">
                     <img :src="lightboxSlides[lightboxSlideIndex + 1]" class="w-full h-full object-cover opacity-60 group-hover:opacity-100 transition-opacity duration-300">
