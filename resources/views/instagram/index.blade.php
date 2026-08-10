@@ -50,6 +50,26 @@
         this.imagePreview = url;
         this.mediaType = 'IMAGE';
         this.tab = 'novo';
+    },
+    lightboxOpen: false,
+    lightboxPost: null,
+    lightboxSlides: [],
+    lightboxSlideIndex: 0,
+    openLightbox(postData, slidesArray) {
+        this.lightboxPost = postData;
+        this.lightboxSlides = (slidesArray && slidesArray.length > 0) ? slidesArray : [postData.media_url || postData.media_path];
+        this.lightboxSlideIndex = 0;
+        this.lightboxOpen = true;
+    },
+    nextLightboxSlide() {
+        if (this.lightboxSlideIndex < this.lightboxSlides.length - 1) {
+            this.lightboxSlideIndex++;
+        }
+    },
+    prevLightboxSlide() {
+        if (this.lightboxSlideIndex > 0) {
+            this.lightboxSlideIndex--;
+        }
     }
 }">
     
@@ -366,8 +386,29 @@
                                 $likes = $item['like_count'] ?? 0;
                                 $comments = $item['comments_count'] ?? 0;
                                 $timestamp = isset($item['timestamp']) ? \Carbon\Carbon::parse($item['timestamp'])->format('d/m/Y H:i') : null;
+
+                                $slides = [];
+                                if (isset($item['children']['data']) && is_array($item['children']['data'])) {
+                                    foreach ($item['children']['data'] as $child) {
+                                        $slides[] = $child['media_url'] ?? ($child['thumbnail_url'] ?? null);
+                                    }
+                                }
+                                if (empty($slides) && $imgUrl) {
+                                    $slides[] = $imgUrl;
+                                }
+
+                                $itemJson = json_encode([
+                                    'caption' => $item['caption'] ?? '',
+                                    'likes' => $likes,
+                                    'comments' => $comments,
+                                    'date' => $timestamp,
+                                    'permalink' => $postUrl,
+                                    'media_type' => $item['media_type'] ?? 'POST',
+                                ], JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE);
+                                $slidesJson = json_encode(array_values(array_filter($slides)), JSON_UNESCAPED_SLASHES);
                             @endphp
-                            <div class="group bg-white border border-slate-200 rounded-xl overflow-hidden shadow-sm hover:shadow-md transition-all flex flex-col justify-between">
+                            <div class="group bg-white border border-slate-200 rounded-xl overflow-hidden shadow-sm hover:shadow-md transition-all flex flex-col justify-between cursor-pointer"
+                                 @click="openLightbox({{ $itemJson }}, {{ $slidesJson }})">
                                 <div class="relative h-60 bg-slate-900 overflow-hidden">
                                     @if($imgUrl)
                                         <img src="{{ $imgUrl }}" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300">
@@ -395,7 +436,7 @@
                                         <span class="text-[10px] text-slate-400 font-mono block">📅 {{ $timestamp }}</span>
                                     @endif
 
-                                    <div class="flex items-center gap-2 pt-2 border-t border-slate-100">
+                                    <div class="flex items-center gap-2 pt-2 border-t border-slate-100" @click.stop>
                                         <a href="{{ $postUrl }}" target="_blank" class="flex-1 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 text-center font-bold text-[10px] rounded transition-all flex items-center justify-center gap-1">
                                             <span>🔗 Ver no Instagram</span>
                                         </a>
@@ -572,5 +613,105 @@
             </div>
         </div>
     @endif
+
+    <!-- LIGHTBOX SMARTPHONE MODAL COM PREVIEW 3D CARROSSEL & OPACIDADE NAS BORDAS -->
+    <div x-show="lightboxOpen" 
+         x-cloak 
+         @keydown.escape.window="lightboxOpen = false"
+         class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/85 backdrop-blur-xl transition-all">
+        
+        <!-- Botão Fechar Modal (ESC) -->
+        <button @click="lightboxOpen = false" class="absolute top-6 right-6 w-10 h-10 rounded-full bg-slate-800/80 hover:bg-slate-700 text-white font-black text-lg flex items-center justify-center border border-slate-700 shadow-xl transition-all cursor-pointer z-50">
+            ✕
+        </button>
+
+        <div class="relative w-full max-w-5xl flex items-center justify-center" @click.outside="lightboxOpen = false">
+
+            <!-- SLIDE ANTERIOR (Borda de Opacidade à Esquerda fora do celular) -->
+            <div x-show="lightboxSlideIndex > 0" 
+                 @click.stop="prevLightboxSlide()"
+                 class="hidden md:block absolute left-2 lg:left-8 z-10 w-48 h-80 rounded-2xl bg-slate-900 border border-white/15 shadow-2xl overflow-hidden opacity-40 hover:opacity-80 scale-90 blur-[0.5px] transition-all cursor-pointer transform -translate-x-1/2">
+                <template x-if="lightboxSlides[lightboxSlideIndex - 1]">
+                    <img :src="lightboxSlides[lightboxSlideIndex - 1]" class="w-full h-full object-cover">
+                </template>
+            </div>
+
+            <!-- ESTRUTURA DO CELULAR (MOCKUP CENTRALIZADO) -->
+            <div class="w-[340px] md:w-[360px] bg-black text-white rounded-[44px] p-3 shadow-2xl border-4 border-slate-800 relative z-20 overflow-hidden transform scale-100 transition-transform">
+                
+                <!-- Smartphone Notch Header -->
+                <div class="w-28 h-4 bg-slate-900 rounded-b-xl mx-auto mb-2 flex items-center justify-center">
+                    <div class="w-2.5 h-2.5 rounded-full bg-slate-800"></div>
+                </div>
+
+                <!-- Instagram App Header -->
+                <div class="flex items-center justify-between px-3 py-2 border-b border-slate-800">
+                    <div class="flex items-center gap-2">
+                        <img src="{{ $account->profile_picture_url ?: 'https://ui-avatars.com/api/?name=' . urlencode($account->username) }}" class="w-8 h-8 rounded-full border border-purple-500 object-cover">
+                        <div>
+                            <span class="text-xs font-bold text-white block leading-tight" x-text="'{{ '@' . $account->username }}'"></span>
+                            <span class="text-[9px] text-slate-400 font-mono block" x-text="lightboxPost?.date || ''"></span>
+                        </div>
+                    </div>
+                    <template x-if="lightboxPost?.permalink">
+                        <a :href="lightboxPost.permalink" target="_blank" title="Abrir no Instagram" class="text-xs text-purple-400 hover:text-purple-300 font-bold">
+                            🔗
+                        </a>
+                    </template>
+                </div>
+
+                <!-- Instagram Viewport Screen (Slide Ativo) -->
+                <div class="w-full h-[340px] bg-slate-900 relative flex items-center justify-center overflow-hidden group">
+                    <template x-if="lightboxSlides.length > 0">
+                        <img :src="lightboxSlides[lightboxSlideIndex]" class="w-full h-full object-cover transition-all duration-300">
+                    </template>
+
+                    <!-- Setas Internas de Navegação -->
+                    <button x-show="lightboxSlideIndex > 0" @click.stop="prevLightboxSlide()" class="absolute left-2 w-8 h-8 rounded-full bg-black/60 text-white font-black text-sm flex items-center justify-center shadow hover:bg-black/80 transition-all cursor-pointer">
+                        ❮
+                    </button>
+                    <button x-show="lightboxSlideIndex < lightboxSlides.length - 1" @click.stop="nextLightboxSlide()" class="absolute right-2 w-8 h-8 rounded-full bg-black/60 text-white font-black text-sm flex items-center justify-center shadow hover:bg-black/80 transition-all cursor-pointer">
+                        ❯
+                    </button>
+
+                    <!-- Indicador de Posição de Slides / Dots -->
+                    <template x-if="lightboxSlides.length > 1">
+                        <div class="absolute bottom-2 left-0 right-0 flex items-center justify-center gap-1.5">
+                            <template x-for="(slide, idx) in lightboxSlides" :key="idx">
+                                <span :class="idx === lightboxSlideIndex ? 'bg-purple-500 w-2.5 h-2.5 scale-110' : 'bg-white/40 w-1.5 h-1.5'" class="rounded-full transition-all"></span>
+                            </template>
+                        </div>
+                    </template>
+                </div>
+
+                <!-- Instagram Likes & Comments Bar -->
+                <div class="px-3 py-2 flex items-center justify-between text-slate-300 border-b border-slate-900">
+                    <div class="flex items-center gap-4 text-xs font-bold">
+                        <span class="flex items-center gap-1 text-rose-500">❤️ <span x-text="lightboxPost?.likes || 0"></span></span>
+                        <span class="flex items-center gap-1 text-slate-300">💬 <span x-text="lightboxPost?.comments || 0"></span></span>
+                    </div>
+                    <span class="text-xs font-black uppercase text-purple-400 tracking-wider" x-text="lightboxPost?.media_type || 'POST'"></span>
+                </div>
+
+                <!-- Instagram Caption Box -->
+                <div class="px-3 py-3 max-h-24 overflow-y-auto space-y-1 text-xs">
+                    <p class="text-slate-200 text-[11px] leading-relaxed break-words">
+                        <strong class="text-white font-bold" x-text="'{{ '@' . $account->username }}'"></strong>
+                        <span x-text="lightboxPost?.caption || 'Sem legenda'"></span>
+                    </p>
+                </div>
+            </div>
+
+            <!-- SLIDE PRÓXIMO (Borda de Opacidade à Direita fora do celular) -->
+            <div x-show="lightboxSlideIndex < lightboxSlides.length - 1" 
+                 @click.stop="nextLightboxSlide()"
+                 class="hidden md:block absolute right-2 lg:right-8 z-10 w-48 h-80 rounded-2xl bg-slate-900 border border-white/15 shadow-2xl overflow-hidden opacity-40 hover:opacity-80 scale-90 blur-[0.5px] transition-all cursor-pointer transform translate-x-1/2">
+                <template x-if="lightboxSlides[lightboxSlideIndex + 1]">
+                    <img :src="lightboxSlides[lightboxSlideIndex + 1]" class="w-full h-full object-cover">
+                </template>
+            </div>
+
+        </div>
+    </div>
 </div>
 @endsection

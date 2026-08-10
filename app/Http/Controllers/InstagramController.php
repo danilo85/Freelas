@@ -33,7 +33,7 @@ class InstagramController extends Controller
         if ($account && $account->access_token && $account->instagram_account_id) {
             try {
                 $feedResp = Http::get("https://graph.facebook.com/v19.0/{$account->instagram_account_id}/media", [
-                    'fields' => 'id,caption,media_type,media_url,permalink,thumbnail_url,timestamp,like_count,comments_count',
+                    'fields' => 'id,caption,media_type,media_url,permalink,thumbnail_url,timestamp,like_count,comments_count,children{id,media_url,thumbnail_url,media_type}',
                     'limit' => 24,
                     'access_token' => $account->access_token,
                 ]);
