@@ -73,10 +73,10 @@
     },
     formatMediaType(type) {
         if (!type) return 'FEED';
-        if (type.includes('CAROUSEL')) return '🎡 CARROSSEL';
-        if (type.includes('VIDEO') || type.includes('REELS')) return '📹 VÍDEO';
-        if (type.includes('STORY')) return '📸 STORY';
-        if (type === 'IMAGE') return '🖼️ FEED';
+        if (type.includes('CAROUSEL')) return 'CARROSSEL';
+        if (type.includes('VIDEO') || type.includes('REELS')) return 'VÍDEO';
+        if (type.includes('STORY')) return 'STORY';
+        if (type === 'IMAGE') return 'FEED';
         return type;
     }
 }">
@@ -85,7 +85,7 @@
     <div class="bg-gradient-to-r {{ $account ? 'from-purple-950 via-slate-900 to-slate-900 border-purple-500/40' : 'from-slate-900 via-rose-950 to-slate-900 border-rose-500/40' }} border text-white rounded-xl p-6 shadow-md flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
         <div class="flex items-center gap-4">
             <div class="w-14 h-14 rounded-2xl {{ $account ? 'bg-gradient-to-tr from-amber-500 via-rose-500 to-purple-600 text-white shadow-lg' : 'bg-slate-800 text-slate-400 border border-slate-700' }} flex items-center justify-center text-3xl shrink-0">
-                <svg class="w-8 h-8" fill="currentColor" viewBox="0 0 24 24">
+                <svg class="w-8 h-8 text-white" fill="currentColor" viewBox="0 0 24 24">
                     <path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zm0-2.163c-3.259 0-3.667.014-4.947.072-4.358.2-6.78 2.618-6.98 6.98-.059 1.281-.073 1.689-.073 4.948 0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98 1.281.058 1.689.072 4.948.072 3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98-1.281-.059-1.69-.073-4.949-.073zm0 5.838c-3.403 0-6.162 2.759-6.162 6.162s2.759 6.163 6.162 6.163 6.162-2.759 6.162-6.163c0-3.403-2.759-6.162-6.162-6.162zm0 10.162c-2.209 0-4-1.79-4-4 0-2.209 1.791-4 4-4s4 1.791 4 4c0 2.21-1.791 4-4 4zm6.406-11.845c-.796 0-1.441.645-1.441 1.44s.645 1.44 1.441 1.44c.795 0 1.439-.645 1.439-1.44s-.644-1.44-1.439-1.44z"/>
                 </svg>
             </div>
@@ -138,7 +138,7 @@
             @else
                 <a href="{{ route('instagram.connect') }}" class="px-5 py-2.5 bg-gradient-to-r from-purple-600 to-rose-600 hover:from-purple-500 hover:to-rose-500 text-white text-xs font-bold rounded-[5px] transition-all shadow-md flex items-center gap-2 cursor-pointer">
                     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 005.656-5.656l-1.1 1.1"></path>
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1"></path>
                     </svg>
                     Conectar Instagram Profissional
                 </a>
@@ -147,24 +147,29 @@
     </div>
 
     @if($account)
-        <!-- Abas do Módulo (Novo Post & Prévia / Agendamentos em Calendário / Banco de Imagens / Configurações) -->
+        <!-- Abas do Módulo (Novo Post / Posts do Perfil / Calendário / Banco de Imagens / Marcas) -->
         <div class="bg-white border border-slate-200 rounded-xl shadow-sm overflow-hidden">
             <div class="border-b border-slate-100 bg-slate-50/50 p-4 flex flex-wrap items-center justify-between gap-3">
                 <div class="flex items-center gap-2">
                     <button @click="tab = 'novo'" :class="tab === 'novo' ? 'bg-purple-600 text-white shadow-sm' : 'bg-white text-slate-600 hover:bg-slate-100 border border-slate-200'" class="px-4 py-2 text-xs font-bold rounded-[5px] transition-all flex items-center gap-2 cursor-pointer">
-                        <span>✨</span> Nova Publicação & Prévia
+                        <svg class="w-4 h-4 text-purple-300" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
+                        Nova Publicação & Prévia
                     </button>
                     <button @click="tab = 'feed_real'" :class="tab === 'feed_real' ? 'bg-purple-600 text-white shadow-sm' : 'bg-white text-slate-600 hover:bg-slate-100 border border-slate-200'" class="px-4 py-2 text-xs font-bold rounded-[5px] transition-all flex items-center gap-2 cursor-pointer">
-                        <span>📸</span> Posts do Perfil ({{ count($liveInstagramPosts) }})
+                        <svg class="w-4 h-4 text-purple-300" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069z"/></svg>
+                        Posts do Perfil ({{ count($liveInstagramPosts) }})
                     </button>
                     <button @click="tab = 'calendario'" :class="tab === 'calendario' ? 'bg-purple-600 text-white shadow-sm' : 'bg-white text-slate-600 hover:bg-slate-100 border border-slate-200'" class="px-4 py-2 text-xs font-bold rounded-[5px] transition-all flex items-center gap-2 cursor-pointer">
-                        <span>🗓️</span> Calendário de Agendamentos
+                        <svg class="w-4 h-4 text-purple-300" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
+                        Calendário de Agendamentos
                     </button>
                     <button @click="tab = 'banco'" :class="tab === 'banco' ? 'bg-purple-600 text-white shadow-sm' : 'bg-white text-slate-600 hover:bg-slate-100 border border-slate-200'" class="px-4 py-2 text-xs font-bold rounded-[5px] transition-all flex items-center gap-2 cursor-pointer">
-                        <span>🖼️</span> Banco de Imagens ({{ $posts->count() }})
+                        <svg class="w-4 h-4 text-purple-300" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
+                        Banco de Imagens ({{ $posts->count() }})
                     </button>
                     <button @click="tab = 'marcas'" :class="tab === 'marcas' ? 'bg-purple-600 text-white shadow-sm' : 'bg-white text-slate-600 hover:bg-slate-100 border border-slate-200'" class="px-4 py-2 text-xs font-bold rounded-[5px] transition-all flex items-center gap-2 cursor-pointer">
-                        <span>🏷️</span> Logo & Seta (Marcas)
+                        <svg class="w-4 h-4 text-purple-300" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z"/></svg>
+                        Logo & Seta (Marcas)
                     </button>
                 </div>
             </div>
@@ -181,16 +186,16 @@
                             <div class="space-y-2">
                                 <label class="text-xs font-extrabold text-slate-700 uppercase tracking-wider block">Formato da Publicação</label>
                                 <div class="grid grid-cols-3 gap-3">
-                                    <button type="button" @click="mediaType = 'IMAGE'" :class="mediaType === 'IMAGE' ? 'border-purple-600 bg-purple-50/50 text-purple-700 font-bold' : 'border-slate-200 bg-white text-slate-600 hover:bg-slate-50'" class="p-3 border rounded-lg text-xs transition-all text-center flex flex-col items-center gap-1 cursor-pointer">
-                                        <span class="text-lg">🖼️</span>
+                                    <button type="button" @click="mediaType = 'IMAGE'" :class="mediaType === 'IMAGE' ? 'border-purple-600 bg-purple-50/50 text-purple-700 font-bold shadow-sm' : 'border-slate-200 bg-white text-slate-600 hover:bg-slate-50'" class="p-3 border rounded-lg text-xs transition-all text-center flex flex-col items-center gap-1.5 cursor-pointer">
+                                        <svg class="w-5 h-5 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
                                         <span>Feed Único</span>
                                     </button>
-                                    <button type="button" @click="mediaType = 'CAROUSEL'" :class="mediaType === 'CAROUSEL' ? 'border-purple-600 bg-purple-50/50 text-purple-700 font-bold' : 'border-slate-200 bg-white text-slate-600 hover:bg-slate-50'" class="p-3 border rounded-lg text-xs transition-all text-center flex flex-col items-center gap-1 cursor-pointer">
-                                        <span class="text-lg">🎡</span>
+                                    <button type="button" @click="mediaType = 'CAROUSEL'" :class="mediaType === 'CAROUSEL' ? 'border-purple-600 bg-purple-50/50 text-purple-700 font-bold shadow-sm' : 'border-slate-200 bg-white text-slate-600 hover:bg-slate-50'" class="p-3 border rounded-lg text-xs transition-all text-center flex flex-col items-center gap-1.5 cursor-pointer">
+                                        <svg class="w-5 h-5 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"/></svg>
                                         <span>Carrossel</span>
                                     </button>
-                                    <button type="button" @click="mediaType = 'STORY'" :class="mediaType === 'STORY' ? 'border-purple-600 bg-purple-50/50 text-purple-700 font-bold' : 'border-slate-200 bg-white text-slate-600 hover:bg-slate-50'" class="p-3 border rounded-lg text-xs transition-all text-center flex flex-col items-center gap-1 cursor-pointer">
-                                        <span class="text-lg">📸</span>
+                                    <button type="button" @click="mediaType = 'STORY'" :class="mediaType === 'STORY' ? 'border-purple-600 bg-purple-50/50 text-purple-700 font-bold shadow-sm' : 'border-slate-200 bg-white text-slate-600 hover:bg-slate-50'" class="p-3 border rounded-lg text-xs transition-all text-center flex flex-col items-center gap-1.5 cursor-pointer">
+                                        <svg class="w-5 h-5 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
                                         <span>Story (24h)</span>
                                     </button>
                                 </div>
@@ -221,7 +226,10 @@
 
                                 <!-- Sobreposição de Marcas (Logo & Seta) -->
                                 <div class="p-3 bg-slate-50 border border-slate-200 rounded-lg space-y-2">
-                                    <span class="text-xs font-extrabold text-slate-700 uppercase tracking-wider block">Sobreposição de Ícones (Marca d'Água)</span>
+                                    <span class="text-xs font-extrabold text-slate-700 uppercase tracking-wider block flex items-center gap-1.5">
+                                        <svg class="w-4 h-4 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z"/></svg>
+                                        Sobreposição de Ícones (Marca d'Água)
+                                    </span>
                                     <div class="flex items-center gap-6">
                                         <label class="flex items-center gap-2 text-xs font-semibold text-slate-700 cursor-pointer">
                                             <input type="checkbox" x-model="hasLogoOverlay" class="rounded text-purple-600 focus:ring-purple-500">
@@ -233,7 +241,7 @@
                                         </label>
                                     </div>
                                     @if(!$settings->logo_path && !$settings->arrow_path)
-                                        <p class="text-[11px] text-amber-600">💡 Faça upload dos ícones na aba <strong>"Logo & Seta (Marcas)"</strong> para aplicar automaticamente.</p>
+                                        <p class="text-[11px] text-amber-600 font-medium">💡 Faça upload dos ícones na aba <strong>"Logo & Seta (Marcas)"</strong> para aplicar automaticamente.</p>
                                     @endif
                                 </div>
 
@@ -250,7 +258,8 @@
                                 <div x-show="mediaType !== 'STORY'" class="p-4 bg-purple-50/50 border border-purple-100 rounded-xl space-y-3">
                                     <div class="flex items-center justify-between">
                                         <h5 class="text-xs font-extrabold text-purple-900 uppercase tracking-wider flex items-center gap-1.5">
-                                            <span>🔥</span> Gerador de Hashtags & Em Alta
+                                            <svg class="w-4 h-4 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
+                                            Gerador de Hashtags & Em Alta
                                         </h5>
                                         <select x-model="hashtagCategory" class="text-xs font-bold text-purple-700 bg-white border border-purple-200 rounded-md px-2 py-1 outline-none">
                                             <option value="design">🎨 Design & Branding</option>
@@ -270,7 +279,7 @@
                                     </div>
 
                                     <button type="button" @click="insertCategoryHashtags(hashtagCategory)" class="text-xs font-bold text-purple-700 hover:underline flex items-center gap-1 cursor-pointer">
-                                        <span>➕ Inserir todas desta categoria na legenda</span>
+                                        <span>+ Inserir todas desta categoria na legenda</span>
                                     </button>
                                 </div>
 
@@ -279,11 +288,11 @@
                                     <div class="flex items-center gap-6">
                                         <label class="flex items-center gap-2 text-xs font-extrabold text-slate-700 cursor-pointer">
                                             <input type="radio" name="action" value="now" x-model="actionType" class="text-purple-600 focus:ring-purple-500">
-                                            <span>🚀 Publicar Agora</span>
+                                            <span>Publicar Agora</span>
                                         </label>
                                         <label class="flex items-center gap-2 text-xs font-extrabold text-slate-700 cursor-pointer">
                                             <input type="radio" name="action" value="schedule" x-model="actionType" class="text-purple-600 focus:ring-purple-500">
-                                            <span>🗓️ Agendar para Data Futura</span>
+                                            <span>Agendar para Data Futura</span>
                                         </label>
                                     </div>
 
@@ -293,17 +302,20 @@
                                     </div>
                                 </div>
 
-                                <button type="submit" class="w-full py-3 bg-gradient-to-r from-purple-600 to-rose-600 hover:from-purple-500 hover:to-rose-500 text-white font-extrabold text-xs uppercase tracking-wider rounded-lg shadow-md transition-all cursor-pointer">
-                                    <span x-text="actionType === 'now' ? '🚀 Publicar no Instagram Agora' : '🗓️ Confirmar Agendamento'"></span>
+                                <button type="submit" class="w-full py-3 bg-gradient-to-r from-purple-600 to-rose-600 hover:from-purple-500 hover:to-rose-500 text-white font-extrabold text-xs uppercase tracking-wider rounded-lg shadow-md transition-all cursor-pointer flex items-center justify-center gap-2">
+                                    <span x-text="actionType === 'now' ? 'Publicar no Instagram Agora' : 'Confirmar Agendamento'"></span>
                                 </button>
                             </form>
                         </div>
 
                         <!-- Coluna da Direita: Prévia ao Vivo do Smartphone Instagram -->
                         <div class="lg:col-span-5 flex flex-col items-center">
-                            <h4 class="text-xs font-extrabold text-slate-500 uppercase tracking-wider mb-3">📱 Prévia em Tempo Real (Instagram App)</h4>
+                            <h4 class="text-xs font-extrabold text-slate-500 uppercase tracking-wider mb-3 flex items-center gap-1.5">
+                                <svg class="w-4 h-4 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 18h.01M8 21h8a2 2 0 002-2V5a2 2 0 00-2-2H8a2 2 0 00-2 2v14a2 2 0 002 2z"/></svg>
+                                Prévia em Tempo Real (Instagram App)
+                            </h4>
                             
-                            <div class="w-[320px] bg-black text-white rounded-[40px] p-3 shadow-2xl border-4 border-slate-800 relative overflow-hidden">
+                            <div class="w-[320px] sm:w-[340px] bg-black text-white rounded-[44px] p-3.5 shadow-2xl border-4 border-slate-800 relative overflow-hidden">
                                 <!-- Smartphone Notch -->
                                 <div class="w-28 h-4 bg-slate-900 rounded-b-xl mx-auto mb-2 flex items-center justify-center">
                                     <div class="w-2.5 h-2.5 rounded-full bg-slate-800"></div>
@@ -319,13 +331,13 @@
                                 </div>
 
                                 <!-- Instagram Image Viewport with Live Overlay Badges -->
-                                <div class="w-full h-[320px] bg-slate-900 relative flex items-center justify-center overflow-hidden">
+                                <div class="w-full h-[340px] sm:h-[380px] bg-slate-900 relative flex items-center justify-center overflow-hidden">
                                     <template x-if="imagePreview">
                                         <img :src="imagePreview" class="w-full h-full object-cover">
                                     </template>
                                     <template x-if="!imagePreview">
                                         <div class="text-center p-6 text-slate-600 space-y-2">
-                                            <span class="text-4xl block">🖼️</span>
+                                            <svg class="w-10 h-10 mx-auto text-slate-700" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
                                             <p class="text-xs font-semibold">Sua imagem ou carrossel aparecerá aqui em tempo real</p>
                                         </div>
                                     </template>
@@ -381,12 +393,12 @@
                 <div x-show="tab === 'feed_real'" class="space-y-6">
                     <div class="flex items-center justify-between">
                         <div>
-                            <h4 class="text-sm font-extrabold text-slate-800 uppercase tracking-wider">📸 Publicações do Perfil {{ '@' . $account->username }}</h4>
+                            <h4 class="text-sm font-extrabold text-slate-800 uppercase tracking-wider">Publicações do Perfil {{ '@' . $account->username }}</h4>
                             <p class="text-xs text-slate-500">Histórico oficial das mídias publicadas diretamente na sua conta do Instagram.</p>
                         </div>
                     </div>
 
-                    <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+                    <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
                         @forelse($liveInstagramPosts as $item)
                             @php
                                 $imgUrl = $item['media_url'] ?? ($item['thumbnail_url'] ?? null);
@@ -433,10 +445,10 @@
                                     @php
                                         $rawType = $item['media_type'] ?? 'IMAGE';
                                         $typeLabel = match(true) {
-                                            str_contains($rawType, 'CAROUSEL') => '🎡 CARROSSEL',
-                                            str_contains($rawType, 'VIDEO') || str_contains($rawType, 'REELS') => '📹 VÍDEO',
-                                            str_contains($rawType, 'STORY') => '📸 STORY',
-                                            default => '🖼️ FEED',
+                                            str_contains($rawType, 'CAROUSEL') => 'CARROSSEL',
+                                            str_contains($rawType, 'VIDEO') || str_contains($rawType, 'REELS') => 'VÍDEO',
+                                            str_contains($rawType, 'STORY') => 'STORY',
+                                            default => 'FEED',
                                         };
                                     @endphp
                                     <span class="absolute top-2 left-2 px-2.5 py-1 text-[9px] font-black uppercase tracking-wider rounded-md text-white bg-purple-600 shadow-md">
@@ -453,21 +465,32 @@
                                         <span class="text-[10px] text-slate-400 font-mono block">📅 {{ $timestamp }}</span>
                                     @endif
 
-                                    <div class="flex items-center gap-2 pt-2 border-t border-slate-100" @click.stop>
-                                        <a href="{{ $postUrl }}" target="_blank" class="flex-1 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 text-center font-bold text-[10px] rounded transition-all flex items-center justify-center gap-1">
-                                            <span>🔗 Ver no Instagram</span>
+                                    <div class="flex items-center gap-1.5 pt-2 border-t border-slate-100" @click.stop>
+                                        <a href="{{ $postUrl }}" target="_blank" title="Ver no Instagram" class="flex-1 py-1.5 px-2 bg-slate-100 hover:bg-slate-200 text-slate-700 text-center font-bold text-[10px] rounded transition-all flex items-center justify-center gap-1">
+                                            <svg class="w-3.5 h-3.5 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/></svg>
+                                            <span>Ver</span>
                                         </a>
                                         @if($imgUrl)
-                                            <button type="button" @click="useMediaBankImage('{{ $imgUrl }}')" class="py-1.5 px-3 bg-purple-50 hover:bg-purple-600 hover:text-white text-purple-700 font-bold text-[10px] rounded transition-all cursor-pointer">
-                                                🔄 Reutilizar
+                                            <button type="button" @click="useMediaBankImage('{{ $imgUrl }}')" title="Reutilizar Imagem" class="py-1.5 px-2 bg-purple-50 hover:bg-purple-600 hover:text-white text-purple-700 font-bold text-[10px] rounded transition-all flex items-center gap-1 cursor-pointer">
+                                                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>
+                                                <span>Reutilizar</span>
                                             </button>
+                                        @endif
+                                        @if(isset($item['db_id']))
+                                            <form action="{{ route('instagram.posts.destroy', $item['db_id']) }}" method="POST" class="inline">
+                                                @csrf
+                                                @method('DELETE')
+                                                <button type="submit" title="Excluir Mídia" class="py-1.5 px-2 bg-rose-50 hover:bg-rose-600 hover:text-white text-rose-600 font-bold text-[10px] rounded transition-all flex items-center justify-center cursor-pointer">
+                                                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
+                                                </button>
+                                            </form>
                                         @endif
                                     </div>
                                 </div>
                             </div>
                         @empty
                             <div class="col-span-full p-12 text-center bg-slate-50 border border-slate-200 rounded-xl text-slate-500 text-xs space-y-2">
-                                <span class="text-3xl block">📸</span>
+                                <svg class="w-10 h-10 mx-auto text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
                                 <p class="font-bold text-slate-700">Nenhuma publicação encontrada diretamente no feed do Instagram.</p>
                                 <p class="text-slate-500">Assim que você fizer publicações na conta {{ '@' . $account->username }}, elas aparecerão aqui automaticamente!</p>
                             </div>
@@ -479,7 +502,7 @@
                 <div x-show="tab === 'calendario'" class="space-y-6">
                     <div class="flex items-center justify-between">
                         <div>
-                            <h4 class="text-sm font-extrabold text-slate-800 uppercase tracking-wider">🗓️ Calendário Mensal de Publicações</h4>
+                            <h4 class="text-sm font-extrabold text-slate-800 uppercase tracking-wider">Calendário Mensal de Publicações</h4>
                             <p class="text-xs text-slate-500">Visualize seus posts agendados e publicados nas datas do mês.</p>
                         </div>
                     </div>
@@ -521,7 +544,7 @@
                                 <div class="space-y-1 my-1">
                                     @foreach($dayPosts as $dp)
                                         <div class="p-1 rounded text-[10px] font-bold border truncate flex items-center justify-between gap-1 {{ $dp->status === 'publicado' ? 'bg-emerald-50 text-emerald-700 border-emerald-200' : ($dp->status === 'erro' ? 'bg-rose-50 text-rose-700 border-rose-200' : 'bg-purple-50 text-purple-700 border-purple-200') }}">
-                                            <span class="truncate">{{ $dp->media_type === 'STORY' ? '📸 Story' : ($dp->media_type === 'CAROUSEL' ? '🎡 Carrossel' : '🖼️ Feed') }}</span>
+                                            <span class="truncate">{{ $dp->media_type === 'STORY' ? 'Story' : ($dp->media_type === 'CAROUSEL' ? 'Carrossel' : 'Feed') }}</span>
                                             <span>{{ $dp->scheduled_at ? $dp->scheduled_at->format('H:i') : '' }}</span>
                                         </div>
                                     @endforeach
@@ -535,11 +558,11 @@
                     </div>
                 </div>
 
-                <!-- 3. ABA: BANCO DE IMAGENS & HISTÓRICO -->
+                <!-- 4. ABA: BANCO DE IMAGENS & HISTÓRICO -->
                 <div x-show="tab === 'banco'" class="space-y-6">
                     <div class="flex items-center justify-between">
                         <div>
-                            <h4 class="text-sm font-extrabold text-slate-800 uppercase tracking-wider">🖼️ Banco de Imagens & Histórico de Mídias</h4>
+                            <h4 class="text-sm font-extrabold text-slate-800 uppercase tracking-wider">Banco de Imagens & Histórico de Mídias</h4>
                             <p class="text-xs text-slate-500">Todas as fotos enviadas e publicadas. Clique em "Reutilizar" para postar novamente.</p>
                         </div>
                     </div>
@@ -547,7 +570,8 @@
                     <div class="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4">
                         @forelse($posts as $p)
                             <div class="group bg-white border border-slate-200 rounded-xl overflow-hidden shadow-sm hover:shadow-md transition-all flex flex-col justify-between">
-                                <div class="relative h-36 bg-slate-900 overflow-hidden">
+                                <div class="relative h-36 bg-slate-900 overflow-hidden cursor-pointer"
+                                     @click="openLightbox({ caption: '{{ addslashes($p->caption) }}', likes: 0, comments: 0, date: '{{ optional($p->created_at)->format('d/m/Y') }}', media_type: '{{ $p->media_type }}' }, [ '{{ asset('storage/' . $p->media_path) }}' ])">
                                     @if($p->media_path)
                                         <img src="{{ asset('storage/' . $p->media_path) }}" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300">
                                     @else
@@ -563,14 +587,15 @@
                                     <p class="text-[11px] text-slate-600 line-clamp-2">{{ $p->caption ?: 'Sem legenda' }}</p>
                                     
                                     <div class="flex items-center gap-1.5 pt-2 border-t border-slate-100">
-                                        <button type="button" @click="useMediaBankImage('{{ asset('storage/' . $p->media_path) }}')" class="flex-1 py-1 bg-purple-50 hover:bg-purple-600 hover:text-white text-purple-700 font-bold text-[10px] rounded transition-all cursor-pointer">
-                                            🔄 Reutilizar
+                                        <button type="button" @click="useMediaBankImage('{{ asset('storage/' . $p->media_path) }}')" title="Reutilizar Imagem" class="flex-1 py-1 bg-purple-50 hover:bg-purple-600 hover:text-white text-purple-700 font-bold text-[10px] rounded transition-all flex items-center justify-center gap-1 cursor-pointer">
+                                            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>
+                                            <span>Reutilizar</span>
                                         </button>
                                         <form action="{{ route('instagram.posts.destroy', $p->id) }}" method="POST" class="inline">
                                             @csrf
                                             @method('DELETE')
-                                            <button type="submit" title="Excluir do Histórico" class="px-2.5 py-1 bg-rose-50 hover:bg-rose-600 hover:text-white text-rose-600 font-bold text-[10px] rounded transition-all cursor-pointer">
-                                                🗑️
+                                            <button type="submit" title="Excluir do Histórico" class="px-2 py-1 bg-rose-50 hover:bg-rose-600 hover:text-white text-rose-600 font-bold text-[10px] rounded transition-all flex items-center justify-center cursor-pointer">
+                                                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
                                             </button>
                                         </form>
                                     </div>
@@ -584,10 +609,10 @@
                     </div>
                 </div>
 
-                <!-- 4. ABA: CONFIGURAÇÕES & MARCAS D'ÁGUA (LOGO E SETA) -->
+                <!-- 5. ABA: CONFIGURAÇÕES & MARCAS D'ÁGUA (LOGO E SETA) -->
                 <div x-show="tab === 'marcas'" class="space-y-6">
                     <div>
-                        <h4 class="text-sm font-extrabold text-slate-800 uppercase tracking-wider">🏷️ Ícones de Sobreposição (Logo & Seta)</h4>
+                        <h4 class="text-sm font-extrabold text-slate-800 uppercase tracking-wider">Ícones de Sobreposição (Logo & Seta)</h4>
                         <p class="text-xs text-slate-500">Cadastre a sua marca d'água para aplicar automaticamente sobre as fotos antes da publicação.</p>
                     </div>
 
@@ -597,7 +622,8 @@
                         <!-- Card Upload Logo -->
                         <div class="p-5 bg-slate-50 border border-slate-200 rounded-xl space-y-3">
                             <h5 class="text-xs font-extrabold text-slate-800 uppercase tracking-wider flex items-center gap-2">
-                                <span>🎨</span> Ícone da Logo (Marca D'Água Topo)
+                                <svg class="w-4 h-4 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
+                                Ícone da Logo (Marca D'Água Topo)
                             </h5>
                             @if($settings->logo_path)
                                 <div class="h-20 bg-slate-900 rounded-lg p-2 flex items-center justify-center border border-slate-700">
@@ -610,7 +636,8 @@
                         <!-- Card Upload Seta -->
                         <div class="p-5 bg-slate-50 border border-slate-200 rounded-xl space-y-3">
                             <h5 class="text-xs font-extrabold text-slate-800 uppercase tracking-wider flex items-center gap-2">
-                                <span>➔</span> Ícone de Seta (Marca D'Água Rodapé)
+                                <svg class="w-4 h-4 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3"/></svg>
+                                Ícone de Seta (Marca D'Água Rodapé)
                             </h5>
                             @if($settings->arrow_path)
                                 <div class="h-20 bg-slate-900 rounded-lg p-2 flex items-center justify-center border border-slate-700">
@@ -622,7 +649,7 @@
 
                         <div class="md:col-span-2">
                             <button type="submit" class="px-6 py-2.5 bg-purple-600 hover:bg-purple-700 text-white font-bold text-xs rounded-lg shadow-md transition-all cursor-pointer">
-                                💾 Salvar Ícones de Marca D'Água
+                                Salvar Ícones de Marca D'Água
                             </button>
                         </div>
                     </form>
@@ -631,121 +658,123 @@
         </div>
     @endif
 
-    <!-- LIGHTBOX SMARTPHONE MODAL COM PREVIEW 3D CARROSSEL & OPACIDADE GRADUAL NAS BORDAS -->
-    <div x-show="lightboxOpen" 
-         x-cloak 
-         @keydown.escape.window="lightboxOpen = false"
-         class="fixed top-0 left-0 right-0 bottom-0 w-screen h-screen z-[99999] flex items-center justify-center p-4 bg-slate-950/90 backdrop-blur-xl transition-all">
-        
-        <!-- Botão Fechar Modal (ESC) -->
-        <button @click="lightboxOpen = false" class="absolute top-4 right-4 md:top-6 md:right-6 w-11 h-11 rounded-full bg-slate-800/90 hover:bg-slate-700 text-white font-black text-xl flex items-center justify-center border border-slate-700 shadow-2xl transition-all cursor-pointer z-50">
-            ✕
-        </button>
+    <!-- LIGHTBOX TELEPORTADO PARA BODY COM TOTAL OVERLAY SEM MARGEM -->
+    <template x-teleport="body">
+        <div x-show="lightboxOpen" 
+             x-cloak 
+             @keydown.escape.window="lightboxOpen = false"
+             class="fixed inset-0 top-0 left-0 right-0 bottom-0 w-screen h-screen z-[999999] flex items-center justify-center p-4 bg-slate-950/90 backdrop-blur-xl transition-all">
+            
+            <!-- Botão Fechar Modal (ESC) -->
+            <button @click="lightboxOpen = false" class="absolute top-4 right-4 md:top-6 md:right-6 w-11 h-11 rounded-full bg-slate-800/90 hover:bg-slate-700 text-white font-black text-xl flex items-center justify-center border border-slate-700 shadow-2xl transition-all cursor-pointer z-50">
+                ✕
+            </button>
 
-        <div class="relative flex items-center justify-center w-full max-w-[95vw] md:max-w-4xl" @click.outside="lightboxOpen = false">
+            <div class="relative flex items-center justify-center w-full max-w-[95vw] md:max-w-4xl" @click.outside="lightboxOpen = false">
 
-            <!-- SLIDE ANTERIOR (ENCOSTADO NA BORDA ESQUERDA COM FADE GRADUAL DE OPACIDADE) -->
-            <div x-show="lightboxSlideIndex > 0" 
-                 @click.stop="prevLightboxSlide()"
-                 x-transition:enter="transition ease-out duration-300 transform"
-                 x-transition:enter-start="opacity-0 -translate-x-6 scale-90"
-                 x-transition:enter-end="opacity-100 translate-x-0 scale-95"
-                 class="hidden lg:block absolute -left-52 z-10 w-52 h-[420px] rounded-3xl bg-slate-900 border border-white/10 shadow-2xl overflow-hidden cursor-pointer group transition-all duration-300 scale-95 hover:scale-100"
-                 style="mask-image: linear-gradient(to right, transparent 0%, rgba(0,0,0,0.6) 40%, black 100%); -webkit-mask-image: linear-gradient(to right, transparent 0%, rgba(0,0,0,0.6) 40%, black 100%);">
-                <template x-if="lightboxSlides[lightboxSlideIndex - 1]">
-                    <img :src="lightboxSlides[lightboxSlideIndex - 1]" class="w-full h-full object-cover opacity-60 group-hover:opacity-100 transition-opacity duration-300">
-                </template>
-            </div>
-
-            <!-- ESTRUTURA DO CELULAR (MOCKUP MODERNO E PROPORCIONAL) -->
-            <div class="w-[320px] sm:w-[360px] md:w-[380px] bg-black text-white rounded-[48px] p-3.5 shadow-2xl border-4 border-slate-800 relative z-20 overflow-hidden shadow-purple-950/40">
-                
-                <!-- Smartphone Notch Header -->
-                <div class="w-32 h-4 bg-slate-900 rounded-b-xl mx-auto mb-2 flex items-center justify-center">
-                    <div class="w-3 h-3 rounded-full bg-slate-800"></div>
+                <!-- SLIDE ANTERIOR (ENCOSTADO NA BORDA ESQUERDA DO CELULAR) -->
+                <div x-show="lightboxSlideIndex > 0" 
+                     @click.stop="prevLightboxSlide()"
+                     x-transition:enter="transition ease-out duration-300 transform"
+                     x-transition:enter-start="opacity-0 translate-x-4 scale-90"
+                     x-transition:enter-end="opacity-100 translate-x-0 scale-95"
+                     class="hidden lg:block absolute -left-36 z-10 w-44 h-[420px] rounded-3xl bg-slate-900 border border-white/10 shadow-2xl overflow-hidden cursor-pointer group transition-all duration-300 scale-95 hover:scale-100"
+                     style="mask-image: linear-gradient(to right, transparent 0%, rgba(0,0,0,0.8) 50%, black 100%); -webkit-mask-image: linear-gradient(to right, transparent 0%, rgba(0,0,0,0.8) 50%, black 100%);">
+                    <template x-if="lightboxSlides[lightboxSlideIndex - 1]">
+                        <img :src="lightboxSlides[lightboxSlideIndex - 1]" class="w-full h-full object-cover opacity-60 group-hover:opacity-100 transition-opacity duration-300">
+                    </template>
                 </div>
 
-                <!-- Instagram App Header -->
-                <div class="flex items-center justify-between px-3 py-2 border-b border-slate-800">
-                    <div class="flex items-center gap-2.5">
-                        <img src="{{ $account->profile_picture_url ?: 'https://ui-avatars.com/api/?name=' . urlencode($account->username) }}" class="w-8 h-8 rounded-full border border-purple-500 object-cover">
-                        <div>
-                            <span class="text-xs font-bold text-white block leading-tight" x-text="'{{ '@' . $account->username }}'"></span>
-                            <span class="text-[9px] text-slate-400 font-mono block" x-text="lightboxPost?.date || ''"></span>
-                        </div>
+                <!-- ESTRUTURA DO CELULAR (MOCKUP MODERNO E PROPORCIONAL) -->
+                <div class="w-[320px] sm:w-[360px] bg-black text-white rounded-[48px] p-3.5 shadow-2xl border-4 border-slate-800 relative z-20 overflow-hidden shadow-purple-950/50">
+                    
+                    <!-- Smartphone Notch Header -->
+                    <div class="w-32 h-4 bg-slate-900 rounded-b-xl mx-auto mb-2 flex items-center justify-center">
+                        <div class="w-3 h-3 rounded-full bg-slate-800"></div>
                     </div>
-                    <template x-if="lightboxPost?.permalink">
-                        <a :href="lightboxPost.permalink" target="_blank" title="Abrir no Instagram" class="text-xs text-purple-400 hover:text-purple-300 font-bold">
-                            🔗
-                        </a>
-                    </template>
-                </div>
 
-                <!-- Instagram Viewport Screen (Altura Moderna Proporcional) -->
-                <div class="w-full h-[380px] sm:h-[420px] bg-slate-900 relative flex items-center justify-center overflow-hidden group">
-                    <template x-for="(slide, idx) in lightboxSlides" :key="idx">
-                        <div x-show="lightboxSlideIndex === idx"
-                             x-transition:enter="transition ease-out duration-400 transform"
-                             x-transition:enter-start="opacity-0 scale-105"
-                             x-transition:enter-end="opacity-100 scale-100"
-                             x-transition:leave="transition ease-in duration-200 transform"
-                             x-transition:leave-start="opacity-100 scale-100"
-                             x-transition:leave-end="opacity-0 scale-95"
-                             class="absolute inset-0 w-full h-full">
-                            <img :src="slide" class="w-full h-full object-cover">
+                    <!-- Instagram App Header -->
+                    <div class="flex items-center justify-between px-3 py-2 border-b border-slate-800">
+                        <div class="flex items-center gap-2.5">
+                            <img src="{{ $account->profile_picture_url ?: 'https://ui-avatars.com/api/?name=' . urlencode($account->username) }}" class="w-8 h-8 rounded-full border border-purple-500 object-cover">
+                            <div>
+                                <span class="text-xs font-bold text-white block leading-tight" x-text="'{{ '@' . $account->username }}'"></span>
+                                <span class="text-[9px] text-slate-400 font-mono block" x-text="lightboxPost?.date || ''"></span>
+                            </div>
                         </div>
-                    </template>
-
-                    <!-- Setas Internas de Navegação -->
-                    <button x-show="lightboxSlideIndex > 0" @click.stop="prevLightboxSlide()" class="absolute left-2.5 z-30 w-8 h-8 rounded-full bg-black/60 text-white font-black text-sm flex items-center justify-center shadow hover:bg-black/90 transition-all cursor-pointer">
-                        ❮
-                    </button>
-                    <button x-show="lightboxSlideIndex < lightboxSlides.length - 1" @click.stop="nextLightboxSlide()" class="absolute right-2.5 z-30 w-8 h-8 rounded-full bg-black/60 text-white font-black text-sm flex items-center justify-center shadow hover:bg-black/90 transition-all cursor-pointer">
-                        ❯
-                    </button>
-
-                    <!-- Indicador de Posição de Slides / Dots -->
-                    <template x-if="lightboxSlides.length > 1">
-                        <div class="absolute bottom-2.5 left-0 right-0 z-30 flex items-center justify-center gap-1.5">
-                            <template x-for="(slide, idx) in lightboxSlides" :key="idx">
-                                <span :class="idx === lightboxSlideIndex ? 'bg-purple-500 w-2.5 h-2.5 scale-110' : 'bg-white/40 w-1.5 h-1.5'" class="rounded-full transition-all"></span>
-                            </template>
-                        </div>
-                    </template>
-                </div>
-
-                <!-- Instagram Likes & Comments Bar -->
-                <div class="px-3 py-2 flex items-center justify-between text-slate-300 border-b border-slate-900">
-                    <div class="flex items-center gap-4 text-xs font-bold">
-                        <span class="flex items-center gap-1 text-rose-500">❤️ <span x-text="lightboxPost?.likes || 0"></span></span>
-                        <span class="flex items-center gap-1 text-slate-300">💬 <span x-text="lightboxPost?.comments || 0"></span></span>
+                        <template x-if="lightboxPost?.permalink">
+                            <a :href="lightboxPost.permalink" target="_blank" title="Abrir no Instagram" class="text-xs text-purple-400 hover:text-purple-300 font-bold">
+                                <svg class="w-4 h-4 text-purple-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/></svg>
+                            </a>
+                        </template>
                     </div>
-                    <span class="text-xs font-black uppercase text-purple-400 tracking-wider" x-text="formatMediaType(lightboxPost?.media_type)"></span>
+
+                    <!-- Instagram Viewport Screen (Altura Moderna Proporcional) -->
+                    <div class="w-full h-[380px] sm:h-[420px] bg-slate-900 relative flex items-center justify-center overflow-hidden group">
+                        <template x-for="(slide, idx) in lightboxSlides" :key="idx">
+                            <div x-show="lightboxSlideIndex === idx"
+                                 x-transition:enter="transition ease-out duration-400 transform"
+                                 x-transition:enter-start="opacity-0 scale-105"
+                                 x-transition:enter-end="opacity-100 scale-100"
+                                 x-transition:leave="transition ease-in duration-200 transform"
+                                 x-transition:leave-start="opacity-100 scale-100"
+                                 x-transition:leave-end="opacity-0 scale-95"
+                                 class="absolute inset-0 w-full h-full">
+                                <img :src="slide" class="w-full h-full object-cover">
+                            </div>
+                        </template>
+
+                        <!-- Setas Internas de Navegação -->
+                        <button x-show="lightboxSlideIndex > 0" @click.stop="prevLightboxSlide()" class="absolute left-2.5 z-30 w-8 h-8 rounded-full bg-black/60 text-white font-black text-sm flex items-center justify-center shadow hover:bg-black/90 transition-all cursor-pointer">
+                            ❮
+                        </button>
+                        <button x-show="lightboxSlideIndex < lightboxSlides.length - 1" @click.stop="nextLightboxSlide()" class="absolute right-2.5 z-30 w-8 h-8 rounded-full bg-black/60 text-white font-black text-sm flex items-center justify-center shadow hover:bg-black/90 transition-all cursor-pointer">
+                            ❯
+                        </button>
+
+                        <!-- Indicador de Posição de Slides / Dots -->
+                        <template x-if="lightboxSlides.length > 1">
+                            <div class="absolute bottom-2.5 left-0 right-0 z-30 flex items-center justify-center gap-1.5">
+                                <template x-for="(slide, idx) in lightboxSlides" :key="idx">
+                                    <span :class="idx === lightboxSlideIndex ? 'bg-purple-500 w-2.5 h-2.5 scale-110' : 'bg-white/40 w-1.5 h-1.5'" class="rounded-full transition-all"></span>
+                                </template>
+                            </div>
+                        </template>
+                    </div>
+
+                    <!-- Instagram Likes & Comments Bar -->
+                    <div class="px-3 py-2 flex items-center justify-between text-slate-300 border-b border-slate-900">
+                        <div class="flex items-center gap-4 text-xs font-bold">
+                            <span class="flex items-center gap-1 text-rose-500">❤️ <span x-text="lightboxPost?.likes || 0"></span></span>
+                            <span class="flex items-center gap-1 text-slate-300">💬 <span x-text="lightboxPost?.comments || 0"></span></span>
+                        </div>
+                        <span class="text-xs font-black uppercase text-purple-400 tracking-wider" x-text="formatMediaType(lightboxPost?.media_type)"></span>
+                    </div>
+
+                    <!-- Instagram Caption Box -->
+                    <div class="px-3 py-3 max-h-28 overflow-y-auto space-y-1 text-xs">
+                        <p class="text-slate-200 text-[11px] leading-relaxed break-words">
+                            <strong class="text-white font-bold" x-text="'{{ '@' . $account->username }}'"></strong>
+                            <span x-text="lightboxPost?.caption || 'Sem legenda'"></span>
+                        </p>
+                    </div>
                 </div>
 
-                <!-- Instagram Caption Box -->
-                <div class="px-3 py-3 max-h-28 overflow-y-auto space-y-1 text-xs">
-                    <p class="text-slate-200 text-[11px] leading-relaxed break-words">
-                        <strong class="text-white font-bold" x-text="'{{ '@' . $account->username }}'"></strong>
-                        <span x-text="lightboxPost?.caption || 'Sem legenda'"></span>
-                    </p>
+                <!-- SLIDE PRÓXIMO (ENCOSTADO NA BORDA DIREITA DO CELULAR) -->
+                <div x-show="lightboxSlideIndex < lightboxSlides.length - 1" 
+                     @click.stop="nextLightboxSlide()"
+                     x-transition:enter="transition ease-out duration-300 transform"
+                     x-transition:enter-start="opacity-0 -translate-x-4 scale-90"
+                     x-transition:enter-end="opacity-100 translate-x-0 scale-95"
+                     class="hidden lg:block absolute -right-36 z-10 w-44 h-[420px] rounded-3xl bg-slate-900 border border-white/10 shadow-2xl overflow-hidden cursor-pointer group transition-all duration-300 scale-95 hover:scale-100"
+                     style="mask-image: linear-gradient(to left, transparent 0%, rgba(0,0,0,0.8) 50%, black 100%); -webkit-mask-image: linear-gradient(to left, transparent 0%, rgba(0,0,0,0.8) 50%, black 100%);">
+                    <template x-if="lightboxSlides[lightboxSlideIndex + 1]">
+                        <img :src="lightboxSlides[lightboxSlideIndex + 1]" class="w-full h-full object-cover opacity-60 group-hover:opacity-100 transition-opacity duration-300">
+                    </template>
                 </div>
-            </div>
 
-            <!-- SLIDE PRÓXIMO (ENCOSTADO NA BORDA DIREITA COM FADE GRADUAL DE OPACIDADE) -->
-            <div x-show="lightboxSlideIndex < lightboxSlides.length - 1" 
-                 @click.stop="nextLightboxSlide()"
-                 x-transition:enter="transition ease-out duration-300 transform"
-                 x-transition:enter-start="opacity-0 translate-x-6 scale-90"
-                 x-transition:enter-end="opacity-100 translate-x-0 scale-95"
-                 class="hidden lg:block absolute -right-52 z-10 w-52 h-[420px] rounded-3xl bg-slate-900 border border-white/10 shadow-2xl overflow-hidden cursor-pointer group transition-all duration-300 scale-95 hover:scale-100"
-                 style="mask-image: linear-gradient(to left, transparent 0%, rgba(0,0,0,0.6) 40%, black 100%); -webkit-mask-image: linear-gradient(to left, transparent 0%, rgba(0,0,0,0.6) 40%, black 100%);">
-                <template x-if="lightboxSlides[lightboxSlideIndex + 1]">
-                    <img :src="lightboxSlides[lightboxSlideIndex + 1]" class="w-full h-full object-cover opacity-60 group-hover:opacity-100 transition-opacity duration-300">
-                </template>
             </div>
-
         </div>
-    </div>
+    </template>
 </div>
 @endsection
