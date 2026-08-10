@@ -43,4 +43,10 @@ return [
         'redirect_uri' => env('GOOGLE_DRIVE_REDIRECT_URI'),
     ],
 
+    'instagram' => [
+        'client_id' => env('INSTAGRAM_CLIENT_ID'),
+        'client_secret' => env('INSTAGRAM_CLIENT_SECRET'),
+        'redirect_uri' => env('INSTAGRAM_REDIRECT_URI'),
+    ],
+
 ];

@@ -228,6 +228,13 @@ Route::middleware(['auth', 'approved'])->prefix('freelas')->group(function () {
         // Histórico de Notificações
         Route::get('/utilidades/notificacoes', [\App\Http\Controllers\NotificationController::class, 'index'])->name('notifications.index');
         Route::post('/utilidades/notificacoes/lidas', [\App\Http\Controllers\NotificationController::class, 'markAllAsRead'])->name('notifications.read-all');
+
+        // Utilidades - Instagram / Mídia Social
+        Route::get('/utilidades/instagram', [\App\Http\Controllers\InstagramController::class, 'index'])->name('instagram.index');
+        Route::get('/instagram/connect', [\App\Http\Controllers\InstagramController::class, 'connect'])->name('instagram.connect');
+        Route::get('/instagram/callback', [\App\Http\Controllers\InstagramController::class, 'callback'])->name('instagram.callback');
+        Route::delete('/instagram/{account}', [\App\Http\Controllers\InstagramController::class, 'disconnect'])->name('instagram.disconnect');
+        Route::post('/utilidades/instagram/posts', [\App\Http\Controllers\InstagramController::class, 'storePost'])->name('instagram.posts.store');
         Route::delete('/utilidades/notificacoes/limpar', [\App\Http\Controllers\NotificationController::class, 'destroyAll'])->name('notifications.destroy-all');
         Route::delete('/utilidades/notificacoes/{notification}', [\App\Http\Controllers\NotificationController::class, 'destroy'])->name('notifications.destroy');
 

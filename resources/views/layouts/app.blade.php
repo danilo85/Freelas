@@ -567,10 +567,10 @@
                 </div>
 
                 <!-- Dropdown: Utilidades -->
-                <div x-data="{ open: {{ (request()->routeIs('revisoes.*')) ? 'true' : 'false' }} }" class="space-y-1">
+                <div x-data="{ open: {{ (request()->routeIs('revisoes.*') || request()->routeIs('instagram.*') || request()->routeIs('revisoes-editoriais.*') || request()->routeIs('lembretes.*')) ? 'true' : 'false' }} }" class="space-y-1">
                     <button @click="open = !open" class="flex items-center justify-between w-full px-4 py-2.5 rounded-[5px] text-sm font-medium transition-colors text-slate-400 hover:text-white hover:bg-slate-800 focus:outline-none" :class="open ? 'text-white bg-slate-800/50' : ''">
                         <div class="flex items-center gap-3">
-                            <svg class="w-5 h-5 {{ (request()->routeIs('revisoes.*')) ? 'text-primary-500' : 'text-slate-400' }}" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <svg class="w-5 h-5 {{ (request()->routeIs('revisoes.*') || request()->routeIs('instagram.*') || request()->routeIs('revisoes-editoriais.*') || request()->routeIs('lembretes.*')) ? 'text-primary-500' : 'text-slate-400' }}" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"></path>
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
                             </svg>
@@ -581,6 +581,9 @@
                         </svg>
                     </button>
                     <div x-show="open" class="pl-9 space-y-1" style="display: none;" :style="open ? 'display: block;' : 'display: none;'">
+                        <a href="{{ route('instagram.index') }}" class="block py-2 px-3 text-xs font-semibold rounded-[5px] transition-colors {{ request()->routeIs('instagram.*') ? 'text-white bg-slate-850' : 'text-slate-400 hover:text-white' }}">
+                            📸 Instagram & Mídia Social
+                        </a>
                         <a href="{{ route('revisoes.index') }}" class="block py-2 px-3 text-xs font-semibold rounded-[5px] transition-colors {{ request()->routeIs('revisoes.index') || request()->routeIs('revisoes.show') ? 'text-white bg-slate-850' : 'text-slate-400 hover:text-white' }}">
                             Revisão de Trabalhos
                         </a>
