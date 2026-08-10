@@ -74,13 +74,10 @@ class InstagramController extends Controller
 
             return view('instagram.index', compact('accounts', 'account', 'posts', 'settings', 'liveInstagramPosts'));
         } catch (\Throwable $e) {
-            Log::error('FATAL Error in InstagramController@index: ' . $e->getMessage());
-            $accounts = collect();
-            $account = null;
-            $posts = collect();
-            $settings = null;
-            $liveInstagramPosts = [];
-            return view('instagram.index', compact('accounts', 'account', 'posts', 'settings', 'liveInstagramPosts'));
+            Log::error('FATAL Error in InstagramController@index: ' . $e->getMessage() . ' | ' . $e->getTraceAsString());
+            
+            // Exibe o erro exato na tela para diagnosticar e resolver na Hostinger
+            return response('<div style="padding:40px; font-family:sans-serif; background:#0f172a; color:#f87171; border-radius:12px; margin:40px;"><h2 style="color:#ef4444; margin-bottom:10px;">⚠️ Erro de Execução no Servidor (Instagram):</h2><p style="color:#f1f5f9; font-weight:bold; font-size:16px;">' . htmlspecialchars($e->getMessage()) . '</p><pre style="background:#1e293b; color:#94a3b8; padding:15px; border-radius:8px; overflow:auto; font-size:12px;">' . htmlspecialchars($e->getTraceAsString()) . '</pre></div>', 500);
         }
     }
 
