@@ -107,119 +107,88 @@ class InstagramController extends Controller
             $redirectUri = $this->getRedirectUri();
             $code = $request->get('code');
 
-            // 1. Tenta trocar o código via Meta Graph API (Facebook Login)
-            $response = Http::get('https://graph.facebook.com/v19.0/oauth/access_token', [
+            // 1. Troca o código via Meta Graph API (Facebook Login)
+            $response = Http::asForm()->post('https://graph.facebook.com/v19.0/oauth/access_token', [
                 'client_id' => $appId,
                 'client_secret' => $appSecret,
                 'redirect_uri' => $redirectUri,
                 'code' => $code,
             ]);
 
-            if ($response->successful()) {
-                $shortToken = $response->json('access_token');
-
-                // Troca por Long-Lived Token (60 dias)
-                $tokenResp = Http::get('https://graph.facebook.com/v19.0/oauth/access_token', [
-                    'grant_type' => 'fb_exchange_token',
+            if ($response->failed()) {
+                // Tenta fallback via GET
+                $response = Http::get('https://graph.facebook.com/v19.0/oauth/access_token', [
                     'client_id' => $appId,
                     'client_secret' => $appSecret,
-                    'fb_exchange_token' => $shortToken,
+                    'redirect_uri' => $redirectUri,
+                    'code' => $code,
                 ]);
-
-                $longToken = $tokenResp->json('access_token', $shortToken);
-
-                // Busca as páginas do Facebook e conta do Instagram vinculada
-                $pagesResp = Http::get("https://graph.facebook.com/v19.0/me/accounts", [
-                    'access_token' => $longToken,
-                    'fields' => 'id,name,instagram_business_account{id,username,name,profile_picture_url}'
-                ]);
-
-                $pages = $pagesResp->json('data', []);
-                $igAccountData = null;
-                $facebookPageId = null;
-
-                $connectedCount = 0;
-                $lastUsername = '';
-
-                foreach ($pages as $page) {
-                    if (isset($page['instagram_business_account'])) {
-                        $igAccountData = $page['instagram_business_account'];
-                        $facebookPageId = $page['id'];
-                        $lastUsername = $igAccountData['username'] ?? '';
-
-                        InstagramAccount::updateOrCreate(
-                            ['instagram_account_id' => $igAccountData['id']],
-                            [
-                                'user_id' => auth()->id(),
-                                'facebook_page_id' => $facebookPageId,
-                                'username' => $igAccountData['username'] ?? 'instagram_user',
-                                'name' => $igAccountData['name'] ?? null,
-                                'profile_picture_url' => $igAccountData['profile_picture_url'] ?? null,
-                                'access_token' => $longToken,
-                                'token_expires_at' => now()->addDays(60),
-                                'is_active' => true,
-                            ]
-                        );
-                        $connectedCount++;
-                    }
-                }
-
-                if ($connectedCount > 0) {
-                    $msg = $connectedCount === 1 
-                        ? '🎉 Conta do Instagram @' . $lastUsername . ' conectada com sucesso!' 
-                        : '🎉 ' . $connectedCount . ' contas do Instagram conectadas com sucesso!';
-                    return redirect()->route('instagram.index')->with('success', $msg);
-                }
             }
 
-            // 2. Se falhar, tenta o fluxo direto do Instagram API (Instagram Business Login)
-            $responseDirect = Http::asForm()->post('https://api.instagram.com/oauth/access_token', [
+            if ($response->failed()) {
+                $err = $response->json('error.message', 'Erro ao obter token da Meta.');
+                Log::error('Erro no token exchange do Facebook: ' . $response->body());
+                return redirect()->route('instagram.index')->with('error', 'Erro ao autenticar com a Meta: ' . $err);
+            }
+
+            $shortToken = $response->json('access_token');
+
+            // 2. Troca por Long-Lived Token (60 dias)
+            $tokenResp = Http::get('https://graph.facebook.com/v19.0/oauth/access_token', [
+                'grant_type' => 'fb_exchange_token',
                 'client_id' => $appId,
                 'client_secret' => $appSecret,
-                'grant_type' => 'authorization_code',
-                'redirect_uri' => $redirectUri,
-                'code' => $code,
+                'fb_exchange_token' => $shortToken,
             ]);
 
-            if ($responseDirect->successful()) {
-                $shortToken = $responseDirect->json('access_token');
-                $userIgId = $responseDirect->json('user_id');
+            $longToken = $tokenResp->json('access_token', $shortToken);
 
-                $tokenResp = Http::get('https://graph.instagram.com/access_token', [
-                    'grant_type' => 'ig_exchange_token',
-                    'client_secret' => $appSecret,
-                    'access_token' => $shortToken,
-                ]);
+            // 3. Busca as páginas do Facebook e contas do Instagram vinculadas
+            $pagesResp = Http::get("https://graph.facebook.com/v19.0/me/accounts", [
+                'access_token' => $longToken,
+                'fields' => 'id,name,instagram_business_account{id,username,name,profile_picture_url}'
+            ]);
 
-                $longToken = $tokenResp->json('access_token', $shortToken);
-
-                $profileResp = Http::get("https://graph.instagram.com/v19.0/me", [
-                    'fields' => 'id,username,name,profile_picture_url',
-                    'access_token' => $longToken,
-                ]);
-
-                $profileData = $profileResp->json();
-                $igAccountId = $profileData['id'] ?? $userIgId;
-                $username = $profileData['username'] ?? 'danilomigueldesigner';
-
-                InstagramAccount::updateOrCreate(
-                    ['instagram_account_id' => $igAccountId],
-                    [
-                        'user_id' => auth()->id(),
-                        'username' => $username,
-                        'name' => $profileData['name'] ?? $username,
-                        'profile_picture_url' => $profileData['profile_picture_url'] ?? null,
-                        'access_token' => $longToken,
-                        'token_expires_at' => now()->addDays(60),
-                        'is_active' => true,
-                    ]
-                );
-
-                return redirect()->route('instagram.index')->with('success', '🎉 Conta do Instagram @' . $username . ' conectada com sucesso!');
+            if ($pagesResp->failed()) {
+                Log::error('Erro ao buscar páginas do Facebook: ' . $pagesResp->body());
+                return redirect()->route('instagram.index')->with('error', 'Erro ao buscar páginas do Facebook: ' . $pagesResp->json('error.message', 'Falha na requisição.'));
             }
 
-            Log::error('Erro ao trocar código por token Meta/Instagram: ' . $response->body() . ' | ' . $responseDirect->body());
-            return redirect()->route('instagram.index')->with('error', 'Erro ao obter token do Instagram: ' . ($response->json('error.message') ?? $responseDirect->json('error_message', 'Falha na autenticação.')));
+            $pages = $pagesResp->json('data', []);
+            $connectedCount = 0;
+            $lastUsername = '';
+
+            foreach ($pages as $page) {
+                if (isset($page['instagram_business_account'])) {
+                    $igAccountData = $page['instagram_business_account'];
+                    $facebookPageId = $page['id'];
+                    $lastUsername = $igAccountData['username'] ?? '';
+
+                    InstagramAccount::updateOrCreate(
+                        ['instagram_account_id' => $igAccountData['id']],
+                        [
+                            'user_id' => auth()->id(),
+                            'facebook_page_id' => $facebookPageId,
+                            'username' => $igAccountData['username'] ?? 'instagram_user',
+                            'name' => $igAccountData['name'] ?? null,
+                            'profile_picture_url' => $igAccountData['profile_picture_url'] ?? null,
+                            'access_token' => $longToken,
+                            'token_expires_at' => now()->addDays(60),
+                            'is_active' => true,
+                        ]
+                    );
+                    $connectedCount++;
+                }
+            }
+
+            if ($connectedCount > 0) {
+                $msg = $connectedCount === 1 
+                    ? '🎉 Conta do Instagram @' . $lastUsername . ' conectada com sucesso!' 
+                    : '🎉 ' . $connectedCount . ' contas do Instagram conectadas com sucesso!';
+                return redirect()->route('instagram.index')->with('success', $msg);
+            }
+
+            return redirect()->route('instagram.index')->with('error', 'Nenhuma conta profissional do Instagram vinculada às suas Páginas do Facebook foi selecionada. Certifique-se de que sua conta do Instagram é Profissional e está conectada a uma Página do Facebook.');
 
         } catch (\Exception $e) {
             Log::error('Erro no callback do Instagram: ' . $e->getMessage());
@@ -296,15 +265,6 @@ class InstagramController extends Controller
             ]);
 
             if ($containerResp->failed()) {
-                // Tenta via Graph Instagram API
-                $containerResp = Http::post("https://graph.instagram.com/v19.0/{$account->instagram_account_id}/media", [
-                    'image_url' => $publicImageUrl,
-                    'caption' => $post->caption,
-                    'access_token' => $account->access_token,
-                ]);
-            }
-
-            if ($containerResp->failed()) {
                 $err = $containerResp->json('error.message', 'Erro ao enviar imagem ao Instagram.');
                 Log::error('Erro container Instagram: ' . $containerResp->body());
                 $post->update(['status' => 'erro', 'error_message' => $err]);
@@ -318,13 +278,6 @@ class InstagramController extends Controller
                 'creation_id' => $containerId,
                 'access_token' => $account->access_token,
             ]);
-
-            if ($publishResp->failed()) {
-                $publishResp = Http::post("https://graph.instagram.com/v19.0/{$account->instagram_account_id}/media_publish", [
-                    'creation_id' => $containerId,
-                    'access_token' => $account->access_token,
-                ]);
-            }
 
             if ($publishResp->failed()) {
                 $err = $publishResp->json('error.message', 'Erro ao publicar no Instagram.');
