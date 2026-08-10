@@ -480,14 +480,17 @@ class InstagramController extends Controller
             }
         }
 
-        if ($post) {
-            if ($post->media_path) {
-                Storage::disk('public')->delete($post->media_path);
-            }
-            $post->delete();
+        if (request()->wantsJson() || request()->ajax()) {
+            return response()->json([
+                'success' => true,
+                'message' => 'Postagem excluída com sucesso.',
+                'media_id' => $mediaIdToDelete,
+                'db_id' => $post ? $post->id : null
+            ]);
         }
 
-        return redirect()->route('instagram.index')->with('info', 'Postagem excluída com sucesso.');
+        $tab = request()->get('tab', 'feed_real');
+        return redirect()->route('instagram.index', ['tab' => $tab])->with('info', 'Postagem excluída com sucesso.');
     }
 
     /**
