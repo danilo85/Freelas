@@ -470,27 +470,49 @@ class InstagramController extends Controller
             ? $post->instagramAccount->access_token 
             : ($account ? $account->access_token : null);
 
+        $metaDeleted = false;
+        $metaErrorMsg = null;
+
         if ($mediaIdToDelete && $accessToken) {
             try {
-                Http::delete("https://graph.facebook.com/v19.0/{$mediaIdToDelete}", [
+                $res = Http::delete("https://graph.facebook.com/v19.0/{$mediaIdToDelete}", [
                     'access_token' => $accessToken,
                 ]);
+
+                if ($res->successful()) {
+                    $metaDeleted = true;
+                } else {
+                    $metaErrorMsg = $res->json('error.message', 'O Instagram proíbe a exclusão de mídias já publicadas através da API externa.');
+                    Log::info('Meta API Delete Response:', $res->json());
+                }
             } catch (\Exception $e) {
                 Log::error('Erro ao excluir mídia na API do Instagram: ' . $e->getMessage());
             }
         }
 
+        if ($post) {
+            if ($post->media_path) {
+                Storage::disk('public')->delete($post->media_path);
+            }
+            $post->delete();
+        }
+
         if (request()->wantsJson() || request()->ajax()) {
             return response()->json([
                 'success' => true,
-                'message' => 'Postagem excluída com sucesso.',
+                'meta_deleted' => $metaDeleted,
+                'meta_error' => $metaErrorMsg,
+                'message' => $metaDeleted ? 'Postagem excluída com sucesso.' : ($metaErrorMsg ?: 'Postagem removida do sistema local.'),
                 'media_id' => $mediaIdToDelete,
                 'db_id' => $post ? $post->id : null
             ]);
         }
 
         $tab = request()->get('tab', 'feed_real');
-        return redirect()->route('instagram.index', ['tab' => $tab])->with('info', 'Postagem excluída com sucesso.');
+        $msgType = $metaDeleted ? 'success' : 'info';
+        $msgContent = $metaDeleted ? 'Postagem excluída com sucesso do Instagram!' : 'Nota: Por políticas de segurança da Meta, posts já publicados no perfil não podem ser apagados via API externa. Apague diretamente no aplicativo do Instagram.';
+
+        return redirect()->route('instagram.index', ['tab' => $tab])->with($msgType, $msgContent);
     }
 
     /**

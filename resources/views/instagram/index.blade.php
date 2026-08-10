@@ -840,7 +840,9 @@ document.addEventListener('alpine:init', () => {
                     body: JSON.stringify({ _method: 'DELETE' })
                 });
 
-                if (res.ok) {
+                const data = await res.json();
+
+                if (res.ok && data.success) {
                     if (this.targetCardElement) {
                         this.targetCardElement.style.transition = 'all 0.3s ease-out';
                         this.targetCardElement.style.opacity = '0';
@@ -848,8 +850,9 @@ document.addEventListener('alpine:init', () => {
                         setTimeout(() => {
                             this.targetCardElement.remove();
                         }, 300);
-                    } else {
-                        window.location.reload();
+                    }
+                    if (data.meta_error) {
+                        alert('ℹ️ Aviso da API do Instagram:\n\n' + data.meta_error + '\n\nPor regras de segurança da Meta, posts já publicados não podem ser excluídos via sistemas externos. Para remover do perfil público, abra o app do Instagram e selecione "Excluir".');
                     }
                 } else {
                     window.location.href = window.location.pathname + '?tab=' + this.tab;
