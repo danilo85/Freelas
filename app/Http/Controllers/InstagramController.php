@@ -39,9 +39,22 @@ class InstagramController extends Controller
         $redirectUri = $this->getRedirectUri();
         $authMode = env('INSTAGRAM_AUTH_MODE', 'facebook'); // 'facebook' ou 'instagram'
 
+        $customScopes = config('services.instagram.scopes') ?: env('INSTAGRAM_SCOPES');
+
+        if ($customScopes) {
+            $scopes = array_filter(array_map('trim', explode(',', $customScopes)));
+        } else {
+            $scopes = [
+                'public_profile',
+                'instagram_business_basic',
+                'instagram_business_content_publish',
+                'pages_show_list',
+                'pages_read_engagement',
+            ];
+        }
+
         if ($authMode === 'instagram') {
             // Fluxo Direto do Instagram API
-            $scopes = ['instagram_business_basic', 'instagram_business_content_publish'];
             $params = http_build_query([
                 'client_id' => $appId,
                 'redirect_uri' => $redirectUri,
@@ -52,13 +65,6 @@ class InstagramController extends Controller
             $authUrl = "https://www.instagram.com/oauth/authorize?" . $params;
         } else {
             // Fluxo Padrão Meta Graph API via Login do Facebook para Empresas
-            $scopes = [
-                'public_profile',
-                'instagram_basic',
-                'instagram_content_publish',
-                'pages_show_list',
-                'pages_read_engagement',
-            ];
             $params = http_build_query([
                 'client_id' => $appId,
                 'redirect_uri' => $redirectUri,
