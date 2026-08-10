@@ -156,20 +156,36 @@ class InstagramController extends Controller
             }
 
             $pages = $pagesResp->json('data', []);
+            Log::info('Meta Facebook Pages returned: ', $pages);
+
             $connectedCount = 0;
             $lastUsername = '';
 
             foreach ($pages as $page) {
-                if (isset($page['instagram_business_account'])) {
-                    $igAccountData = $page['instagram_business_account'];
-                    $facebookPageId = $page['id'];
-                    $lastUsername = $igAccountData['username'] ?? '';
+                $pageId = $page['id'] ?? null;
+                if (!$pageId) continue;
 
+                $igAccountData = $page['instagram_business_account'] ?? null;
+
+                if (!$igAccountData) {
+                    // Tenta buscar a conta do instagram vinculada diretamente no ID da página
+                    $pageDetailResp = Http::get("https://graph.facebook.com/v19.0/{$pageId}", [
+                        'fields' => 'instagram_business_account{id,username,name,profile_picture_url}',
+                        'access_token' => $longToken,
+                    ]);
+
+                    if ($pageDetailResp->successful() && $pageDetailResp->json('instagram_business_account')) {
+                        $igAccountData = $pageDetailResp->json('instagram_business_account');
+                    }
+                }
+
+                if ($igAccountData) {
+                    $lastUsername = $igAccountData['username'] ?? '';
                     InstagramAccount::updateOrCreate(
                         ['instagram_account_id' => $igAccountData['id']],
                         [
                             'user_id' => auth()->id(),
-                            'facebook_page_id' => $facebookPageId,
+                            'facebook_page_id' => $pageId,
                             'username' => $igAccountData['username'] ?? 'instagram_user',
                             'name' => $igAccountData['name'] ?? null,
                             'profile_picture_url' => $igAccountData['profile_picture_url'] ?? null,
