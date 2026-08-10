@@ -49,6 +49,12 @@ class GoogleDriveController extends Controller
                 return redirect()->away($client->createAuthUrl());
             }
 
+            // Atualiza runtime config
+            config([
+                'services.google.refresh_token' => $refreshToken,
+                'filesystems.disks.google.refreshToken' => $refreshToken,
+            ]);
+
             // Atualiza o .env com as credenciais obtidas
             $this->updateEnv([
                 'GOOGLE_DRIVE_REFRESH_TOKEN' => $refreshToken,
@@ -57,6 +63,10 @@ class GoogleDriveController extends Controller
             // Tenta criar/obter a pasta raiz "Freelas_Shared_Files" no Google Drive
             $folderId = $this->ensureRootFolderExists($client);
             if ($folderId) {
+                config([
+                    'services.google.folder_id' => $folderId,
+                    'filesystems.disks.google.folder' => $folderId,
+                ]);
                 $this->updateEnv(['GOOGLE_DRIVE_FOLDER_ID' => $folderId]);
             }
 
@@ -72,6 +82,13 @@ class GoogleDriveController extends Controller
      */
     public function disconnect()
     {
+        config([
+            'services.google.refresh_token' => '',
+            'services.google.folder_id' => '',
+            'filesystems.disks.google.refreshToken' => '',
+            'filesystems.disks.google.folder' => '',
+        ]);
+
         $this->updateEnv([
             'GOOGLE_DRIVE_REFRESH_TOKEN' => '',
             'GOOGLE_DRIVE_FOLDER_ID' => '',
@@ -86,14 +103,29 @@ class GoogleDriveController extends Controller
     protected function getGoogleClient()
     {
         $client = new GoogleClient();
-        $client->setClientId(env('GOOGLE_DRIVE_CLIENT_ID'));
-        $client->setClientSecret(env('GOOGLE_DRIVE_CLIENT_SECRET'));
         
-        // Define a URI de redirecionamento correspondente à cadastrada no Google Cloud Console
-        $redirectUri = 'http://127.0.0.1:8000/google-drive/callback';
-        if (!in_array(request()->getHost(), ['127.0.0.1', 'localhost'])) {
-            $redirectUri = url('/google-drive/callback');
+        $clientId = config('services.google.client_id') ?: env('GOOGLE_DRIVE_CLIENT_ID');
+        $clientSecret = config('services.google.client_secret') ?: env('GOOGLE_DRIVE_CLIENT_SECRET');
+
+        $client->setClientId($clientId);
+        $client->setClientSecret($clientSecret);
+        
+        // Permite definir a URI explicitamente em GOOGLE_DRIVE_REDIRECT_URI ou gera dinamicamente respeitando o esquema da requisição
+        $redirectUri = config('services.google.redirect_uri') ?: env('GOOGLE_DRIVE_REDIRECT_URI');
+
+        if (!$redirectUri) {
+            $isHttps = request()->isSecure() 
+                || request()->header('x-forwarded-proto') === 'https'
+                || request()->header('X-Forwarded-Proto') === 'https'
+                || str_starts_with(config('app.url'), 'https://');
+
+            $baseUrl = url('/google-drive/callback');
+            if ($isHttps && str_starts_with($baseUrl, 'http://')) {
+                $baseUrl = str_replace('http://', 'https://', $baseUrl);
+            }
+            $redirectUri = $baseUrl;
         }
+
         $client->setRedirectUri($redirectUri);
 
         $client->setScopes([
@@ -137,21 +169,28 @@ class GoogleDriveController extends Controller
     }
 
     /**
-     * Atualiza valores no arquivo .env
+     * Atualiza valores no arquivo .env de forma segura.
      */
     protected function updateEnv(array $data)
     {
-        $envPath = base_path('.env');
-        if (!file_exists($envPath)) return;
-
-        $content = file_get_contents($envPath);
-        foreach ($data as $key => $value) {
-            if (preg_match("/^{$key}=.*/m", $content)) {
-                $content = preg_replace("/^{$key}=.*/m", "{$key}=\"{$value}\"", $content);
-            } else {
-                $content .= "\n{$key}=\"{$value}\"";
+        try {
+            $envPath = base_path('.env');
+            if (!file_exists($envPath) || !is_writable($envPath)) {
+                Log::warning('.env file is missing or not writable.');
+                return;
             }
+
+            $content = file_get_contents($envPath);
+            foreach ($data as $key => $value) {
+                if (preg_match("/^{$key}=.*/m", $content)) {
+                    $content = preg_replace("/^{$key}=.*/m", "{$key}=\"{$value}\"", $content);
+                } else {
+                    $content .= "\n{$key}=\"{$value}\"";
+                }
+            }
+            file_put_contents($envPath, $content);
+        } catch (\Throwable $e) {
+            Log::warning('Não foi possível escrever no arquivo .env: ' . $e->getMessage());
         }
-        file_put_contents($envPath, $content);
     }
 }

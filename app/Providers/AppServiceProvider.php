@@ -25,12 +25,16 @@ class AppServiceProvider extends ServiceProvider
         try {
             Storage::extend('google', function ($app, $config) {
                 $client = new \Google\Client();
-                $client->setClientId($config['clientId'] ?? env('GOOGLE_DRIVE_CLIENT_ID'));
-                $client->setClientSecret($config['clientSecret'] ?? env('GOOGLE_DRIVE_CLIENT_SECRET'));
-                $client->refreshToken($config['refreshToken'] ?? env('GOOGLE_DRIVE_REFRESH_TOKEN'));
+                $client->setClientId($config['clientId'] ?? config('services.google.client_id') ?? env('GOOGLE_DRIVE_CLIENT_ID'));
+                $client->setClientSecret($config['clientSecret'] ?? config('services.google.client_secret') ?? env('GOOGLE_DRIVE_CLIENT_SECRET'));
+                
+                $refreshToken = $config['refreshToken'] ?? config('services.google.refresh_token') ?? env('GOOGLE_DRIVE_REFRESH_TOKEN');
+                if (!empty($refreshToken)) {
+                    $client->refreshToken($refreshToken);
+                }
 
                 $service = new \Google\Service\Drive($client);
-                $folderId = $config['folder'] ?? env('GOOGLE_DRIVE_FOLDER_ID');
+                $folderId = $config['folder'] ?? config('services.google.folder_id') ?? env('GOOGLE_DRIVE_FOLDER_ID');
                 $folder = (!empty($folderId) && $folderId !== 'root' && $folderId !== '.') ? $folderId : null;
                 $adapter = new GoogleDriveAdapter($service, $folder);
                 $driver = new Flysystem($adapter);
