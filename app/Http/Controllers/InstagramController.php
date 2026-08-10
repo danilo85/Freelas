@@ -55,6 +55,8 @@ class InstagramController extends Controller
                 'instagram_content_publish',
                 'pages_show_list',
                 'pages_read_engagement',
+                'pages_manage_posts',
+                'business_management',
             ];
         }
 
@@ -144,20 +146,25 @@ class InstagramController extends Controller
 
             $longToken = $tokenResp->json('access_token', $shortToken);
 
-            // 3. Verifica as permissões concedidas e busca as páginas do Facebook
+            // 3. Verifica as permissões concedidas e busca todas as páginas do Facebook com paginação completa
             $permResp = Http::get("https://graph.facebook.com/v19.0/me/permissions", ['access_token' => $longToken]);
             Log::info('Meta Granted Permissions: ', $permResp->json('data', []));
 
-            $pagesResp = Http::get("https://graph.facebook.com/v19.0/me/accounts", [
-                'access_token' => $longToken,
-                'limit' => 100,
-                'fields' => 'id,name,access_token,instagram_business_account{id,username,name,profile_picture_url},connected_instagram_account{id,username,name,profile_picture_url},page_backed_instagram_account{id,username,name,profile_picture_url}'
-            ]);
+            $pages = [];
+            $nextUrl = "https://graph.facebook.com/v19.0/me/accounts?fields=id,name,access_token,instagram_business_account{id,username,name,profile_picture_url},connected_instagram_account{id,username,name,profile_picture_url},page_backed_instagram_account{id,username,name,profile_picture_url}&limit=50&access_token=" . $longToken;
 
-            $pages = $pagesResp->json('data', []);
+            while ($nextUrl) {
+                $pagesResp = Http::get($nextUrl);
+                if ($pagesResp->failed()) break;
+
+                $data = $pagesResp->json('data', []);
+                $pages = array_merge($pages, $data);
+
+                $nextUrl = $pagesResp->json('paging.next');
+            }
 
             if (empty($pages)) {
-                // Tenta fallback via me?fields=accounts
+                // Fallback via me?fields=accounts
                 $meResp = Http::get("https://graph.facebook.com/v19.0/me", [
                     'access_token' => $longToken,
                     'fields' => 'accounts.limit(100){id,name,access_token,instagram_business_account{id,username,name,profile_picture_url},connected_instagram_account{id,username,name,profile_picture_url},page_backed_instagram_account{id,username,name,profile_picture_url}}'
