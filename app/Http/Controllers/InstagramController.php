@@ -144,18 +144,26 @@ class InstagramController extends Controller
 
             $longToken = $tokenResp->json('access_token', $shortToken);
 
-            // 3. Busca as páginas do Facebook e contas do Instagram vinculadas
+            // 3. Verifica as permissões concedidas e busca as páginas do Facebook
+            $permResp = Http::get("https://graph.facebook.com/v19.0/me/permissions", ['access_token' => $longToken]);
+            Log::info('Meta Granted Permissions: ', $permResp->json('data', []));
+
             $pagesResp = Http::get("https://graph.facebook.com/v19.0/me/accounts", [
                 'access_token' => $longToken,
                 'fields' => 'id,name,access_token,instagram_business_account{id,username,name,profile_picture_url}'
             ]);
 
-            if ($pagesResp->failed()) {
-                Log::error('Erro ao buscar páginas do Facebook: ' . $pagesResp->body());
-                return redirect()->route('instagram.index')->with('error', 'Erro ao buscar páginas do Facebook: ' . $pagesResp->json('error.message', 'Falha na requisição.'));
+            $pages = $pagesResp->json('data', []);
+
+            if (empty($pages)) {
+                // Tenta fallback via me?fields=accounts
+                $meResp = Http::get("https://graph.facebook.com/v19.0/me", [
+                    'access_token' => $longToken,
+                    'fields' => 'accounts{id,name,access_token,instagram_business_account{id,username,name,profile_picture_url}}'
+                ]);
+                $pages = $meResp->json('accounts.data', []);
             }
 
-            $pages = $pagesResp->json('data', []);
             Log::info('Meta Facebook Pages returned: ', $pages);
 
             $connectedCount = 0;
