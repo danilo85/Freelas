@@ -78,6 +78,12 @@
         if (type.includes('STORY')) return 'STORY';
         if (type === 'IMAGE') return 'FEED';
         return type;
+    },
+    confirmDeleteModalOpen: false,
+    deleteFormActionUrl: '',
+    confirmDeletePost(url) {
+        this.deleteFormActionUrl = url;
+        this.confirmDeleteModalOpen = true;
     }
 }">
     
@@ -476,13 +482,9 @@
                                                 <span>Reutilizar</span>
                                             </button>
                                         @endif
-                                        <form action="{{ route('instagram.posts.destroy', $item['db_id'] ?? $item['id']) }}" method="POST" class="inline">
-                                            @csrf
-                                            @method('DELETE')
-                                            <button type="submit" title="Excluir Mídia do Instagram" class="py-1.5 px-2 bg-rose-50 hover:bg-rose-600 hover:text-white text-rose-600 font-bold text-[10px] rounded transition-all flex items-center justify-center cursor-pointer">
-                                                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
-                                            </button>
-                                        </form>
+                                        <button type="button" @click="confirmDeletePost('{{ route('instagram.posts.destroy', $item['db_id'] ?? $item['id']) }}')" title="Excluir Mídia do Instagram" class="py-1.5 px-2 bg-rose-50 hover:bg-rose-600 hover:text-white text-rose-600 font-bold text-[10px] rounded transition-all flex items-center justify-center cursor-pointer">
+                                            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
+                                        </button>
                                     </div>
                                 </div>
                             </div>
@@ -589,13 +591,9 @@
                                             <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>
                                             <span>Reutilizar</span>
                                         </button>
-                                        <form action="{{ route('instagram.posts.destroy', $p->id) }}" method="POST" class="inline">
-                                            @csrf
-                                            @method('DELETE')
-                                            <button type="submit" title="Excluir do Histórico" class="px-2 py-1 bg-rose-50 hover:bg-rose-600 hover:text-white text-rose-600 font-bold text-[10px] rounded transition-all flex items-center justify-center cursor-pointer">
-                                                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
-                                            </button>
-                                        </form>
+                                        <button type="button" @click="confirmDeletePost('{{ route('instagram.posts.destroy', $p->id) }}')" title="Excluir do Histórico" class="px-2 py-1 bg-rose-50 hover:bg-rose-600 hover:text-white text-rose-600 font-bold text-[10px] rounded transition-all flex items-center justify-center cursor-pointer">
+                                            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
+                                        </button>
                                     </div>
                                 </div>
                             </div>
@@ -773,6 +771,40 @@
                     </div>
                 </div>
 
+            </div>
+        </div>
+    </template>
+
+    <!-- MODAL DE CONFIRMAÇÃO DE EXCLUSÃO (ESTILOSO E SEGURO) -->
+    <template x-teleport="body">
+        <div x-show="confirmDeleteModalOpen" 
+             x-cloak 
+             @keydown.escape.window="confirmDeleteModalOpen = false"
+             class="fixed inset-0 top-0 left-0 right-0 bottom-0 w-screen h-screen z-[9999999] flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-md transition-all">
+            
+            <div class="bg-white rounded-2xl p-6 max-w-md w-full shadow-2xl border border-slate-100 space-y-5 text-center transform transition-all" @click.outside="confirmDeleteModalOpen = false">
+                <div class="w-14 h-14 rounded-full bg-rose-100 text-rose-600 flex items-center justify-center mx-auto shadow-inner">
+                    <svg class="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
+                </div>
+                
+                <div class="space-y-1.5">
+                    <h4 class="text-base font-extrabold text-slate-800 tracking-tight">Confirmar Exclusão da Publicação?</h4>
+                    <p class="text-xs text-slate-500 leading-relaxed">
+                        Esta ação removerá a publicação do seu histórico e enviará a ordem de exclusão diretamente para a Meta Graph API do Instagram.
+                    </p>
+                </div>
+
+                <form :action="deleteFormActionUrl" method="POST" class="flex items-center justify-center gap-3 pt-2">
+                    @csrf
+                    @method('DELETE')
+                    <button type="button" @click="confirmDeleteModalOpen = false" class="flex-1 py-2.5 px-4 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs rounded-xl transition-all cursor-pointer">
+                        Cancelar
+                    </button>
+                    <button type="submit" class="flex-1 py-2.5 px-4 bg-rose-600 hover:bg-rose-700 text-white font-extrabold text-xs rounded-xl shadow-md transition-all cursor-pointer flex items-center justify-center gap-1.5">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
+                        <span>Sim, Excluir</span>
+                    </button>
+                </form>
             </div>
         </div>
     </template>

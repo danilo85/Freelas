@@ -28,21 +28,29 @@ class InstagramController extends Controller
             ->orderBy('created_at', 'desc')
             ->get();
 
-        // Busca o Feed real de posts já publicados no perfil do Instagram
+        // Busca o Feed real de posts já publicados no perfil do Instagram (com paginação completa)
         $liveInstagramPosts = [];
         if ($account && $account->access_token && $account->instagram_account_id) {
             try {
-                $feedResp = Http::get("https://graph.facebook.com/v19.0/{$account->instagram_account_id}/media", [
-                    'fields' => 'id,caption,media_type,media_url,permalink,thumbnail_url,timestamp,like_count,comments_count,children{id,media_url,thumbnail_url,media_type}',
-                    'limit' => 24,
-                    'access_token' => $account->access_token,
-                ]);
-                if ($feedResp->successful()) {
-                    $liveInstagramPosts = $feedResp->json('data', []);
-                    $dbPostMap = $posts->pluck('id', 'instagram_media_id')->toArray();
-                    foreach ($liveInstagramPosts as &$item) {
-                        $item['db_id'] = $dbPostMap[$item['id']] ?? null;
-                    }
+                $nextUrl = "https://graph.facebook.com/v19.0/{$account->instagram_account_id}/media?fields=id,caption,media_type,media_url,permalink,thumbnail_url,timestamp,like_count,comments_count,children{id,media_url,thumbnail_url,media_type}&limit=50&access_token=" . $account->access_token;
+                
+                $maxPages = 4; // Busca até 200 publicações
+                $pageCount = 0;
+
+                while ($nextUrl && $pageCount < $maxPages) {
+                    $feedResp = Http::get($nextUrl);
+                    if ($feedResp->failed()) break;
+
+                    $data = $feedResp->json('data', []);
+                    $liveInstagramPosts = array_merge($liveInstagramPosts, $data);
+
+                    $nextUrl = $feedResp->json('paging.next');
+                    $pageCount++;
+                }
+
+                $dbPostMap = $posts->pluck('id', 'instagram_media_id')->toArray();
+                foreach ($liveInstagramPosts as &$item) {
+                    $item['db_id'] = $dbPostMap[$item['id']] ?? null;
                 }
             } catch (\Exception $e) {
                 Log::error('Erro ao buscar feed vivo do Instagram: ' . $e->getMessage());
