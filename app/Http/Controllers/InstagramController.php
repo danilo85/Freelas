@@ -421,14 +421,30 @@ class InstagramController extends Controller
     }
 
     /**
-     * Exclui / cancela postagem do banco de dados.
+     * Exclui / cancela postagem do banco de dados e da API da Meta se publicada.
      */
     public function destroyPost(InstagramPost $post)
     {
         abort_if($post->user_id !== auth()->id(), 403);
+
+        // Se o post foi publicado e tem ID de mídia no Instagram, tenta excluir na Meta API
+        if ($post->status === 'publicado' && $post->instagram_media_id && $post->instagramAccount) {
+            try {
+                Http::delete("https://graph.facebook.com/v19.0/{$post->instagram_media_id}", [
+                    'access_token' => $post->instagramAccount->access_token,
+                ]);
+            } catch (\Exception $e) {
+                Log::error('Erro ao excluir mídia na API do Instagram: ' . $e->getMessage());
+            }
+        }
+
+        if ($post->media_path) {
+            Storage::disk('public')->delete($post->media_path);
+        }
+
         $post->delete();
 
-        return redirect()->route('instagram.index')->with('info', 'Postagem removida do histórico.');
+        return redirect()->route('instagram.index')->with('info', 'Postagem excluída com sucesso.');
     }
 
     /**

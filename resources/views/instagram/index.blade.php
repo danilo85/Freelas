@@ -433,10 +433,17 @@
                                 <div class="p-2.5 space-y-2">
                                     <p class="text-[11px] text-slate-600 line-clamp-2">{{ $p->caption ?: 'Sem legenda' }}</p>
                                     
-                                    <div class="flex items-center justify-between pt-2 border-t border-slate-100">
-                                        <button type="button" @click="useMediaBankImage('{{ asset('storage/' . $p->media_path) }}')" class="w-full py-1 bg-purple-50 hover:bg-purple-600 hover:text-white text-purple-700 font-bold text-[10px] rounded transition-all cursor-pointer">
+                                    <div class="flex items-center gap-1.5 pt-2 border-t border-slate-100">
+                                        <button type="button" @click="useMediaBankImage('{{ asset('storage/' . $p->media_path) }}')" class="flex-1 py-1 bg-purple-50 hover:bg-purple-600 hover:text-white text-purple-700 font-bold text-[10px] rounded transition-all cursor-pointer">
                                             🔄 Reutilizar
                                         </button>
+                                        <form action="{{ route('instagram.posts.destroy', $p->id) }}" method="POST" class="inline">
+                                            @csrf
+                                            @method('DELETE')
+                                            <button type="submit" title="Excluir do Histórico" class="px-2.5 py-1 bg-rose-50 hover:bg-rose-600 hover:text-white text-rose-600 font-bold text-[10px] rounded transition-all cursor-pointer">
+                                                🗑️
+                                            </button>
+                                        </form>
                                     </div>
                                 </div>
                             </div>
