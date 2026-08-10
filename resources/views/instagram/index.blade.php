@@ -4,130 +4,7 @@
 @section('page_title', 'Integração & Gestão do Instagram')
 
 @section('content')
-<div class="space-y-8" x-data="{ 
-    tab: (new URLSearchParams(window.location.search)).get('tab') || 'novo', 
-    mediaType: 'IMAGE', 
-    actionType: 'now',
-    caption: '',
-    hasLogoOverlay: false,
-    hasArrowOverlay: false,
-    imagePreview: null,
-    carouselPreviews: [],
-    currentCarouselIndex: 0,
-    selectedAccountId: '{{ optional($account)->id }}',
-    hashtagCategory: 'design',
-    hashtags: {
-        design: ['#designgrafico', '#identidadevisual', '#logodesign', '#designbr', '#designer', '#branding', '#designgraficobr', '#creative', '#graphicdesign', '#visualidentity'],
-        freelance: ['#freelancerbr', '#freelance', '#gestordefreelas', '#vidadefreela', '#trabalhoremoto', '#carreiradesign', '#designindependente', '#freelancerlife'],
-        socialmedia: ['#socialmedia', '#marketingdigital', '#midiasociais', '#gestordesocialmedia', '#conteudodigital', '#engajamento', '#instagramdicas', '#estrategiadedados'],
-        ilustracao: ['#ilustracao', '#artedigital', '#desenhodigital', '#illustrator', '#procreate', '#vectorart', '#ilustra', '#digitalart'],
-        trending: ['#viral', '#reelsbrasil', '#dicas', '#emalta', '#empreendedorismo', '#criatividade', '#portfoliodesign']
-    },
-    insertHashtag(tag) {
-        if (!this.caption.includes(tag)) {
-            this.caption = (this.caption ? this.caption.trim() + ' ' : '') + tag;
-        }
-    },
-    insertCategoryHashtags(cat) {
-        const tags = this.hashtags[cat] || [];
-        tags.forEach(t => this.insertHashtag(t));
-    },
-    handleImageChange(e) {
-        const file = e.target.files[0];
-        if (file) {
-            this.imagePreview = URL.createObjectURL(file);
-        }
-    },
-    handleCarouselChange(e) {
-        const files = Array.from(e.target.files);
-        this.carouselPreviews = files.map(f => URL.createObjectURL(f));
-        if (this.carouselPreviews.length > 0) {
-            this.imagePreview = this.carouselPreviews[0];
-            this.currentCarouselIndex = 0;
-        }
-    },
-    useMediaBankImage(url) {
-        this.imagePreview = url;
-        this.mediaType = 'IMAGE';
-        this.tab = 'novo';
-    },
-    lightboxOpen: false,
-    lightboxPost: null,
-    lightboxSlides: [],
-    lightboxSlideIndex: 0,
-    openLightbox(postData, slidesArray) {
-        this.lightboxPost = postData;
-        this.lightboxSlides = (slidesArray && slidesArray.length > 0) ? slidesArray : [postData.media_url || postData.media_path];
-        this.lightboxSlideIndex = 0;
-        this.lightboxOpen = true;
-    },
-    nextLightboxSlide() {
-        if (this.lightboxSlideIndex < this.lightboxSlides.length - 1) {
-            this.lightboxSlideIndex++;
-        }
-    },
-    prevLightboxSlide() {
-        if (this.lightboxSlideIndex > 0) {
-            this.lightboxSlideIndex--;
-        }
-    },
-    formatMediaType(type) {
-        if (!type) return 'FEED';
-        if (type.includes('CAROUSEL')) return 'CARROSSEL';
-        if (type.includes('VIDEO') || type.includes('REELS')) return 'VÍDEO';
-        if (type.includes('STORY')) return 'STORY';
-        if (type === 'IMAGE') return 'FEED';
-        return type;
-    },
-    confirmDeleteModalOpen: false,
-    deleteFormActionUrl: '',
-    targetCardElement: null,
-    isDeleting: false,
-    confirmDeletePost(url, event) {
-        this.deleteFormActionUrl = url;
-        this.targetCardElement = event ? event.target.closest('.group') : null;
-        this.confirmDeleteModalOpen = true;
-    },
-    async executeDelete() {
-        if (!this.deleteFormActionUrl) return;
-        this.isDeleting = true;
-
-        try {
-            const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content');
-            const res = await fetch(this.deleteFormActionUrl, {
-                method: 'POST',
-                headers: {
-                    'X-CSRF-TOKEN': csrfToken,
-                    'X-Requested-With': 'XMLHttpRequest',
-                    'Content-Type': 'application/json',
-                    'Accept': 'application/json'
-                },
-                body: JSON.stringify({ _method: 'DELETE' })
-            });
-
-            if (res.ok) {
-                if (this.targetCardElement) {
-                    this.targetCardElement.style.transition = 'all 0.3s ease-out';
-                    this.targetCardElement.style.opacity = '0';
-                    this.targetCardElement.style.transform = 'scale(0.8)';
-                    setTimeout(() => {
-                        this.targetCardElement.remove();
-                    }, 300);
-                } else {
-                    window.location.reload();
-                }
-            } else {
-                // Se falhar silenciosamente recarrega mantendo a aba
-                window.location.href = window.location.pathname + '?tab=' + this.tab;
-            }
-        } catch (e) {
-            window.location.href = window.location.pathname + '?tab=' + this.tab;
-        } finally {
-            this.isDeleting = false;
-            this.confirmDeleteModalOpen = false;
-        }
-    }
-}">
+<div class="space-y-8" x-data="instagramModule">
     
     <!-- Banner de Status de Conexão com a Meta / Instagram -->
     <div class="bg-gradient-to-r {{ $account ? 'from-purple-950 via-slate-900 to-slate-900 border-purple-500/40' : 'from-slate-900 via-rose-950 to-slate-900 border-rose-500/40' }} border text-white rounded-xl p-6 shadow-md flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
@@ -859,4 +736,132 @@
         </div>
     </template>
 </div>
+
+<script>
+document.addEventListener('alpine:init', () => {
+    Alpine.data('instagramModule', () => ({
+        tab: (new URLSearchParams(window.location.search)).get('tab') || 'novo',
+        mediaType: 'IMAGE',
+        actionType: 'now',
+        caption: '',
+        hasLogoOverlay: false,
+        hasArrowOverlay: false,
+        imagePreview: null,
+        carouselPreviews: [],
+        currentCarouselIndex: 0,
+        selectedAccountId: '{{ optional($account)->id }}',
+        hashtagCategory: 'design',
+        hashtags: {
+            design: ['#designgrafico', '#identidadevisual', '#logodesign', '#designbr', '#designer', '#branding', '#designgraficobr', '#creative', '#graphicdesign', '#visualidentity'],
+            freelance: ['#freelancerbr', '#freelance', '#gestordefreelas', '#vidadefreela', '#trabalhoremoto', '#carreiradesign', '#designindependente', '#freelancerlife'],
+            socialmedia: ['#socialmedia', '#marketingdigital', '#midiasociais', '#gestordesocialmedia', '#conteudodigital', '#engajamento', '#instagramdicas', '#estrategiadedados'],
+            ilustracao: ['#ilustracao', '#artedigital', '#desenhodigital', '#illustrator', '#procreate', '#vectorart', '#ilustra', '#digitalart'],
+            trending: ['#viral', '#reelsbrasil', '#dicas', '#emalta', '#empreendedorismo', '#criatividade', '#portfoliodesign']
+        },
+        insertHashtag(tag) {
+            if (!this.caption.includes(tag)) {
+                this.caption = (this.caption ? this.caption.trim() + ' ' : '') + tag;
+            }
+        },
+        insertCategoryHashtags(cat) {
+            const tags = this.hashtags[cat] || [];
+            tags.forEach(t => this.insertHashtag(t));
+        },
+        handleImageChange(e) {
+            const file = e.target.files[0];
+            if (file) {
+                this.imagePreview = URL.createObjectURL(file);
+            }
+        },
+        handleCarouselChange(e) {
+            const files = Array.from(e.target.files);
+            this.carouselPreviews = files.map(f => URL.createObjectURL(f));
+            if (this.carouselPreviews.length > 0) {
+                this.imagePreview = this.carouselPreviews[0];
+                this.currentCarouselIndex = 0;
+            }
+        },
+        useMediaBankImage(url) {
+            this.imagePreview = url;
+            this.mediaType = 'IMAGE';
+            this.tab = 'novo';
+        },
+        lightboxOpen: false,
+        lightboxPost: null,
+        lightboxSlides: [],
+        lightboxSlideIndex: 0,
+        openLightbox(postData, slidesArray) {
+            this.lightboxPost = postData;
+            this.lightboxSlides = (slidesArray && slidesArray.length > 0) ? slidesArray : [postData.media_url || postData.media_path];
+            this.lightboxSlideIndex = 0;
+            this.lightboxOpen = true;
+        },
+        nextLightboxSlide() {
+            if (this.lightboxSlideIndex < this.lightboxSlides.length - 1) {
+                this.lightboxSlideIndex++;
+            }
+        },
+        prevLightboxSlide() {
+            if (this.lightboxSlideIndex > 0) {
+                this.lightboxSlideIndex--;
+            }
+        },
+        formatMediaType(type) {
+            if (!type) return 'FEED';
+            if (type.includes('CAROUSEL')) return 'CARROSSEL';
+            if (type.includes('VIDEO') || type.includes('REELS')) return 'VÍDEO';
+            if (type.includes('STORY')) return 'STORY';
+            if (type === 'IMAGE') return 'FEED';
+            return type;
+        },
+        confirmDeleteModalOpen: false,
+        deleteFormActionUrl: '',
+        targetCardElement: null,
+        isDeleting: false,
+        confirmDeletePost(url, event) {
+            this.deleteFormActionUrl = url;
+            this.targetCardElement = event ? event.target.closest('.group') : null;
+            this.confirmDeleteModalOpen = true;
+        },
+        async executeDelete() {
+            if (!this.deleteFormActionUrl) return;
+            this.isDeleting = true;
+
+            try {
+                const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content');
+                const res = await fetch(this.deleteFormActionUrl, {
+                    method: 'POST',
+                    headers: {
+                        'X-CSRF-TOKEN': csrfToken,
+                        'X-Requested-With': 'XMLHttpRequest',
+                        'Content-Type': 'application/json',
+                        'Accept': 'application/json'
+                    },
+                    body: JSON.stringify({ _method: 'DELETE' })
+                });
+
+                if (res.ok) {
+                    if (this.targetCardElement) {
+                        this.targetCardElement.style.transition = 'all 0.3s ease-out';
+                        this.targetCardElement.style.opacity = '0';
+                        this.targetCardElement.style.transform = 'scale(0.8)';
+                        setTimeout(() => {
+                            this.targetCardElement.remove();
+                        }, 300);
+                    } else {
+                        window.location.reload();
+                    }
+                } else {
+                    window.location.href = window.location.pathname + '?tab=' + this.tab;
+                }
+            } catch (e) {
+                window.location.href = window.location.pathname + '?tab=' + this.tab;
+            } finally {
+                this.isDeleting = false;
+                this.confirmDeleteModalOpen = false;
+            }
+        }
+    }));
+});
+</script>
 @endsection
