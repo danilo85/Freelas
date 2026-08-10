@@ -58,6 +58,12 @@ class InstagramController extends Controller
             ];
         }
 
+        if ($authMode === 'facebook') {
+            $scopes = array_map(function($s) {
+                return str_replace(['instagram_business_basic', 'instagram_business_content_publish'], ['instagram_basic', 'instagram_content_publish'], $s);
+            }, $scopes);
+        }
+
         if ($authMode === 'instagram') {
             // Fluxo Direto do Instagram API
             $params = http_build_query([
@@ -132,30 +138,37 @@ class InstagramController extends Controller
                 $igAccountData = null;
                 $facebookPageId = null;
 
+                $connectedCount = 0;
+                $lastUsername = '';
+
                 foreach ($pages as $page) {
                     if (isset($page['instagram_business_account'])) {
                         $igAccountData = $page['instagram_business_account'];
                         $facebookPageId = $page['id'];
-                        break;
+                        $lastUsername = $igAccountData['username'] ?? '';
+
+                        InstagramAccount::updateOrCreate(
+                            ['instagram_account_id' => $igAccountData['id']],
+                            [
+                                'user_id' => auth()->id(),
+                                'facebook_page_id' => $facebookPageId,
+                                'username' => $igAccountData['username'] ?? 'instagram_user',
+                                'name' => $igAccountData['name'] ?? null,
+                                'profile_picture_url' => $igAccountData['profile_picture_url'] ?? null,
+                                'access_token' => $longToken,
+                                'token_expires_at' => now()->addDays(60),
+                                'is_active' => true,
+                            ]
+                        );
+                        $connectedCount++;
                     }
                 }
 
-                if ($igAccountData) {
-                    InstagramAccount::updateOrCreate(
-                        ['instagram_account_id' => $igAccountData['id']],
-                        [
-                            'user_id' => auth()->id(),
-                            'facebook_page_id' => $facebookPageId,
-                            'username' => $igAccountData['username'] ?? 'instagram_user',
-                            'name' => $igAccountData['name'] ?? null,
-                            'profile_picture_url' => $igAccountData['profile_picture_url'] ?? null,
-                            'access_token' => $longToken,
-                            'token_expires_at' => now()->addDays(60),
-                            'is_active' => true,
-                        ]
-                    );
-
-                    return redirect()->route('instagram.index')->with('success', '🎉 Conta do Instagram @' . ($igAccountData['username'] ?? '') . ' conectada com sucesso!');
+                if ($connectedCount > 0) {
+                    $msg = $connectedCount === 1 
+                        ? '🎉 Conta do Instagram @' . $lastUsername . ' conectada com sucesso!' 
+                        : '🎉 ' . $connectedCount . ' contas do Instagram conectadas com sucesso!';
+                    return redirect()->route('instagram.index')->with('success', $msg);
                 }
             }
 
