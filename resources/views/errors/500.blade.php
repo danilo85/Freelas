@@ -53,7 +53,7 @@
         </div>
 
         <!-- Glass card information -->
-        <div class="bg-white/5 border border-white/10 rounded-2xl p-6 backdrop-blur-md max-w-sm mx-auto space-y-4 text-left">
+        <div class="bg-white/5 border border-white/10 rounded-2xl p-6 backdrop-blur-md max-w-md mx-auto space-y-4 text-left">
             <div class="flex items-center gap-3">
                 <span class="text-2xl">⚙️</span>
                 <div>
@@ -61,6 +61,13 @@
                     <p class="text-[11px] text-slate-400">Pode ter havido um erro de execução do PHP ou banco de dados indisponível.</p>
                 </div>
             </div>
+
+            @if(isset($exception) && $exception->getMessage())
+                <div class="mt-3 p-3 bg-slate-950/80 border border-rose-500/40 rounded-xl font-mono text-[11px] text-rose-300 break-words overflow-x-auto">
+                    <strong class="text-rose-400 uppercase text-[10px] block mb-1">Causa da Falha:</strong>
+                    {{ $exception->getMessage() }}
+                </div>
+            @endif
         </div>
 
         <!-- Back link -->
