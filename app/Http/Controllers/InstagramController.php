@@ -253,7 +253,9 @@ class InstagramController extends Controller
 
             $pageSummary = count($pageNames) > 0 ? ' (Páginas encontradas: ' . implode(', ', $pageNames) . ')' : ' (Nenhuma página do Facebook encontrada)';
 
-            return redirect()->route('instagram.index')->with('error', 'Nenhuma conta profissional do Instagram conectada foi encontrada' . $pageSummary . '. Certifique-se de que a conta do Instagram é Profissional (Empresarial/Criador) e está vinculada à Página do Facebook nas configurações da Página.');
+            $rawDebug = ' Resposta bruta da Meta para a página: ' . json_encode($pages, JSON_UNESCAPED_UNICODE | JSON_PRETTY_PRINT);
+
+            return redirect()->route('instagram.index')->with('error', 'Nenhuma conta profissional do Instagram conectada foi encontrada' . $pageSummary . '.' . $rawDebug);
 
         } catch (\Exception $e) {
             Log::error('Erro no callback do Instagram: ' . $e->getMessage());
