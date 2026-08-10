@@ -147,7 +147,7 @@ class InstagramController extends Controller
             // 3. Busca as páginas do Facebook e contas do Instagram vinculadas
             $pagesResp = Http::get("https://graph.facebook.com/v19.0/me/accounts", [
                 'access_token' => $longToken,
-                'fields' => 'id,name,instagram_business_account{id,username,name,profile_picture_url}'
+                'fields' => 'id,name,access_token,instagram_business_account{id,username,name,profile_picture_url}'
             ]);
 
             if ($pagesResp->failed()) {
@@ -160,18 +160,21 @@ class InstagramController extends Controller
 
             $connectedCount = 0;
             $lastUsername = '';
+            $pageNames = [];
 
             foreach ($pages as $page) {
                 $pageId = $page['id'] ?? null;
                 if (!$pageId) continue;
+                $pageNames[] = $page['name'] ?? "Página ID {$pageId}";
 
                 $igAccountData = $page['instagram_business_account'] ?? null;
+                $pageAccessToken = $page['access_token'] ?? $longToken;
 
                 if (!$igAccountData) {
-                    // Tenta buscar a conta do instagram vinculada diretamente no ID da página
+                    // Tenta buscar a conta do instagram usando o Token de Acesso da própria Página
                     $pageDetailResp = Http::get("https://graph.facebook.com/v19.0/{$pageId}", [
                         'fields' => 'instagram_business_account{id,username,name,profile_picture_url}',
-                        'access_token' => $longToken,
+                        'access_token' => $pageAccessToken,
                     ]);
 
                     if ($pageDetailResp->successful() && $pageDetailResp->json('instagram_business_account')) {
@@ -205,7 +208,9 @@ class InstagramController extends Controller
                 return redirect()->route('instagram.index')->with('success', $msg);
             }
 
-            return redirect()->route('instagram.index')->with('error', 'Nenhuma conta profissional do Instagram vinculada às suas Páginas do Facebook foi selecionada. Certifique-se de que sua conta do Instagram é Profissional e está conectada a uma Página do Facebook.');
+            $pageSummary = count($pageNames) > 0 ? ' (Páginas encontradas: ' . implode(', ', $pageNames) . ')' : ' (Nenhuma página do Facebook encontrada)';
+
+            return redirect()->route('instagram.index')->with('error', 'Nenhuma conta profissional do Instagram conectada foi encontrada' . $pageSummary . '. Certifique-se de que a conta do Instagram é Profissional (Empresarial/Criador) e está vinculada à Página do Facebook nas configurações da Página.');
 
         } catch (\Exception $e) {
             Log::error('Erro no callback do Instagram: ' . $e->getMessage());
