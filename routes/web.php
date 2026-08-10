@@ -239,6 +239,8 @@ Route::middleware(['auth', 'approved'])->prefix('freelas')->group(function () {
         Route::get('/instagram/callback', [\App\Http\Controllers\InstagramController::class, 'callback'])->name('instagram.callback');
         Route::delete('/instagram/{account}', [\App\Http\Controllers\InstagramController::class, 'disconnect'])->name('instagram.disconnect');
         Route::post('/utilidades/instagram/posts', [\App\Http\Controllers\InstagramController::class, 'storePost'])->name('instagram.posts.store');
+        Route::delete('/utilidades/instagram/posts/{post}', [\App\Http\Controllers\InstagramController::class, 'destroyPost'])->name('instagram.posts.destroy');
+        Route::post('/utilidades/instagram/settings/overlays', [\App\Http\Controllers\InstagramController::class, 'storeOverlayIcons'])->name('instagram.settings.overlays');
         Route::delete('/utilidades/notificacoes/limpar', [\App\Http\Controllers\NotificationController::class, 'destroyAll'])->name('notifications.destroy-all');
         Route::delete('/utilidades/notificacoes/{notification}', [\App\Http\Controllers\NotificationController::class, 'destroy'])->name('notifications.destroy');
 

@@ -4,9 +4,11 @@ namespace App\Http\Controllers;
 
 use App\Models\InstagramAccount;
 use App\Models\InstagramPost;
+use App\Models\InstagramSetting;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Storage;
 use Carbon\Carbon;
 
 class InstagramController extends Controller
@@ -20,11 +22,44 @@ class InstagramController extends Controller
         $selectedAccountId = $request->get('account_id', optional($accounts->first())->id);
         $account = $accounts->where('id', $selectedAccountId)->first() ?: $accounts->first();
 
+        $settings = InstagramSetting::firstOrCreate(['user_id' => auth()->id()]);
+
         $posts = InstagramPost::where('user_id', auth()->id())
             ->orderBy('created_at', 'desc')
             ->get();
 
-        return view('instagram.index', compact('accounts', 'account', 'posts'));
+        return view('instagram.index', compact('accounts', 'account', 'posts', 'settings'));
+    }
+
+    /**
+     * Salva ou atualiza os ícones de sobreposição (Logo e Seta).
+     */
+    public function storeOverlayIcons(Request $request)
+    {
+        $request->validate([
+            'logo_icon' => 'nullable|image|max:5120',
+            'arrow_icon' => 'nullable|image|max:5120',
+        ]);
+
+        $settings = InstagramSetting::firstOrCreate(['user_id' => auth()->id()]);
+
+        if ($request->hasFile('logo_icon')) {
+            if ($settings->logo_path) {
+                Storage::disk('public')->delete($settings->logo_path);
+            }
+            $settings->logo_path = $request->file('logo_icon')->store('instagram_overlays', 'public');
+        }
+
+        if ($request->hasFile('arrow_icon')) {
+            if ($settings->arrow_path) {
+                Storage::disk('public')->delete($settings->arrow_path);
+            }
+            $settings->arrow_path = $request->file('arrow_icon')->store('instagram_overlays', 'public');
+        }
+
+        $settings->save();
+
+        return redirect()->route('instagram.index')->with('success', '✨ Ícones de sobreposição salvos com sucesso!');
     }
 
     /**
@@ -287,7 +322,6 @@ class InstagramController extends Controller
             }
 
             $pageSummary = count($pageNames) > 0 ? ' (Páginas encontradas: ' . implode(', ', $pageNames) . ')' : ' (Nenhuma página do Facebook encontrada)';
-
             $rawDebug = ' Resposta bruta da Meta para a página: ' . json_encode($pages, JSON_UNESCAPED_UNICODE | JSON_PRETTY_PRINT);
 
             return redirect()->route('instagram.index')->with('error', 'Nenhuma conta profissional do Instagram conectada foi encontrada' . $pageSummary . '.' . $rawDebug);
@@ -310,14 +344,18 @@ class InstagramController extends Controller
     }
 
     /**
-     * Cadastra ou agenda a postagem.
+     * Cadastra ou agenda a postagem (Feed Único, Carrossel ou Story).
      */
     public function storePost(Request $request)
     {
         $request->validate([
             'instagram_account_id' => 'nullable|exists:instagram_accounts,id',
-            'image' => 'required|image|max:10240',
+            'media_type' => 'required|in:IMAGE,CAROUSEL,STORY',
+            'image' => 'nullable|required_if:media_type,IMAGE,STORY|image|max:10240',
+            'carousel_images.*' => 'nullable|image|max:10240',
             'caption' => 'nullable|string',
+            'has_logo_overlay' => 'nullable|boolean',
+            'has_arrow_overlay' => 'nullable|boolean',
             'action' => 'required|in:now,schedule',
             'scheduled_at' => 'nullable|required_if:action,schedule|date|after:now',
         ]);
@@ -331,39 +369,79 @@ class InstagramController extends Controller
             return redirect()->route('instagram.index')->with('error', 'Conecte sua conta do Instagram antes de publicar.');
         }
 
-        $path = $request->file('image')->store('instagram_posts', 'public');
+        $mediaType = $request->input('media_type', 'IMAGE');
+        $hasLogo = $request->boolean('has_logo_overlay');
+        $hasArrow = $request->boolean('has_arrow_overlay');
+
+        $mainPath = null;
+        $mediaUrls = [];
+
+        if ($mediaType === 'CAROUSEL') {
+            if (!$request->hasFile('carousel_images') || count($request->file('carousel_images')) < 2) {
+                return redirect()->back()->with('error', 'Selecione pelo menos 2 imagens para criar um Carrossel.');
+            }
+
+            foreach ($request->file('carousel_images') as $imgFile) {
+                $rawPath = $imgFile->store('instagram_posts', 'public');
+                $processedPath = $this->applyOverlays($rawPath, $hasLogo, $hasArrow);
+                $mediaUrls[] = $processedPath;
+            }
+            $mainPath = $mediaUrls[0] ?? null;
+        } else {
+            if ($request->hasFile('image')) {
+                $rawPath = $request->file('image')->store('instagram_posts', 'public');
+                $mainPath = $this->applyOverlays($rawPath, $hasLogo, $hasArrow);
+            }
+        }
 
         $post = InstagramPost::create([
             'user_id' => auth()->id(),
             'instagram_account_id' => $account->id,
-            'media_type' => 'IMAGE',
-            'media_path' => $path,
+            'media_type' => $mediaType,
+            'media_path' => $mainPath,
+            'media_urls' => $mediaUrls,
             'caption' => $request->caption,
+            'has_logo_overlay' => $hasLogo,
+            'has_arrow_overlay' => $hasArrow,
             'status' => $request->action === 'now' ? 'rascunho' : 'agendado',
             'scheduled_at' => $request->action === 'schedule' ? Carbon::parse($request->scheduled_at) : null,
         ]);
 
         if ($request->action === 'now') {
-            return $this->publishPostToInstagram($post);
+            if ($mediaType === 'CAROUSEL') {
+                return $this->publishCarouselPostToInstagram($post);
+            } elseif ($mediaType === 'STORY') {
+                return $this->publishStoryPostToInstagram($post);
+            } else {
+                return $this->publishPostToInstagram($post);
+            }
         }
 
-        return redirect()->route('instagram.index')->with('success', '🗓️ Post agendado com sucesso para ' . Carbon::parse($request->scheduled_at)->format('d/m/Y H:i'));
+        return redirect()->route('instagram.index')->with('success', '🗓️ Conteúdo agendado com sucesso para ' . Carbon::parse($request->scheduled_at)->format('d/m/Y H:i'));
     }
 
     /**
-     * Publica a imagem diretamente na conta conectada via Instagram Graph API.
+     * Exclui / cancela postagem do banco de dados.
+     */
+    public function destroyPost(InstagramPost $post)
+    {
+        abort_if($post->user_id !== auth()->id(), 403);
+        $post->delete();
+
+        return redirect()->route('instagram.index')->with('info', 'Postagem removida do histórico.');
+    }
+
+    /**
+     * Publica uma Imagem Única no Feed do Instagram.
      */
     public function publishPostToInstagram(InstagramPost $post)
     {
         try {
             $account = $post->instagramAccount;
-            if (!$account) {
-                throw new \Exception('Conta do Instagram não encontrada.');
-            }
+            if (!$account) throw new \Exception('Conta do Instagram não encontrada.');
 
             $publicImageUrl = asset('storage/' . $post->media_path);
 
-            // 1. Criar container de mídia na API do Instagram
             $containerResp = Http::post("https://graph.facebook.com/v19.0/{$account->instagram_account_id}/media", [
                 'image_url' => $publicImageUrl,
                 'caption' => $post->caption,
@@ -379,7 +457,6 @@ class InstagramController extends Controller
 
             $containerId = $containerResp->json('id');
 
-            // 2. Publicar container
             $publishResp = Http::post("https://graph.facebook.com/v19.0/{$account->instagram_account_id}/media_publish", [
                 'creation_id' => $containerId,
                 'access_token' => $account->access_token,
@@ -392,12 +469,10 @@ class InstagramController extends Controller
                 return redirect()->route('instagram.index')->with('error', 'Erro ao publicar no Instagram: ' . $err);
             }
 
-            $mediaId = $publishResp->json('id');
-
             $post->update([
                 'status' => 'publicado',
                 'published_at' => now(),
-                'instagram_media_id' => $mediaId,
+                'instagram_media_id' => $publishResp->json('id'),
                 'error_message' => null,
             ]);
 
@@ -408,6 +483,217 @@ class InstagramController extends Controller
             $post->update(['status' => 'erro', 'error_message' => $e->getMessage()]);
             return redirect()->route('instagram.index')->with('error', 'Falha na publicação: ' . $e->getMessage());
         }
+    }
+
+    /**
+     * Publica um Carrossel com múltiplas imagens no Instagram.
+     */
+    public function publishCarouselPostToInstagram(InstagramPost $post)
+    {
+        try {
+            $account = $post->instagramAccount;
+            if (!$account) throw new \Exception('Conta do Instagram não encontrada.');
+
+            $itemContainerIds = [];
+            $mediaUrls = $post->media_urls ?: [$post->media_path];
+
+            foreach ($mediaUrls as $path) {
+                $publicUrl = asset('storage/' . $path);
+                $itemResp = Http::post("https://graph.facebook.com/v19.0/{$account->instagram_account_id}/media", [
+                    'image_url' => $publicUrl,
+                    'is_carousel_item' => 'true',
+                    'access_token' => $account->access_token,
+                ]);
+
+                if ($itemResp->failed()) {
+                    $err = $itemResp->json('error.message', 'Erro ao enviar item do carrossel ao Instagram.');
+                    Log::error('Erro item carrossel: ' . $itemResp->body());
+                    $post->update(['status' => 'erro', 'error_message' => $err]);
+                    return redirect()->route('instagram.index')->with('error', 'Erro no carrossel: ' . $err);
+                }
+
+                $itemContainerIds[] = $itemResp->json('id');
+            }
+
+            // Criar container pai do Carrossel
+            $parentResp = Http::post("https://graph.facebook.com/v19.0/{$account->instagram_account_id}/media", [
+                'media_type' => 'CAROUSEL',
+                'caption' => $post->caption,
+                'children' => implode(',', $itemContainerIds),
+                'access_token' => $account->access_token,
+            ]);
+
+            if ($parentResp->failed()) {
+                $err = $parentResp->json('error.message', 'Erro ao criar container pai do carrossel.');
+                Log::error('Erro container pai carrossel: ' . $parentResp->body());
+                $post->update(['status' => 'erro', 'error_message' => $err]);
+                return redirect()->route('instagram.index')->with('error', 'Erro ao criar carrossel: ' . $err);
+            }
+
+            $parentId = $parentResp->json('id');
+
+            // Publicar
+            $publishResp = Http::post("https://graph.facebook.com/v19.0/{$account->instagram_account_id}/media_publish", [
+                'creation_id' => $parentId,
+                'access_token' => $account->access_token,
+            ]);
+
+            if ($publishResp->failed()) {
+                $err = $publishResp->json('error.message', 'Erro ao publicar carrossel no Instagram.');
+                $post->update(['status' => 'erro', 'error_message' => $err]);
+                return redirect()->route('instagram.index')->with('error', 'Erro na publicação do carrossel: ' . $err);
+            }
+
+            $post->update([
+                'status' => 'publicado',
+                'published_at' => now(),
+                'instagram_media_id' => $publishResp->json('id'),
+                'error_message' => null,
+            ]);
+
+            return redirect()->route('instagram.index')->with('success', '🎡 Carrossel publicado com sucesso no Instagram!');
+
+        } catch (\Exception $e) {
+            Log::error('Exceção ao publicar carrossel: ' . $e->getMessage());
+            $post->update(['status' => 'erro', 'error_message' => $e->getMessage()]);
+            return redirect()->route('instagram.index')->with('error', 'Falha no carrossel: ' . $e->getMessage());
+        }
+    }
+
+    /**
+     * Publica um Story no Instagram.
+     */
+    public function publishStoryPostToInstagram(InstagramPost $post)
+    {
+        try {
+            $account = $post->instagramAccount;
+            if (!$account) throw new \Exception('Conta do Instagram não encontrada.');
+
+            $publicImageUrl = asset('storage/' . $post->media_path);
+
+            $containerResp = Http::post("https://graph.facebook.com/v19.0/{$account->instagram_account_id}/media", [
+                'image_url' => $publicImageUrl,
+                'media_type' => 'STORIES',
+                'access_token' => $account->access_token,
+            ]);
+
+            if ($containerResp->failed()) {
+                $err = $containerResp->json('error.message', 'Erro ao enviar Story para o Instagram.');
+                Log::error('Erro container Story: ' . $containerResp->body());
+                $post->update(['status' => 'erro', 'error_message' => $err]);
+                return redirect()->route('instagram.index')->with('error', 'Erro ao enviar Story: ' . $err);
+            }
+
+            $containerId = $containerResp->json('id');
+
+            $publishResp = Http::post("https://graph.facebook.com/v19.0/{$account->instagram_account_id}/media_publish", [
+                'creation_id' => $containerId,
+                'access_token' => $account->access_token,
+            ]);
+
+            if ($publishResp->failed()) {
+                $err = $publishResp->json('error.message', 'Erro ao publicar Story.');
+                $post->update(['status' => 'erro', 'error_message' => $err]);
+                return redirect()->route('instagram.index')->with('error', 'Erro ao publicar Story: ' . $err);
+            }
+
+            $post->update([
+                'status' => 'publicado',
+                'published_at' => now(),
+                'instagram_media_id' => $publishResp->json('id'),
+                'error_message' => null,
+            ]);
+
+            return redirect()->route('instagram.index')->with('success', '📸 Story publicado com sucesso no Instagram!');
+
+        } catch (\Exception $e) {
+            Log::error('Exceção ao publicar Story: ' . $e->getMessage());
+            $post->update(['status' => 'erro', 'error_message' => $e->getMessage()]);
+            return redirect()->route('instagram.index')->with('error', 'Falha no Story: ' . $e->getMessage());
+        }
+    }
+
+    /**
+     * Aplica os ícones de marca d'água (Logo no topo e Seta no rodapé) na imagem enviada.
+     */
+    protected function applyOverlays($relativePath, $hasLogo, $hasArrow)
+    {
+        if (!$hasLogo && !$hasArrow) return $relativePath;
+
+        $fullPath = storage_path('app/public/' . $relativePath);
+        if (!file_exists($fullPath)) return $relativePath;
+
+        $info = @getimagesize($fullPath);
+        if (!$info) return $relativePath;
+
+        $mime = $info['mime'];
+        switch ($mime) {
+            case 'image/jpeg': $srcImg = @imagecreatefromjpeg($fullPath); break;
+            case 'image/png':  $srcImg = @imagecreatefrompng($fullPath); break;
+            case 'image/webp': $srcImg = @imagecreatefromwebp($fullPath); break;
+            default: return $relativePath;
+        }
+
+        if (!$srcImg) return $relativePath;
+
+        $width = imagesx($srcImg);
+        $height = imagesy($srcImg);
+
+        $settings = InstagramSetting::where('user_id', auth()->id())->first();
+
+        // 1. Logo Overlay (Topo Direita)
+        if ($hasLogo && $settings && $settings->logo_path && file_exists(storage_path('app/public/' . $settings->logo_path))) {
+            $logoFullPath = storage_path('app/public/' . $settings->logo_path);
+            $logoInfo = @getimagesize($logoFullPath);
+            if ($logoInfo) {
+                $logoSrc = @imagecreatefrompng($logoFullPath) ?: @imagecreatefromjpeg($logoFullPath);
+                if ($logoSrc) {
+                    imagealphablending($logoSrc, true);
+                    imagesavealpha($logoSrc, true);
+                    $logoW = imagesx($logoSrc);
+                    $logoH = imagesy($logoSrc);
+
+                    $targetW = (int)($width * 0.18); // 18% da largura da imagem
+                    $targetH = (int)($logoH * ($targetW / max(1, $logoW)));
+                    $posX = $width - $targetW - (int)($width * 0.04);
+                    $posY = (int)($height * 0.04);
+
+                    imagecopyresampled($srcImg, $logoSrc, $posX, $posY, 0, 0, $targetW, $targetH, $logoW, $logoH);
+                    imagedestroy($logoSrc);
+                }
+            }
+        }
+
+        // 2. Arrow Overlay (Rodapé Direita - Arraste pro lado / Seta)
+        if ($hasArrow && $settings && $settings->arrow_path && file_exists(storage_path('app/public/' . $settings->arrow_path))) {
+            $arrowFullPath = storage_path('app/public/' . $settings->arrow_path);
+            $arrowInfo = @getimagesize($arrowFullPath);
+            if ($arrowInfo) {
+                $arrowSrc = @imagecreatefrompng($arrowFullPath) ?: @imagecreatefromjpeg($arrowFullPath);
+                if ($arrowSrc) {
+                    imagealphablending($arrowSrc, true);
+                    imagesavealpha($arrowSrc, true);
+                    $arrowW = imagesx($arrowSrc);
+                    $arrowH = imagesy($arrowSrc);
+
+                    $targetW = (int)($width * 0.14); // 14% da largura da imagem
+                    $targetH = (int)($arrowH * ($targetW / max(1, $arrowW)));
+                    $posX = $width - $targetW - (int)($width * 0.05);
+                    $posY = $height - $targetH - (int)($height * 0.05);
+
+                    imagecopyresampled($srcImg, $arrowSrc, $posX, $posY, 0, 0, $targetW, $targetH, $arrowW, $arrowH);
+                    imagedestroy($arrowSrc);
+                }
+            }
+        }
+
+        // Salva imagem modificada
+        $newFilename = 'instagram_posts/overlay_' . time() . '_' . uniqid() . '.jpg';
+        $savePath = storage_path('app/public/' . $newFilename);
+        imagejpeg($srcImg, $savePath, 90);
+        imagedestroy($srcImg);
+
+        return $newFilename;
     }
 
     /**

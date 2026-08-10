@@ -6,14 +6,50 @@
 @section('content')
 <div class="space-y-8" x-data="{ 
     tab: 'novo', 
+    mediaType: 'IMAGE', 
     actionType: 'now',
     caption: '',
+    hasLogoOverlay: false,
+    hasArrowOverlay: false,
     imagePreview: null,
+    carouselPreviews: [],
+    currentCarouselIndex: 0,
+    selectedAccountId: '{{ optional($account)->id }}',
+    hashtagCategory: 'design',
+    hashtags: {
+        design: ['#designgrafico', '#identidadevisual', '#logodesign', '#designbr', '#designer', '#branding', '#designgraficobr', '#creative', '#graphicdesign', '#visualidentity'],
+        freelance: ['#freelancerbr', '#freelance', '#gestordefreelas', '#vidadefreela', '#trabalhoremoto', '#carreiradesign', '#designindependente', '#freelancerlife'],
+        socialmedia: ['#socialmedia', '#marketingdigital', '#midiasociais', '#gestordesocialmedia', '#conteudodigital', '#engajamento', '#instagramdicas', '#estrategiadedados'],
+        ilustracao: ['#ilustracao', '#artedigital', '#desenhodigital', '#illustrator', '#procreate', '#vectorart', '#ilustra', '#digitalart'],
+        trending: ['#viral', '#reelsbrasil', '#dicas', '#emalta', '#empreendedorismo', '#criatividade', '#portfoliodesign']
+    },
+    insertHashtag(tag) {
+        if (!this.caption.includes(tag)) {
+            this.caption = (this.caption ? this.caption.trim() + ' ' : '') + tag;
+        }
+    },
+    insertCategoryHashtags(cat) {
+        const tags = this.hashtags[cat] || [];
+        tags.forEach(t => this.insertHashtag(t));
+    },
     handleImageChange(e) {
         const file = e.target.files[0];
         if (file) {
             this.imagePreview = URL.createObjectURL(file);
         }
+    },
+    handleCarouselChange(e) {
+        const files = Array.from(e.target.files);
+        this.carouselPreviews = files.map(f => URL.createObjectURL(f));
+        if (this.carouselPreviews.length > 0) {
+            this.imagePreview = this.carouselPreviews[0];
+            this.currentCarouselIndex = 0;
+        }
+    },
+    useMediaBankImage(url) {
+        this.imagePreview = url;
+        this.mediaType = 'IMAGE';
+        this.tab = 'novo';
     }
 }">
     
@@ -26,7 +62,7 @@
                 </svg>
             </div>
             <div>
-                <div class="flex items-center gap-2">
+                <div class="flex flex-wrap items-center gap-2">
                     <h3 class="text-base font-extrabold text-white">Integração do Instagram Graph API</h3>
                     @if($account)
                         <span class="px-2.5 py-0.5 text-[10px] font-black uppercase tracking-wider bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 rounded-full flex items-center gap-1">
@@ -41,15 +77,28 @@
                 </div>
                 <p class="text-xs text-slate-300 mt-1 leading-relaxed">
                     @if($account)
-                        Sua conta profissional <strong class="text-white">{{ '@' . $account->username }}</strong> está pronta para publicar e agendar conteúdos diretamente do seu painel.
+                        Sua conta profissional <strong class="text-white">{{ '@' . $account->username }}</strong> está pronta para publicar Feed, Carrosséis e Stories.
                     @else
-                        Conecte sua conta do Instagram Profissional (vinculada a uma Página do Facebook) para publicar fotos, Reels e agendar postagens.
+                        Conecte sua conta do Instagram Profissional (vinculada a uma Página do Facebook) para agendar e publicar fotos, carrosséis e stories.
                     @endif
                 </p>
             </div>
         </div>
 
         <div class="shrink-0 flex items-center gap-2">
+            @if($accounts->count() > 1)
+                <!-- Seletor de Múltiplas Contas -->
+                <form action="{{ route('instagram.index') }}" method="GET" class="inline-block">
+                    <select name="account_id" onchange="this.form.submit()" class="px-3 py-2 bg-slate-800 text-white text-xs font-bold rounded-[5px] border border-slate-700">
+                        @foreach($accounts as $acc)
+                            <option value="{{ $acc->id }}" {{ optional($account)->id == $acc->id ? 'selected' : '' }}>
+                                {{ '@' . $acc->username }}
+                            </option>
+                        @endforeach
+                    </select>
+                </form>
+            @endif
+
             @if($account)
                 <form action="{{ route('instagram.disconnect', $account->id) }}" method="POST">
                     @csrf
@@ -61,7 +110,7 @@
             @else
                 <a href="{{ route('instagram.connect') }}" class="px-5 py-2.5 bg-gradient-to-r from-purple-600 to-rose-600 hover:from-purple-500 hover:to-rose-500 text-white text-xs font-bold rounded-[5px] transition-all shadow-md flex items-center gap-2 cursor-pointer">
                     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1"></path>
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 005.656-5.656l-1.1 1.1"></path>
                     </svg>
                     Conectar Instagram Profissional
                 </a>
@@ -69,225 +118,378 @@
         </div>
     </div>
 
-    @if(!$account)
-        <!-- Instruções de Conexão se não estiver conectado -->
-        <div class="bg-white border border-slate-200 rounded-xl p-6 shadow-sm space-y-4">
-            <h4 class="text-sm font-extrabold text-slate-800 uppercase tracking-wider flex items-center gap-2">
-                <span>💡</span> Como conectar sua conta:
-            </h4>
-            <div class="grid grid-cols-1 md:grid-cols-3 gap-4 text-xs text-slate-600">
-                <div class="p-4 bg-slate-50 border border-slate-100 rounded-lg space-y-1.5">
-                    <span class="w-6 h-6 rounded-full bg-purple-100 text-purple-700 font-bold flex items-center justify-center text-xs">1</span>
-                    <h5 class="font-bold text-slate-800">Conta Profissional</h5>
-                    <p class="text-slate-500">Garante que a sua conta do Instagram é de Criador de Conteúdo ou Empresa.</p>
-                </div>
-                <div class="p-4 bg-slate-50 border border-slate-100 rounded-lg space-y-1.5">
-                    <span class="w-6 h-6 rounded-full bg-purple-100 text-purple-700 font-bold flex items-center justify-center text-xs">2</span>
-                    <h5 class="font-bold text-slate-800">Página do Facebook</h5>
-                    <p class="text-slate-500">A conta do Instagram deve estar associada a uma Página do Facebook no seu perfil.</p>
-                </div>
-                <div class="p-4 bg-slate-50 border border-slate-100 rounded-lg space-y-1.5">
-                    <span class="w-6 h-6 rounded-full bg-purple-100 text-purple-700 font-bold flex items-center justify-center text-xs">3</span>
-                    <h5 class="font-bold text-slate-800">Autorização Meta</h5>
-                    <p class="text-slate-500">Clique em "Conectar Instagram", faça login com a conta do Facebook e conceda as permissões.</p>
-                </div>
-            </div>
-        </div>
-    @else
-        <!-- Abas do Módulo (Novo Post / Agendamentos / Histórico) -->
+    @if($account)
+        <!-- Abas do Módulo (Novo Post & Prévia / Agendamentos em Calendário / Banco de Imagens / Configurações) -->
         <div class="bg-white border border-slate-200 rounded-xl shadow-sm overflow-hidden">
             <div class="border-b border-slate-100 bg-slate-50/50 p-4 flex flex-wrap items-center justify-between gap-3">
                 <div class="flex items-center gap-2">
-                    <button type="button" @click="tab = 'novo'" 
-                            :class="tab === 'novo' ? 'bg-purple-600 text-white shadow-sm' : 'bg-white text-slate-600 hover:bg-slate-100 border border-slate-200'"
-                            class="px-4 py-2 text-xs font-extrabold uppercase tracking-wider rounded-[5px] transition-all cursor-pointer">
-                        ➕ Nova Publicação
+                    <button @click="tab = 'novo'" :class="tab === 'novo' ? 'bg-purple-600 text-white shadow-sm' : 'bg-white text-slate-600 hover:bg-slate-100 border border-slate-200'" class="px-4 py-2 text-xs font-bold rounded-[5px] transition-all flex items-center gap-2 cursor-pointer">
+                        <span>✨</span> Nova Publicação & Prévia
                     </button>
-                    <button type="button" @click="tab = 'posts'" 
-                            :class="tab === 'posts' ? 'bg-purple-600 text-white shadow-sm' : 'bg-white text-slate-600 hover:bg-slate-100 border border-slate-200'"
-                            class="px-4 py-2 text-xs font-extrabold uppercase tracking-wider rounded-[5px] transition-all cursor-pointer flex items-center gap-1.5">
-                        <span>📋 Publicações & Agendamentos</span>
-                        <span class="bg-purple-100 text-purple-800 text-[10px] px-1.5 py-0.5 rounded-full font-black" x-text="'{{ count($posts) }}'"></span>
+                    <button @click="tab = 'calendario'" :class="tab === 'calendario' ? 'bg-purple-600 text-white shadow-sm' : 'bg-white text-slate-600 hover:bg-slate-100 border border-slate-200'" class="px-4 py-2 text-xs font-bold rounded-[5px] transition-all flex items-center gap-2 cursor-pointer">
+                        <span>🗓️</span> Calendário de Agendamentos
+                    </button>
+                    <button @click="tab = 'banco'" :class="tab === 'banco' ? 'bg-purple-600 text-white shadow-sm' : 'bg-white text-slate-600 hover:bg-slate-100 border border-slate-200'" class="px-4 py-2 text-xs font-bold rounded-[5px] transition-all flex items-center gap-2 cursor-pointer">
+                        <span>🖼️</span> Banco de Imagens ({{ $posts->count() }})
+                    </button>
+                    <button @click="tab = 'marcas'" :class="tab === 'marcas' ? 'bg-purple-600 text-white shadow-sm' : 'bg-white text-slate-600 hover:bg-slate-100 border border-slate-200'" class="px-4 py-2 text-xs font-bold rounded-[5px] transition-all flex items-center gap-2 cursor-pointer">
+                        <span>🏷️</span> Logo & Seta (Marcas)
                     </button>
                 </div>
             </div>
 
             <div class="p-6">
-                <!-- Conteúdo Aba 1: Novo Post / Agendamento -->
-                <div x-show="tab === 'novo'" class="grid grid-cols-1 lg:grid-cols-12 gap-8">
-                    <!-- Formulário -->
-                    <div class="lg:col-span-7 space-y-6">
-                        <form action="{{ route('instagram.posts.store') }}" method="POST" enctype="multipart/form-data" class="space-y-5">
-                            @csrf
+                <!-- 1. ABA: NOVA PUBLICAÇÃO & PRÉVIA AO VIVO -->
+                <div x-show="tab === 'novo'" class="space-y-6">
+                    <div class="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
+                        
+                        <!-- Coluna da Esquerda: Formulário de Postagem -->
+                        <div class="lg:col-span-7 space-y-6">
                             
-                            <!-- Upload de Imagem -->
-                            <div class="space-y-1">
-                                <label class="text-xs font-semibold text-slate-500 uppercase tracking-wider block">Imagem do Post *</label>
-                                <div class="border-2 border-dashed border-slate-200 hover:border-purple-400 bg-slate-50/50 rounded-xl p-6 text-center transition-all cursor-pointer relative">
-                                    <input type="file" name="image" accept="image/*" @change="handleImageChange" required class="absolute inset-0 w-full h-full opacity-0 cursor-pointer">
-                                    <div class="space-y-2 pointer-events-none">
-                                        <div class="w-12 h-12 rounded-full bg-purple-100 text-purple-600 mx-auto flex items-center justify-center text-xl">
-                                            📸
-                                        </div>
-                                        <p class="text-xs font-bold text-slate-700">Clique para selecionar ou arraste uma foto</p>
-                                        <span class="text-[10px] text-slate-400">Suporta JPG ou PNG (Máx 10 MB)</span>
+                            <!-- Seletor do Tipo de Mídia (Feed Único, Carrossel, Story) -->
+                            <div class="space-y-2">
+                                <label class="text-xs font-extrabold text-slate-700 uppercase tracking-wider block">Formato da Publicação</label>
+                                <div class="grid grid-cols-3 gap-3">
+                                    <button type="button" @click="mediaType = 'IMAGE'" :class="mediaType === 'IMAGE' ? 'border-purple-600 bg-purple-50/50 text-purple-700 font-bold' : 'border-slate-200 bg-white text-slate-600 hover:bg-slate-50'" class="p-3 border rounded-lg text-xs transition-all text-center flex flex-col items-center gap-1 cursor-pointer">
+                                        <span class="text-lg">🖼️</span>
+                                        <span>Feed Único</span>
+                                    </button>
+                                    <button type="button" @click="mediaType = 'CAROUSEL'" :class="mediaType === 'CAROUSEL' ? 'border-purple-600 bg-purple-50/50 text-purple-700 font-bold' : 'border-slate-200 bg-white text-slate-600 hover:bg-slate-50'" class="p-3 border rounded-lg text-xs transition-all text-center flex flex-col items-center gap-1 cursor-pointer">
+                                        <span class="text-lg">🎡</span>
+                                        <span>Carrossel</span>
+                                    </button>
+                                    <button type="button" @click="mediaType = 'STORY'" :class="mediaType === 'STORY' ? 'border-purple-600 bg-purple-50/50 text-purple-700 font-bold' : 'border-slate-200 bg-white text-slate-600 hover:bg-slate-50'" class="p-3 border rounded-lg text-xs transition-all text-center flex flex-col items-center gap-1 cursor-pointer">
+                                        <span class="text-lg">📸</span>
+                                        <span>Story (24h)</span>
+                                    </button>
+                                </div>
+                            </div>
+
+                            <form action="{{ route('instagram.posts.store') }}" method="POST" enctype="multipart/form-data" class="space-y-5">
+                                @csrf
+                                <input type="hidden" name="instagram_account_id" :value="selectedAccountId">
+                                <input type="hidden" name="media_type" :value="mediaType">
+                                <input type="hidden" name="has_logo_overlay" :value="hasLogoOverlay ? 1 : 0">
+                                <input type="hidden" name="has_arrow_overlay" :value="hasArrowOverlay ? 1 : 0">
+
+                                <!-- Upload de Imagem Única ou Story -->
+                                <div x-show="mediaType !== 'CAROUSEL'" class="space-y-2">
+                                    <label class="text-xs font-extrabold text-slate-700 uppercase tracking-wider block">
+                                        Selecione a Imagem <span class="text-rose-500">*</span>
+                                    </label>
+                                    <input type="file" name="image" @change="handleImageChange" accept="image/*" class="w-full text-xs text-slate-600 file:mr-4 file:py-2 file:px-4 file:rounded-[5px] file:border-0 file:text-xs file:font-bold file:bg-purple-50 file:text-purple-700 hover:file:bg-purple-100 border border-slate-200 rounded-lg p-1.5 cursor-pointer">
+                                </div>
+
+                                <!-- Upload de Múltiplas Imagens do Carrossel -->
+                                <div x-show="mediaType === 'CAROUSEL'" class="space-y-2">
+                                    <label class="text-xs font-extrabold text-slate-700 uppercase tracking-wider block">
+                                        Selecione as Fotos do Carrossel (mínimo 2) <span class="text-rose-500">*</span>
+                                    </label>
+                                    <input type="file" name="carousel_images[]" multiple @change="handleCarouselChange" accept="image/*" class="w-full text-xs text-slate-600 file:mr-4 file:py-2 file:px-4 file:rounded-[5px] file:border-0 file:text-xs file:font-bold file:bg-purple-50 file:text-purple-700 hover:file:bg-purple-100 border border-slate-200 rounded-lg p-1.5 cursor-pointer">
+                                </div>
+
+                                <!-- Sobreposição de Marcas (Logo & Seta) -->
+                                <div class="p-3 bg-slate-50 border border-slate-200 rounded-lg space-y-2">
+                                    <span class="text-xs font-extrabold text-slate-700 uppercase tracking-wider block">Sobreposição de Ícones (Marca d'Água)</span>
+                                    <div class="flex items-center gap-6">
+                                        <label class="flex items-center gap-2 text-xs font-semibold text-slate-700 cursor-pointer">
+                                            <input type="checkbox" x-model="hasLogoOverlay" class="rounded text-purple-600 focus:ring-purple-500">
+                                            <span>Aplicar Ícone da Logo (Topo)</span>
+                                        </label>
+                                        <label class="flex items-center gap-2 text-xs font-semibold text-slate-700 cursor-pointer">
+                                            <input type="checkbox" x-model="hasArrowOverlay" class="rounded text-purple-600 focus:ring-purple-500">
+                                            <span>Aplicar Seta (Rodapé)</span>
+                                        </label>
+                                    </div>
+                                    @if(!$settings->logo_path && !$settings->arrow_path)
+                                        <p class="text-[11px] text-amber-600">💡 Faça upload dos ícones na aba <strong>"Logo & Seta (Marcas)"</strong> para aplicar automaticamente.</p>
+                                    @endif
+                                </div>
+
+                                <!-- Legenda do Post (Não exigida em Story) -->
+                                <div x-show="mediaType !== 'STORY'" class="space-y-2">
+                                    <div class="flex items-center justify-between">
+                                        <label class="text-xs font-extrabold text-slate-700 uppercase tracking-wider">Legenda do Post</label>
+                                        <span class="text-[11px] text-slate-400 font-mono" x-text="caption.length + ' / 2200'"></span>
+                                    </div>
+                                    <textarea name="caption" x-model="caption" rows="5" placeholder="Escreva uma legenda atraente para o seu post..." class="w-full text-xs text-slate-800 border border-slate-200 rounded-lg p-3 focus:ring-2 focus:ring-purple-500 focus:border-purple-500 outline-none transition-all"></textarea>
+                                </div>
+
+                                <!-- GERADOR INTELIGENTE DE HASHTAGS -->
+                                <div x-show="mediaType !== 'STORY'" class="p-4 bg-purple-50/50 border border-purple-100 rounded-xl space-y-3">
+                                    <div class="flex items-center justify-between">
+                                        <h5 class="text-xs font-extrabold text-purple-900 uppercase tracking-wider flex items-center gap-1.5">
+                                            <span>🔥</span> Gerador de Hashtags & Em Alta
+                                        </h5>
+                                        <select x-model="hashtagCategory" class="text-xs font-bold text-purple-700 bg-white border border-purple-200 rounded-md px-2 py-1 outline-none">
+                                            <option value="design">🎨 Design & Branding</option>
+                                            <option value="freelance">💻 Freelance & Carreira</option>
+                                            <option value="socialmedia">📲 Social Media</option>
+                                            <option value="ilustracao">✍️ Ilustração Digital</option>
+                                            <option value="trending">🔥 Em Alta / Trending</option>
+                                        </select>
+                                    </div>
+
+                                    <div class="flex flex-wrap gap-1.5">
+                                        <template x-for="tag in hashtags[hashtagCategory]" :key="tag">
+                                            <button type="button" @click="insertHashtag(tag)" class="px-2.5 py-1 bg-white hover:bg-purple-600 hover:text-white text-purple-700 border border-purple-200 text-[11px] font-semibold rounded-md transition-all cursor-pointer">
+                                                <span x-text="tag"></span>
+                                            </button>
+                                        </template>
+                                    </div>
+
+                                    <button type="button" @click="insertCategoryHashtags(hashtagCategory)" class="text-xs font-bold text-purple-700 hover:underline flex items-center gap-1 cursor-pointer">
+                                        <span>➕ Inserir todas desta categoria na legenda</span>
+                                    </button>
+                                </div>
+
+                                <!-- Ação: Publicar Agora ou Agendar -->
+                                <div class="space-y-4 pt-2 border-t border-slate-100">
+                                    <div class="flex items-center gap-6">
+                                        <label class="flex items-center gap-2 text-xs font-extrabold text-slate-700 cursor-pointer">
+                                            <input type="radio" name="action" value="now" x-model="actionType" class="text-purple-600 focus:ring-purple-500">
+                                            <span>🚀 Publicar Agora</span>
+                                        </label>
+                                        <label class="flex items-center gap-2 text-xs font-extrabold text-slate-700 cursor-pointer">
+                                            <input type="radio" name="action" value="schedule" x-model="actionType" class="text-purple-600 focus:ring-purple-500">
+                                            <span>🗓️ Agendar para Data Futura</span>
+                                        </label>
+                                    </div>
+
+                                    <div x-show="actionType === 'schedule'" class="space-y-2 bg-slate-50 p-3 rounded-lg border border-slate-200">
+                                        <label class="text-xs font-extrabold text-slate-700 uppercase tracking-wider block">Data e Horário da Publicação</label>
+                                        <input type="datetime-local" name="scheduled_at" class="w-full text-xs text-slate-800 border border-slate-200 rounded-lg p-2.5 bg-white font-semibold">
                                     </div>
                                 </div>
-                            </div>
 
-                            <!-- Legenda do Post -->
-                            <div class="space-y-1">
-                                <label for="caption" class="text-xs font-semibold text-slate-500 uppercase tracking-wider block">Legenda & Hashtags</label>
-                                <textarea id="caption" name="caption" rows="5" x-model="caption" placeholder="Escreva a legenda do seu post aqui... Use #hashtags e emojis!" class="w-full p-3 border border-slate-200 rounded-[5px] text-sm focus:ring-2 focus:ring-purple-500/20 focus:border-purple-500 transition-all placeholder-slate-400"></textarea>
-                            </div>
-
-                            <!-- Tipo de Ação (Publicar Agora vs Agendar) -->
-                            <div class="space-y-3 pt-2">
-                                <label class="text-xs font-semibold text-slate-500 uppercase tracking-wider block">Quando Publicar?</label>
-                                <div class="grid grid-cols-2 gap-3">
-                                    <label class="border p-3 rounded-[5px] flex items-center gap-3 cursor-pointer transition-all"
-                                           :class="actionType === 'now' ? 'border-purple-500 bg-purple-50/50 text-purple-900 font-bold' : 'border-slate-200 text-slate-600'">
-                                        <input type="radio" name="action" value="now" x-model="actionType" class="accent-purple-600">
-                                        <span class="text-xs">🚀 Publicar Agora</span>
-                                    </label>
-
-                                    <label class="border p-3 rounded-[5px] flex items-center gap-3 cursor-pointer transition-all"
-                                           :class="actionType === 'schedule' ? 'border-purple-500 bg-purple-50/50 text-purple-900 font-bold' : 'border-slate-200 text-slate-600'">
-                                        <input type="radio" name="action" value="schedule" x-model="actionType" class="accent-purple-600">
-                                        <span class="text-xs">🗓️ Agendar Post</span>
-                                    </label>
-                                </div>
-
-                                <!-- Data e Hora para Agendamento -->
-                                <div x-show="actionType === 'schedule'" x-cloak class="pt-2 space-y-1">
-                                    <label for="scheduled_at" class="text-xs font-semibold text-slate-500 uppercase tracking-wider block">Data e Hora do Agendamento</label>
-                                    <input type="datetime-local" id="scheduled_at" name="scheduled_at" class="w-full p-2.5 border border-slate-200 rounded-[5px] text-xs focus:ring-2 focus:ring-purple-500/20 focus:border-purple-500">
-                                </div>
-                            </div>
-
-                            <!-- Botão de Envio -->
-                            <div class="pt-4 border-t border-slate-100">
-                                <button type="submit" class="w-full py-3 bg-gradient-to-r from-purple-600 to-rose-600 hover:from-purple-500 hover:to-rose-500 text-white font-extrabold text-xs uppercase tracking-wider rounded-[5px] transition-all shadow-md cursor-pointer flex items-center justify-center gap-2">
+                                <button type="submit" class="w-full py-3 bg-gradient-to-r from-purple-600 to-rose-600 hover:from-purple-500 hover:to-rose-500 text-white font-extrabold text-xs uppercase tracking-wider rounded-lg shadow-md transition-all cursor-pointer">
                                     <span x-text="actionType === 'now' ? '🚀 Publicar no Instagram Agora' : '🗓️ Confirmar Agendamento'"></span>
                                 </button>
-                            </div>
-                        </form>
-                    </div>
+                            </form>
+                        </div>
 
-                    <!-- Preview ao Vivo do Post no Instagram -->
-                    <div class="lg:col-span-5 flex flex-col items-center">
-                        <span class="text-xs font-bold text-slate-400 uppercase tracking-wider mb-3">Pré-visualização do Post</span>
-                        
-                        <!-- Card Mockup Instagram -->
-                        <div class="w-full max-w-[340px] bg-white border border-slate-200 rounded-2xl shadow-xl overflow-hidden text-xs">
-                            <!-- Header Mockup -->
-                            <div class="p-3 border-b border-slate-100 flex items-center justify-between bg-white">
-                                <div class="flex items-center gap-2.5">
-                                    <img src="{{ $account->profile_picture_url ?: 'https://ui-avatars.com/api/?name=' . urlencode($account->username) }}" class="w-8 h-8 rounded-full border object-cover">
-                                    <div>
-                                        <strong class="font-extrabold text-slate-900 block leading-none">{{ '@' . $account->username }}</strong>
-                                        <span class="text-[10px] text-slate-400">Patrocinado / Feed</span>
-                                    </div>
+                        <!-- Coluna da Direita: Prévia ao Vivo do Smartphone Instagram -->
+                        <div class="lg:col-span-5 flex flex-col items-center">
+                            <h4 class="text-xs font-extrabold text-slate-500 uppercase tracking-wider mb-3">📱 Prévia em Tempo Real (Instagram App)</h4>
+                            
+                            <div class="w-[320px] bg-black text-white rounded-[40px] p-3 shadow-2xl border-4 border-slate-800 relative overflow-hidden">
+                                <!-- Smartphone Notch -->
+                                <div class="w-28 h-4 bg-slate-900 rounded-b-xl mx-auto mb-2 flex items-center justify-center">
+                                    <div class="w-2.5 h-2.5 rounded-full bg-slate-800"></div>
                                 </div>
-                                <span class="text-slate-400 font-bold">•••</span>
-                            </div>
 
-                            <!-- Imagem Mockup -->
-                            <div class="aspect-square bg-slate-100 flex items-center justify-center overflow-hidden">
-                                <template x-if="imagePreview">
-                                    <img :src="imagePreview" class="w-full h-full object-cover">
-                                </template>
-                                <template x-if="!imagePreview">
-                                    <div class="text-center p-6 text-slate-400 space-y-2">
-                                        <span class="text-3xl block">🖼️</span>
-                                        <span class="text-[11px] block">Selecione uma imagem no formulário ao lado para ver a prévia</span>
+                                <!-- Instagram App Header -->
+                                <div class="flex items-center justify-between px-3 py-2 border-b border-slate-800">
+                                    <div class="flex items-center gap-2">
+                                        <img src="{{ $account->profile_picture_url ?: 'https://ui-avatars.com/api/?name=' . urlencode($account->username) }}" class="w-8 h-8 rounded-full border border-purple-500 object-cover">
+                                        <span class="text-xs font-bold text-white tracking-tight" x-text="'{{ '@' . $account->username }}'"></span>
                                     </div>
-                                </template>
-                            </div>
+                                    <span class="text-slate-400 text-xs">•••</span>
+                                </div>
 
-                            <!-- Botões de Ação Mockup -->
-                            <div class="p-3 space-y-2">
-                                <div class="flex items-center justify-between text-xl">
+                                <!-- Instagram Image Viewport with Live Overlay Badges -->
+                                <div class="w-full h-[320px] bg-slate-900 relative flex items-center justify-center overflow-hidden">
+                                    <template x-if="imagePreview">
+                                        <img :src="imagePreview" class="w-full h-full object-cover">
+                                    </template>
+                                    <template x-if="!imagePreview">
+                                        <div class="text-center p-6 text-slate-600 space-y-2">
+                                            <span class="text-4xl block">🖼️</span>
+                                            <p class="text-xs font-semibold">Sua imagem ou carrossel aparecerá aqui em tempo real</p>
+                                        </div>
+                                    </template>
+
+                                    <!-- Live Overlay Badge Logo (Top Right) -->
+                                    <template x-if="hasLogoOverlay">
+                                        <div class="absolute top-3 right-3 bg-black/60 backdrop-blur-md px-2 py-1 rounded border border-white/20 flex items-center gap-1 shadow-lg">
+                                            @if($settings->logo_path)
+                                                <img src="{{ asset('storage/' . $settings->logo_path) }}" class="h-4 object-contain">
+                                            @else
+                                                <span class="text-[9px] font-black uppercase text-amber-300 tracking-wider">LOGO</span>
+                                            @endif
+                                        </div>
+                                    </template>
+
+                                    <!-- Live Overlay Badge Arrow (Bottom Right) -->
+                                    <template x-if="hasArrowOverlay">
+                                        <div class="absolute bottom-3 right-3 bg-purple-600/80 backdrop-blur-md px-2.5 py-1 rounded-full text-white text-[10px] font-bold flex items-center gap-1 shadow-lg animate-bounce">
+                                            @if($settings->arrow_path)
+                                                <img src="{{ asset('storage/' . $settings->arrow_path) }}" class="h-3 object-contain">
+                                            @else
+                                                <span>Arraste pro lado ➔</span>
+                                            @endif
+                                        </div>
+                                    </template>
+                                </div>
+
+                                <!-- Instagram Actions Bar -->
+                                <div class="px-3 py-2 flex items-center justify-between text-slate-300">
                                     <div class="flex items-center gap-3">
-                                        <span>❤️</span>
-                                        <span>💬</span>
-                                        <span>✈️</span>
+                                        <span class="text-rose-500 font-bold text-base">❤️</span>
+                                        <span class="text-base">💬</span>
+                                        <span class="text-base">✈️</span>
                                     </div>
-                                    <span>🔖</span>
+                                    <span class="text-base">🔖</span>
                                 </div>
-                                <div class="text-slate-800 font-normal leading-relaxed line-clamp-3">
-                                    <strong class="font-bold mr-1">{{ '@' . $account->username }}</strong>
-                                    <span x-text="caption || 'Sua legenda aparecerá aqui...'"></span>
+
+                                <!-- Live Caption Preview -->
+                                <div class="px-3 pb-4 space-y-1 text-xs">
+                                    <p class="text-slate-200 text-[11px] leading-relaxed break-words">
+                                        <strong class="text-white font-bold" x-text="'{{ '@' . $account->username }}'"></strong>
+                                        <span x-text="caption || 'Sua legenda aparecerá aqui...'"></span>
+                                    </p>
+                                    <span class="text-[9px] text-slate-500 uppercase font-semibold block pt-1">HÁ 1 MINUTO</span>
                                 </div>
                             </div>
                         </div>
+
                     </div>
                 </div>
 
-                <!-- Conteúdo Aba 2: Lista de Publicações -->
-                <div x-show="tab === 'posts'" class="space-y-4">
-                    <div class="overflow-x-auto border border-slate-200 rounded-lg">
-                        <table class="w-full text-left text-xs text-slate-600">
-                            <thead class="bg-slate-50 text-slate-500 uppercase tracking-wider font-bold border-b border-slate-200">
-                                <tr>
-                                    <th class="p-3">Mídia</th>
-                                    <th class="p-3">Legenda</th>
-                                    <th class="p-3">Status</th>
-                                    <th class="p-3">Data</th>
-                                    <th class="p-3 text-right">Ação</th>
-                                </tr>
-                            </thead>
-                            <tbody class="divide-y divide-slate-100">
-                                @forelse($posts as $post)
-                                    <tr class="hover:bg-slate-50/50 transition-colors">
-                                        <td class="p-3">
-                                            <div class="w-12 h-12 rounded bg-slate-100 overflow-hidden shrink-0 border border-slate-200">
-                                                <img src="{{ asset('storage/' . $post->media_path) }}" class="w-full h-full object-cover">
-                                            </div>
-                                        </td>
-                                        <td class="p-3 max-w-xs">
-                                            <p class="line-clamp-2 leading-relaxed text-slate-700 font-medium">{{ $post->caption ?: 'Sem legenda' }}</p>
-                                        </td>
-                                        <td class="p-3">
-                                            @if($post->status === 'publicado')
-                                                <span class="px-2 py-0.5 text-[10px] font-extrabold uppercase rounded bg-emerald-100 text-emerald-800 border border-emerald-200">
-                                                    ● Publicado
-                                                </span>
-                                            @elseif($post->status === 'agendado')
-                                                <span class="px-2 py-0.5 text-[10px] font-extrabold uppercase rounded bg-blue-100 text-blue-800 border border-blue-200">
-                                                    ⏰ Agendado
-                                                </span>
-                                            @elseif($post->status === 'erro')
-                                                <span class="px-2 py-0.5 text-[10px] font-extrabold uppercase rounded bg-rose-100 text-rose-800 border border-rose-200" title="{{ $post->error_message }}">
-                                                    ⚠️ Erro ao publicar
-                                                </span>
-                                            @else
-                                                <span class="px-2 py-0.5 text-[10px] font-extrabold uppercase rounded bg-slate-100 text-slate-700 border border-slate-200">
-                                                    Rascunho
-                                                </span>
-                                            @endif
-                                        </td>
-                                        <td class="p-3 text-slate-500 font-medium">
-                                            {{ $post->published_at ? $post->published_at->format('d/m/Y H:i') : ($post->scheduled_at ? $post->scheduled_at->format('d/m/Y H:i') : $post->created_at->format('d/m/Y H:i')) }}
-                                        </td>
-                                        <td class="p-3 text-right">
-                                            @if($post->status === 'publicado' && $post->instagram_media_id)
-                                                <a href="https://www.instagram.com/p/{{ $post->instagram_media_id }}" target="_blank" class="text-purple-600 hover:text-purple-800 font-bold hover:underline">
-                                                    Ver no IG ↗
-                                                </a>
-                                            @endif
-                                        </td>
-                                    </tr>
-                                @empty
-                                    <tr>
-                                        <td colspan="5" class="p-8 text-center text-slate-400">
-                                            Nenhum post agendado ou publicado ainda.
-                                        </td>
-                                    </tr>
-                                @endforelse
-                            </tbody>
-                        </table>
+                <!-- 2. ABA: CALENDÁRIO VISUAL DE AGENDAMENTOS -->
+                <div x-show="tab === 'calendario'" class="space-y-6">
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <h4 class="text-sm font-extrabold text-slate-800 uppercase tracking-wider">🗓️ Calendário Mensal de Publicações</h4>
+                            <p class="text-xs text-slate-500">Visualize seus posts agendados e publicados nas datas do mês.</p>
+                        </div>
                     </div>
+
+                    <!-- Grid do Calendário -->
+                    <div class="grid grid-cols-7 gap-2 bg-slate-100 p-2 rounded-xl border border-slate-200">
+                        @php
+                            $daysInMonth = now()->daysInMonth;
+                            $firstDayOfWeek = now()->startOfMonth()->dayOfWeek;
+                        @endphp
+
+                        @foreach(['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'] as $dayName)
+                            <div class="text-center text-[11px] font-extrabold text-slate-500 uppercase tracking-wider py-1.5 bg-slate-200/60 rounded-md">
+                                {{ $dayName }}
+                            </div>
+                        @endforeach
+
+                        @for($i = 0; $i < $firstDayOfWeek; $i++)
+                            <div class="min-h-[100px] bg-slate-50/50 rounded-lg border border-slate-100/50 opacity-40"></div>
+                        @endfor
+
+                        @for($day = 1; $day <= $daysInMonth; $day++)
+                            @php
+                                $dateStr = now()->format('Y-m-') . sprintf('%02d', $day);
+                                $dayPosts = $posts->filter(function($p) use ($dateStr) {
+                                    return ($p->scheduled_at && $p->scheduled_at->format('Y-m-d') === $dateStr)
+                                        || ($p->published_at && $p->published_at->format('Y-m-d') === $dateStr);
+                                });
+                                $isToday = $day == now()->day;
+                            @endphp
+                            <div class="min-h-[100px] bg-white p-2 rounded-lg border {{ $isToday ? 'border-purple-500 ring-2 ring-purple-100' : 'border-slate-200' }} flex flex-col justify-between hover:border-purple-300 transition-all">
+                                <div class="flex items-center justify-between">
+                                    <span class="text-xs font-bold {{ $isToday ? 'bg-purple-600 text-white w-5 h-5 rounded-full flex items-center justify-center' : 'text-slate-700' }}">{{ $day }}</span>
+                                    @if($dayPosts->count() > 0)
+                                        <span class="text-[9px] font-black bg-purple-100 text-purple-700 px-1.5 py-0.5 rounded-full">{{ $dayPosts->count() }} post</span>
+                                    @endif
+                                </div>
+
+                                <div class="space-y-1 my-1">
+                                    @foreach($dayPosts as $dp)
+                                        <div class="p-1 rounded text-[10px] font-bold border truncate flex items-center justify-between gap-1 {{ $dp->status === 'publicado' ? 'bg-emerald-50 text-emerald-700 border-emerald-200' : ($dp->status === 'erro' ? 'bg-rose-50 text-rose-700 border-rose-200' : 'bg-purple-50 text-purple-700 border-purple-200') }}">
+                                            <span class="truncate">{{ $dp->media_type === 'STORY' ? '📸 Story' : ($dp->media_type === 'CAROUSEL' ? '🎡 Carrossel' : '🖼️ Feed') }}</span>
+                                            <span>{{ $dp->scheduled_at ? $dp->scheduled_at->format('H:i') : '' }}</span>
+                                        </div>
+                                    @endforeach
+                                </div>
+
+                                <button @click="tab = 'novo'; actionType = 'schedule'" class="text-[10px] font-bold text-purple-600 hover:text-purple-800 text-center block pt-1 border-t border-slate-100 cursor-pointer">
+                                    + Agendar
+                                </button>
+                            </div>
+                        @endfor
+                    </div>
+                </div>
+
+                <!-- 3. ABA: BANCO DE IMAGENS & HISTÓRICO -->
+                <div x-show="tab === 'banco'" class="space-y-6">
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <h4 class="text-sm font-extrabold text-slate-800 uppercase tracking-wider">🖼️ Banco de Imagens & Histórico de Mídias</h4>
+                            <p class="text-xs text-slate-500">Todas as fotos enviadas e publicadas. Clique em "Reutilizar" para postar novamente.</p>
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4">
+                        @forelse($posts as $p)
+                            <div class="group bg-white border border-slate-200 rounded-xl overflow-hidden shadow-sm hover:shadow-md transition-all flex flex-col justify-between">
+                                <div class="relative h-36 bg-slate-900 overflow-hidden">
+                                    @if($p->media_path)
+                                        <img src="{{ asset('storage/' . $p->media_path) }}" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300">
+                                    @else
+                                        <div class="w-full h-full flex items-center justify-center text-slate-600">🖼️</div>
+                                    @endif
+                                    
+                                    <span class="absolute top-2 left-2 px-2 py-0.5 text-[9px] font-black uppercase tracking-wider rounded-md text-white {{ $p->status === 'publicado' ? 'bg-emerald-600' : ($p->status === 'erro' ? 'bg-rose-600' : 'bg-purple-600') }}">
+                                        {{ $p->status }}
+                                    </span>
+                                </div>
+
+                                <div class="p-2.5 space-y-2">
+                                    <p class="text-[11px] text-slate-600 line-clamp-2">{{ $p->caption ?: 'Sem legenda' }}</p>
+                                    
+                                    <div class="flex items-center justify-between pt-2 border-t border-slate-100">
+                                        <button type="button" @click="useMediaBankImage('{{ asset('storage/' . $p->media_path) }}')" class="w-full py-1 bg-purple-50 hover:bg-purple-600 hover:text-white text-purple-700 font-bold text-[10px] rounded transition-all cursor-pointer">
+                                            🔄 Reutilizar
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        @empty
+                            <div class="col-span-full p-8 text-center bg-slate-50 border border-slate-200 rounded-xl text-slate-500 text-xs">
+                                Nenhuma imagem registrada ainda no histórico.
+                            </div>
+                        @endforelse
+                    </div>
+                </div>
+
+                <!-- 4. ABA: CONFIGURAÇÕES & MARCAS D'ÁGUA (LOGO E SETA) -->
+                <div x-show="tab === 'marcas'" class="space-y-6">
+                    <div>
+                        <h4 class="text-sm font-extrabold text-slate-800 uppercase tracking-wider">🏷️ Ícones de Sobreposição (Logo & Seta)</h4>
+                        <p class="text-xs text-slate-500">Cadastre a sua marca d'água para aplicar automaticamente sobre as fotos antes da publicação.</p>
+                    </div>
+
+                    <form action="{{ route('instagram.settings.overlays') }}" method="POST" enctype="multipart/form-data" class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        @csrf
+
+                        <!-- Card Upload Logo -->
+                        <div class="p-5 bg-slate-50 border border-slate-200 rounded-xl space-y-3">
+                            <h5 class="text-xs font-extrabold text-slate-800 uppercase tracking-wider flex items-center gap-2">
+                                <span>🎨</span> Ícone da Logo (Marca D'Água Topo)
+                            </h5>
+                            @if($settings->logo_path)
+                                <div class="h-20 bg-slate-900 rounded-lg p-2 flex items-center justify-center border border-slate-700">
+                                    <img src="{{ asset('storage/' . $settings->logo_path) }}" class="h-full object-contain">
+                                </div>
+                            @endif
+                            <input type="file" name="logo_icon" accept="image/png,image/jpeg" class="w-full text-xs text-slate-600 file:mr-3 file:py-1.5 file:px-3 file:rounded file:border-0 file:text-xs file:font-bold file:bg-purple-50 file:text-purple-700 hover:file:bg-purple-100 border border-slate-200 rounded-lg p-1">
+                        </div>
+
+                        <!-- Card Upload Seta -->
+                        <div class="p-5 bg-slate-50 border border-slate-200 rounded-xl space-y-3">
+                            <h5 class="text-xs font-extrabold text-slate-800 uppercase tracking-wider flex items-center gap-2">
+                                <span>➔</span> Ícone de Seta (Marca D'Água Rodapé)
+                            </h5>
+                            @if($settings->arrow_path)
+                                <div class="h-20 bg-slate-900 rounded-lg p-2 flex items-center justify-center border border-slate-700">
+                                    <img src="{{ asset('storage/' . $settings->arrow_path) }}" class="h-full object-contain">
+                                </div>
+                            @endif
+                            <input type="file" name="arrow_icon" accept="image/png,image/jpeg" class="w-full text-xs text-slate-600 file:mr-3 file:py-1.5 file:px-3 file:rounded file:border-0 file:text-xs file:font-bold file:bg-purple-50 file:text-purple-700 hover:file:bg-purple-100 border border-slate-200 rounded-lg p-1">
+                        </div>
+
+                        <div class="md:col-span-2">
+                            <button type="submit" class="px-6 py-2.5 bg-purple-600 hover:bg-purple-700 text-white font-bold text-xs rounded-lg shadow-md transition-all cursor-pointer">
+                                💾 Salvar Ícones de Marca D'Água
+                            </button>
+                        </div>
+                    </form>
                 </div>
             </div>
         </div>
