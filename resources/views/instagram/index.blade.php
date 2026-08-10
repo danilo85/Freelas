@@ -897,7 +897,7 @@ document.addEventListener('alpine:init', () => {
             ilustracao: ['#ilustracao', '#artedigital', '#desenhodigital', '#illustrator', '#procreate', '#vectorart', '#ilustra', '#digitalart'],
             trending: ['#viral', '#reelsbrasil', '#dicas', '#emalta', '#empreendedorismo', '#criatividade', '#portfoliodesign']
         },
-        savedThemes: @json($settings->saved_themes ?: []),
+        savedThemes: @json(optional($settings)->saved_themes ?: []),
         newThemeName: '',
         showSaveThemeModal: false,
         isGeneratingHashtags: false,

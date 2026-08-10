@@ -38,10 +38,12 @@ class InstagramController extends Controller
                 $pageCount = 0;
 
                 while ($nextUrl && $pageCount < $maxPages) {
-                    $feedResp = Http::get($nextUrl);
+                    $feedResp = Http::withoutVerifying()->timeout(10)->get($nextUrl);
                     if ($feedResp->failed()) break;
 
                     $data = $feedResp->json('data', []);
+                    if (empty($data) || !is_array($data)) break;
+
                     $liveInstagramPosts = array_merge($liveInstagramPosts, $data);
 
                     $nextUrl = $feedResp->json('paging.next');
@@ -59,7 +61,7 @@ class InstagramController extends Controller
                         }
                     }
                 }
-            } catch (\Exception $e) {
+            } catch (\Throwable $e) {
                 Log::error('Erro ao buscar feed vivo do Instagram: ' . $e->getMessage());
             }
         }
