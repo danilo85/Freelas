@@ -39,13 +39,18 @@ class InstagramController extends Controller
 
         $redirectUri = $this->getRedirectUri();
 
-        $scopes = [
-            'instagram_basic',
-            'instagram_content_publish',
-            'pages_show_list',
-            'pages_read_engagement',
-            'public_profile'
-        ];
+        $envScopes = config('services.instagram.scopes') ?: env('INSTAGRAM_SCOPES');
+        if ($envScopes) {
+            $scopes = array_filter(array_map('trim', explode(',', $envScopes)));
+        } else {
+            $scopes = [
+                'public_profile',
+                'instagram_basic',
+                'instagram_content_publish',
+                'pages_show_list',
+                'pages_read_engagement',
+            ];
+        }
 
         $params = http_build_query([
             'client_id' => $appId,
