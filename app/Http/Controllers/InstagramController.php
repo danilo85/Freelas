@@ -163,13 +163,25 @@ class InstagramController extends Controller
                 $nextUrl = $pagesResp->json('paging.next');
             }
 
-            if (empty($pages)) {
-                // Fallback via me?fields=accounts
-                $meResp = Http::get("https://graph.facebook.com/v19.0/me", [
-                    'access_token' => $longToken,
-                    'fields' => 'accounts.limit(100){id,name,access_token,instagram_business_account{id,username,name,profile_picture_url},connected_instagram_account{id,username,name,profile_picture_url},page_backed_instagram_account{id,username,name,profile_picture_url}}'
-                ]);
-                $pages = $meResp->json('accounts.data', []);
+            // Busca também páginas gerenciadas via Portfólio Empresarial (Business Manager)
+            $bizResp = Http::get("https://graph.facebook.com/v19.0/me/businesses", [
+                'access_token' => $longToken,
+                'fields' => 'id,name,pages{id,name,access_token,instagram_business_account{id,username,name,profile_picture_url},connected_instagram_account{id,username,name,profile_picture_url},page_backed_instagram_account{id,username,name,profile_picture_url}},client_pages{id,name,access_token,instagram_business_account{id,username,name,profile_picture_url},connected_instagram_account{id,username,name,profile_picture_url},page_backed_instagram_account{id,username,name,profile_picture_url}}'
+            ]);
+
+            if ($bizResp->successful()) {
+                $businesses = $bizResp->json('data', []);
+                foreach ($businesses as $biz) {
+                    $bizPages = array_merge(
+                        $biz['pages']['data'] ?? [],
+                        $biz['client_pages']['data'] ?? []
+                    );
+                    foreach ($bizPages as $bp) {
+                        if (!collect($pages)->pluck('id')->contains($bp['id'])) {
+                            $pages[] = $bp;
+                        }
+                    }
+                }
             }
 
             Log::info('Meta Facebook Pages returned: ', $pages);
