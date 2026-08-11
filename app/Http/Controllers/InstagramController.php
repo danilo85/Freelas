@@ -9,6 +9,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Facades\Artisan;
 use Carbon\Carbon;
 
 class InstagramController extends Controller
@@ -1062,9 +1063,27 @@ class InstagramController extends Controller
             }
         }
 
-        // Fallback automático para desenvolvimento local ou hospedagens com storage:link ausente: Upload temporário para tmpfiles.org
+        // Fallback automático para desenvolvimento local: Upload temporário para Litterbox Catbox (retorna URL direta de imagem compatível com a Meta API)
         $fullPath = storage_path('app/public/' . $cleanPath);
         if (file_exists($fullPath)) {
+            try {
+                $response = Http::attach(
+                    'fileToUpload', file_get_contents($fullPath), basename($fullPath)
+                )->post('https://litterbox.catbox.moe/resources/internals/api.php', [
+                    'reqtype' => 'fileupload',
+                    'time' => '1h'
+                ]);
+
+                if ($response->successful() && str_starts_with(trim($response->body()), 'http')) {
+                    $directUrl = trim($response->body());
+                    Log::info("Localhost fallback: imagem enviada para URL pública temporária: {$directUrl}");
+                    return $directUrl;
+                }
+            } catch (\Exception $e) {
+                Log::error('Erro no fallback de imagem para litterbox: ' . $e->getMessage());
+            }
+
+            // Fallback secundário: tmpfiles.org
             try {
                 $response = Http::attach(
                     'file', file_get_contents($fullPath), basename($fullPath)
@@ -1073,7 +1092,7 @@ class InstagramController extends Controller
                 if ($response->successful() && $response->json('status') === 'success') {
                     $rawUrl = $response->json('data.url');
                     $directUrl = str_replace('tmpfiles.org/', 'tmpfiles.org/dl/', $rawUrl);
-                    Log::info("Fallback Hostinger/Localhost: imagem enviada para URL pública temporária: {$directUrl}");
+                    Log::info("Fallback secundário: imagem enviada para URL pública temporária: {$directUrl}");
                     return $directUrl;
                 }
             } catch (\Exception $e) {
