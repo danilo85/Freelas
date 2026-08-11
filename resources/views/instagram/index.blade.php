@@ -546,8 +546,47 @@
 </script>
 
 <div class="space-y-8" x-data="instagramModule">
-    
-    <!-- Banner de Status de Conexão com a Meta / Instagram -->
+
+    <!-- Mensagens de Alerta Flash (Sucesso, Erros da API ou Erros de Validação) -->
+    @if (session('success'))
+        <div class="bg-emerald-500/10 border border-emerald-500/30 text-emerald-700 dark:text-emerald-300 p-4 rounded-2xl flex items-center justify-between gap-3 shadow-sm">
+            <div class="flex items-center gap-3">
+                <span class="text-xl">✅</span>
+                <p class="text-xs font-bold">{{ session('success') }}</p>
+            </div>
+            <button type="button" onclick="this.parentElement.remove()" class="text-emerald-500 hover:text-emerald-700 font-bold text-sm">✕</button>
+        </div>
+    @endif
+
+    @if (session('error'))
+        <div class="bg-rose-500/10 border border-rose-500/30 text-rose-700 dark:text-rose-300 p-4 rounded-2xl flex items-center justify-between gap-3 shadow-sm">
+            <div class="flex items-center gap-3">
+                <span class="text-xl">⚠️</span>
+                <div>
+                    <h5 class="text-xs font-black uppercase tracking-wider text-rose-800 dark:text-rose-200">Aviso / Erro no Instagram</h5>
+                    <p class="text-xs font-bold mt-0.5">{{ session('error') }}</p>
+                </div>
+            </div>
+            <button type="button" onclick="this.parentElement.remove()" class="text-rose-500 hover:text-rose-700 font-bold text-sm">✕</button>
+        </div>
+    @endif
+
+    @if ($errors->any())
+        <div class="bg-rose-500/10 border border-rose-500/30 text-rose-700 dark:text-rose-300 p-4 rounded-2xl space-y-2 shadow-sm">
+            <div class="flex items-center justify-between">
+                <div class="flex items-center gap-2">
+                    <span class="text-xl">🚨</span>
+                    <h5 class="text-xs font-black uppercase tracking-wider text-rose-800 dark:text-rose-200">Erros no Envio do Formulário</h5>
+                </div>
+                <button type="button" onclick="this.parentElement.parentElement.remove()" class="text-rose-500 hover:text-rose-700 font-bold text-sm">✕</button>
+            </div>
+            <ul class="list-disc list-inside text-xs font-semibold space-y-1 pl-2">
+                @foreach ($errors->all() as $error)
+                    <li>{{ $error }}</li>
+                @endforeach
+            </ul>
+        </div>
+    @endif
     <div class="bg-gradient-to-r {{ $account ? 'from-purple-950 via-slate-900 to-slate-900 border-purple-500/40' : 'from-slate-900 via-rose-950 to-slate-900 border-rose-500/40' }} border text-white rounded-xl p-6 shadow-md flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
         <div class="flex items-center gap-4">
             <div class="w-14 h-14 rounded-2xl {{ $account ? 'bg-gradient-to-tr from-amber-500 via-rose-500 to-purple-600 text-white shadow-lg' : 'bg-slate-800 text-slate-400 border border-slate-700' }} flex items-center justify-center text-3xl shrink-0">

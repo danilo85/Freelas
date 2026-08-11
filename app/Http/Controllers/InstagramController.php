@@ -405,85 +405,92 @@ class InstagramController extends Controller
      */
     public function storePost(Request $request)
     {
-        $request->validate([
-            'instagram_account_id' => 'nullable|exists:instagram_accounts,id',
-            'media_type' => 'required|in:IMAGE,CAROUSEL,STORY',
-            'image' => 'nullable|required_if:media_type,IMAGE,STORY|image|max:10240',
-            'carousel_images.*' => 'nullable|image|max:10240',
-            'caption' => 'nullable|string',
-            'has_logo_overlay' => 'nullable|boolean',
-            'has_arrow_overlay' => 'nullable|boolean',
-            'action' => 'required|in:now,schedule',
-            'scheduled_at' => 'nullable|required_if:action,schedule|date|after:now',
-        ]);
+        try {
+            $request->validate([
+                'instagram_account_id' => 'nullable|exists:instagram_accounts,id',
+                'media_type' => 'required|in:IMAGE,CAROUSEL,STORY',
+                'image' => 'nullable|required_if:media_type,IMAGE,STORY|image|max:10240',
+                'carousel_images.*' => 'nullable|image|max:10240',
+                'caption' => 'nullable|string',
+                'has_logo_overlay' => 'nullable|boolean',
+                'has_arrow_overlay' => 'nullable|boolean',
+                'action' => 'required|in:now,schedule',
+                'scheduled_at' => 'nullable|required_if:action,schedule|date|after:now',
+            ]);
 
-        $accountId = $request->input('instagram_account_id');
-        $account = $accountId 
-            ? InstagramAccount::where('id', $accountId)->where('user_id', auth()->id())->first()
-            : InstagramAccount::where('user_id', auth()->id())->where('is_active', true)->first();
+            $accountId = $request->input('instagram_account_id');
+            $account = $accountId 
+                ? InstagramAccount::where('id', $accountId)->where('user_id', auth()->id())->first()
+                : InstagramAccount::where('user_id', auth()->id())->where('is_active', true)->first();
 
-        if (!$account) {
-            return redirect()->route('instagram.index')->with('error', 'Conecte sua conta do Instagram antes de publicar.');
-        }
-
-        $mediaType = $request->input('media_type', 'IMAGE');
-        $hasLogo = $request->boolean('has_logo_overlay');
-        $hasArrow = $request->boolean('has_arrow_overlay');
-
-        $mainPath = null;
-        $mediaUrls = [];
-
-        if ($mediaType === 'CAROUSEL') {
-            $carouselFiles = [];
-            if ($request->hasFile('carousel_images')) {
-                $files = $request->file('carousel_images');
-                $carouselFiles = is_array($files) ? $files : [$files];
-            } elseif ($request->hasFile('image')) {
-                $files = $request->file('image');
-                $carouselFiles = is_array($files) ? $files : [$files];
+            if (!$account) {
+                return redirect()->route('instagram.index')->with('error', 'Conecte sua conta do Instagram antes de publicar.');
             }
 
-            if (count($carouselFiles) < 2) {
-                return redirect()->back()->with('error', 'Selecione pelo menos 2 imagens para criar um Carrossel.');
-            }
+            $mediaType = $request->input('media_type', 'IMAGE');
+            $hasLogo = $request->boolean('has_logo_overlay');
+            $hasArrow = $request->boolean('has_arrow_overlay');
 
-            foreach ($carouselFiles as $imgFile) {
-                $rawPath = $imgFile->store('instagram_posts', 'public');
-                $processedPath = $this->applyOverlays($rawPath, $hasLogo, $hasArrow);
-                $mediaUrls[] = $processedPath;
-            }
-            $mainPath = $mediaUrls[0] ?? null;
-        } else {
-            if ($request->hasFile('image')) {
-                $rawPath = $request->file('image')->store('instagram_posts', 'public');
-                $mainPath = $this->applyOverlays($rawPath, $hasLogo, $hasArrow);
-            }
-        }
+            $mainPath = null;
+            $mediaUrls = [];
 
-        $post = InstagramPost::create([
-            'user_id' => auth()->id(),
-            'instagram_account_id' => $account->id,
-            'media_type' => $mediaType,
-            'media_path' => $mainPath,
-            'media_urls' => $mediaUrls,
-            'caption' => $request->caption,
-            'has_logo_overlay' => $hasLogo,
-            'has_arrow_overlay' => $hasArrow,
-            'status' => $request->action === 'now' ? 'rascunho' : 'agendado',
-            'scheduled_at' => $request->action === 'schedule' ? Carbon::parse($request->scheduled_at) : null,
-        ]);
-
-        if ($request->action === 'now') {
             if ($mediaType === 'CAROUSEL') {
-                return $this->publishCarouselPostToInstagram($post);
-            } elseif ($mediaType === 'STORY') {
-                return $this->publishStoryPostToInstagram($post);
-            } else {
-                return $this->publishPostToInstagram($post);
-            }
-        }
+                $carouselFiles = [];
+                if ($request->hasFile('carousel_images')) {
+                    $files = $request->file('carousel_images');
+                    $carouselFiles = is_array($files) ? $files : [$files];
+                } elseif ($request->hasFile('image')) {
+                    $files = $request->file('image');
+                    $carouselFiles = is_array($files) ? $files : [$files];
+                }
 
-        return redirect()->route('instagram.index')->with('success', '🗓️ Conteúdo agendado com sucesso para ' . Carbon::parse($request->scheduled_at)->format('d/m/Y H:i'));
+                if (count($carouselFiles) < 2) {
+                    return redirect()->back()->withInput()->with('error', 'Selecione pelo menos 2 imagens para criar um Carrossel.');
+                }
+
+                foreach ($carouselFiles as $imgFile) {
+                    $rawPath = $imgFile->store('instagram_posts', 'public');
+                    $processedPath = $this->applyOverlays($rawPath, $hasLogo, $hasArrow);
+                    $mediaUrls[] = $processedPath;
+                }
+                $mainPath = $mediaUrls[0] ?? null;
+            } else {
+                if ($request->hasFile('image')) {
+                    $rawPath = $request->file('image')->store('instagram_posts', 'public');
+                    $mainPath = $this->applyOverlays($rawPath, $hasLogo, $hasArrow);
+                }
+            }
+
+            $post = InstagramPost::create([
+                'user_id' => auth()->id(),
+                'instagram_account_id' => $account->id,
+                'media_type' => $mediaType,
+                'media_path' => $mainPath,
+                'media_urls' => $mediaUrls,
+                'caption' => $request->caption,
+                'has_logo_overlay' => $hasLogo,
+                'has_arrow_overlay' => $hasArrow,
+                'status' => $request->action === 'now' ? 'rascunho' : 'agendado',
+                'scheduled_at' => $request->action === 'schedule' ? Carbon::parse($request->scheduled_at) : null,
+            ]);
+
+            if ($request->action === 'now') {
+                if ($mediaType === 'CAROUSEL') {
+                    return $this->publishCarouselPostToInstagram($post);
+                } elseif ($mediaType === 'STORY') {
+                    return $this->publishStoryPostToInstagram($post);
+                } else {
+                    return $this->publishPostToInstagram($post);
+                }
+            }
+
+            return redirect()->route('instagram.index')->with('success', '🗓️ Conteúdo agendado com sucesso para ' . Carbon::parse($request->scheduled_at)->format('d/m/Y H:i'));
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            throw $e;
+        } catch (\Throwable $e) {
+            Log::error('Erro em storePost: ' . $e->getMessage() . "\n" . $e->getTraceAsString());
+            return redirect()->back()->withInput()->with('error', 'Erro ao processar postagem: ' . $e->getMessage());
+        }
     }
 
     /**
@@ -984,22 +991,42 @@ class InstagramController extends Controller
      */
     protected function getPublicImageUrl($relativePath)
     {
-        $localUrl = asset('storage/' . $relativePath);
+        $cleanPath = ltrim($relativePath, '/');
+        $localUrl = asset('storage/' . $cleanPath);
 
-        // Se houver PUBLIC_URL configurado no .env (ex: Ngrok), utiliza ela
+        // Força HTTPS se não for localhost
+        $host = parse_url($localUrl, PHP_URL_HOST) ?? '';
+        $isLocal = str_contains($host, 'localhost') || str_contains($host, '127.0.0.1') || str_contains($host, '.test');
+
+        if (!$isLocal && str_starts_with($localUrl, 'http://')) {
+            $localUrl = str_replace('http://', 'https://', $localUrl);
+        }
+
+        // Se houver PUBLIC_URL configurado no .env (ex: Ngrok ou subdomínio público)
         $publicBase = env('PUBLIC_URL');
         if ($publicBase && !str_contains($publicBase, 'localhost') && !str_contains($publicBase, '127.0.0.1') && !str_contains($publicBase, '.test')) {
-            return rtrim($publicBase, '/') . '/storage/' . ltrim($relativePath, '/');
+            $url = rtrim($publicBase, '/') . '/storage/' . $cleanPath;
+            if (str_starts_with($url, 'http://')) {
+                $url = str_replace('http://', 'https://', $url);
+            }
+            return $url;
         }
 
-        // Se for URL pública de produção (sem localhost/127.0.0.1/.test), usa a própria URL
-        $host = parse_url($localUrl, PHP_URL_HOST) ?? '';
-        if (!str_contains($host, 'localhost') && !str_contains($host, '127.0.0.1') && !str_contains($host, '.test')) {
-            return $localUrl;
+        // Em produção (Hostinger), verifica se a URL local é publicamente acessível via HTTP 200
+        if (!$isLocal) {
+            try {
+                $check = Http::withoutVerifying()->timeout(4)->get($localUrl);
+                if ($check->successful()) {
+                    return $localUrl;
+                }
+                Log::warning("URL local da Hostinger [{$localUrl}] retornou HTTP {$check->status()}. Ativando fallback de imagem pública.");
+            } catch (\Exception $e) {
+                Log::warning('URL pública local não acessível na Hostinger, ativando fallback: ' . $e->getMessage());
+            }
         }
 
-        // Fallback automático para desenvolvimento local: Upload temporário para tmpfiles.org
-        $fullPath = storage_path('app/public/' . $relativePath);
+        // Fallback automático para desenvolvimento local ou hospedagens com storage:link ausente: Upload temporário para tmpfiles.org
+        $fullPath = storage_path('app/public/' . $cleanPath);
         if (file_exists($fullPath)) {
             try {
                 $response = Http::attach(
@@ -1009,11 +1036,11 @@ class InstagramController extends Controller
                 if ($response->successful() && $response->json('status') === 'success') {
                     $rawUrl = $response->json('data.url');
                     $directUrl = str_replace('tmpfiles.org/', 'tmpfiles.org/dl/', $rawUrl);
-                    Log::info("Localhost fallback: imagem enviada para URL pública temporária: {$directUrl}");
+                    Log::info("Fallback Hostinger/Localhost: imagem enviada para URL pública temporária: {$directUrl}");
                     return $directUrl;
                 }
             } catch (\Exception $e) {
-                Log::error('Erro no fallback local de imagem para tmpfiles: ' . $e->getMessage());
+                Log::error('Erro no fallback de imagem para tmpfiles: ' . $e->getMessage());
             }
         }
 
