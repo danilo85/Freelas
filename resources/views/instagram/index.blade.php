@@ -35,7 +35,8 @@
                 isGeneratingHashtags: false,
                 lightboxOpen: false,
                 lightboxPost: null,
-                lightboxIndex: 0,
+                lightboxSlides: [],
+                lightboxSlideIndex: 0,
                 savedThemes: @json(optional($settings)->saved_themes ?: []),
                 newThemeName: '',
                 newThemeCategory: 'design',
@@ -102,33 +103,67 @@
                     }
                 },
 
-                openLightbox(post) {
-                    this.lightboxPost = post;
-                    this.lightboxIndex = 0;
+                openLightboxFromElement(el) {
+                    if (!el) return;
+                    const rawSlidesB64 = el.getAttribute('data-slides');
+                    const captionB64 = el.getAttribute('data-caption');
+
+                    let slides = [];
+                    let caption = '';
+
+                    try {
+                        if (rawSlidesB64) {
+                            slides = JSON.parse(atob(rawSlidesB64));
+                        }
+                    } catch (e) {
+                        console.error('Erro ao ler slides b64:', e);
+                    }
+
+                    try {
+                        if (captionB64) {
+                            caption = decodeURIComponent(escape(atob(captionB64)));
+                        }
+                    } catch (e) {
+                        caption = '';
+                    }
+
+                    this.lightboxPost = {
+                        caption: caption,
+                        likes: el.getAttribute('data-likes') || 0,
+                        comments: el.getAttribute('data-comments') || 0,
+                        date: el.getAttribute('data-date') || '',
+                        permalink: el.getAttribute('data-permalink') || '',
+                        media_type: el.getAttribute('data-media-type') || 'FEED'
+                    };
+
+                    this.lightboxSlides = (Array.isArray(slides) && slides.length > 0) ? slides : [];
+                    this.lightboxSlideIndex = 0;
+                    this.lightboxOpen = true;
+                },
+
+                openLightbox(postData, slidesArray) {
+                    this.lightboxPost = postData;
+                    this.lightboxSlides = (slidesArray && slidesArray.length > 0) ? slidesArray : [postData.media_url || postData.media_path];
+                    this.lightboxSlideIndex = 0;
                     this.lightboxOpen = true;
                 },
 
                 closeLightbox() {
                     this.lightboxOpen = false;
                     this.lightboxPost = null;
-                    this.lightboxIndex = 0;
+                    this.lightboxSlides = [];
+                    this.lightboxSlideIndex = 0;
                 },
 
                 prevLightboxSlide() {
-                    if (!this.lightboxPost || !this.lightboxPost.children || this.lightboxPost.children.length === 0) return;
-                    if (this.lightboxIndex > 0) {
-                        this.lightboxIndex--;
-                    } else {
-                        this.lightboxIndex = this.lightboxPost.children.length - 1;
+                    if (this.lightboxSlideIndex > 0) {
+                        this.lightboxSlideIndex--;
                     }
                 },
 
                 nextLightboxSlide() {
-                    if (!this.lightboxPost || !this.lightboxPost.children || this.lightboxPost.children.length === 0) return;
-                    if (this.lightboxIndex < this.lightboxPost.children.length - 1) {
-                        this.lightboxIndex++;
-                    } else {
-                        this.lightboxIndex = 0;
+                    if (this.lightboxSlideIndex < this.lightboxSlides.length - 1) {
+                        this.lightboxSlideIndex++;
                     }
                 },
 
@@ -613,6 +648,8 @@
                                                 </template>
                                             </div>
                                         </div>
+                                    </template>
+
                                     <template x-if="!imagePreview && carouselPreviews.length === 0">
                                         <div class="text-center p-6 text-slate-600 space-y-2">
                                             <svg class="w-10 h-10 mx-auto text-slate-700" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
