@@ -55,6 +55,120 @@
                 postProgress: 0,
                 postProgressStep: 'Iniciando publicação...',
 
+                // Estado do Calendário Dinâmico de Meses e Anos
+                currentYear: (new Date()).getFullYear(),
+                currentMonth: (new Date()).getMonth(),
+                monthNames: ['Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho', 'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro'],
+                allPosts: @json($posts),
+
+                // Modal de Gerenciamento / Edição do Post Agendado
+                managePostModalOpen: false,
+                editingPost: null,
+                editCaption: '',
+                editScheduledAt: '',
+
+                openManagePost(post) {
+                    this.editingPost = post;
+                    this.editCaption = post.caption || '';
+                    if (post.scheduled_at) {
+                        const d = new Date(post.scheduled_at);
+                        const yyyy = d.getFullYear();
+                        const mm = String(d.getMonth() + 1).padStart(2, '0');
+                        const dd = String(d.getDate()).padStart(2, '0');
+                        const hh = String(d.getHours()).padStart(2, '0');
+                        const mi = String(d.getMinutes()).padStart(2, '0');
+                        this.editScheduledAt = `${yyyy}-${mm}-${dd}T${hh}:${mi}`;
+                    } else {
+                        this.editScheduledAt = '';
+                    }
+                    this.managePostModalOpen = true;
+                },
+
+                prevMonth() {
+                    if (this.currentMonth === 0) {
+                        this.currentMonth = 11;
+                        this.currentYear--;
+                    } else {
+                        this.currentMonth--;
+                    }
+                },
+
+                nextMonth() {
+                    if (this.currentMonth === 11) {
+                        this.currentMonth = 0;
+                        this.currentYear++;
+                    } else {
+                        this.currentMonth++;
+                    }
+                },
+
+                goToToday() {
+                    const now = new Date();
+                    this.currentYear = now.getFullYear();
+                    this.currentMonth = now.getMonth();
+                },
+
+                get calendarGrid() {
+                    const year = this.currentYear;
+                    const month = this.currentMonth;
+                    
+                    const firstDayIndex = new Date(year, month, 1).getDay();
+                    const totalDays = new Date(year, month + 1, 0).getDate();
+                    const prevMonthTotalDays = new Date(year, month, 0).getDate();
+
+                    const days = [];
+
+                    // Preenchimento dos dias do mês anterior
+                    for (let i = firstDayIndex - 1; i >= 0; i--) {
+                        days.push({
+                            day: prevMonthTotalDays - i,
+                            isCurrentMonth: false,
+                            dateStr: null,
+                            posts: []
+                        });
+                    }
+
+                    const todayObj = new Date();
+                    const todayStr = `${todayObj.getFullYear()}-${String(todayObj.getMonth() + 1).padStart(2, '0')}-${String(todayObj.getDate()).padStart(2, '0')}`;
+
+                    // Dias do mês atual
+                    for (let day = 1; day <= totalDays; day++) {
+                        const mmStr = String(month + 1).padStart(2, '0');
+                        const ddStr = String(day).padStart(2, '0');
+                        const dateStr = `${year}-${mmStr}-${ddStr}`;
+
+                        const dayPosts = this.allPosts.filter(p => {
+                            if (p.scheduled_at && p.scheduled_at.startsWith(dateStr)) return true;
+                            if (p.published_at && p.published_at.startsWith(dateStr)) return true;
+                            if (p.created_at && p.created_at.startsWith(dateStr) && !p.scheduled_at) return true;
+                            return false;
+                        });
+
+                        days.push({
+                            day: day,
+                            isCurrentMonth: true,
+                            isToday: dateStr === todayStr,
+                            dateStr: dateStr,
+                            posts: dayPosts
+                        });
+                    }
+
+                    // Preenchimento dos dias do próximo mês para fechar o grid (linhas completas de 7)
+                    const remaining = 7 - (days.length % 7);
+                    if (remaining < 7) {
+                        for (let i = 1; i <= remaining; i++) {
+                            days.push({
+                                day: i,
+                                isCurrentMonth: false,
+                                dateStr: null,
+                                posts: []
+                            });
+                        }
+                    }
+
+                    return days;
+                },
+
                 startSubmitting(e) {
                     this.isSubmittingPost = true;
                     this.postProgress = 10;
@@ -990,63 +1104,121 @@
                     </div>
                 </div>
 
-                <!-- 3. ABA: CALENDÁRIO VISUAL DE AGENDAMENTOS -->
+                <!-- 3. ABA: CALENDÁRIO VISUAL DE AGENDAMENTOS E CONTROLE DE MESES/ANOS -->
                 <div x-show="tab === 'calendario'" class="space-y-6">
-                    <div class="flex items-center justify-between">
+                    
+                    <!-- Cabeçalho do Calendário com Navegação de Mês/Ano e Filtros -->
+                    <div class="bg-gradient-to-r from-slate-900 via-purple-950 to-slate-900 text-white p-5 rounded-2xl shadow-md border border-purple-900/50 flex flex-wrap items-center justify-between gap-4">
                         <div>
-                            <h4 class="text-sm font-extrabold text-slate-800 uppercase tracking-wider">Calendário Mensal de Publicações</h4>
-                            <p class="text-xs text-slate-500">Visualize seus posts agendados e publicados nas datas do mês.</p>
+                            <div class="flex items-center gap-2">
+                                <span class="px-2.5 py-0.5 text-[10px] font-black uppercase tracking-wider bg-purple-500/30 text-purple-200 border border-purple-400/40 rounded-full">
+                                    Controle de Mídia
+                                </span>
+                                <h4 class="text-base font-black text-white tracking-tight">Calendário Mensal & Anual de Agendamentos</h4>
+                            </div>
+                            <p class="text-xs text-slate-300 mt-1">Gerencie, edite legendas, mude datas/horários e altere publicações agendadas.</p>
+                        </div>
+
+                        <!-- Seletores de Mês, Ano e Botões de Navegação -->
+                        <div class="flex items-center gap-2">
+                            <button type="button" @click="prevMonth()" title="Mês Anterior" class="p-2 bg-white/10 hover:bg-white/20 text-white rounded-lg transition-all cursor-pointer font-bold">
+                                ❮
+                            </button>
+
+                            <div class="flex items-center gap-1.5 bg-slate-800/80 px-3 py-1.5 rounded-xl border border-slate-700">
+                                <select x-model.number="currentMonth" class="bg-transparent text-xs font-bold text-white outline-none cursor-pointer">
+                                    <template x-for="(mName, idx) in monthNames" :key="idx">
+                                        <option :value="idx" x-text="mName" class="bg-slate-900 text-white"></option>
+                                    </template>
+                                </select>
+
+                                <select x-model.number="currentYear" class="bg-transparent text-xs font-bold text-purple-300 outline-none cursor-pointer">
+                                    <template x-for="y in [2024, 2025, 2026, 2027, 2028]" :key="y">
+                                        <option :value="y" x-text="y" class="bg-slate-900 text-white"></option>
+                                    </template>
+                                </select>
+                            </div>
+
+                            <button type="button" @click="nextMonth()" title="Próximo Mês" class="p-2 bg-white/10 hover:bg-white/20 text-white rounded-lg transition-all cursor-pointer font-bold">
+                                ❯
+                            </button>
+
+                            <button type="button" @click="goToToday()" class="px-3 py-2 bg-purple-600 hover:bg-purple-500 text-white font-extrabold text-xs rounded-xl shadow-sm transition-all cursor-pointer">
+                                Hoje
+                            </button>
                         </div>
                     </div>
 
-                    <!-- Grid do Calendário -->
-                    <div class="grid grid-cols-7 gap-2 bg-slate-100 p-2 rounded-xl border border-slate-200">
-                        @php
-                            $daysInMonth = now()->daysInMonth;
-                            $firstDayOfWeek = now()->startOfMonth()->dayOfWeek;
-                        @endphp
+                    <!-- Legenda de Status de Postagens -->
+                    <div class="flex flex-wrap items-center gap-4 text-xs font-semibold text-slate-600 bg-slate-50 p-3 rounded-xl border border-slate-200">
+                        <span class="text-[11px] font-extrabold uppercase text-slate-400">Legenda:</span>
+                        <span class="flex items-center gap-1.5"><span class="w-2.5 h-2.5 rounded-full bg-purple-500"></span> Agendado</span>
+                        <span class="flex items-center gap-1.5"><span class="w-2.5 h-2.5 rounded-full bg-emerald-500"></span> Publicado</span>
+                        <span class="flex items-center gap-1.5"><span class="w-2.5 h-2.5 rounded-full bg-rose-500"></span> Erro</span>
+                        <span class="flex items-center gap-1.5"><span class="w-2.5 h-2.5 rounded-full bg-amber-500"></span> Carrossel</span>
+                        <span class="flex items-center gap-1.5"><span class="w-2.5 h-2.5 rounded-full bg-indigo-500"></span> Story</span>
+                    </div>
 
-                        @foreach(['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'] as $dayName)
-                            <div class="text-center text-[11px] font-extrabold text-slate-500 uppercase tracking-wider py-1.5 bg-slate-200/60 rounded-md">
-                                {{ $dayName }}
+                    <!-- Grid do Calendário Interativo -->
+                    <div class="grid grid-cols-7 gap-2 bg-slate-100 p-2.5 rounded-2xl border border-slate-200 shadow-xs">
+                        
+                        <!-- Nomes dos Dias da Semana -->
+                        <template x-for="dayName in ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb']" :key="dayName">
+                            <div class="text-center text-[11px] font-black text-slate-500 uppercase tracking-wider py-2 bg-slate-200/80 rounded-lg">
+                                <span x-text="dayName"></span>
                             </div>
-                        @endforeach
+                        </template>
 
-                        @for($i = 0; $i < $firstDayOfWeek; $i++)
-                            <div class="min-h-[100px] bg-slate-50/50 rounded-lg border border-slate-100/50 opacity-40"></div>
-                        @endfor
-
-                        @for($day = 1; $day <= $daysInMonth; $day++)
-                            @php
-                                $dateStr = now()->format('Y-m-') . sprintf('%02d', $day);
-                                $dayPosts = $posts->filter(function($p) use ($dateStr) {
-                                    return ($p->scheduled_at && $p->scheduled_at->format('Y-m-d') === $dateStr)
-                                        || ($p->published_at && $p->published_at->format('Y-m-d') === $dateStr);
-                                });
-                                $isToday = $day == now()->day;
-                            @endphp
-                            <div class="min-h-[100px] bg-white p-2 rounded-lg border {{ $isToday ? 'border-purple-500 ring-2 ring-purple-100' : 'border-slate-200' }} flex flex-col justify-between hover:border-purple-300 transition-all">
-                                <div class="flex items-center justify-between">
-                                    <span class="text-xs font-bold {{ $isToday ? 'bg-purple-600 text-white w-5 h-5 rounded-full flex items-center justify-center' : 'text-slate-700' }}">{{ $day }}</span>
-                                    @if($dayPosts->count() > 0)
-                                        <span class="text-[9px] font-black bg-purple-100 text-purple-700 px-1.5 py-0.5 rounded-full">{{ $dayPosts->count() }} post</span>
-                                    @endif
+                        <!-- Dias do Mês (Grid Dinâmico Alpine JS) -->
+                        <template x-for="(cell, cIdx) in calendarGrid" :key="cIdx">
+                            <div :class="[
+                                    cell.isCurrentMonth ? 'bg-white' : 'bg-slate-50/50 opacity-40',
+                                    cell.isToday ? 'border-2 border-purple-600 ring-2 ring-purple-100 shadow-sm' : 'border border-slate-200 hover:border-purple-300'
+                                 ]"
+                                 class="min-h-[110px] p-2 rounded-xl flex flex-col justify-between transition-all relative group">
+                                
+                                <div class="flex items-center justify-between mb-1">
+                                    <span :class="cell.isToday ? 'bg-purple-600 text-white w-6 h-6 rounded-full flex items-center justify-center font-black shadow-xs' : 'text-slate-700 font-bold'"
+                                          class="text-xs"
+                                          x-text="cell.day"></span>
+                                    
+                                    <template x-if="cell.posts && cell.posts.length > 0">
+                                        <span class="text-[9px] font-black bg-purple-100 text-purple-800 px-1.5 py-0.5 rounded-full border border-purple-200"
+                                              x-text="cell.posts.length + (cell.posts.length === 1 ? ' post' : ' posts')"></span>
+                                    </template>
                                 </div>
 
-                                <div class="space-y-1 my-1">
-                                    @foreach($dayPosts as $dp)
-                                        <div class="p-1 rounded text-[10px] font-bold border truncate flex items-center justify-between gap-1 {{ $dp->status === 'publicado' ? 'bg-emerald-50 text-emerald-700 border-emerald-200' : ($dp->status === 'erro' ? 'bg-rose-50 text-rose-700 border-rose-200' : 'bg-purple-50 text-purple-700 border-purple-200') }}">
-                                            <span class="truncate">{{ $dp->media_type === 'STORY' ? 'Story' : ($dp->media_type === 'CAROUSEL' ? 'Carrossel' : 'Feed') }}</span>
-                                            <span>{{ $dp->scheduled_at ? $dp->scheduled_at->format('H:i') : '' }}</span>
+                                <!-- Cards das Postagens Agendadas/Publicadas no Dia -->
+                                <div class="space-y-1.5 my-1 overflow-y-auto max-h-[100px] scrollbar-thin">
+                                    <template x-for="p in cell.posts" :key="p.id">
+                                        <div @click="openManagePost(p)"
+                                             :class="[
+                                                p.status === 'publicado' ? 'bg-emerald-50 text-emerald-900 border-emerald-300 hover:bg-emerald-100' :
+                                                (p.status === 'erro' ? 'bg-rose-50 text-rose-900 border-rose-300 hover:bg-rose-100' : 'bg-purple-50 text-purple-900 border-purple-300 hover:bg-purple-100')
+                                             ]"
+                                             class="p-1.5 rounded-lg border text-[10px] font-bold transition-all cursor-pointer shadow-2xs space-y-1 group/card">
+                                            
+                                            <div class="flex items-center justify-between gap-1">
+                                                <span class="px-1 py-0.2 bg-white/80 rounded font-black text-[9px] uppercase tracking-wider"
+                                                      x-text="p.media_type === 'STORY' ? 'Story' : (p.media_type === 'CAROUSEL' ? 'Carrossel' : 'Feed')"></span>
+                                                <span class="text-[9px] font-mono font-extrabold"
+                                                      x-text="p.scheduled_at ? p.scheduled_at.substring(11, 16) : (p.created_at ? p.created_at.substring(11, 16) : '')"></span>
+                                            </div>
+
+                                            <p class="truncate text-[10px] text-slate-700 font-medium"
+                                               x-text="p.caption || 'Sem legenda'"></p>
                                         </div>
-                                    @endforeach
+                                    </template>
                                 </div>
 
-                                <button @click="tab = 'novo'; actionType = 'schedule'" class="text-[10px] font-bold text-purple-600 hover:text-purple-800 text-center block pt-1 border-t border-slate-100 cursor-pointer">
+                                <!-- Botão Rápido de Agendar para este Dia -->
+                                <button type="button" 
+                                        @click="tab = 'novo'; actionType = 'schedule'" 
+                                        class="text-[10px] font-extrabold text-purple-600 hover:text-purple-900 text-center block pt-1 border-t border-slate-100 hover:underline cursor-pointer">
                                     + Agendar
                                 </button>
                             </div>
-                        @endfor
+                        </template>
                     </div>
                 </div>
 
@@ -1387,6 +1559,84 @@
                 <div class="w-full bg-slate-100 rounded-full h-2.5 overflow-hidden border border-slate-200">
                     <div class="bg-gradient-to-r from-purple-600 to-rose-500 h-full rounded-full transition-all duration-300 shadow-sm" :style="'width: ' + postProgress + '%'"></div>
                 </div>
+            </div>
+        </div>
+    <!-- MODAL DE GERENCIAMENTO & EDIÇÃO DE POSTAGEM AGENDADA -->
+    <template x-teleport="body">
+        <div x-show="managePostModalOpen" 
+             x-cloak 
+             @keydown.escape.window="managePostModalOpen = false"
+             class="fixed inset-0 top-0 left-0 right-0 bottom-0 w-screen h-screen z-[9999999] flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-md transition-all">
+            
+            <div class="bg-white rounded-3xl p-6 max-w-lg w-full shadow-2xl border border-slate-100 space-y-5" @click.outside="managePostModalOpen = false">
+                
+                <!-- Cabeçalho do Modal -->
+                <div class="flex items-center justify-between border-b border-slate-100 pb-3">
+                    <div class="flex items-center gap-2">
+                        <span :class="editingPost?.status === 'publicado' ? 'bg-emerald-500' : (editingPost?.status === 'erro' ? 'bg-rose-500' : 'bg-purple-600')"
+                              class="w-2.5 h-2.5 rounded-full"></span>
+                        <h4 class="text-sm font-extrabold text-slate-800 uppercase tracking-wider">
+                            Gerenciar Postagem <span x-text="'#' + (editingPost?.id || '')"></span>
+                        </h4>
+                    </div>
+                    <button type="button" @click="managePostModalOpen = false" class="text-slate-400 hover:text-slate-600 font-bold text-lg cursor-pointer">✕</button>
+                </div>
+
+                <!-- Formulário de Edição -->
+                <form :action="'/freelas/utilidades/instagram/posts/' + (editingPost?.id || '')" method="POST" class="space-y-4">
+                    @csrf
+                    <input type="hidden" name="_method" value="PUT">
+
+                    <!-- Mini Prévia da Imagem -->
+                    <template x-if="editingPost?.media_path">
+                        <div class="relative h-44 rounded-xl overflow-hidden bg-slate-900 border border-slate-200 shadow-inner">
+                            <img :src="'/storage/' + editingPost.media_path" class="w-full h-full object-cover">
+                            <span class="absolute top-2 left-2 px-2 py-0.5 bg-black/80 backdrop-blur-xs text-white text-[10px] font-black uppercase rounded"
+                                  x-text="editingPost.media_type"></span>
+                        </div>
+                    </template>
+
+                    <!-- Alterar Data e Horário -->
+                    <div class="space-y-1.5">
+                        <label class="text-xs font-extrabold text-slate-700 uppercase tracking-wider block">Data e Horário Agendados</label>
+                        <input type="datetime-local" 
+                               name="scheduled_at" 
+                               x-model="editScheduledAt" 
+                               class="w-full text-xs text-slate-800 border border-slate-200 rounded-lg p-2.5 font-semibold outline-none focus:ring-2 focus:ring-purple-500">
+                    </div>
+
+                    <!-- Alterar Legenda -->
+                    <div class="space-y-1.5">
+                        <label class="text-xs font-extrabold text-slate-700 uppercase tracking-wider block">Legenda da Publicação</label>
+                        <textarea name="caption" 
+                                  x-model="editCaption" 
+                                  rows="4" 
+                                  class="w-full text-xs text-slate-800 border border-slate-200 rounded-lg p-2.5 outline-none focus:ring-2 focus:ring-purple-500"></textarea>
+                    </div>
+
+                    <!-- Botões de Ação (Salvar / Publicar Agora / Excluir) -->
+                    <div class="space-y-2 pt-2 border-t border-slate-100">
+                        <div class="grid grid-cols-2 gap-2">
+                            <button type="submit" 
+                                    class="py-2.5 px-4 bg-purple-600 hover:bg-purple-700 text-white font-extrabold text-xs rounded-xl shadow-sm transition-all cursor-pointer flex items-center justify-center gap-1.5">
+                                <span>💾 Salvar Alterações</span>
+                            </button>
+
+                            <button type="submit" 
+                                    name="publish_now" 
+                                    value="1" 
+                                    class="py-2.5 px-4 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white font-extrabold text-xs rounded-xl shadow-sm transition-all cursor-pointer flex items-center justify-center gap-1.5">
+                                <span>🚀 Publicar Agora</span>
+                            </button>
+                        </div>
+
+                        <button type="button" 
+                                @click="confirmDeletePost(editingPost.id, editingPost.caption); managePostModalOpen = false;" 
+                                class="w-full py-2 bg-rose-50 hover:bg-rose-100 text-rose-700 font-extrabold text-xs rounded-xl transition-all cursor-pointer flex items-center justify-center gap-1 border border-rose-200">
+                            <span>🗑️ Excluir Agendamento</span>
+                        </button>
+                    </div>
+                </form>
             </div>
         </div>
     </template>

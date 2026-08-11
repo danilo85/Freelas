@@ -238,6 +238,7 @@ Route::middleware(['auth', 'approved'])->prefix('freelas')->group(function () {
         Route::get('/instagram/connect', [\App\Http\Controllers\InstagramController::class, 'connect'])->name('instagram.connect');
         Route::delete('/instagram/{account}', [\App\Http\Controllers\InstagramController::class, 'disconnect'])->name('instagram.disconnect');
         Route::post('/utilidades/instagram/posts', [\App\Http\Controllers\InstagramController::class, 'storePost'])->name('instagram.posts.store');
+        Route::put('/utilidades/instagram/posts/{post}', [\App\Http\Controllers\InstagramController::class, 'updatePost'])->name('instagram.posts.update');
         Route::delete('/utilidades/instagram/posts/{post}', [\App\Http\Controllers\InstagramController::class, 'destroyPost'])->name('instagram.posts.destroy');
         Route::post('/utilidades/instagram/settings/overlays', [\App\Http\Controllers\InstagramController::class, 'storeOverlayIcons'])->name('instagram.settings.overlays');
         Route::post('/utilidades/instagram/generate-hashtags', [\App\Http\Controllers\InstagramController::class, 'generateAiHashtags'])->name('instagram.hashtags.generate');

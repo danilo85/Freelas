@@ -478,6 +478,55 @@ class InstagramController extends Controller
     }
 
     /**
+     * Atualiza dados de uma postagem agendada (legenda, data/horário de agendamento ou publicação imediata).
+     */
+    public function updatePost(Request $request, $id)
+    {
+        $post = InstagramPost::where('user_id', auth()->id())->findOrFail($id);
+
+        $request->validate([
+            'caption' => 'nullable|string',
+            'scheduled_at' => 'nullable|date',
+            'publish_now' => 'nullable',
+        ]);
+
+        if ($request->has('caption')) {
+            $post->caption = $request->caption;
+        }
+
+        if ($request->boolean('publish_now')) {
+            $post->status = 'rascunho';
+            $post->save();
+
+            if ($post->media_type === 'CAROUSEL') {
+                return $this->publishCarouselPostToInstagram($post);
+            } elseif ($post->media_type === 'STORY') {
+                return $this->publishStoryPostToInstagram($post);
+            } else {
+                return $this->publishPostToInstagram($post);
+            }
+        }
+
+        if ($request->filled('scheduled_at')) {
+            $post->scheduled_at = Carbon::parse($request->scheduled_at);
+            $post->status = 'agendado';
+            $post->error_message = null;
+        }
+
+        $post->save();
+
+        if ($request->wantsJson() || $request->ajax()) {
+            return response()->json([
+                'success' => true,
+                'message' => 'Postagem agendada atualizada com sucesso!',
+                'post' => $post
+            ]);
+        }
+
+        return redirect()->route('instagram.index', ['tab' => 'calendario'])->with('success', '✏️ Postagem agendada atualizada com sucesso!');
+    }
+
+    /**
      * Exclui / cancela postagem do banco de dados e da API da Meta se publicada.
      */
     public function destroyPost($id)
