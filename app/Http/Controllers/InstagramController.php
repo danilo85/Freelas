@@ -545,7 +545,7 @@ class InstagramController extends Controller
             $account = $post->instagramAccount;
             if (!$account) throw new \Exception('Conta do Instagram não encontrada.');
 
-            $publicImageUrl = asset('storage/' . $post->media_path);
+            $publicImageUrl = $this->getPublicImageUrl($post->media_path);
 
             $containerResp = Http::post("https://graph.facebook.com/v19.0/{$account->instagram_account_id}/media", [
                 'image_url' => $publicImageUrl,
@@ -603,7 +603,7 @@ class InstagramController extends Controller
             $mediaUrls = $post->media_urls ?: [$post->media_path];
 
             foreach ($mediaUrls as $path) {
-                $publicUrl = asset('storage/' . $path);
+                $publicUrl = $this->getPublicImageUrl($path);
                 $itemResp = Http::post("https://graph.facebook.com/v19.0/{$account->instagram_account_id}/media", [
                     'image_url' => $publicUrl,
                     'is_carousel_item' => 'true',
@@ -674,7 +674,7 @@ class InstagramController extends Controller
             $account = $post->instagramAccount;
             if (!$account) throw new \Exception('Conta do Instagram não encontrada.');
 
-            $publicImageUrl = asset('storage/' . $post->media_path);
+            $publicImageUrl = $this->getPublicImageUrl($post->media_path);
 
             $containerResp = Http::post("https://graph.facebook.com/v19.0/{$account->instagram_account_id}/media", [
                 'image_url' => $publicImageUrl,
@@ -911,6 +911,49 @@ class InstagramController extends Controller
             'message' => 'Tema excluído!',
             'themes' => $themes,
         ]);
+    }
+
+    /**
+     * Retorna a URL pública acessível pela Meta / Instagram Graph API.
+     * Se estiver em ambiente local (localhost / .test), faz fallback upload para temp host público.
+     */
+    protected function getPublicImageUrl($relativePath)
+    {
+        $localUrl = asset('storage/' . $relativePath);
+
+        // Se houver PUBLIC_URL configurado no .env (ex: Ngrok), utiliza ela
+        $publicBase = env('PUBLIC_URL');
+        if ($publicBase && !str_contains($publicBase, 'localhost') && !str_contains($publicBase, '127.0.0.1') && !str_contains($publicBase, '.test')) {
+            return rtrim($publicBase, '/') . '/storage/' . ltrim($relativePath, '/');
+        }
+
+        // Se for URL pública de produção (sem localhost/127.0.0.1/.test), usa a própria URL
+        $host = parse_url($localUrl, PHP_URL_HOST) ?? '';
+        if (!str_contains($host, 'localhost') && !str_contains($host, '127.0.0.1') && !str_contains($host, '.test')) {
+            return $localUrl;
+        }
+
+        // Fallback automático para desenvolvimento local: Upload temporário para catbox
+        $fullPath = storage_path('app/public/' . $relativePath);
+        if (file_exists($fullPath)) {
+            try {
+                $response = Http::asMultipart()->post('https://litterbox.catbox.moe/resources/internals/api.php', [
+                    'reqtype' => 'fileupload',
+                    'time' => '1h',
+                    'fileToUpload' => fopen($fullPath, 'r'),
+                ]);
+
+                if ($response->successful() && str_starts_with(trim($response->body()), 'http')) {
+                    $publicUrl = trim($response->body());
+                    Log::info("Localhost fallback: imagem enviada para URL pública temporária: {$publicUrl}");
+                    return $publicUrl;
+                }
+            } catch (\Exception $e) {
+                Log::error('Erro no fallback local de imagem para catbox: ' . $e->getMessage());
+            }
+        }
+
+        return $localUrl;
     }
 
     /**
