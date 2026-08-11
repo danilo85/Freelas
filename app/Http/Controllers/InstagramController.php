@@ -30,21 +30,28 @@ class InstagramController extends Controller
                 Log::error('Erro ao obter InstagramSetting: ' . $tSettings->getMessage());
             }
 
+            // Executa automaticamente a verificação de postagens agendadas vencidas
+            try {
+                Artisan::call('instagram:publish-scheduled');
+            } catch (\Throwable $tSched) {
+                Log::error('Erro ao executar agendamentos automáticos: ' . $tSched->getMessage());
+            }
+
             $posts = InstagramPost::where('user_id', auth()->id())
                 ->orderBy('created_at', 'desc')
                 ->get();
 
-            // Busca o Feed real de posts já publicados no perfil do Instagram (com paginação completa)
+            // Busca o Feed real de posts já publicados no perfil do Instagram (sem limite baixo de páginas)
             $liveInstagramPosts = [];
             if ($account && $account->access_token && $account->instagram_account_id) {
                 try {
                     $nextUrl = "https://graph.facebook.com/v19.0/{$account->instagram_account_id}/media?fields=id,caption,media_type,media_url,permalink,thumbnail_url,timestamp,like_count,comments_count,children{id,media_url,thumbnail_url,media_type}&limit=50&access_token=" . $account->access_token;
                     
-                    $maxPages = 4; // Busca até 200 publicações
+                    $maxPages = 30; // Permite buscar até 1500 publicações (traz todos os posts do perfil)
                     $pageCount = 0;
 
                     while ($nextUrl && $pageCount < $maxPages) {
-                        $feedResp = Http::withoutVerifying()->timeout(10)->get($nextUrl);
+                        $feedResp = Http::withoutVerifying()->timeout(15)->get($nextUrl);
                         if ($feedResp->failed()) break;
 
                         $data = $feedResp->json('data', []);
