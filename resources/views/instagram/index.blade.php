@@ -156,7 +156,7 @@
                         .filter(t => t.length > 0)
                         .map(t => t.startsWith('#') ? t : '#' + t);
 
-                    fetch('{{ route("instagram.theme.save") }}', {
+                    fetch('{{ route("instagram.themes.save") }}', {
                         method: 'POST',
                         headers: {
                             'Content-Type': 'application/json',
@@ -179,7 +179,7 @@
                 },
 
                 deleteTheme(index) {
-                    fetch('{{ route("instagram.theme.delete") }}', {
+                    fetch('{{ route("instagram.themes.delete", ["index" => 0]) }}'.replace('/0', '/' + index), {
                         method: 'POST',
                         headers: {
                             'Content-Type': 'application/json',
