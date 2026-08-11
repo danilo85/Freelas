@@ -1322,5 +1322,201 @@
             };
         }
     </script>
+
+    <!-- 💬 WIDGET FLUTUANTE DE CHAT & INBOX LATERAL DO INSTAGRAM -->
+    @if(auth()->check())
+        <div x-data="{ chatOpen: false, selectedPost: null, replyMsg: '', isReplying: false, replyAlert: '', commentsList: [] }" class="relative z-50">
+            <!-- Botão Flutuante no Canto Inferior Direito -->
+            <button @click="chatOpen = !chatOpen" 
+                    type="button" 
+                    title="Instagram Live Inbox"
+                    class="fixed bottom-6 right-6 w-14 h-14 bg-gradient-to-tr from-purple-600 via-rose-500 to-amber-500 text-white rounded-full shadow-2xl hover:scale-110 transition-all flex items-center justify-center cursor-pointer border-2 border-white focus:outline-none z-50 group">
+                <svg class="w-7 h-7 group-hover:rotate-12 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 10h.01M12 10h.01M16 10h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"/></svg>
+                <span class="absolute -top-1 -right-1 w-4 h-4 bg-emerald-500 rounded-full border-2 border-white animate-pulse"></span>
+            </button>
+
+            <!-- Back-drop Escuro -->
+            <div x-show="chatOpen" 
+                 x-transition.opacity 
+                 @click="chatOpen = false" 
+                 class="fixed inset-0 bg-black/60 backdrop-blur-xs z-40"></div>
+
+            <!-- Drawer Lateral Estilo Feed / Chat do Instagram -->
+            <div x-show="chatOpen" 
+                 x-transition:enter="transition ease-out duration-300 transform"
+                 x-transition:enter-start="translate-x-full"
+                 x-transition:enter-end="translate-x-0"
+                 x-transition:leave="transition ease-in duration-200 transform"
+                 x-transition:leave-start="translate-x-0"
+                 x-transition:leave-end="translate-x-full"
+                 class="fixed top-0 right-0 h-full w-full sm:w-[420px] bg-slate-900 text-white shadow-2xl z-50 flex flex-col justify-between border-l border-slate-800">
+                
+                <!-- Cabeçalho do Drawer -->
+                <div class="p-4 border-b border-slate-800 flex items-center justify-between bg-slate-950/80">
+                    <div class="flex items-center gap-2.5">
+                        <div class="w-8 h-8 rounded-full bg-gradient-to-tr from-purple-500 to-rose-500 p-0.5">
+                            <div class="w-full h-full bg-slate-900 rounded-full flex items-center justify-center text-xs">📸</div>
+                        </div>
+                        <div>
+                            <h4 class="text-xs font-black text-white uppercase tracking-wider">Instagram Live Inbox</h4>
+                            <span class="text-[10px] text-emerald-400 font-extrabold flex items-center gap-1">
+                                <span class="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-ping"></span> Conectado ao Feed
+                            </span>
+                        </div>
+                    </div>
+                    <button type="button" @click="chatOpen = false" class="text-slate-400 hover:text-white p-1 rounded-lg text-sm font-bold">✕</button>
+                </div>
+
+                <!-- Feed Vertical de Comentários / Interações Reais -->
+                <div class="flex-1 overflow-y-auto p-4 space-y-4">
+                    @php
+                        $postsWithComments = collect($liveInstagramPosts ?? [])->filter(function($p) {
+                            return ($p['comments_count'] ?? 0) > 0;
+                        });
+                    @endphp
+
+                    @forelse($postsWithComments as $item)
+                        <div class="bg-slate-800/90 border border-slate-700/80 rounded-2xl p-4 space-y-3 shadow-md hover:border-purple-500/50 transition-all"
+                             x-data="{ 
+                                comments: [], 
+                                loaded: false, 
+                                loading: false,
+                                fetchComments() {
+                                    if(this.loaded) return;
+                                    this.loading = true;
+                                    fetch('/freelas/utilidades/instagram/media/{{ $item['id'] }}/comments')
+                                        .then(r => r.json())
+                                        .then(d => {
+                                            this.comments = d.comments || [];
+                                            this.loaded = true;
+                                            this.loading = false;
+                                        })
+                                        .catch(() => { this.loading = false; });
+                                }
+                             }"
+                             x-init="fetchComments()">
+
+                            <!-- Header da Publicação -->
+                            <div class="flex items-center gap-3">
+                                @if(!empty($item['media_url']))
+                                    <img src="{{ $item['media_url'] }}" class="w-12 h-12 rounded-xl object-cover border border-slate-700 shrink-0">
+                                @else
+                                    <div class="w-12 h-12 rounded-xl bg-slate-900 border border-slate-700 flex items-center justify-center text-lg shrink-0">🖼️</div>
+                                @endif
+                                <div class="min-w-0 flex-1">
+                                    <p class="text-xs text-slate-200 line-clamp-1 font-semibold">{{ $item['caption'] ?? 'Publicação do Instagram' }}</p>
+                                    <div class="flex items-center gap-2 text-[10px] text-slate-400 font-mono mt-0.5">
+                                        <span>❤️ {{ number_format($item['like_count'] ?? 0, 0, ',', '.') }}</span>
+                                        <span>💬 {{ $item['comments_count'] ?? 0 }} comentários</span>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Estado de Carregamento dos Comentários da Meta -->
+                            <template x-if="loading">
+                                <div class="p-3 bg-slate-900/60 rounded-xl text-center text-[10px] text-purple-300 animate-pulse font-bold">
+                                    ⏳ Carregando comentários do Instagram...
+                                </div>
+                            </template>
+
+                            <!-- Lista dos Comentários Reais buscados da Meta Graph API -->
+                            <template x-if="loaded && comments.length > 0">
+                                <div class="space-y-2">
+                                    <template x-for="c in comments" :key="c.id">
+                                        <div class="bg-slate-900/90 rounded-xl p-3 space-y-2 border border-slate-700/50 text-left" x-data="{ replyMsg: '', isReplying: false, replyAlert: '' }">
+                                            <div class="flex items-start justify-between gap-2">
+                                                <div class="flex items-center gap-2">
+                                                    <div class="w-6 h-6 rounded-full bg-purple-600 flex items-center justify-center text-[10px] font-black text-white shrink-0" x-text="(c.author_name || c.username || 'S').substring(0, 1).toUpperCase()">
+                                                    </div>
+                                                    <span class="text-xs font-bold text-purple-300" x-text="'@' + (c.author_name || c.username || 'seguidor')"></span>
+                                                </div>
+                                                <span class="text-[9px] text-slate-500 font-mono">Meta Live</span>
+                                            </div>
+                                            <p class="text-xs text-slate-200 leading-relaxed font-medium pl-8" x-text="c.text"></p>
+
+                                            <!-- Caixa de Resposta por Comentário Real -->
+                                            <div class="space-y-2 pt-2 border-t border-slate-800/80">
+                                                <div class="flex flex-wrap gap-1">
+                                                    <button type="button" @click="replyMsg = 'Muito obrigado pelo carinho! ❤️'" class="px-2 py-0.5 bg-slate-800 hover:bg-purple-900/60 text-[9px] text-purple-200 rounded border border-slate-700">❤️ Agradecer</button>
+                                                    <button type="button" @click="replyMsg = 'Te chamamos no Direct com os detalhes! 📩'" class="px-2 py-0.5 bg-slate-800 hover:bg-purple-900/60 text-[9px] text-purple-200 rounded border border-slate-700">📩 Direct</button>
+                                                </div>
+
+                                                <div class="flex gap-2">
+                                                    <input type="text" x-model="replyMsg" :placeholder="'Responder a @' + (c.username || 'seguidor') + '...'" class="flex-1 bg-slate-950 text-white border border-slate-700 rounded-xl px-3 py-1.5 text-xs outline-none focus:border-purple-400">
+                                                    <button type="button" 
+                                                            @click="
+                                                                if(!replyMsg.trim()) return;
+                                                                isReplying = true;
+                                                                fetch('{{ route('instagram.comments.reply') }}', {
+                                                                    method: 'POST',
+                                                                    headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': '{{ csrf_token() }}' },
+                                                                    body: JSON.stringify({ comment_id: c.id, message: replyMsg })
+                                                                })
+                                                                .then(r => r.json())
+                                                                .then(d => {
+                                                                    isReplying = false;
+                                                                    replyAlert = d.message || 'Enviado!';
+                                                                    if(d.success) setTimeout(() => { replyMsg = ''; replyAlert = ''; }, 2000);
+                                                                });
+                                                            "
+                                                            :disabled="isReplying"
+                                                            class="px-3 py-1.5 bg-purple-600 hover:bg-purple-700 text-white font-extrabold text-xs rounded-xl cursor-pointer shrink-0">
+                                                        <span x-text="isReplying ? '...' : 'Responder'"></span>
+                                                    </button>
+                                                </div>
+                                                <span x-show="replyAlert" class="text-[10px] text-emerald-400 font-bold block" x-text="replyAlert"></span>
+                                            </div>
+                                        </div>
+                                    </template>
+                                </div>
+                            </template>
+
+                            <!-- Se não retornou array estendido mas possui contador -->
+                            <template x-if="loaded && comments.length === 0">
+                                <div class="bg-slate-900/90 rounded-xl p-3 space-y-2 border border-slate-700/50" x-data="{ replyMsg: '', isReplying: false, replyAlert: '' }">
+                                    <p class="text-xs text-slate-400 italic">Esta publicação possui comentários no Instagram. Responda diretamente abaixo:</p>
+                                    <div class="flex gap-2">
+                                        <input type="text" x-model="replyMsg" placeholder="Responder comentário no post..." class="flex-1 bg-slate-950 text-white border border-slate-700 rounded-xl px-3 py-1.5 text-xs outline-none focus:border-purple-400">
+                                        <button type="button" 
+                                                @click="
+                                                    if(!replyMsg.trim()) return;
+                                                    isReplying = true;
+                                                    fetch('{{ route('instagram.comments.reply') }}', {
+                                                        method: 'POST',
+                                                        headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': '{{ csrf_token() }}' },
+                                                        body: JSON.stringify({ comment_id: '{{ $item['id'] }}', message: replyMsg })
+                                                    })
+                                                    .then(r => r.json())
+                                                    .then(d => {
+                                                        isReplying = false;
+                                                        replyAlert = d.message || 'Enviado!';
+                                                        if(d.success) setTimeout(() => { replyMsg = ''; replyAlert = ''; }, 2000);
+                                                    });
+                                                "
+                                                :disabled="isReplying"
+                                                class="px-3 py-1.5 bg-purple-600 hover:bg-purple-700 text-white font-extrabold text-xs rounded-xl cursor-pointer shrink-0">
+                                            <span x-text="isReplying ? '...' : 'Enviar'"></span>
+                                        </button>
+                                    </div>
+                                    <span x-show="replyAlert" class="text-[10px] text-emerald-400 font-bold block" x-text="replyAlert"></span>
+                                </div>
+                            </template>
+                        </div>
+                    @empty
+                        <div class="text-center p-8 bg-slate-800/50 rounded-2xl border border-slate-800 text-slate-400 space-y-2">
+                            <span class="text-3xl block">💬</span>
+                            <p class="text-xs font-bold text-slate-300">Nenhum comentário pendente no momento.</p>
+                            <p class="text-[11px] text-slate-500">As publicações com comentários recebidos aparecerão aqui automaticamente estilo chat!</p>
+                        </div>
+                    @endforelse
+                </div>
+
+                <!-- Rodapé do Drawer -->
+                <div class="p-3 bg-slate-950 border-t border-slate-800 text-center text-[10px] text-slate-500">
+                    <span>Meta Graph API Live Chat Sync</span>
+                </div>
+            </div>
+        </div>
+    @endif
 </body>
 </html>

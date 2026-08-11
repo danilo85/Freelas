@@ -42,7 +42,7 @@ class InstagramController extends Controller
                 ->orderBy('created_at', 'desc')
                 ->get();
 
-            // Busca o Feed real de posts já publicados no perfil do Instagram (sem limite baixo de páginas)
+            // Busca o Feed real de posts já publicados no perfil do Instagram
             $liveInstagramPosts = [];
             if ($account && $account->access_token && $account->instagram_account_id) {
                 try {
@@ -53,7 +53,10 @@ class InstagramController extends Controller
 
                     while ($nextUrl && $pageCount < $maxPages) {
                         $feedResp = Http::withoutVerifying()->timeout(15)->get($nextUrl);
-                        if ($feedResp->failed()) break;
+                        if ($feedResp->failed()) {
+                            Log::error('Falha na resposta da Meta Graph API para feed do Instagram: ' . $feedResp->body());
+                            break;
+                        }
 
                         $data = $feedResp->json('data', []);
                         if (empty($data) || !is_array($data)) break;
@@ -72,6 +75,15 @@ class InstagramController extends Controller
                             $firstChild = $item['children']['data'][0] ?? null;
                             if ($firstChild) {
                                 $item['media_url'] = $firstChild['media_url'] ?? ($firstChild['thumbnail_url'] ?? null);
+                            }
+                        }
+
+                        // Garante que o username do autor do comentário seja extraído tanto do campo 'username' quanto do objeto 'from'
+                        if (!empty($item['comments']['data'])) {
+                            foreach ($item['comments']['data'] as &$commentObj) {
+                                if (empty($commentObj['username']) && !empty($commentObj['from']['username'])) {
+                                    $commentObj['username'] = $commentObj['from']['username'];
+                                }
                             }
                         }
                     }
@@ -410,9 +422,11 @@ class InstagramController extends Controller
             $request->validate([
                 'instagram_account_id' => 'nullable|exists:instagram_accounts,id',
                 'media_type' => 'required|in:IMAGE,CAROUSEL,STORY',
+                'category' => 'nullable|string',
                 'caption' => 'nullable|string',
                 'has_logo_overlay' => 'nullable|boolean',
                 'has_arrow_overlay' => 'nullable|boolean',
+                'post_to_facebook' => 'nullable|boolean',
                 'action' => 'required|in:now,schedule',
                 'scheduled_at' => 'nullable|required_if:action,schedule|date',
             ], [
@@ -431,6 +445,8 @@ class InstagramController extends Controller
             $mediaType = $request->input('media_type', 'IMAGE');
             $hasLogo = $request->boolean('has_logo_overlay');
             $hasArrow = $request->boolean('has_arrow_overlay');
+            $postToFacebook = $request->boolean('post_to_facebook');
+            $category = $request->input('category', 'Geral');
 
             $mainPath = null;
             $mediaUrls = [];
@@ -454,9 +470,12 @@ class InstagramController extends Controller
                     return redirect()->back()->withInput()->with('error', 'Selecione pelo menos 2 imagens para criar um Carrossel.');
                 }
 
-                foreach ($uploadedFiles as $imgFile) {
+                $totalFiles = count($uploadedFiles);
+                foreach ($uploadedFiles as $idx => $imgFile) {
                     $rawPath = $imgFile->store('instagram_posts', 'public');
-                    $processedPath = $this->applyOverlays($rawPath, $hasLogo, $hasArrow);
+                    // A seta (indicador de deslizar) só é aplicada se NÃO for o último slide do carrossel
+                    $shouldApplyArrow = $hasArrow && ($idx < ($totalFiles - 1));
+                    $processedPath = $this->applyOverlays($rawPath, $hasLogo, $shouldApplyArrow);
                     $mediaUrls[] = $processedPath;
                 }
                 $mainPath = $mediaUrls[0] ?? null;
@@ -474,12 +493,14 @@ class InstagramController extends Controller
                 'user_id' => auth()->id(),
                 'instagram_account_id' => $account->id,
                 'media_type' => $mediaType,
+                'category' => $category,
                 'media_path' => $mainPath,
                 'media_urls' => $mediaUrls,
                 'caption' => $request->caption,
                 'has_logo_overlay' => $hasLogo,
                 'has_arrow_overlay' => $hasArrow,
                 'status' => $request->action === 'now' ? 'rascunho' : 'agendado',
+                'post_to_facebook' => $postToFacebook,
                 'scheduled_at' => $request->action === 'schedule' ? Carbon::parse($request->scheduled_at, config('app.timezone', 'America/Sao_Paulo')) : null,
             ]);
 
@@ -1161,5 +1182,275 @@ class InstagramController extends Controller
             $baseUrl = str_replace('http://', 'https://', $baseUrl);
         }
         return $baseUrl;
+    }
+
+    /**
+     * Gera uma Legenda Inteligente (Copywriting) com IA ou algoritmo estruturado de Copywriting.
+     */
+    public function generateAiCaption(Request $request)
+    {
+        $topic = trim($request->input('topic', ''));
+        $tone = $request->input('tone', 'Descontraído');
+        $ctaType = $request->input('cta_type', 'salvar');
+        $mediaType = $request->input('media_type', 'IMAGE');
+
+        if (empty($topic)) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Por favor, insira um assunto, rascunho ou ideia base para gerar a legenda.'
+            ], 422);
+        }
+
+        $openAiKey = config('services.openai.api_key') ?: env('OPENAI_API_KEY');
+        $geminiKey = config('services.gemini.api_key') ?: env('GEMINI_API_KEY');
+
+        $prompt = "Você é um Copywriter especialista em Mídias Sociais e Instagram.\n";
+        $prompt .= "Crie uma legenda altamente engajadora para um post do Instagram do tipo {$mediaType}.\n";
+        $prompt .= "Assunto/Tema base: \"{$topic}\"\n";
+        $prompt .= "Tom de Voz: \"{$tone}\"\n";
+        $prompt .= "Objetivo/CTA Principal: \"{$ctaType}\"\n\n";
+        $prompt .= "Diretrizes:\n";
+        $prompt .= "1. Use um gancho inicial impactante nas primeiras 2 linhas.\n";
+        $prompt .= "2. Divida o texto em parágrafos curtos com espaçamento e emojis apropriados.\n";
+        $prompt .= "3. Inclua a Call to Action (CTA) clara no final alinhada ao objetivo escolhido.\n";
+        $prompt .= "4. Não coloque hashtags no meio do texto (deixe para o final ou campo separado).\n";
+        $prompt .= "5. Retorne APENAS o texto da legenda pronta para publicação.";
+
+        if ($openAiKey) {
+            try {
+                $response = Http::withoutVerifying()->timeout(6)->withToken($openAiKey)
+                    ->post('https://api.openai.com/v1/chat/completions', [
+                        'model' => 'gpt-4o-mini',
+                        'messages' => [
+                            ['role' => 'system', 'content' => 'Você é um assistente especialista em Copywriting para Instagram.'],
+                            ['role' => 'user', 'content' => $prompt]
+                        ],
+                        'temperature' => 0.7,
+                    ]);
+
+                if ($response->successful()) {
+                    $aiText = trim($response->json('choices.0.message.content', ''));
+                    if (!empty($aiText)) {
+                        return response()->json([
+                            'success' => true,
+                            'caption' => $aiText,
+                            'provider' => 'OpenAI GPT-4o Mini'
+                        ]);
+                    }
+                }
+            } catch (\Throwable $e) {
+                Log::warning("OpenAI API call failed: " . $e->getMessage());
+            }
+        }
+
+        if ($geminiKey) {
+            try {
+                $response = Http::withoutVerifying()->timeout(6)->post("https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key={$geminiKey}", [
+                    'contents' => [
+                        ['parts' => [['text' => $prompt]]]
+                    ]
+                ]);
+
+                if ($response->successful()) {
+                    $aiText = trim($response->json('candidates.0.content.parts.0.text', ''));
+                    if (!empty($aiText)) {
+                        return response()->json([
+                            'success' => true,
+                            'caption' => $aiText,
+                            'provider' => 'Google Gemini'
+                        ]);
+                    }
+                }
+            } catch (\Throwable $e) {
+                Log::warning("Gemini API call failed: " . $e->getMessage());
+            }
+        }
+
+        $generatedCaption = $this->buildFallbackCopywriting($topic, $tone, $ctaType, $mediaType);
+
+        return response()->json([
+            'success' => true,
+            'caption' => $generatedCaption,
+            'provider' => 'Assistente Inteligente Freelas'
+        ]);
+    }
+
+    /**
+     * Motor de Copywriting Estruturado em PHP para fallback local.
+     */
+    protected function buildFallbackCopywriting(string $topic, string $tone, string $ctaType, string $mediaType): string
+    {
+        $hooks = [
+            'Descontraído' => [
+                "Você não vai acreditar nisso... 🤫",
+                "Alerta de dica valiosa! Dá uma olhada nisso 👇",
+                "Quer melhorar seus resultados sem complicação? Vem comigo!",
+            ],
+            'Profissional' => [
+                "A chave para transformar seus projetos está no detalhe.",
+                "Estratégia e execução: o que realmente faz a diferença.",
+                "Confira os pontos essenciais que todo profissional precisa saber.",
+            ],
+            'Persuasivo' => [
+                "Se você ignorar isso, pode estar perdendo tempo e dinheiro.",
+                "O segredo que os grandes profissionais usam no dia a dia...",
+                "Transforme sua forma de trabalhar com este conceito simples.",
+            ],
+            'Educativo' => [
+                "Guia Rápido: Como dominar esse conceito passo a passo 📚",
+                "Você já sabia disso? Aprenda a aplicar na prática!",
+                "3 lições indispensáveis sobre este assunto 💡",
+            ],
+            'Minimalista' => [
+                "Menos ruído, mais resultado.",
+                "Foco no que realmente importa.",
+                "Essencial e direto ao ponto.",
+            ]
+        ];
+
+        $ctas = [
+            'salvar' => "📌 Salve este post para consultar sempre que precisar!",
+            'comentar' => "💬 Qual é a sua opinião sobre isso? Deixe seu comentário abaixo!",
+            'bio' => "🔗 Clique no link da Bio para saber mais e conferir os detalhes completos!",
+            'direct' => "📩 Me envie uma mensagem no Direct com a palavra \"INFO\" para conversarmos!",
+            'compartilhar' => "🚀 Compartilhe este conteúdo com alguém que precisa ver isso hoje!"
+        ];
+
+        $selectedHook = $hooks[$tone][array_rand($hooks[$tone])] ?? "Confira esta dica especial que separamos para você! ✨";
+        $selectedCta = $ctas[$ctaType] ?? $ctas['salvar'];
+
+        $formattedTopic = ucfirst($topic);
+
+        $body = "";
+        if ($mediaType === 'CAROUSEL') {
+            $body = "Arrasta para o lado ➡️ para ver todos os detalhes sobre:\n\n";
+            $body .= "✨ {$formattedTopic}\n\n";
+            $body .= "1️⃣ Primeiro passo: Defina clareza e objetivo.\n";
+            $body .= "2️⃣ Segundo passo: Mantenha a consistência visual e estratégica.\n";
+            $body .= "3️⃣ Terceiro passo: Meça os resultados e aprimore sempre.";
+        } else {
+            $body = "Quando o assunto é {$formattedTopic}, aplicar a estratégia certa faz toda a diferença.\n\n";
+            $body .= "Aqui estão os pontos principais para ficar atento:\n";
+            $body .= "• Organização e foco na entrega\n";
+            $body .= "• Atenção aos detalhes que encantam\n";
+            $body .= "• Consistência no dia a dia";
+        }
+
+        return "{$selectedHook}\n\n{$body}\n\n{$selectedCta}";
+    }
+
+    /**
+     * Gera e renderiza a folha de relatório mensal de desempenho para impressão/PDF.
+     */
+    public function exportPdfReport(Request $request)
+    {
+        $account = InstagramAccount::where('user_id', auth()->id())->first();
+        if (!$account) {
+            return redirect()->route('instagram.index')->with('error', 'Nenhuma conta do Instagram conectada.');
+        }
+
+        $posts = InstagramPost::where('user_id', auth()->id())->get();
+
+        // Coleta posts do perfil via Meta API
+        $liveInstagramPosts = [];
+        if ($account->access_token && $account->instagram_account_id) {
+            try {
+                $url = "https://graph.facebook.com/v19.0/{$account->instagram_account_id}/media?fields=id,caption,media_type,media_url,permalink,timestamp,like_count,comments_count&limit=50&access_token=" . $account->access_token;
+                $resp = Http::withoutVerifying()->get($url);
+                if ($resp->successful()) {
+                    $liveInstagramPosts = $resp->json('data', []);
+                }
+            } catch (\Throwable $e) {
+                Log::error('Erro ao buscar dados para o relatório PDF: ' . $e->getMessage());
+            }
+        }
+
+        $totalLikes = array_sum(array_column($liveInstagramPosts, 'like_count'));
+        $totalComments = array_sum(array_column($liveInstagramPosts, 'comments_count'));
+        $totalPostsCount = count($liveInstagramPosts);
+        $avgEngagement = $totalPostsCount > 0 ? round(($totalLikes + $totalComments) / $totalPostsCount, 1) : 0;
+
+        return view('instagram.report_pdf', compact('account', 'posts', 'liveInstagramPosts', 'totalLikes', 'totalComments', 'totalPostsCount', 'avgEngagement'));
+    }
+
+    /**
+     * Responde a um comentário de post diretamente no Instagram via Meta API.
+     */
+    public function replyComment(Request $request)
+    {
+        $commentId = $request->input('comment_id');
+        $message = trim($request->input('message'));
+
+        if (empty($commentId) || empty($message)) {
+            return response()->json(['success' => false, 'message' => 'Comentário e mensagem são obrigatórios.'], 422);
+        }
+
+        $account = InstagramAccount::where('user_id', auth()->id())->first();
+        if (!$account || !$account->access_token) {
+            return response()->json(['success' => false, 'message' => 'Conta do Instagram não conectada.'], 400);
+        }
+
+        try {
+            $resp = Http::withoutVerifying()->post("https://graph.facebook.com/v19.0/{$commentId}/replies", [
+                'message' => $message,
+                'access_token' => $account->access_token
+            ]);
+
+            if ($resp->successful()) {
+                // Notifica no sistema interno que uma resposta foi enviada
+                \App\Models\Notification::create([
+                    'user_id' => auth()->id(),
+                    'title' => '💬 Comentário Respondido no Instagram',
+                    'content' => 'Sua resposta "' . \Illuminate\Support\Str::limit($message, 40) . '" foi enviada com sucesso ao seguidor.',
+                    'type' => 'instagram_comment_reply'
+                ]);
+
+                return response()->json(['success' => true, 'message' => 'Resposta enviada com sucesso!']);
+            }
+
+            return response()->json(['success' => false, 'message' => 'Falha da API Meta: ' . $resp->json('error.message', 'Erro ao responder')], 400);
+        } catch (\Throwable $e) {
+            return response()->json(['success' => false, 'message' => 'Erro de conexão: ' . $e->getMessage()], 500);
+        }
+    }
+
+    /**
+     * Busca os comentários e autores reais de uma publicação específica sob demanda.
+     */
+    public function getMediaComments($mediaId)
+    {
+        $account = InstagramAccount::where('user_id', auth()->id())->first();
+        if (!$account || !$account->access_token) {
+            return response()->json(['success' => false, 'comments' => []]);
+        }
+
+        try {
+            $resp = Http::withoutVerifying()->get("https://graph.facebook.com/v19.0/{$mediaId}/comments", [
+                'fields' => 'id,text,timestamp,username,from{id,username,name},user{id,username,name}',
+                'access_token' => $account->access_token
+            ]);
+
+            if ($resp->successful()) {
+                $comments = $resp->json('data', []);
+                foreach ($comments as &$c) {
+                    $c['author_name'] = $c['username'] 
+                        ?? ($c['from']['username'] 
+                        ?? ($c['from']['name'] 
+                        ?? ($c['user']['username'] 
+                        ?? ($c['user']['name'] 
+                        ?? 'seguidor'))));
+                    
+                    // Garante que username tenha o valor encontrado
+                    $c['username'] = $c['author_name'];
+                }
+                return response()->json(['success' => true, 'comments' => $comments]);
+            } else {
+                Log::warning("Falha na resposta da Meta ao buscar comentários da mídia {$mediaId}: " . $resp->body());
+            }
+        } catch (\Throwable $e) {
+            Log::error("Erro ao buscar comentários da mídia {$mediaId}: " . $e->getMessage());
+        }
+
+        return response()->json(['success' => false, 'comments' => []]);
     }
 }

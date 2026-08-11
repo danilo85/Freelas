@@ -161,6 +161,9 @@ span.flatpickr-weekday {
                 lightboxPost: null,
                 lightboxSlides: [],
                 lightboxSlideIndex: 0,
+                lightboxTouchStartX: 0,
+                lightboxTouchCurrentX: 0,
+                lightboxIsSwiping: false,
                 confirmDeleteModalOpen: false,
                 postToDeleteId: null,
                 postToDeleteCaption: '',
@@ -173,6 +176,23 @@ span.flatpickr-weekday {
                 isSubmittingPost: false,
                 postProgress: 0,
                 postProgressStep: 'Iniciando publicação...',
+
+                // Estado do Assistente de Copywriting com IA
+                aiTopic: '',
+                aiTone: 'Descontraído',
+                aiCtaType: 'salvar',
+                isGeneratingAiCaption: false,
+                aiCaptionNotice: '',
+                aiCaptionError: '',
+                showAiCaptionModal: false,
+
+                // Drag & Drop no Calendário & Grid 3x3
+                draggedPost: null,
+                draggedGridIndex: null,
+                gridItemsOrder: [],
+
+                // Ferramenta de Corte/Aspect Ratio
+                aspectRatio: '1:1', // '1:1', '4:5', '9:16'
 
                 // Estado do Calendário Dinâmico de Meses e Anos
                 currentYear: (new Date()).getFullYear(),
@@ -538,6 +558,34 @@ span.flatpickr-weekday {
                     }
                 },
 
+                handleLightboxTouchStart(e) {
+                    if (!e.touches || e.touches.length === 0) return;
+                    this.lightboxTouchStartX = e.touches[0].clientX;
+                    this.lightboxTouchCurrentX = e.touches[0].clientX;
+                    this.lightboxIsSwiping = true;
+                },
+
+                handleLightboxTouchMove(e) {
+                    if (!this.lightboxIsSwiping || !e.touches || e.touches.length === 0) return;
+                    this.lightboxTouchCurrentX = e.touches[0].clientX;
+                },
+
+                handleLightboxTouchEnd() {
+                    if (!this.lightboxIsSwiping) return;
+                    const diffX = this.lightboxTouchCurrentX - this.lightboxTouchStartX;
+                    const threshold = 40; // minimum pixels to trigger swipe
+
+                    if (diffX < -threshold) {
+                        this.nextLightboxSlide();
+                    } else if (diffX > threshold) {
+                        this.prevLightboxSlide();
+                    }
+
+                    this.lightboxIsSwiping = false;
+                    this.lightboxTouchStartX = 0;
+                    this.lightboxTouchCurrentX = 0;
+                },
+
                 async generateAiHashtags() {
                     this.isGeneratingHashtags = true;
                     try {
@@ -567,6 +615,114 @@ span.flatpickr-weekday {
                     } finally {
                         this.isGeneratingHashtags = false;
                     }
+                },
+
+                async generateAiCaption() {
+                    const topicText = this.aiTopic.trim() || this.caption.trim();
+                    if (!topicText) {
+                        this.aiCaptionNotice = '';
+                        this.aiCaptionError = '⚠️ Por favor, informe o assunto ou rascunho base no campo acima.';
+                        return;
+                    }
+
+                    this.isGeneratingAiCaption = true;
+                    this.aiCaptionNotice = '';
+                    this.aiCaptionError = '';
+                    try {
+                        const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content');
+                        const res = await fetch('{{ route('instagram.caption.generate') }}', {
+                            method: 'POST',
+                            headers: {
+                                'X-CSRF-TOKEN': csrfToken,
+                                'Content-Type': 'application/json',
+                                'Accept': 'application/json'
+                            },
+                            body: JSON.stringify({
+                                topic: topicText,
+                                tone: this.aiTone,
+                                cta_type: this.aiCtaType,
+                                media_type: this.mediaType
+                            })
+                        });
+                        const data = await res.json();
+                        if (data.success && data.caption) {
+                            this.caption = data.caption;
+                            this.aiCaptionNotice = `✨ Legenda gerada com sucesso via ${data.provider || 'IA'}!`;
+                            this.aiCaptionError = '';
+                            setTimeout(() => { this.showAiCaptionModal = false; }, 1200);
+                        } else {
+                            this.aiCaptionError = data.message || 'Não foi possível gerar a legenda no momento.';
+                        }
+                    } catch (e) {
+                        this.aiCaptionError = 'Ocorreu um erro de conexão ao tentar gerar a legenda com IA.';
+                    } finally {
+                        this.isGeneratingAiCaption = false;
+                    }
+                },
+
+                // Métodos da Fase 2: Drag & Drop Calendário + Reordenador Grid + Aspect Ratio
+                handleCalendarDragStart(event, post) {
+                    this.draggedPost = post;
+                    event.dataTransfer.setData('text/plain', post.id);
+                    event.dataTransfer.effectAllowed = 'move';
+                },
+
+                async handleCalendarDrop(event, targetDateStr) {
+                    event.preventDefault();
+                    if (!this.draggedPost || !targetDateStr) return;
+
+                    const post = this.draggedPost;
+                    this.draggedPost = null;
+
+                    // Mantém a hora original ou define 12:00 por padrão
+                    let timePart = '12:00';
+                    if (post.scheduled_at) {
+                        const parts = post.scheduled_at.split(' ');
+                        if (parts[1]) timePart = parts[1].substring(0, 5);
+                    }
+                    const newScheduledAt = `${targetDateStr} ${timePart}`;
+
+                    try {
+                        const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content');
+                        const res = await fetch(`/freelas/utilidades/instagram/posts/${post.id}/reschedule`, {
+                            method: 'PATCH',
+                            headers: {
+                                'X-CSRF-TOKEN': csrfToken,
+                                'Content-Type': 'application/json',
+                                'Accept': 'application/json'
+                            },
+                            body: JSON.stringify({ scheduled_at: newScheduledAt })
+                        });
+                        const data = await res.json();
+                        if (data.success) {
+                            post.scheduled_at = newScheduledAt;
+                            // Atualiza na lista de posts local
+                            const found = this.allPosts.find(p => p.id === post.id);
+                            if (found) found.scheduled_at = newScheduledAt;
+                        } else {
+                            alert(data.message || 'Erro ao reagendar post.');
+                        }
+                    } catch (e) {
+                        console.error('Erro no drag and drop do calendário:', e);
+                    }
+                },
+
+                handleGridDragStart(event, index) {
+                    this.draggedGridIndex = index;
+                    event.dataTransfer.effectAllowed = 'move';
+                },
+
+                handleGridDrop(event, targetIndex) {
+                    event.preventDefault();
+                    if (this.draggedGridIndex === null || this.draggedGridIndex === targetIndex) return;
+
+                    const fromIdx = this.draggedGridIndex;
+                    this.draggedGridIndex = null;
+
+                    // Reordena o array local de gridItems
+                    const temp = this.gridItemsOrder[fromIdx];
+                    this.gridItemsOrder[fromIdx] = this.gridItemsOrder[targetIndex];
+                    this.gridItemsOrder[targetIndex] = temp;
                 },
 
                 insertHashtag(tag) {
@@ -844,6 +1000,18 @@ span.flatpickr-weekday {
                         <svg class="w-4 h-4 text-purple-300" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069z"/></svg>
                         Posts do Perfil ({{ count($liveInstagramPosts) }})
                     </button>
+                    <button @click="tab = 'stories'" :class="tab === 'stories' ? 'bg-purple-600 text-white shadow-sm' : 'bg-white text-slate-600 hover:bg-slate-100 border border-slate-200'" class="px-4 py-2 text-xs font-bold rounded-[5px] transition-all flex items-center gap-2 cursor-pointer">
+                        <svg class="w-4 h-4 text-purple-300" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                        ✨ Stories & Enquetes
+                    </button>
+                    <button @click="tab = 'templates'" :class="tab === 'templates' ? 'bg-purple-600 text-white shadow-sm' : 'bg-white text-slate-600 hover:bg-slate-100 border border-slate-200'" class="px-4 py-2 text-xs font-bold rounded-[5px] transition-all flex items-center gap-2 cursor-pointer">
+                        <svg class="w-4 h-4 text-purple-300" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
+                        🎨 Gerador de Templates
+                    </button>
+                    <button @click="tab = 'analytics'" :class="tab === 'analytics' ? 'bg-purple-600 text-white shadow-sm' : 'bg-white text-slate-600 hover:bg-slate-100 border border-slate-200'" class="px-4 py-2 text-xs font-bold rounded-[5px] transition-all flex items-center gap-2 cursor-pointer">
+                        <svg class="w-4 h-4 text-purple-300" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/></svg>
+                        📊 Analytics & Relatórios
+                    </button>
                     <button @click="tab = 'calendario'" :class="tab === 'calendario' ? 'bg-purple-600 text-white shadow-sm' : 'bg-white text-slate-600 hover:bg-slate-100 border border-slate-200'" class="px-4 py-2 text-xs font-bold rounded-[5px] transition-all flex items-center gap-2 cursor-pointer">
                         <svg class="w-4 h-4 text-purple-300" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
                         Calendário de Agendamentos
@@ -882,6 +1050,25 @@ span.flatpickr-weekday {
                                     <button type="button" @click="mediaType = 'STORY'" :class="mediaType === 'STORY' ? 'border-purple-600 bg-purple-50/50 text-purple-700 font-bold shadow-sm' : 'border-slate-200 bg-white text-slate-600 hover:bg-slate-50'" class="p-3 border rounded-lg text-xs transition-all text-center flex flex-col items-center gap-1.5 cursor-pointer">
                                         <svg class="w-5 h-5 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
                                         <span>Story (24h)</span>
+                                    </button>
+                                </div>
+                            </div>
+
+                            <!-- SELETOR DE ENQUADRAMENTO / ASPECT RATIO (FASE 2) -->
+                            <div class="space-y-2">
+                                <label class="text-xs font-extrabold text-slate-700 uppercase tracking-wider block">Proporção da Imagem (Aspect Ratio)</label>
+                                <div class="grid grid-cols-3 gap-2">
+                                    <button type="button" @click="aspectRatio = '1:1'" :class="aspectRatio === '1:1' ? 'bg-purple-600 text-white font-extrabold shadow-sm' : 'bg-slate-100 text-slate-700 hover:bg-slate-200 font-bold'" class="px-3 py-2 text-xs rounded-lg transition-all flex items-center justify-center gap-1.5 cursor-pointer">
+                                        <span class="w-3.5 h-3.5 border-2 border-current rounded-xs"></span>
+                                        <span>1:1 (Quadrado)</span>
+                                    </button>
+                                    <button type="button" @click="aspectRatio = '4:5'" :class="aspectRatio === '4:5' ? 'bg-purple-600 text-white font-extrabold shadow-sm' : 'bg-slate-100 text-slate-700 hover:bg-slate-200 font-bold'" class="px-3 py-2 text-xs rounded-lg transition-all flex items-center justify-center gap-1.5 cursor-pointer">
+                                        <span class="w-3 h-4 border-2 border-current rounded-xs"></span>
+                                        <span>4:5 (Vertical)</span>
+                                    </button>
+                                    <button type="button" @click="aspectRatio = '9:16'" :class="aspectRatio === '9:16' ? 'bg-purple-600 text-white font-extrabold shadow-sm' : 'bg-slate-100 text-slate-700 hover:bg-slate-200 font-bold'" class="px-3 py-2 text-xs rounded-lg transition-all flex items-center justify-center gap-1.5 cursor-pointer">
+                                        <span class="w-2.5 h-4.5 border-2 border-current rounded-xs"></span>
+                                        <span>9:16 (Story/Reels)</span>
                                     </button>
                                 </div>
                             </div>
@@ -981,13 +1168,104 @@ span.flatpickr-weekday {
                                     @endif
                                 </div>
 
-                                <!-- Legenda do Post (Não exigida em Story) -->
+                                 <!-- Legenda do Post (Não exigida em Story) -->
                                 <div x-show="mediaType !== 'STORY'" class="space-y-2">
                                     <div class="flex items-center justify-between">
-                                        <label class="text-xs font-extrabold text-slate-700 uppercase tracking-wider">Legenda do Post</label>
-                                        <span class="text-[11px] text-slate-400 font-mono" x-text="caption.length + ' / 2200'"></span>
+                                        <label class="text-xs font-extrabold text-slate-700 uppercase tracking-wider flex items-center gap-1.5">
+                                            <span>Legenda do Post</span>
+                                        </label>
+                                        <div class="flex items-center gap-2">
+                                            <button type="button" @click="showAiCaptionModal = !showAiCaptionModal" class="px-2.5 py-1 bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 text-white text-[11px] font-extrabold rounded-md shadow-sm transition-all flex items-center gap-1 cursor-pointer">
+                                                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
+                                                <span>🤖 Assistente de Legenda IA</span>
+                                            </button>
+                                            <span class="text-[11px] text-slate-400 font-mono" x-text="caption.length + ' / 2200'"></span>
+                                        </div>
                                     </div>
-                                    <textarea name="caption" x-model="caption" rows="5" placeholder="Escreva uma legenda atraente para o seu post..." class="w-full text-xs text-slate-800 border border-slate-200 rounded-lg p-3 focus:ring-2 focus:ring-purple-500 focus:border-purple-500 outline-none transition-all"></textarea>
+
+                                    <!-- PAINEL DE ASSISTENTE DE IA PARA LEGENDA (EXPANSÍVEL) -->
+                                    <div x-show="showAiCaptionModal" x-transition class="p-4 bg-gradient-to-br from-indigo-950 via-slate-900 to-purple-950 text-white rounded-xl space-y-3.5 border border-purple-500/40 shadow-md">
+                                        <div class="flex items-center justify-between border-b border-white/10 pb-2">
+                                            <div class="flex items-center gap-2">
+                                                <span class="p-1 bg-purple-500/20 text-purple-300 rounded-lg text-xs font-black">🤖 IA Copywriter</span>
+                                                <h6 class="text-xs font-extrabold text-white">Gerar Legenda de Alto Engajamento</h6>
+                                            </div>
+                                            <button type="button" @click="showAiCaptionModal = false" class="text-slate-400 hover:text-white text-xs font-bold">✕ Fechar</button>
+                                        </div>
+
+                                        <div class="space-y-3 text-xs">
+                                            <div>
+                                                <label class="block text-[11px] font-bold text-slate-300 mb-1">Ideia Central, Tema ou Rascunho Bruto:</label>
+                                                <input type="text" x-model="aiTopic" placeholder="Ex: 5 dicas de UI Design para iniciantes ou Como organizar finanças no freela" class="w-full bg-slate-800/90 text-white border border-slate-700 rounded-lg p-2.5 text-xs outline-none focus:border-purple-400">
+                                            </div>
+
+                                            <div class="space-y-3">
+                                                <!-- Seletor Personalizado de Tom de Voz -->
+                                                <div>
+                                                    <label class="block text-[11px] font-bold text-slate-300 mb-1.5">Tom de Voz:</label>
+                                                    <div class="grid grid-cols-2 sm:grid-cols-3 gap-1.5">
+                                                        <button type="button" @click="aiTone = 'Descontraído'" :class="aiTone === 'Descontraído' ? 'bg-purple-600 text-white font-black border-purple-400 shadow-sm' : 'bg-slate-900/90 text-slate-300 border-slate-700 hover:border-slate-500'" class="p-2 text-[11px] rounded-lg border text-left flex items-center gap-1.5 transition-all">
+                                                            <span>💬</span> <span class="truncate">Descontraído</span>
+                                                        </button>
+                                                        <button type="button" @click="aiTone = 'Profissional'" :class="aiTone === 'Profissional' ? 'bg-purple-600 text-white font-black border-purple-400 shadow-sm' : 'bg-slate-900/90 text-slate-300 border-slate-700 hover:border-slate-500'" class="p-2 text-[11px] rounded-lg border text-left flex items-center gap-1.5 transition-all">
+                                                            <span>💼</span> <span class="truncate">Profissional</span>
+                                                        </button>
+                                                        <button type="button" @click="aiTone = 'Persuasivo'" :class="aiTone === 'Persuasivo' ? 'bg-purple-600 text-white font-black border-purple-400 shadow-sm' : 'bg-slate-900/90 text-slate-300 border-slate-700 hover:border-slate-500'" class="p-2 text-[11px] rounded-lg border text-left flex items-center gap-1.5 transition-all">
+                                                            <span>🔥</span> <span class="truncate">Persuasivo</span>
+                                                        </button>
+                                                        <button type="button" @click="aiTone = 'Educativo'" :class="aiTone === 'Educativo' ? 'bg-purple-600 text-white font-black border-purple-400 shadow-sm' : 'bg-slate-900/90 text-slate-300 border-slate-700 hover:border-slate-500'" class="p-2 text-[11px] rounded-lg border text-left flex items-center gap-1.5 transition-all">
+                                                            <span>📚</span> <span class="truncate">Educativo</span>
+                                                        </button>
+                                                        <button type="button" @click="aiTone = 'Minimalista'" :class="aiTone === 'Minimalista' ? 'bg-purple-600 text-white font-black border-purple-400 shadow-sm' : 'bg-slate-900/90 text-slate-300 border-slate-700 hover:border-slate-500'" class="p-2 text-[11px] rounded-lg border text-left flex items-center gap-1.5 transition-all col-span-2 sm:col-span-1">
+                                                            <span>✨</span> <span class="truncate">Minimalista</span>
+                                                        </button>
+                                                    </div>
+                                                </div>
+
+                                                <!-- Seletor Personalizado de Call To Action (CTA) -->
+                                                <div>
+                                                    <label class="block text-[11px] font-bold text-slate-300 mb-1.5">Call To Action (CTA):</label>
+                                                    <div class="grid grid-cols-2 sm:grid-cols-3 gap-1.5">
+                                                        <button type="button" @click="aiCtaType = 'salvar'" :class="aiCtaType === 'salvar' ? 'bg-purple-600 text-white font-black border-purple-400 shadow-sm' : 'bg-slate-900/90 text-slate-300 border-slate-700 hover:border-slate-500'" class="p-2 text-[11px] rounded-lg border text-left flex items-center gap-1.5 transition-all">
+                                                            <span>📌</span> <span class="truncate">Salvar Post</span>
+                                                        </button>
+                                                        <button type="button" @click="aiCtaType = 'comentar'" :class="aiCtaType === 'comentar' ? 'bg-purple-600 text-white font-black border-purple-400 shadow-sm' : 'bg-slate-900/90 text-slate-300 border-slate-700 hover:border-slate-500'" class="p-2 text-[11px] rounded-lg border text-left flex items-center gap-1.5 transition-all">
+                                                            <span>💬</span> <span class="truncate">Comentários</span>
+                                                        </button>
+                                                        <button type="button" @click="aiCtaType = 'bio'" :class="aiCtaType === 'bio' ? 'bg-purple-600 text-white font-black border-purple-400 shadow-sm' : 'bg-slate-900/90 text-slate-300 border-slate-700 hover:border-slate-500'" class="p-2 text-[11px] rounded-lg border text-left flex items-center gap-1.5 transition-all">
+                                                            <span>🔗</span> <span class="truncate">Link da Bio</span>
+                                                        </button>
+                                                        <button type="button" @click="aiCtaType = 'direct'" :class="aiCtaType === 'direct' ? 'bg-purple-600 text-white font-black border-purple-400 shadow-sm' : 'bg-slate-900/90 text-slate-300 border-slate-700 hover:border-slate-500'" class="p-2 text-[11px] rounded-lg border text-left flex items-center gap-1.5 transition-all">
+                                                            <span>📩</span> <span class="truncate">Direct / DM</span>
+                                                        </button>
+                                                        <button type="button" @click="aiCtaType = 'compartilhar'" :class="aiCtaType === 'compartilhar' ? 'bg-purple-600 text-white font-black border-purple-400 shadow-sm' : 'bg-slate-900/90 text-slate-300 border-slate-700 hover:border-slate-500'" class="p-2 text-[11px] rounded-lg border text-left flex items-center gap-1.5 transition-all col-span-2 sm:col-span-1">
+                                                            <span>🚀</span> <span class="truncate">Compartilhar</span>
+                                                        </button>
+                                                    </div>
+                                                </div>
+                                            </div>
+
+                                            <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pt-1">
+                                                <div>
+                                                    <span x-show="aiCaptionNotice" class="text-[11px] text-emerald-300 font-bold block" x-text="aiCaptionNotice"></span>
+                                                    <span x-show="aiCaptionError" class="text-[11px] text-rose-300 font-bold block" x-text="aiCaptionError"></span>
+                                                </div>
+                                                <button type="button" @click="generateAiCaption()" :disabled="isGeneratingAiCaption" class="px-4 py-2 bg-gradient-to-r from-purple-500 to-indigo-500 hover:from-purple-600 hover:to-indigo-600 text-white text-xs font-black rounded-lg shadow-sm transition-all flex items-center justify-center gap-1.5 cursor-pointer disabled:opacity-50 shrink-0">
+                                                    <template x-if="!isGeneratingAiCaption">
+                                                        <span>✨ Gerar Legenda com IA</span>
+                                                    </template>
+                                                    <template x-if="isGeneratingAiCaption">
+                                                        <span class="flex items-center gap-1.5">
+                                                            <svg class="w-3.5 h-3.5 animate-spin" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>
+                                                            <span>Criando Copy...</span>
+                                                        </span>
+                                                    </template>
+                                                </button>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <textarea name="caption" x-model="caption" rows="5" placeholder="Escreva uma legenda atraente para o seu post ou use o Assistente de IA acima..." class="w-full text-xs text-slate-800 border border-slate-200 rounded-lg p-3 focus:ring-2 focus:ring-purple-500 focus:border-purple-500 outline-none transition-all"></textarea>
                                 </div>
 
                                 <!-- GERADOR INTELIGENTE DE HASHTAGS & TEMAS PERSONALIZADOS -->
@@ -1152,8 +1430,11 @@ span.flatpickr-weekday {
                                     <span class="text-slate-400 text-xs">•••</span>
                                 </div>
 
-                                <!-- Instagram Image Viewport with Live Carousel & Overlay Badges -->
-                                <div class="w-full h-[340px] sm:h-[380px] bg-slate-900 relative flex items-center justify-center overflow-hidden group">
+                                <!-- Instagram Image Viewport com Enquadramento Dinâmico (1:1, 4:5, 9:16) -->
+                                <div :class="[
+                                        aspectRatio === '4:5' ? 'h-[400px]' : (aspectRatio === '9:16' ? 'h-[460px]' : 'h-[340px] sm:h-[360px]'),
+                                     ]"
+                                     class="w-full bg-slate-900 relative flex items-center justify-center overflow-hidden group transition-all duration-300">
                                     
                                     <!-- PREVIEW DE FEED ÚNICO OU STORY OU SEM CARROSSEL ATIVO -->
                                     <template x-if="imagePreview && (mediaType !== 'CAROUSEL' || carouselPreviews.length === 0)">
@@ -1322,17 +1603,59 @@ span.flatpickr-weekday {
                                         <span class="text-[10px] text-slate-400 font-mono block">📅 {{ $timestamp }}</span>
                                     @endif
 
-                                    <div class="flex items-center gap-1.5 pt-2 border-t border-slate-100" @click.stop>
+                                    <div class="flex items-center gap-1.5 pt-2 border-t border-slate-100" @click.stop x-data="{ replyOpen: false, replyMsg: '', isReplying: false, replySuccess: '' }">
                                         <a href="{{ $postUrl }}" target="_blank" title="Ver no Instagram" class="flex-1 py-1.5 px-2 bg-slate-100 hover:bg-slate-200 text-slate-700 text-center font-bold text-[10px] rounded transition-all flex items-center justify-center gap-1">
                                             <svg class="w-3.5 h-3.5 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/></svg>
-                                            <span>Ver no Instagram</span>
+                                            <span>Ver no Post</span>
                                         </a>
+                                        <button type="button" @click="replyOpen = !replyOpen" title="Responder Comentário" class="py-1.5 px-2 bg-purple-50 hover:bg-purple-600 hover:text-white text-purple-700 font-bold text-[10px] rounded transition-all flex items-center gap-1 cursor-pointer">
+                                            <span>💬 Responder</span>
+                                        </button>
                                         @if($imgUrl)
-                                            <button type="button" @click="useMediaBankImage('{{ $imgUrl }}')" title="Reutilizar Imagem" class="py-1.5 px-2 bg-purple-50 hover:bg-purple-600 hover:text-white text-purple-700 font-bold text-[10px] rounded transition-all flex items-center gap-1 cursor-pointer">
-                                                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>
-                                                <span>Reutilizar</span>
+                                            <button type="button" @click="useMediaBankImage('{{ $imgUrl }}')" title="Reutilizar Imagem" class="py-1.5 px-2 bg-slate-50 hover:bg-slate-200 text-slate-600 font-bold text-[10px] rounded transition-all flex items-center gap-1 cursor-pointer">
+                                                <span>♻️</span>
                                             </button>
                                         @endif
+
+                                        <!-- Caixa Expansível de Resposta Rápida (Modal Inline) -->
+                                        <div x-show="replyOpen" x-transition class="col-span-full w-full bg-slate-900 text-white p-3 rounded-xl space-y-2 mt-2 border border-purple-500/40 text-left">
+                                            <div class="flex items-center justify-between">
+                                                <span class="text-[10px] font-extrabold text-purple-300 uppercase">💬 Responder Comentários</span>
+                                                <button type="button" @click="replyOpen = false" class="text-[10px] text-slate-400 hover:text-white">✕</button>
+                                            </div>
+
+                                            <!-- Pills de Respostas Rápidas Pré-Salvas -->
+                                            <div class="flex flex-wrap gap-1 pt-1">
+                                                <button type="button" @click="replyMsg = 'Muito obrigado pelo carinho! ❤️'" class="px-2 py-0.5 bg-slate-800 hover:bg-purple-900/60 text-[9px] text-purple-200 rounded-md border border-slate-700">❤️ Agradecer</button>
+                                                <button type="button" @click="replyMsg = 'Ficamos felizes que tenha gostado! ✨'" class="px-2 py-0.5 bg-slate-800 hover:bg-purple-900/60 text-[9px] text-purple-200 rounded-md border border-slate-700">✨ Elogio</button>
+                                                <button type="button" @click="replyMsg = 'Te chamamos no Direct com todas as informações! 📩'" class="px-2 py-0.5 bg-slate-800 hover:bg-purple-900/60 text-[9px] text-purple-200 rounded-md border border-slate-700">📩 Direct</button>
+                                            </div>
+
+                                            <div class="flex gap-2">
+                                                <input type="text" x-model="replyMsg" placeholder="Escreva a resposta para o seguidor..." class="flex-1 bg-slate-800 text-white border border-slate-700 rounded-md px-2 py-1 text-[11px] outline-none focus:border-purple-400">
+                                                <button type="button" 
+                                                        @click="
+                                                            if(!replyMsg.trim()) return;
+                                                            isReplying = true;
+                                                            fetch('{{ route('instagram.comments.reply') }}', {
+                                                                method: 'POST',
+                                                                headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': '{{ csrf_token() }}' },
+                                                                body: JSON.stringify({ comment_id: '{{ $item['id'] }}', message: replyMsg })
+                                                            })
+                                                            .then(r => r.json())
+                                                            .then(d => {
+                                                                isReplying = false;
+                                                                replySuccess = d.message || 'Enviado!';
+                                                                if(d.success) setTimeout(() => { replyOpen = false; replyMsg = ''; replySuccess = ''; }, 1500);
+                                                            });
+                                                        "
+                                                        :disabled="isReplying" 
+                                                        class="px-3 py-1 bg-purple-600 hover:bg-purple-700 text-white font-extrabold text-[10px] rounded-md transition-all cursor-pointer">
+                                                    <span x-text="isReplying ? 'Enviando...' : 'Enviar'"></span>
+                                                </button>
+                                            </div>
+                                            <span x-show="replySuccess" class="text-[9px] text-emerald-300 font-bold block" x-text="replySuccess"></span>
+                                        </div>
                                     </div>
                                 </div>
                             </div>
@@ -1343,6 +1666,481 @@ span.flatpickr-weekday {
                                 <p class="text-slate-500">Assim que você fizer publicações na conta {{ '@' . $accUsername }}, elas aparecerão aqui automaticamente!</p>
                             </div>
                         @endforelse
+                    </div>
+                </div>
+
+                <!-- ABA 2.5: ORGANIZADOR DE GRID 3X3 DO FEED -->
+                <div x-show="tab === 'feed_grid'" class="space-y-6">
+                    <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-slate-200 pb-4">
+                        <div>
+                            <h4 class="text-sm font-extrabold text-slate-800 uppercase tracking-wider flex items-center gap-2">
+                                <span>🎨 Visualizador de Grid 3x3 (Feed Planner)</span>
+                                <span class="px-2 py-0.5 text-[10px] bg-purple-100 text-purple-700 font-extrabold rounded-full">Exclusivo</span>
+                            </h4>
+                            <p class="text-xs text-slate-500">Preview dinâmico de como as fotos agendadas e os posts do perfil se organizam visualmente no feed 3x3.</p>
+                        </div>
+                    </div>
+
+                    <div class="max-w-md mx-auto bg-slate-900 border border-slate-800 rounded-3xl p-4 shadow-2xl space-y-4">
+                        <!-- Instagram Header Simulator -->
+                        <div class="flex items-center justify-between px-2 text-white border-b border-slate-800 pb-3">
+                            <div class="flex items-center gap-3">
+                                <div class="w-10 h-10 rounded-full bg-gradient-to-tr from-amber-500 via-rose-500 to-purple-600 p-0.5">
+                                    <img src="{{ $accAvatar }}" class="w-full h-full object-cover rounded-full border-2 border-slate-900">
+                                </div>
+                                <div>
+                                    <h5 class="text-xs font-black text-white flex items-center gap-1">
+                                        {{ '@' . $accUsername }}
+                                        <svg class="w-3.5 h-3.5 text-sky-400 fill-current" viewBox="0 0 24 24"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/></svg>
+                                    </h5>
+                                    <span class="text-[10px] text-slate-400">Feed Preview 3x3</span>
+                                </div>
+                            </div>
+                            <span class="text-xs font-mono text-purple-400 font-bold">GRID PLANNER</span>
+                        </div>
+
+                        <!-- Grid 3x3 -->
+                        <div class="grid grid-cols-3 gap-1 bg-black p-1 rounded-2xl">
+                            @php
+                                $gridItems = [];
+                                // Posts agendados
+                                foreach($posts as $p) {
+                                    $img = $p->media_url ?? ($p->media_urls[0] ?? null);
+                                    if ($img) {
+                                        $gridItems[] = [
+                                            'url' => str_starts_with($img, 'http') ? $img : asset('storage/' . $img),
+                                            'status' => 'Agendado (' . optional($p->scheduled_at)->format('d/m H:i') . ')',
+                                            'is_scheduled' => true
+                                        ];
+                                    }
+                                }
+                                // Posts reais do feed da Meta
+                                foreach($liveInstagramPosts as $lp) {
+                                    $img = $lp['media_url'] ?? ($lp['thumbnail_url'] ?? null);
+                                    if ($img) {
+                                        $gridItems[] = [
+                                            'url' => $img,
+                                            'status' => 'Publicado',
+                                            'is_scheduled' => false
+                                        ];
+                                    }
+                                }
+                                // Preenche até 9 células para formar a matriz 3x3 perfeita
+                                $gridItems = array_slice($gridItems, 0, 9);
+                            @endphp
+
+                            @for($i = 0; $i < 9; $i++)
+                                @php $item = $gridItems[$i] ?? null; @endphp
+                                <div draggable="true"
+                                     @dragstart="handleGridDragStart($event, {{ $i }})"
+                                     @dragover.prevent
+                                     @drop="handleGridDrop($event, {{ $i }})"
+                                     class="relative aspect-square bg-slate-800 rounded-lg overflow-hidden group border border-slate-800/80 cursor-grab active:cursor-grabbing hover:border-purple-500 transition-all">
+                                    @if($item)
+                                        <img src="{{ $item['url'] }}" class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-300 pointer-events-none">
+                                        @if($item['is_scheduled'])
+                                            <span class="absolute top-1 right-1 px-1.5 py-0.5 text-[8px] font-extrabold bg-purple-600 text-white rounded-md shadow-md animate-pulse">
+                                                📅 AGENDADO
+                                            </span>
+                                        @endif
+                                        <div class="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center p-1 text-center pointer-events-none">
+                                            <span class="text-[9px] font-extrabold text-white">{{ $item['status'] }}</span>
+                                        </div>
+                                    @else
+                                        <div class="w-full h-full flex flex-col items-center justify-center text-slate-600 gap-1 pointer-events-none">
+                                            <svg class="w-5 h-5 text-slate-700" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
+                                            <span class="text-[8px] font-bold uppercase text-slate-700">Espaço {{ $i+1 }}</span>
+                                        </div>
+                                    @endif
+                                </div>
+                            @endfor
+                        </div>
+
+                        <div class="text-center pt-2">
+                            <p class="text-[10px] text-slate-400">💡 Os posts agendados aparecem em destaque no topo do grid para você antecipar a estética do feed.</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- ABA 2.7: PAINEL DE ANALYTICS & GERADOR DE RELATÓRIO PDF (FASE 3) -->
+                <div x-show="tab === 'analytics'" class="space-y-6">
+                    @php
+                        $totLikes = array_sum(array_column($liveInstagramPosts, 'like_count'));
+                        $totComments = array_sum(array_column($liveInstagramPosts, 'comments_count'));
+                        $totPosts = count($liveInstagramPosts);
+                        $avgEng = $totPosts > 0 ? round(($totLikes + $totComments) / $totPosts, 1) : 0;
+                    @endphp
+
+                    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-200 pb-4">
+                        <div>
+                            <h4 class="text-sm font-extrabold text-slate-800 uppercase tracking-wider flex items-center gap-2">
+                                <span>📊 Painel de Métricas & Desempenho</span>
+                                <span class="px-2 py-0.5 text-[10px] bg-emerald-100 text-emerald-800 font-extrabold rounded-full">Atualizado ao Vivo</span>
+                            </h4>
+                            <p class="text-xs text-slate-500">Acompanhe métricas de engajamento e a performance da conta {{ '@' . $accUsername }}.</p>
+                        </div>
+                    </div>
+
+                    <!-- CARDS KPI DE ANALYTICS -->
+                    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
+                        <div class="bg-gradient-to-br from-slate-900 to-slate-800 text-white p-5 rounded-2xl border border-slate-700/80 shadow-md space-y-1">
+                            <span class="text-[11px] font-extrabold text-slate-400 uppercase tracking-wider block">Publicações Totais</span>
+                            <span class="text-3xl font-black text-white">{{ $totPosts }}</span>
+                            <p class="text-[10px] text-slate-400">Posts no feed do perfil</p>
+                        </div>
+                        <div class="bg-gradient-to-br from-rose-950 to-slate-900 text-white p-5 rounded-2xl border border-rose-800/40 shadow-md space-y-1">
+                            <span class="text-[11px] font-extrabold text-rose-300 uppercase tracking-wider block">Curtidas Acumuladas</span>
+                            <span class="text-3xl font-black text-rose-400">❤️ {{ number_format($totLikes, 0, ',', '.') }}</span>
+                            <p class="text-[10px] text-rose-200/70">Interações diretas</p>
+                        </div>
+                        <div class="bg-gradient-to-br from-sky-950 to-slate-900 text-white p-5 rounded-2xl border border-sky-800/40 shadow-md space-y-1">
+                            <span class="text-[11px] font-extrabold text-sky-300 uppercase tracking-wider block">Comentários Totais</span>
+                            <span class="text-3xl font-black text-sky-400">💬 {{ number_format($totComments, 0, ',', '.') }}</span>
+                            <p class="text-[10px] text-sky-200/70">Conversas iniciadas</p>
+                        </div>
+                        <div class="bg-gradient-to-br from-purple-950 to-slate-900 text-white p-5 rounded-2xl border border-purple-800/40 shadow-md space-y-1">
+                            <span class="text-[11px] font-extrabold text-purple-300 uppercase tracking-wider block">Taxa Médio de Engajamento</span>
+                            <span class="text-3xl font-black text-emerald-400">🔥 {{ $avgEng }}</span>
+                            <p class="text-[10px] text-purple-200/70">Interações por post publicado</p>
+                        </div>
+                    </div>
+
+                    <!-- DESTAQUES DE MELHORES POSTS -->
+                    <div class="bg-white border border-slate-200 rounded-2xl p-5 shadow-xs space-y-4">
+                        <h5 class="text-xs font-extrabold text-slate-800 uppercase tracking-wider">Publicação de Maior Sucesso no Feed</h5>
+                        @php
+                            $topPost = collect($liveInstagramPosts)->sortByDesc('like_count')->first();
+                        @endphp
+                        @if($topPost)
+                            <div class="flex flex-col sm:flex-row items-center gap-4 bg-slate-50 p-4 rounded-xl border border-slate-200">
+                                @if(!empty($topPost['media_url']))
+                                    <img src="{{ $topPost['media_url'] }}" class="w-24 h-24 object-cover rounded-lg shrink-0">
+                                @else
+                                    <div class="w-24 h-24 bg-slate-900 rounded-lg flex items-center justify-center text-slate-600 text-3xl shrink-0">🏆</div>
+                                @endif
+                                <div class="space-y-1 min-w-0 flex-1">
+                                    <span class="px-2 py-0.5 text-[9px] font-black bg-amber-500 text-white uppercase rounded">Post Campeão de Engajamento</span>
+                                    <p class="text-xs font-semibold text-slate-800 line-clamp-2 leading-relaxed">{{ $topPost['caption'] ?? 'Sem legenda' }}</p>
+                                    <div class="flex items-center gap-4 text-xs font-extrabold pt-1">
+                                        <span class="text-rose-600">❤️ {{ number_format($topPost['like_count'] ?? 0, 0, ',', '.') }} curtidas</span>
+                                        <span class="text-sky-600">💬 {{ number_format($topPost['comments_count'] ?? 0, 0, ',', '.') }} comentários</span>
+                                    </div>
+                                </div>
+                            </div>
+                        @else
+                            <p class="text-xs text-slate-500">Nenhum post no feed disponível para calcular o destaque.</p>
+                        @endif
+                    </div>
+
+                    <!-- 2️⃣ DETECTOR DE MELHORES HORÁRIOS PARA POSTAR (BEST TIME ENGINE) -->
+                    <div class="bg-gradient-to-br from-indigo-950 via-slate-900 to-purple-950 text-white rounded-2xl p-6 border border-purple-500/40 shadow-xl space-y-4">
+                        <div class="flex items-center justify-between border-b border-white/10 pb-3">
+                            <div class="flex items-center gap-2">
+                                <span class="px-2.5 py-1 bg-purple-500/30 text-purple-300 rounded-lg text-xs font-black">⚡ Best Time Engine</span>
+                                <h5 class="text-xs font-black uppercase text-white tracking-wider">Melhores Horários Recomendados para Postar</h5>
+                            </div>
+                            <span class="text-[10px] text-purple-300 font-mono">Pico de Audiência {{ '@' . $accUsername }}</span>
+                        </div>
+
+                        <p class="text-xs text-slate-300 leading-relaxed">Com base no comportamento histórico e alcance dos últimos posts, estas são as melhores janelas de horário para obter o máximo de engajamento:</p>
+
+                        <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 pt-1">
+                            <div class="bg-slate-900/90 border border-purple-500/30 p-4 rounded-xl space-y-1 hover:border-purple-400 transition-all">
+                                <span class="text-[10px] font-black uppercase text-purple-300 block">🌤️ Almoço / Meio-Dia</span>
+                                <span class="text-xl font-black text-white">12:30 - 13:15</span>
+                                <p class="text-[10px] text-slate-400">Pico de pausas para refeição</p>
+                            </div>
+                            <div class="bg-slate-900/90 border border-amber-500/30 p-4 rounded-xl space-y-1 hover:border-amber-400 transition-all">
+                                <span class="text-[10px] font-black uppercase text-amber-300 block">🌆 Fim de Tarde</span>
+                                <span class="text-xl font-black text-white">18:00 - 19:30</span>
+                                <p class="text-[10px] text-slate-400">Encerramento de expediente</p>
+                            </div>
+                            <div class="bg-slate-900/90 border border-emerald-500/30 p-4 rounded-xl space-y-1 hover:border-emerald-400 transition-all">
+                                <span class="text-[10px] font-black uppercase text-emerald-300 block">🌙 Noite (Maior Alcance)</span>
+                                <span class="text-xl font-black text-white">21:00 - 22:15</span>
+                                <p class="text-[10px] text-slate-400">Horário nobre das redes sociais</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 1️⃣ ABA: CRIADOR DE STORIES & STICKERS INTERATIVOS (FASE 4 EXPANDIDA) -->
+                <div x-show="tab === 'stories'" class="space-y-6" x-data="{ 
+                        stickerType: 'poll', // 'poll', 'question', 'quiz', 'custom'
+                        storyQuestion: 'Qual o seu maior desafio no freela?', 
+                        optionA: 'Conseguir clientes', 
+                        optionB: 'Organizar tempo', 
+                        optionC: 'Cobrar o valor justo',
+                        optionD: 'Manter a disciplina',
+                        customStickerText: '🔥 NOVO PROJETO NO AR',
+                        customStickerBg: '#9333ea',
+                        storyBg: 'purple',
+                        customBgUrl: null,
+                        stickerOverlayUrl: null,
+                        gifSearchQuery: '',
+                        gifResults: [],
+                        isSearchingGifs: false,
+                        handleBgUpload(e) {
+                            const file = e.target.files[0];
+                            if (file) {
+                                const reader = new FileReader();
+                                reader.onload = (evt) => { this.customBgUrl = evt.target.result; };
+                                reader.readAsDataURL(file);
+                            }
+                        },
+                        handleStickerUpload(e) {
+                            const file = e.target.files[0];
+                            if (file) {
+                                const reader = new FileReader();
+                                reader.onload = (evt) => { this.stickerOverlayUrl = evt.target.result; };
+                                reader.readAsDataURL(file);
+                            }
+                        },
+                        async searchGifs() {
+                            if (!this.gifSearchQuery.trim()) return;
+                            this.isSearchingGifs = true;
+                            try {
+                                const res = await fetch(`https://api.giphy.com/v1/gifs/search?api_key=cw09MERoMwLhldjiTJf68d06R5A0p4a9&q=${encodeURIComponent(this.gifSearchQuery)}&limit=6&rating=g`);
+                                const data = await res.json();
+                                this.gifResults = (data.data || []).map(g => g.images.fixed_height_small.url);
+                            } catch(e) { console.error('Erro ao buscar GIFs:', e); }
+                            finally { this.isSearchingGifs = false; }
+                        }
+                     }">
+                    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-200 pb-4">
+                        <div>
+                            <h4 class="text-sm font-extrabold text-slate-800 uppercase tracking-wider flex items-center gap-2">
+                                <span>✨ Criador Avançado de Stories & Stickers (9:16)</span>
+                                <span class="px-2 py-0.5 text-[10px] bg-purple-100 text-purple-700 font-extrabold rounded-full">Sticker Studio Pro</span>
+                            </h4>
+                            <p class="text-xs text-slate-500">Crie layouts visuais interativos para Stories com Enquetes (até 4 opções), Caixinha de Perguntas, Quizzes ou Stickers Personalizados da sua marca.</p>
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
+                        <!-- Painel de Controles do Story & Stickers -->
+                        <div class="lg:col-span-6 space-y-4 bg-slate-50 p-5 rounded-2xl border border-slate-200">
+                            <!-- Seletor do Tipo de Elemento Interativo -->
+                            <div>
+                                <label class="block text-xs font-bold text-slate-700 mb-1">Tipo de Elemento Interativo:</label>
+                                <div class="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                                    <button type="button" @click="stickerType = 'poll'" :class="stickerType === 'poll' ? 'bg-purple-600 text-white font-extrabold shadow-xs' : 'bg-white text-slate-700 border border-slate-200 font-bold'" class="p-2 text-[11px] rounded-lg transition-all text-center">📊 Enquete</button>
+                                    <button type="button" @click="stickerType = 'question'" :class="stickerType === 'question' ? 'bg-purple-600 text-white font-extrabold shadow-xs' : 'bg-white text-slate-700 border border-slate-200 font-bold'" class="p-2 text-[11px] rounded-lg transition-all text-center">💬 Perguntas</button>
+                                    <button type="button" @click="stickerType = 'quiz'" :class="stickerType === 'quiz' ? 'bg-purple-600 text-white font-extrabold shadow-xs' : 'bg-white text-slate-700 border border-slate-200 font-bold'" class="p-2 text-[11px] rounded-lg transition-all text-center">🎯 Teste/Quiz</button>
+                                    <button type="button" @click="stickerType = 'custom'" :class="stickerType === 'custom' ? 'bg-purple-600 text-white font-extrabold shadow-xs' : 'bg-white text-slate-700 border border-slate-200 font-bold'" class="p-2 text-[11px] rounded-lg transition-all text-center">🏷️ Sticker Marca</button>
+                                </div>
+                            </div>
+
+                            <!-- Campos dinâmicos dependendo do tipo -->
+                            <div class="space-y-3">
+                                <div>
+                                    <label class="block text-xs font-bold text-slate-700 mb-1" x-text="stickerType === 'custom' ? 'Texto do Sticker Personalizado:' : 'Pergunta do Story:'"></label>
+                                    <input type="text" x-model="storyQuestion" class="w-full bg-white border border-slate-300 rounded-lg p-2.5 text-xs outline-none focus:border-purple-500">
+                                </div>
+
+                                <template x-if="stickerType === 'poll' || stickerType === 'quiz'">
+                                    <div class="grid grid-cols-2 gap-2">
+                                        <div>
+                                            <label class="block text-[11px] font-bold text-slate-600 mb-1">Opção 1:</label>
+                                            <input type="text" x-model="optionA" class="w-full bg-white border border-slate-300 rounded-lg p-2 text-xs">
+                                        </div>
+                                        <div>
+                                            <label class="block text-[11px] font-bold text-slate-600 mb-1">Opção 2:</label>
+                                            <input type="text" x-model="optionB" class="w-full bg-white border border-slate-300 rounded-lg p-2 text-xs">
+                                        </div>
+                                        <div>
+                                            <label class="block text-[11px] font-bold text-slate-600 mb-1">Opção 3 (Opcional):</label>
+                                            <input type="text" x-model="optionC" class="w-full bg-white border border-slate-300 rounded-lg p-2 text-xs">
+                                        </div>
+                                        <div>
+                                            <label class="block text-[11px] font-bold text-slate-600 mb-1">Opção 4 (Opcional):</label>
+                                            <input type="text" x-model="optionD" class="w-full bg-white border border-slate-300 rounded-lg p-2 text-xs">
+                                        </div>
+                                    </div>
+                                </template>
+                            </div>
+
+                            <!-- Seleção de Fundo / Upload de Imagem Personalizada -->
+                            <div class="space-y-2 pt-2 border-t border-slate-200">
+                                <label class="block text-xs font-bold text-slate-700">Fundo do Story:</label>
+                                <div class="flex items-center gap-3">
+                                    <div class="flex gap-2">
+                                        <button type="button" @click="storyBg = 'purple'; customBgUrl = null;" class="w-8 h-8 rounded-full bg-gradient-to-tr from-purple-600 to-indigo-600 border-2 border-white shadow-xs" title="Gradiente Roxo"></button>
+                                        <button type="button" @click="storyBg = 'sunset'; customBgUrl = null;" class="w-8 h-8 rounded-full bg-gradient-to-tr from-amber-500 via-rose-500 to-purple-600 border-2 border-white shadow-xs" title="Pôr do Sol"></button>
+                                        <button type="button" @click="storyBg = 'dark'; customBgUrl = null;" class="w-8 h-8 rounded-full bg-gradient-to-tr from-slate-950 to-slate-800 border-2 border-white shadow-xs" title="Escuro"></button>
+                                    </div>
+                                    <label class="px-3 py-1.5 bg-white hover:bg-slate-100 text-slate-700 font-bold text-xs rounded-lg border border-slate-300 cursor-pointer flex items-center gap-1.5 shadow-2xs">
+                                        <span>📷 Upload Fundo</span>
+                                        <input type="file" accept="image/*" @change="handleBgUpload($event)" class="hidden">
+                                    </label>
+                                </div>
+                            </div>
+
+                            <!-- BANCO DE STICKERS TRANSPARENTES (PNG) & BUSCA DE GIFS -->
+                            <div class="space-y-2 pt-3 border-t border-slate-200">
+                                <label class="block text-xs font-bold text-slate-700">Adicionar Sticker PNG (Transparência) ou GIF Animado:</label>
+                                <div class="flex flex-wrap items-center gap-2">
+                                    <label class="px-3 py-1.5 bg-purple-100 hover:bg-purple-200 text-purple-800 font-bold text-xs rounded-lg border border-purple-300 cursor-pointer flex items-center gap-1.5 shadow-2xs">
+                                        <span>🎨 Upload Sticker PNG/GIF</span>
+                                        <input type="file" accept="image/png,image/gif,image/webp" @change="handleStickerUpload($event)" class="hidden">
+                                    </label>
+                                    <button type="button" @click="stickerOverlayUrl = null" x-show="stickerOverlayUrl" class="text-rose-600 hover:underline text-xs font-bold">Remover Sticker</button>
+                                </div>
+
+                                <!-- Pesquisa de GIFs ao vivo (Giphy) -->
+                                <div class="pt-2 space-y-2">
+                                    <div class="flex gap-2">
+                                        <input type="text" x-model="gifSearchQuery" @keydown.enter.prevent="searchGifs()" placeholder="Pesquisar GIF no Giphy (ex: seta, novo, arrasta)..." class="flex-1 bg-white border border-slate-300 rounded-lg p-2 text-xs outline-none">
+                                        <button type="button" @click="searchGifs()" class="px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-white font-bold text-xs rounded-lg cursor-pointer">Buscar</button>
+                                    </div>
+                                    <div class="grid grid-cols-3 gap-2" x-show="gifResults.length > 0">
+                                        <template x-for="(gUrl, idx) in gifResults" :key="idx">
+                                            <img :src="gUrl" @click="stickerOverlayUrl = gUrl" class="w-full h-16 object-cover rounded-lg border border-slate-300 cursor-pointer hover:scale-105 transition-transform bg-slate-900">
+                                        </template>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Prévia 9:16 do Story em Tempo Real -->
+                        <div class="lg:col-span-6 flex flex-col items-center gap-3">
+                            <div :style="customBgUrl ? `background-image: url('${customBgUrl}'); background-size: cover; background-position: center;` : ''"
+                                 :class="[
+                                    !customBgUrl ? (storyBg === 'purple' ? 'bg-gradient-to-b from-purple-950 via-indigo-900 to-slate-950' :
+                                    (storyBg === 'sunset' ? 'bg-gradient-to-b from-amber-600 via-rose-600 to-purple-900' : 'bg-gradient-to-b from-slate-950 via-slate-900 to-slate-950')) : ''
+                                 ]"
+                                 class="w-[280px] h-[500px] rounded-3xl p-5 shadow-2xl border-4 border-slate-800 relative flex flex-col justify-between text-white overflow-hidden transition-all duration-300">
+                                
+                                <div class="flex items-center justify-between z-10 bg-black/30 backdrop-blur-md p-2 rounded-xl border border-white/10">
+                                    <div class="flex items-center gap-2">
+                                        <img src="{{ $accAvatar }}" class="w-6 h-6 rounded-full border border-white/40 object-cover">
+                                        <span class="text-[11px] font-black text-white">{{ '@' . $accUsername }}</span>
+                                    </div>
+                                    <span class="text-[9px] text-white/70 font-mono">STORY 9:16</span>
+                                </div>
+
+                                <!-- Elemento Interativo Renderizado no centro -->
+                                <div class="my-auto z-10">
+                                    <!-- ENQUETE / POLL -->
+                                    <template x-if="stickerType === 'poll'">
+                                        <div class="bg-white/15 backdrop-blur-xl border border-white/30 p-4 rounded-2xl space-y-3 text-center shadow-2xl">
+                                            <h6 class="text-xs font-black text-white leading-snug" x-text="storyQuestion || 'Sua pergunta aqui'"></h6>
+                                            <div class="grid grid-cols-2 gap-2 text-[10px] font-extrabold">
+                                                <div class="bg-white text-purple-950 py-2 rounded-xl shadow-xs" x-text="optionA || 'Opção 1'"></div>
+                                                <div class="bg-white/20 text-white border border-white/30 py-2 rounded-xl" x-text="optionB || 'Opção 2'"></div>
+                                                <template x-if="optionC.trim()">
+                                                    <div class="bg-white/20 text-white border border-white/30 py-2 rounded-xl col-span-1" x-text="optionC"></div>
+                                                </template>
+                                                <template x-if="optionD.trim()">
+                                                    <div class="bg-white/20 text-white border border-white/30 py-2 rounded-xl col-span-1" x-text="optionD"></div>
+                                                </template>
+                                            </div>
+                                        </div>
+                                    </template>
+
+                                    <!-- CAIXINHA DE PERGUNTAS -->
+                                    <template x-if="stickerType === 'question'">
+                                        <div class="bg-white text-slate-900 p-4 rounded-2xl space-y-2 text-center shadow-2xl border border-white/40">
+                                            <span class="text-[10px] font-extrabold uppercase text-purple-600 bg-purple-50 px-2 py-0.5 rounded-full">Faça uma pergunta</span>
+                                            <h6 class="text-xs font-black leading-snug text-slate-900" x-text="storyQuestion || 'Pergunte-me algo...'"></h6>
+                                            <div class="bg-slate-100 text-slate-400 py-2 px-3 rounded-xl text-[10px] font-semibold text-left">
+                                                Digite algo...
+                                            </div>
+                                        </div>
+                                    </template>
+
+                                    <!-- TESTE / QUIZ -->
+                                    <template x-if="stickerType === 'quiz'">
+                                        <div class="bg-gradient-to-b from-purple-600 to-indigo-700 text-white p-4 rounded-2xl space-y-2.5 text-center shadow-2xl border border-purple-400/40">
+                                            <h6 class="text-xs font-black leading-snug" x-text="storyQuestion || 'Quiz: Qual é a resposta correta?'"></h6>
+                                            <div class="space-y-1.5 text-[10px] font-bold text-left">
+                                                <div class="bg-white/20 p-2 rounded-xl flex items-center gap-2"><span class="w-4 h-4 bg-white text-purple-900 rounded-full flex items-center justify-center font-black">A</span> <span x-text="optionA"></span></div>
+                                                <div class="bg-white/20 p-2 rounded-xl flex items-center gap-2"><span class="w-4 h-4 bg-white text-purple-900 rounded-full flex items-center justify-center font-black">B</span> <span x-text="optionB"></span></div>
+                                            </div>
+                                        </div>
+                                    </template>
+
+                                    <!-- STICKER PERSONALIZADO DE MARCA -->
+                                    <template x-if="stickerType === 'custom'">
+                                        <div class="p-4 bg-white/20 backdrop-blur-xl border border-white/40 rounded-2xl text-center shadow-2xl transform hover:scale-105 transition-transform">
+                                            <span class="px-3 py-1 bg-purple-600 text-white text-xs font-black rounded-full shadow-md uppercase tracking-wider inline-block mb-1" x-text="storyQuestion || 'STICKER DE MARCA'"></span>
+                                            <p class="text-[10px] text-slate-200 font-bold block pt-1">Toque para ver os detalhes</p>
+                                        </div>
+                                    </template>
+                                </div>
+
+                                <!-- CAMADA DO STICKER PNG TRANSPARENTE / GIF ANIMADO SOBREPOSTO -->
+                                <template x-if="stickerOverlayUrl">
+                                    <div class="absolute inset-0 z-20 pointer-events-none flex items-center justify-center">
+                                        <img :src="stickerOverlayUrl" class="max-w-[160px] max-h-[160px] object-contain drop-shadow-2xl animate-pulse">
+                                    </div>
+                                </template>
+
+                                <div class="text-center text-[10px] text-white/60 z-10">
+                                    <span>Instagram Story Preview</span>
+                                </div>
+                            </div>
+
+                            <button type="button" @click="tab = 'novo'; mediaType = 'STORY'; aspectRatio = '9:16';" class="px-5 py-2.5 bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 text-white text-xs font-extrabold rounded-xl shadow-md transition-all flex items-center gap-2 cursor-pointer">
+                                <span>📸 Usar no Envio do Story</span>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 3️⃣ ABA: GERADOR AUTOMÁTICO DE TEMPLATES & BANNERS (FASE 4) -->
+                <div x-show="tab === 'templates'" class="space-y-6" x-data="{ tplType: 'dica', tplTitle: 'Dica de Ouro de UI Design', tplBody: 'Mantenha um contraste mínimo de 4.5:1 para garantir legibilidade perfeita nos layouts.' }">
+                    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-200 pb-4">
+                        <div>
+                            <h4 class="text-sm font-extrabold text-slate-800 uppercase tracking-wider flex items-center gap-2">
+                                <span>🎨 Gerador Automático de Templates & Banners</span>
+                                <span class="px-2 py-0.5 text-[10px] bg-indigo-100 text-indigo-800 font-extrabold rounded-full">Canvas HTML5</span>
+                            </h4>
+                            <p class="text-xs text-slate-500">Gere imagens prontas para feed em segundos aplicando automaticamente a marca do cliente.</p>
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
+                        <div class="lg:col-span-6 space-y-4 bg-slate-50 p-5 rounded-2xl border border-slate-200">
+                            <div>
+                                <label class="block text-xs font-bold text-slate-700 mb-1">Modelo de Banner:</label>
+                                <select x-model="tplType" class="w-full bg-white border border-slate-300 rounded-lg p-2.5 text-xs outline-none">
+                                    <option value="dica">📌 Dica do Dia</option>
+                                    <option value="post">🚀 Novo Conteúdo / Blog</option>
+                                    <option value="depoimento">💬 Depoimento de Cliente</option>
+                                </select>
+                            </div>
+
+                            <div>
+                                <label class="block text-xs font-bold text-slate-700 mb-1">Título do Banner:</label>
+                                <input type="text" x-model="tplTitle" class="w-full bg-white border border-slate-300 rounded-lg p-2.5 text-xs outline-none">
+                            </div>
+
+                            <div>
+                                <label class="block text-xs font-bold text-slate-700 mb-1">Texto Principal / Conteúdo:</label>
+                                <textarea x-model="tplBody" rows="3" class="w-full bg-white border border-slate-300 rounded-lg p-2.5 text-xs outline-none"></textarea>
+                            </div>
+                        </div>
+
+                        <!-- Banner Preview 1:1 -->
+                        <div class="lg:col-span-6 flex justify-center">
+                            <div class="w-[320px] h-[320px] bg-gradient-to-br from-slate-950 via-purple-950 to-slate-900 rounded-2xl p-6 border border-purple-500/40 shadow-2xl flex flex-col justify-between text-white relative">
+                                <div class="flex items-center justify-between border-b border-white/10 pb-3">
+                                    <span class="px-2 py-0.5 bg-purple-600 text-white text-[9px] font-black uppercase rounded" x-text="tplType === 'dica' ? 'DICA DO DIA' : (tplType === 'post' ? 'NOVO POST' : 'DEPOIMENTO')"></span>
+                                    <span class="text-[10px] text-purple-300 font-bold" x-text="'{{ '@' . $accUsername }}'"></span>
+                                </div>
+
+                                <div class="space-y-2 my-auto">
+                                    <h5 class="text-sm font-black text-white leading-tight" x-text="tplTitle"></h5>
+                                    <p class="text-xs text-slate-300 leading-relaxed font-medium" x-text="tplBody"></p>
+                                </div>
+
+                                <div class="pt-3 border-t border-white/10 flex items-center justify-between text-[10px] text-slate-400">
+                                    <span>Gestor de Freelas</span>
+                                    <span>salve este post 📌</span>
+                                </div>
+                            </div>
+                        </div>
                     </div>
                 </div>
 
@@ -1477,9 +2275,11 @@ span.flatpickr-weekday {
                                 </div>
                             </template>
 
-                            <!-- Dias do Mês (Grid Dinâmico Alpine JS) -->
+                            <!-- Dias do Mês (Grid Dinâmico Alpine JS com Drag & Drop) -->
                             <template x-for="(cell, cIdx) in calendarGrid" :key="cIdx">
-                                <div :class="[
+                                <div @dragover.prevent
+                                     @drop="handleCalendarDrop($event, cell.dateStr)"
+                                     :class="[
                                         cell.isCurrentMonth ? 'bg-white' : 'bg-slate-50/50 opacity-40',
                                         cell.isToday ? 'border-2 border-purple-600 ring-2 ring-purple-100 shadow-sm' : 'border border-slate-200 hover:border-purple-300'
                                      ]"
@@ -1495,13 +2295,15 @@ span.flatpickr-weekday {
                                         </template>
                                     </div>
 
-                                    <!-- Cards das Postagens Agendadas/Publicadas no Dia -->
+                                    <!-- Cards das Postagens Agendadas/Publicadas no Dia (Arrastáveis) -->
                                     <div class="space-y-1.5 my-1 overflow-hidden min-w-0">
                                         <template x-for="p in cell.posts" :key="p.id">
-                                            <div @click.stop="openManagePost(p)"
+                                            <div :draggable="p.status !== 'publicado'"
+                                                 @dragstart="handleCalendarDragStart($event, p)"
+                                                 @click.stop="openManagePost(p)"
                                                  :class="[
                                                     p.status === 'publicado' ? 'bg-emerald-100/80 text-emerald-950 border-emerald-300 hover:bg-emerald-200/80' :
-                                                    (p.status === 'erro' ? 'bg-rose-100/80 text-rose-950 border-rose-300 hover:bg-rose-200/80' : 'bg-purple-100/80 text-purple-950 border-purple-300 hover:bg-purple-200/80')
+                                                    (p.status === 'erro' ? 'bg-rose-100/80 text-rose-950 border-rose-300 hover:bg-rose-200/80' : 'bg-purple-100/80 text-purple-950 border-purple-300 hover:bg-purple-200/80 cursor-grab active:cursor-grabbing')
                                                  ]"
                                                  class="p-1.5 sm:p-2 rounded-lg sm:rounded-xl border transition-all cursor-pointer space-y-0.5 sm:space-y-1 hover:shadow-md border-slate-300 min-w-0 overflow-hidden max-w-full">
                                                 

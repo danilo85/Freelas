@@ -13,15 +13,18 @@ class InstagramPost extends Model
         'user_id',
         'instagram_account_id',
         'media_type',
+        'category',
         'media_path',
         'media_urls',
         'caption',
         'has_logo_overlay',
         'has_arrow_overlay',
         'status',
+        'post_to_facebook',
         'scheduled_at',
         'published_at',
         'instagram_media_id',
+        'facebook_post_id',
         'error_message',
     ];
 
@@ -29,6 +32,7 @@ class InstagramPost extends Model
         'media_urls' => 'array',
         'has_logo_overlay' => 'boolean',
         'has_arrow_overlay' => 'boolean',
+        'post_to_facebook' => 'boolean',
         'scheduled_at' => 'datetime',
         'published_at' => 'datetime',
     ];

@@ -239,9 +239,14 @@ Route::middleware(['auth', 'approved'])->prefix('freelas')->group(function () {
         Route::delete('/instagram/{account}', [\App\Http\Controllers\InstagramController::class, 'disconnect'])->name('instagram.disconnect');
         Route::post('/utilidades/instagram/posts', [\App\Http\Controllers\InstagramController::class, 'storePost'])->name('instagram.posts.store');
         Route::put('/utilidades/instagram/posts/{post}', [\App\Http\Controllers\InstagramController::class, 'updatePost'])->name('instagram.posts.update');
+        Route::patch('/utilidades/instagram/posts/{post}/reschedule', [\App\Http\Controllers\InstagramController::class, 'reschedulePost'])->name('instagram.posts.reschedule');
         Route::delete('/utilidades/instagram/posts/{post}', [\App\Http\Controllers\InstagramController::class, 'destroyPost'])->name('instagram.posts.destroy');
         Route::post('/utilidades/instagram/settings/overlays', [\App\Http\Controllers\InstagramController::class, 'storeOverlayIcons'])->name('instagram.settings.overlays');
         Route::post('/utilidades/instagram/generate-hashtags', [\App\Http\Controllers\InstagramController::class, 'generateAiHashtags'])->name('instagram.hashtags.generate');
+        Route::post('/utilidades/instagram/generate-caption', [\App\Http\Controllers\InstagramController::class, 'generateAiCaption'])->name('instagram.caption.generate');
+        Route::get('/utilidades/instagram/report/pdf', [\App\Http\Controllers\InstagramController::class, 'exportPdfReport'])->name('instagram.report.pdf');
+        Route::post('/utilidades/instagram/comments/reply', [\App\Http\Controllers\InstagramController::class, 'replyComment'])->name('instagram.comments.reply');
+        Route::get('/utilidades/instagram/media/{mediaId}/comments', [\App\Http\Controllers\InstagramController::class, 'getMediaComments'])->name('instagram.media.comments');
         Route::post('/utilidades/instagram/themes', [\App\Http\Controllers\InstagramController::class, 'saveHashtagTheme'])->name('instagram.themes.save');
         Route::delete('/utilidades/instagram/themes/{index}', [\App\Http\Controllers\InstagramController::class, 'deleteHashtagTheme'])->name('instagram.themes.delete');
         Route::delete('/utilidades/notificacoes/limpar', [\App\Http\Controllers\NotificationController::class, 'destroyAll'])->name('notifications.destroy-all');
