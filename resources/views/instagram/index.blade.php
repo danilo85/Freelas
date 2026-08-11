@@ -21,6 +21,7 @@
                 hasArrowOverlay: false,
                 imagePreview: null,
                 carouselPreviews: [],
+                selectedFiles: [],
                 currentCarouselIndex: 0,
                 selectedAccountId: '{{ optional($account)->id }}',
                 hashtagCategory: 'design',
@@ -170,6 +171,20 @@
                 },
 
                 startSubmitting(e) {
+                    if (this.$refs.fileInput && this.selectedFiles.length > 0) {
+                        try {
+                            const dt = new DataTransfer();
+                            this.selectedFiles.forEach(file => {
+                                if (file instanceof File) {
+                                    dt.items.add(file);
+                                }
+                            });
+                            this.$refs.fileInput.files = dt.files;
+                        } catch (err) {
+                            console.error('DataTransfer submit error:', err);
+                        }
+                    }
+
                     this.isSubmittingPost = true;
                     this.postProgress = 10;
                     this.postProgressStep = 'Processando e otimizando imagem...';
@@ -194,14 +209,14 @@
                     this.isDragging = false;
                     const files = Array.from(e.dataTransfer.files).filter(f => f.type.startsWith('image/'));
                     if (files.length > 0) {
-                        this.processFilesList(files);
+                        this.addFilesToList(files);
                     }
                 },
 
                 handleImageInputChange(e) {
                     const files = Array.from(e.target.files);
                     if (files.length > 0) {
-                        this.processFilesList(files);
+                        this.addFilesToList(files);
                     }
                 },
 
@@ -221,33 +236,70 @@
                     this.handleImageInputChange(e);
                 },
 
-                processFilesList(files) {
-                    this.carouselPreviews = [];
-                    let loadedCount = 0;
+                addFilesToList(newFiles) {
+                    if (this.mediaType === 'IMAGE' || this.mediaType === 'STORY') {
+                        if (newFiles.length > 1) {
+                            this.mediaType = 'CAROUSEL';
+                            this.selectedFiles = newFiles;
+                        } else {
+                            this.selectedFiles = newFiles;
+                        }
+                    } else {
+                        // Acumula imagens no modo Carrossel
+                        this.selectedFiles = [...this.selectedFiles, ...newFiles];
+                    }
+                    this.syncFileInputAndPreviews();
+                },
 
-                    files.forEach((file, index) => {
-                        const reader = new FileReader();
-                        reader.onload = (evt) => {
-                            this.carouselPreviews[index] = evt.target.result;
-                            loadedCount++;
-                            if (loadedCount === 1 || index === 0) {
-                                this.imagePreview = evt.target.result;
-                            }
-                        };
-                        reader.readAsDataURL(file);
+                syncFileInputAndPreviews() {
+                    // Sincroniza os arquivos reais no <input type="file"> com DataTransfer
+                    if (this.$refs.fileInput) {
+                        try {
+                            const dt = new DataTransfer();
+                            this.selectedFiles.forEach(file => {
+                                if (file instanceof File) {
+                                    dt.items.add(file);
+                                }
+                            });
+                            this.$refs.fileInput.files = dt.files;
+                        } catch (e) {
+                            console.error('DataTransfer sync error:', e);
+                        }
+                    }
+
+                    // Atualiza miniaturas de visualização
+                    this.carouselPreviews = [];
+                    if (this.selectedFiles.length === 0) {
+                        this.imagePreview = null;
+                        return;
+                    }
+
+                    let loadedCount = 0;
+                    this.selectedFiles.forEach((file, index) => {
+                        if (file instanceof File) {
+                            const reader = new FileReader();
+                            reader.onload = (evt) => {
+                                this.carouselPreviews[index] = evt.target.result;
+                                loadedCount++;
+                                if (index === 0) {
+                                    this.imagePreview = evt.target.result;
+                                }
+                            };
+                            reader.readAsDataURL(file);
+                        } else if (typeof file === 'string') {
+                            this.carouselPreviews[index] = file;
+                            if (index === 0) this.imagePreview = file;
+                        }
                     });
 
                     this.currentCarouselIndex = 0;
-
-                    // Alterna automaticamente o formato para Carrossel quando selecionadas 2 ou mais fotos
-                    if (this.mediaType !== 'STORY') {
-                        if (files.length > 1) {
-                            this.mediaType = 'CAROUSEL';
-                        }
+                    if (this.selectedFiles.length > 1 && this.mediaType !== 'STORY') {
+                        this.mediaType = 'CAROUSEL';
                     }
                 },
 
                 clearAllImages() {
+                    this.selectedFiles = [];
                     this.carouselPreviews = [];
                     this.imagePreview = null;
                     this.currentCarouselIndex = 0;
@@ -257,21 +309,18 @@
                 },
 
                 removeCarouselSlide(index) {
-                    this.carouselPreviews.splice(index, 1);
-                    if (this.currentCarouselIndex >= this.carouselPreviews.length) {
-                        this.currentCarouselIndex = Math.max(0, this.carouselPreviews.length - 1);
+                    this.selectedFiles.splice(index, 1);
+                    if (this.currentCarouselIndex >= this.selectedFiles.length) {
+                        this.currentCarouselIndex = Math.max(0, this.selectedFiles.length - 1);
                     }
-                    if (this.carouselPreviews.length > 0) {
-                        this.imagePreview = this.carouselPreviews[this.currentCarouselIndex];
-                    } else {
-                        this.imagePreview = null;
-                    }
-                    if (this.carouselPreviews.length <= 1 && this.mediaType === 'CAROUSEL') {
+                    this.syncFileInputAndPreviews();
+                    if (this.selectedFiles.length <= 1 && this.mediaType === 'CAROUSEL') {
                         this.mediaType = 'IMAGE';
                     }
                 },
 
                 useMediaBankImage(url) {
+                    this.selectedFiles = [url];
                     this.imagePreview = url;
                     this.carouselPreviews = [url];
                     this.mediaType = 'IMAGE';

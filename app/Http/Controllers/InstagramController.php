@@ -434,17 +434,18 @@ class InstagramController extends Controller
             $mainPath = null;
             $mediaUrls = [];
 
-            // Coleta todas as mídias enviadas independente do nome do campo
+            // Coleta TODAS as mídias enviadas na requisição independente da chave do formulário
             $uploadedFiles = [];
-            if ($request->hasFile('carousel_images')) {
-                $f = $request->file('carousel_images');
-                $uploadedFiles = is_array($f) ? $f : [$f];
-            } elseif ($request->hasFile('image')) {
-                $f = $request->file('image');
-                $uploadedFiles = is_array($f) ? $f : [$f];
-            } elseif ($request->hasFile('images')) {
-                $f = $request->file('images');
-                $uploadedFiles = is_array($f) ? $f : [$f];
+            foreach ($request->allFiles() as $fileGroup) {
+                if (is_array($fileGroup)) {
+                    foreach ($fileGroup as $f) {
+                        if ($f instanceof \Illuminate\Http\UploadedFile && $f->isValid()) {
+                            $uploadedFiles[] = $f;
+                        }
+                    }
+                } elseif ($fileGroup instanceof \Illuminate\Http\UploadedFile && $fileGroup->isValid()) {
+                    $uploadedFiles[] = $fileGroup;
+                }
             }
 
             if ($mediaType === 'CAROUSEL') {
