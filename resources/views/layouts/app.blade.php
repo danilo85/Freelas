@@ -15,6 +15,10 @@
             default => '#16a34a',
         };
         $svgContent = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1000 1000"><path fill="' . $faviconColor . '" d="M865.113,449.522c10.877,386.934-382.478,526.992-710.13,483.392l-20.316-813.713C451.19,2.759,854.661,28.682,865.113,449.522z M609.715,489.39c5.268-86.891-48.151-175.483-143.27-174.42l-24.921,386.211C542.249,687.04,611.843,587.711,609.715,489.39z"/></svg>';
+        $unreadNotificationsCount = auth()->check() ? \App\Models\Notification::where('user_id', auth()->id())
+            ->whereNull('read_at')
+            ->whereNotIn('type', ['bill_dismissed', 'reminder_dismissed'])
+            ->count() : 0;
     @endphp
     <link id="app-favicon" rel="icon" type="image/svg+xml" href="data:image/svg+xml;utf8,{{ rawurlencode($svgContent) }}">
     
@@ -553,10 +557,6 @@
                 default: $sidebarBg = 'bg-slate-900'; break;
             }
         }
-        $unreadNotificationsCount = auth()->check() ? \App\Models\Notification::where('user_id', auth()->id())
-            ->whereNull('read_at')
-            ->whereNotIn('type', ['bill_dismissed', 'reminder_dismissed'])
-            ->count() : 0;
     @endphp
     <aside class="fixed inset-y-0 left-0 z-40 w-64 {{ $sidebarBg }} dark:bg-slate-950 text-slate-100 flex flex-col border-r border-slate-800 dark:border-slate-900 transform -translate-x-full transition-transform duration-300 ease-in-out md:sticky md:top-0 md:h-screen md:translate-x-0 md:flex"
            :class="sidebarOpen ? 'translate-x-0' : '-translate-x-full'">
