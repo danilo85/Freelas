@@ -409,20 +409,13 @@ class InstagramController extends Controller
             $request->validate([
                 'instagram_account_id' => 'nullable|exists:instagram_accounts,id',
                 'media_type' => 'required|in:IMAGE,CAROUSEL,STORY',
-                'image' => 'nullable|required_if:media_type,IMAGE,STORY|image|max:10240',
-                'carousel_images.*' => 'nullable|image|max:10240',
                 'caption' => 'nullable|string',
                 'has_logo_overlay' => 'nullable|boolean',
                 'has_arrow_overlay' => 'nullable|boolean',
                 'action' => 'required|in:now,schedule',
-                'scheduled_at' => 'nullable|required_if:action,schedule|date|after_or_equal:' . now()->subMinutes(5)->toDateTimeString(),
+                'scheduled_at' => 'nullable|required_if:action,schedule|date',
             ], [
                 'scheduled_at.required_if' => 'Informe a data e o horário para agendar a postagem.',
-                'scheduled_at.after_or_equal' => 'A data e o horário do agendamento devem estar no presente ou futuro.',
-                'scheduled_at.after' => 'A data e o horário do agendamento devem estar no presente ou futuro.',
-                'image.required_if' => 'Selecione uma imagem para a publicação.',
-                'image.image' => 'O arquivo selecionado deve ser uma imagem válida (JPG, PNG, WebP).',
-                'carousel_images.*.image' => 'Todos os arquivos do carrossel devem ser imagens válidas (JPG, PNG, WebP).',
             ]);
 
             $accountId = $request->input('instagram_account_id');
@@ -441,30 +434,37 @@ class InstagramController extends Controller
             $mainPath = null;
             $mediaUrls = [];
 
-            if ($mediaType === 'CAROUSEL') {
-                $carouselFiles = [];
-                if ($request->hasFile('carousel_images')) {
-                    $files = $request->file('carousel_images');
-                    $carouselFiles = is_array($files) ? $files : [$files];
-                } elseif ($request->hasFile('image')) {
-                    $files = $request->file('image');
-                    $carouselFiles = is_array($files) ? $files : [$files];
-                }
+            // Coleta todas as mídias enviadas independente do nome do campo
+            $uploadedFiles = [];
+            if ($request->hasFile('carousel_images')) {
+                $f = $request->file('carousel_images');
+                $uploadedFiles = is_array($f) ? $f : [$f];
+            } elseif ($request->hasFile('image')) {
+                $f = $request->file('image');
+                $uploadedFiles = is_array($f) ? $f : [$f];
+            } elseif ($request->hasFile('images')) {
+                $f = $request->file('images');
+                $uploadedFiles = is_array($f) ? $f : [$f];
+            }
 
-                if (count($carouselFiles) < 2) {
+            if ($mediaType === 'CAROUSEL') {
+                if (count($uploadedFiles) < 2) {
                     return redirect()->back()->withInput()->with('error', 'Selecione pelo menos 2 imagens para criar um Carrossel.');
                 }
 
-                foreach ($carouselFiles as $imgFile) {
+                foreach ($uploadedFiles as $imgFile) {
                     $rawPath = $imgFile->store('instagram_posts', 'public');
                     $processedPath = $this->applyOverlays($rawPath, $hasLogo, $hasArrow);
                     $mediaUrls[] = $processedPath;
                 }
                 $mainPath = $mediaUrls[0] ?? null;
             } else {
-                if ($request->hasFile('image')) {
-                    $rawPath = $request->file('image')->store('instagram_posts', 'public');
+                $singleFile = $uploadedFiles[0] ?? null;
+                if ($singleFile) {
+                    $rawPath = $singleFile->store('instagram_posts', 'public');
                     $mainPath = $this->applyOverlays($rawPath, $hasLogo, $hasArrow);
+                } else {
+                    return redirect()->back()->withInput()->with('error', 'Selecione uma imagem para a publicação.');
                 }
             }
 

@@ -733,8 +733,8 @@
                                         
                                         <input type="file"
                                                x-ref="fileInput"
-                                               :name="mediaType === 'CAROUSEL' ? 'carousel_images[]' : 'image'"
-                                               :multiple="mediaType === 'CAROUSEL' || mediaType === 'IMAGE'"
+                                               name="carousel_images[]"
+                                               multiple
                                                @change="handleImageInputChange($event)"
                                                accept="image/*"
                                                class="hidden">
