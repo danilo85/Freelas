@@ -479,7 +479,7 @@ class InstagramController extends Controller
                 'has_logo_overlay' => $hasLogo,
                 'has_arrow_overlay' => $hasArrow,
                 'status' => $request->action === 'now' ? 'rascunho' : 'agendado',
-                'scheduled_at' => $request->action === 'schedule' ? Carbon::parse($request->scheduled_at) : null,
+                'scheduled_at' => $request->action === 'schedule' ? Carbon::parse($request->scheduled_at, config('app.timezone', 'America/Sao_Paulo')) : null,
             ]);
 
             if ($request->action === 'now') {
@@ -492,7 +492,8 @@ class InstagramController extends Controller
                 }
             }
 
-            return redirect()->route('instagram.index')->with('success', '🗓️ Conteúdo agendado com sucesso para ' . Carbon::parse($request->scheduled_at)->format('d/m/Y H:i'));
+            $schedFormatted = Carbon::parse($request->scheduled_at, config('app.timezone', 'America/Sao_Paulo'))->format('d/m/Y H:i');
+            return redirect()->route('instagram.index')->with('success', '🗓️ Conteúdo agendado com sucesso para ' . $schedFormatted);
         } catch (\Illuminate\Validation\ValidationException $e) {
             throw $e;
         } catch (\Throwable $e) {

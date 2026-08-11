@@ -42,4 +42,9 @@ class InstagramPost extends Model
     {
         return $this->belongsTo(InstagramAccount::class);
     }
+
+    protected function serializeDate(\DateTimeInterface $date)
+    {
+        return $date->format('Y-m-d H:i:s');
+    }
 }

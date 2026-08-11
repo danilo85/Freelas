@@ -1313,7 +1313,7 @@
                                                 <span class="px-1.5 py-0.5 bg-white/90 rounded-md font-black text-[9px] uppercase tracking-wider text-slate-800 shadow-2xs"
                                                       x-text="p.media_type === 'STORY' ? 'Story' : (p.media_type === 'CAROUSEL' ? 'Carrossel' : 'Feed')"></span>
                                                 <span class="text-[9px] font-mono font-extrabold text-slate-700"
-                                                      x-text="p.scheduled_at ? p.scheduled_at.substring(11, 16) : (p.created_at ? p.created_at.substring(11, 16) : '')"></span>
+                                                      x-text="p.published_at ? p.published_at.substring(11, 16) : (p.scheduled_at ? p.scheduled_at.substring(11, 16) : (p.created_at ? p.created_at.substring(11, 16) : ''))"></span>
                                             </div>
 
                                             <p class="truncate text-[10px] text-slate-800 font-semibold"
