@@ -4,6 +4,10 @@
 @section('page_title', 'Integração & Gestão do Instagram')
 
 @section('content')
+@php
+    $accUsername = optional($account)->username ?: 'seu_perfil';
+    $accAvatar = optional($account)->profile_picture_url ?: ('https://ui-avatars.com/api/?name=' . urlencode($accUsername));
+@endphp
 <div class="space-y-8" x-data="instagramModule">
     
     <!-- Banner de Status de Conexão com a Meta / Instagram -->
@@ -20,7 +24,7 @@
                     @if($account)
                         <span class="px-2.5 py-0.5 text-[10px] font-black uppercase tracking-wider bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 rounded-full flex items-center gap-1">
                             <span class="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span>
-                            Conectado: {{ '@' . $account->username }}
+                            Conectado: {{ '@' . $accUsername }}
                         </span>
                     @else
                         <span class="px-2.5 py-0.5 text-[10px] font-black uppercase tracking-wider bg-rose-500/20 text-rose-300 border border-rose-500/30 rounded-full">
@@ -30,7 +34,7 @@
                 </div>
                 <p class="text-xs text-slate-300 mt-1 leading-relaxed">
                     @if($account)
-                        Sua conta profissional <strong class="text-white">{{ '@' . $account->username }}</strong> está pronta para publicar Feed, Carrosséis e Stories.
+                        Sua conta profissional <strong class="text-white">{{ '@' . $accUsername }}</strong> está pronta para publicar Feed, Carrosséis e Stories.
                     @else
                         Conecte sua conta do Instagram Profissional (vinculada a uma Página do Facebook) para agendar e publicar fotos, carrosséis e stories.
                     @endif
@@ -308,8 +312,8 @@
                                 <!-- Instagram App Header -->
                                 <div class="flex items-center justify-between px-3 py-2 border-b border-slate-800">
                                     <div class="flex items-center gap-2">
-                                        <img src="{{ $account->profile_picture_url ?: 'https://ui-avatars.com/api/?name=' . urlencode($account->username) }}" class="w-8 h-8 rounded-full border border-purple-500 object-cover">
-                                        <span class="text-xs font-bold text-white tracking-tight" x-text="'{{ '@' . $account->username }}'"></span>
+                                        <img src="{{ $accAvatar }}" class="w-8 h-8 rounded-full border border-purple-500 object-cover">
+                                        <span class="text-xs font-bold text-white tracking-tight" x-text="'{{ '@' . $accUsername }}'"></span>
                                     </div>
                                     <span class="text-slate-400 text-xs">•••</span>
                                 </div>
@@ -395,7 +399,7 @@
                                 <!-- Live Caption Preview -->
                                 <div class="px-3 pb-4 space-y-1 text-xs">
                                     <p class="text-slate-200 text-[11px] leading-relaxed break-words">
-                                        <strong class="text-white font-bold" x-text="'{{ '@' . $account->username }}'"></strong>
+                                        <strong class="text-white font-bold" x-text="'{{ '@' . $accUsername }}'"></strong>
                                         <span x-text="caption || 'Sua legenda aparecerá aqui...'"></span>
                                     </p>
                                     <span class="text-[9px] text-slate-500 uppercase font-semibold block pt-1">HÁ 1 MINUTO</span>
@@ -410,7 +414,7 @@
                 <div x-show="tab === 'feed_real'" class="space-y-6">
                     <div class="flex items-center justify-between">
                         <div>
-                            <h4 class="text-sm font-extrabold text-slate-800 uppercase tracking-wider">Publicações do Perfil {{ '@' . $account->username }}</h4>
+                            <h4 class="text-sm font-extrabold text-slate-800 uppercase tracking-wider">Publicações do Perfil {{ '@' . $accUsername }}</h4>
                             <p class="text-xs text-slate-500">Histórico oficial das mídias publicadas diretamente na sua conta do Instagram.</p>
                         </div>
                     </div>
@@ -502,7 +506,7 @@
                             <div class="col-span-full p-12 text-center bg-slate-50 border border-slate-200 rounded-xl text-slate-500 text-xs space-y-2">
                                 <svg class="w-10 h-10 mx-auto text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
                                 <p class="font-bold text-slate-700">Nenhuma publicação encontrada diretamente no feed do Instagram.</p>
-                                <p class="text-slate-500">Assim que você fizer publicações na conta {{ '@' . $account->username }}, elas aparecerão aqui automaticamente!</p>
+                                <p class="text-slate-500">Assim que você fizer publicações na conta {{ '@' . $accUsername }}, elas aparecerão aqui automaticamente!</p>
                             </div>
                         @endforelse
                     </div>
@@ -700,9 +704,9 @@
                     <!-- Instagram App Header -->
                     <div class="flex items-center justify-between px-3 py-2 border-b border-slate-800">
                         <div class="flex items-center gap-2.5">
-                            <img src="{{ $account->profile_picture_url ?: 'https://ui-avatars.com/api/?name=' . urlencode($account->username) }}" class="w-8 h-8 rounded-full border border-purple-500 object-cover">
+                            <img src="{{ $accAvatar }}" class="w-8 h-8 rounded-full border border-purple-500 object-cover">
                             <div>
-                                <span class="text-xs font-bold text-white block leading-tight" x-text="'{{ '@' . $account->username }}'"></span>
+                                <span class="text-xs font-bold text-white block leading-tight" x-text="'{{ '@' . $accUsername }}'"></span>
                                 <span class="text-[9px] text-slate-400 font-mono block" x-text="lightboxPost?.date || ''"></span>
                             </div>
                         </div>
@@ -786,7 +790,7 @@
                     <!-- Instagram Caption Box -->
                     <div class="px-3 py-3 max-h-28 overflow-y-auto space-y-1 text-xs relative z-20 bg-black">
                         <p class="text-slate-200 text-[11px] leading-relaxed break-words">
-                            <strong class="text-white font-bold" x-text="'{{ '@' . $account->username }}'"></strong>
+                            <strong class="text-white font-bold" x-text="'{{ '@' . $accUsername }}'"></strong>
                             <span x-text="lightboxPost?.caption || 'Sem legenda'"></span>
                         </p>
                     </div>
