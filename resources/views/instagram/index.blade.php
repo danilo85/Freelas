@@ -4,6 +4,124 @@
 @section('page_title', 'Integração & Gestão do Instagram')
 
 @section('content')
+<!-- Flatpickr Datepicker & Modern Styles -->
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
+<script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
+<script src="https://npmcdn.com/flatpickr/dist/l10n/pt.js"></script>
+
+<style>
+/* Custom Styling for Flatpickr - Premium Dark Purple Theme */
+.flatpickr-calendar {
+    z-index: 9999999999 !important;
+    border-radius: 1.25rem !important;
+    border: 1px solid rgba(168, 85, 247, 0.3) !important;
+    box-shadow: 0 25px 50px -12px rgba(15, 23, 42, 0.5), 0 0 0 1px rgba(168, 85, 247, 0.2) !important;
+    font-family: inherit !important;
+    padding: 12px !important;
+    background: #0f172a !important;
+    color: #f8fafc !important;
+}
+.flatpickr-calendar.arrowTop:before, .flatpickr-calendar.arrowTop:after {
+    border-bottom-color: #0f172a !important;
+}
+.flatpickr-calendar.arrowBottom:before, .flatpickr-calendar.arrowBottom:after {
+    border-top-color: #0f172a !important;
+}
+.flatpickr-months {
+    background: transparent !important;
+    margin-bottom: 8px !important;
+}
+.flatpickr-months .flatpickr-month {
+    color: #ffffff !important;
+    fill: #ffffff !important;
+    height: 38px !important;
+}
+.flatpickr-current-month {
+    font-size: 0.9rem !important;
+    font-weight: 800 !important;
+    color: #ffffff !important;
+}
+.flatpickr-current-month .flatpickr-monthDropdown-months {
+    background: #1e293b !important;
+    color: #ffffff !important;
+    font-weight: 800 !important;
+    border-radius: 0.5rem !important;
+    padding: 2px 6px !important;
+}
+.flatpickr-current-month input.cur-year {
+    font-weight: 800 !important;
+    color: #c084fc !important;
+}
+.flatpickr-months .flatpickr-prev-month, .flatpickr-months .flatpickr-next-month {
+    color: #c084fc !important;
+    fill: #c084fc !important;
+    padding: 8px !important;
+}
+.flatpickr-months .flatpickr-prev-month:hover svg, .flatpickr-months .flatpickr-next-month:hover svg {
+    fill: #a855f7 !important;
+}
+span.flatpickr-weekday {
+    color: #94a3b8 !important;
+    font-weight: 800 !important;
+    font-size: 0.75rem !important;
+    text-transform: uppercase !important;
+}
+.flatpickr-day {
+    color: #cbd5e1 !important;
+    font-weight: 600 !important;
+    border-radius: 0.75rem !important;
+    transition: all 0.15s ease !important;
+}
+.flatpickr-day:hover {
+    background: rgba(168, 85, 247, 0.25) !important;
+    border-color: rgba(168, 85, 247, 0.4) !important;
+    color: #ffffff !important;
+}
+.flatpickr-day.selected, .flatpickr-day.startRange, .flatpickr-day.endRange, .flatpickr-day.selected:focus, .flatpickr-day.selected:hover {
+    background: linear-gradient(135deg, #9333ea, #7c3aed) !important;
+    border-color: #9333ea !important;
+    font-weight: 800 !important;
+    color: #ffffff !important;
+    box-shadow: 0 4px 12px rgba(147, 51, 234, 0.5) !important;
+}
+.flatpickr-day.today {
+    border-color: #c084fc !important;
+    color: #c084fc !important;
+    font-weight: 800 !important;
+}
+.flatpickr-day.flatpickr-disabled, .flatpickr-day.flatpickr-disabled:hover {
+    color: #334155 !important;
+}
+.flatpickr-time {
+    border-top: 1px solid rgba(255, 255, 255, 0.1) !important;
+    margin-top: 8px !important;
+    padding-top: 8px !important;
+}
+.flatpickr-time input {
+    color: #ffffff !important;
+    font-weight: 800 !important;
+}
+.flatpickr-time input:hover, .flatpickr-time input:focus {
+    background: #1e293b !important;
+    border-radius: 0.5rem !important;
+}
+.flatpickr-time .flatpickr-time-separator, .flatpickr-time .flatpickr-am-pm {
+    color: #c084fc !important;
+    font-weight: 800 !important;
+}
+.flatpickr-time .flatpickr-am-pm:hover {
+    background: #1e293b !important;
+}
+.flatpickr-calendar.hasTime .flatpickr-time {
+    height: 40px !important;
+}
+/* Ensure Flatpickr altInput takes full container styling */
+.flatpickr-mobile {
+    background: transparent !important;
+    color: inherit !important;
+}
+</style>
+
 @php
     $accUsername = optional($account)->username ?: 'seu_perfil';
     $accAvatar = optional($account)->profile_picture_url ?: ('https://ui-avatars.com/api/?name=' . urlencode($accUsername));
@@ -59,6 +177,8 @@
                 // Estado do Calendário Dinâmico de Meses e Anos
                 currentYear: (new Date()).getFullYear(),
                 currentMonth: (new Date()).getMonth(),
+                monthDropdownOpen: false,
+                yearDropdownOpen: false,
                 monthNames: ['Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho', 'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro'],
                 allPosts: @json($posts),
 
@@ -74,7 +194,7 @@
                     this.editCaption = post.caption || '';
                     if (post.scheduled_at) {
                         try {
-                            const dateStr = String(post.scheduled_at).replace(' ', 'T').substring(0, 16);
+                            const dateStr = String(post.scheduled_at).substring(0, 16);
                             this.editScheduledAt = dateStr;
                         } catch (e) {
                             this.editScheduledAt = '';
@@ -83,6 +203,17 @@
                         this.editScheduledAt = '';
                     }
                     this.managePostModalOpen = true;
+
+                    this.$nextTick(() => {
+                        const modalInput = document.getElementById('modal_edit_scheduled_at');
+                        if (modalInput && modalInput._flatpickr) {
+                            if (this.editScheduledAt) {
+                                modalInput._flatpickr.setDate(this.editScheduledAt);
+                            } else {
+                                modalInput._flatpickr.clear();
+                            }
+                        }
+                    });
                 },
 
                 prevMonth() {
@@ -960,9 +1091,36 @@
                                         </label>
                                     </div>
 
-                                    <div x-show="actionType === 'schedule'" class="space-y-2 bg-slate-50 p-3 rounded-lg border border-slate-200">
-                                        <label class="text-xs font-extrabold text-slate-700 uppercase tracking-wider block">Data e Horário da Publicação</label>
-                                        <input type="datetime-local" name="scheduled_at" class="w-full text-xs text-slate-800 border border-slate-200 rounded-lg p-2.5 bg-white font-semibold">
+                                    <div x-show="actionType === 'schedule'" class="space-y-2 bg-purple-50/60 p-3.5 rounded-xl border border-purple-200/80 transition-all">
+                                        <label class="text-[11px] font-black text-purple-900 uppercase tracking-wider flex items-center gap-1.5">
+                                            <svg class="w-3.5 h-3.5 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
+                                            Data e Horário da Publicação
+                                        </label>
+                                        <div class="relative">
+                                            <input type="text" 
+                                                   id="create_scheduled_at"
+                                                   name="scheduled_at" 
+                                                   x-init="
+                                                       $nextTick(() => {
+                                                           flatpickr($el, {
+                                                               enableTime: true,
+                                                               dateFormat: 'Y-m-d H:i',
+                                                               altInput: true,
+                                                               altFormat: 'j \\d\\e F \\d\\e Y \\à\\s H:i',
+                                                               time_24hr: true,
+                                                               locale: 'pt',
+                                                               minDate: 'today',
+                                                               defaultHour: (new Date()).getHours() + 1,
+                                                               defaultMinute: 0
+                                                           });
+                                                       });
+                                                   "
+                                                   placeholder="Clique para selecionar a data e hora..."
+                                                   class="w-full text-xs text-slate-800 border border-purple-200 rounded-xl p-2.5 bg-white font-bold pl-9 shadow-xs focus:ring-2 focus:ring-purple-500 outline-none cursor-pointer">
+                                            <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-purple-600">
+                                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                                            </div>
+                                        </div>
                                     </div>
                                 </div>
 
@@ -1192,7 +1350,7 @@
                 <div x-show="tab === 'calendario'" class="space-y-6">
                     
                     <!-- Cabeçalho do Calendário com Navegação de Mês/Ano e Filtros -->
-                    <div class="bg-gradient-to-r from-slate-900 via-purple-950 to-slate-900 text-white p-5 rounded-2xl shadow-md border border-purple-900/50 flex flex-wrap items-center justify-between gap-4">
+                    <div class="relative z-30 bg-gradient-to-r from-slate-900 via-purple-950 to-slate-900 text-white p-5 rounded-2xl shadow-md border border-purple-900/50 flex flex-wrap items-center justify-between gap-4">
                         <div>
                             <div class="flex items-center gap-2">
                                 <span class="px-2.5 py-0.5 text-[10px] font-black uppercase tracking-wider bg-purple-500/30 text-purple-200 border border-purple-400/40 rounded-full">
@@ -1213,29 +1371,67 @@
                                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M15 19l-7-7 7-7"/></svg>
                             </button>
 
-                            <!-- Select de Mês -->
-                            <div class="relative">
-                                <select x-model.number="currentMonth" 
-                                        class="appearance-none bg-purple-600/40 hover:bg-purple-600/60 text-white text-xs font-black px-3.5 py-2 pr-7 rounded-xl border border-purple-400/40 outline-none cursor-pointer transition-all shadow-sm focus:ring-2 focus:ring-purple-400">
+                            <!-- Custom Dropdown Mês -->
+                            <div class="relative" @click.outside="monthDropdownOpen = false">
+                                <button type="button" 
+                                        @click="monthDropdownOpen = !monthDropdownOpen" 
+                                        class="flex items-center gap-2 bg-purple-600/40 hover:bg-purple-600/60 text-white text-xs font-black px-3.5 py-2 rounded-xl border border-purple-400/40 shadow-sm transition-all active:scale-95 cursor-pointer">
+                                    <span x-text="monthNames[currentMonth]"></span>
+                                    <svg class="w-3.5 h-3.5 text-purple-200 transition-transform duration-200" :class="monthDropdownOpen ? 'rotate-180' : ''" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M19 9l-7 7-7-7"/></svg>
+                                </button>
+
+                                <div x-show="monthDropdownOpen" 
+                                     x-transition:enter="transition ease-out duration-150 transform"
+                                     x-transition:enter-start="opacity-0 scale-95 -translate-y-1"
+                                     x-transition:enter-end="opacity-100 scale-100 translate-y-0"
+                                     x-transition:leave="transition ease-in duration-100 transform"
+                                     x-transition:leave-start="opacity-100 scale-100 translate-y-0"
+                                     x-transition:leave-end="opacity-0 scale-95 -translate-y-1"
+                                     x-cloak
+                                     class="absolute top-full left-0 mt-2 z-[100] w-44 bg-slate-900/95 backdrop-blur-xl border border-purple-500/40 rounded-2xl shadow-2xl p-1.5 grid grid-cols-1 max-h-60 overflow-y-auto custom-scrollbar">
                                     <template x-for="(mName, idx) in monthNames" :key="idx">
-                                        <option :value="idx" x-text="mName" class="bg-slate-900 text-white font-bold"></option>
+                                        <button type="button" 
+                                                @click="currentMonth = idx; monthDropdownOpen = false" 
+                                                :class="currentMonth === idx ? 'bg-purple-600 text-white font-extrabold shadow-sm' : 'text-slate-300 hover:bg-purple-900/50 hover:text-white font-bold'"
+                                                class="w-full text-left px-3 py-1.5 text-xs rounded-xl transition-all flex items-center justify-between cursor-pointer">
+                                            <span x-text="mName"></span>
+                                            <template x-if="currentMonth === idx">
+                                                <svg class="w-3.5 h-3.5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"/></svg>
+                                            </template>
+                                        </button>
                                     </template>
-                                </select>
-                                <div class="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-purple-200">
-                                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M19 9l-7 7-7-7"/></svg>
                                 </div>
                             </div>
 
-                            <!-- Select de Ano -->
-                            <div class="relative">
-                                <select x-model.number="currentYear" 
-                                        class="appearance-none bg-white/10 hover:bg-white/20 text-purple-200 text-xs font-black px-3 py-2 pr-6 rounded-xl border border-white/10 outline-none cursor-pointer transition-all shadow-sm focus:ring-2 focus:ring-purple-400">
-                                    <template x-for="y in [2024, 2025, 2026, 2027, 2028]" :key="y">
-                                        <option :value="y" x-text="y" class="bg-slate-900 text-white font-bold"></option>
+                            <!-- Custom Dropdown Ano -->
+                            <div class="relative" @click.outside="yearDropdownOpen = false">
+                                <button type="button" 
+                                        @click="yearDropdownOpen = !yearDropdownOpen" 
+                                        class="flex items-center gap-2 bg-white/10 hover:bg-white/20 text-purple-200 text-xs font-black px-3.5 py-2 rounded-xl border border-white/10 shadow-sm transition-all active:scale-95 cursor-pointer">
+                                    <span x-text="currentYear"></span>
+                                    <svg class="w-3.5 h-3.5 text-purple-300 transition-transform duration-200" :class="yearDropdownOpen ? 'rotate-180' : ''" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M19 9l-7 7-7-7"/></svg>
+                                </button>
+
+                                <div x-show="yearDropdownOpen" 
+                                     x-transition:enter="transition ease-out duration-150 transform"
+                                     x-transition:enter-start="opacity-0 scale-95 -translate-y-1"
+                                     x-transition:enter-end="opacity-100 scale-100 translate-y-0"
+                                     x-transition:leave="transition ease-in duration-100 transform"
+                                     x-transition:leave-start="opacity-100 scale-100 translate-y-0"
+                                     x-transition:leave-end="opacity-0 scale-95 -translate-y-1"
+                                     x-cloak
+                                     class="absolute top-full left-0 mt-2 z-[100] w-32 bg-slate-900/95 backdrop-blur-xl border border-purple-500/40 rounded-2xl shadow-2xl p-1.5 grid grid-cols-1 max-h-60 overflow-y-auto custom-scrollbar">
+                                    <template x-for="y in [2024, 2025, 2026, 2027, 2028, 2029, 2030]" :key="y">
+                                        <button type="button" 
+                                                @click="currentYear = y; yearDropdownOpen = false" 
+                                                :class="currentYear === y ? 'bg-purple-600 text-white font-extrabold shadow-sm' : 'text-slate-300 hover:bg-purple-900/50 hover:text-white font-bold'"
+                                                class="w-full text-left px-3 py-1.5 text-xs rounded-xl transition-all flex items-center justify-between cursor-pointer">
+                                            <span x-text="y"></span>
+                                            <template x-if="currentYear === y">
+                                                <svg class="w-3.5 h-3.5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"/></svg>
+                                            </template>
+                                        </button>
                                     </template>
-                                </select>
-                                <div class="pointer-events-none absolute inset-y-0 right-0 flex items-center px-1.5 text-purple-300">
-                                    <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M19 9l-7 7-7-7"/></svg>
                                 </div>
                             </div>
 
@@ -1697,11 +1893,34 @@
 
                 <!-- Alterar Data e Horário -->
                 <div class="space-y-1.5">
-                    <label class="text-xs font-extrabold text-slate-700 uppercase tracking-wider block">Data e Horário Agendados</label>
-                    <input type="datetime-local" 
-                           name="scheduled_at" 
-                           x-model="editScheduledAt" 
-                           class="w-full text-xs text-slate-800 border border-slate-200 rounded-lg p-2.5 font-semibold outline-none focus:ring-2 focus:ring-purple-500">
+                    <label class="text-[11px] font-black text-purple-900 uppercase tracking-wider flex items-center gap-1.5">
+                        <svg class="w-3.5 h-3.5 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
+                        Data e Horário Agendados
+                    </label>
+                    <div class="relative">
+                        <input type="text" 
+                               id="modal_edit_scheduled_at"
+                               name="scheduled_at" 
+                               x-model="editScheduledAt" 
+                               x-init="
+                                   $nextTick(() => {
+                                       flatpickr($el, {
+                                           enableTime: true,
+                                           dateFormat: 'Y-m-d H:i',
+                                           altInput: true,
+                                           altFormat: 'j \\d\\e F \\d\\e Y \\à\\s H:i',
+                                           time_24hr: true,
+                                           locale: 'pt',
+                                           minDate: 'today'
+                                       });
+                                   });
+                               "
+                               placeholder="Clique para alterar a data e hora..."
+                               class="w-full text-xs text-slate-800 border border-purple-200 rounded-xl p-2.5 bg-white font-bold pl-9 shadow-xs focus:ring-2 focus:ring-purple-500 outline-none cursor-pointer">
+                        <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-purple-600">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                        </div>
+                    </div>
                 </div>
 
                 <!-- Alterar Legenda -->
