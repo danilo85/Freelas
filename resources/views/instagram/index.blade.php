@@ -8,6 +8,265 @@
     $accUsername = optional($account)->username ?: 'seu_perfil';
     $accAvatar = optional($account)->profile_picture_url ?: ('https://ui-avatars.com/api/?name=' . urlencode($accUsername));
 @endphp
+<script>
+(function() {
+    function initInstagramModule() {
+        if (typeof Alpine !== 'undefined') {
+            Alpine.data('instagramModule', () => ({
+                tab: (new URLSearchParams(window.location.search)).get('tab') || 'novo',
+                mediaType: 'IMAGE',
+                actionType: 'now',
+                caption: '',
+                hasLogoOverlay: false,
+                hasArrowOverlay: false,
+                imagePreview: null,
+                carouselPreviews: [],
+                currentCarouselIndex: 0,
+                selectedAccountId: '{{ optional($account)->id }}',
+                hashtagCategory: 'design',
+                hashtags: {
+                    design: ['#designgrafico', '#identidadevisual', '#logodesign', '#designbr', '#designer', '#branding', '#designgraficobr', '#creative', '#graphicdesign', '#visualidentity'],
+                    freelance: ['#freelancerbr', '#freelance', '#gestordefreelas', '#vidadefreela', '#trabalhoremoto', '#carreiradesign', '#designindependente', '#freelancerlife'],
+                    socialmedia: ['#socialmedia', '#marketingdigital', '#midiasociais', '#gestordesocialmedia', '#conteudodigital', '#engajamento', '#instagramdicas', '#estrategiadedados'],
+                    tecnologia: ['#tecnologia', '#desenvolvimentoweb', '#programador', '#uiux', '#frontend', '#webdesign', '#codebr', '#techdicas', '#softwarehouse'],
+                    vendas: ['#vendas', '#negocios', '#empreendedorismo', '#marketingdeconteudo', '#copywriting', '#leads', '#vendasonline', '#sucesso'],
+                    geral: ['#geral', '#postnovo', '#dicanova', '#paravoce', '#foryou', '#inspiração', '#criatividade', '#novidade']
+                },
+                isGeneratingHashtags: false,
+                lightboxOpen: false,
+                lightboxPost: null,
+                lightboxIndex: 0,
+                savedThemes: @json(optional($settings)->saved_themes ?: []),
+                newThemeName: '',
+                newThemeCategory: 'design',
+                newThemeTagsText: '',
+                confirmDeleteModalOpen: false,
+                postToDeleteId: null,
+                postToDeleteCaption: '',
+                isDeleting: false,
+
+                prevCarouselSlide() {
+                    if (this.currentCarouselIndex > 0) {
+                        this.currentCarouselIndex--;
+                    } else {
+                        this.currentCarouselIndex = this.carouselPreviews.length - 1;
+                    }
+                },
+
+                nextCarouselSlide() {
+                    if (this.currentCarouselIndex < this.carouselPreviews.length - 1) {
+                        this.currentCarouselIndex++;
+                    } else {
+                        this.currentCarouselIndex = 0;
+                    }
+                },
+
+                handleSingleFile(e) {
+                    const file = e.target.files[0];
+                    if (file) {
+                        const reader = new FileReader();
+                        reader.onload = (evt) => {
+                            this.imagePreview = evt.target.result;
+                        };
+                        reader.readAsDataURL(file);
+                    }
+                },
+
+                handleCarouselFiles(e) {
+                    const files = Array.from(e.target.files);
+                    if (files.length > 0) {
+                        this.carouselPreviews = [];
+                        files.forEach(file => {
+                            const reader = new FileReader();
+                            reader.onload = (evt) => {
+                                this.carouselPreviews.push(evt.target.result);
+                                if (this.carouselPreviews.length === 1) {
+                                    this.imagePreview = evt.target.result;
+                                }
+                            };
+                            reader.readAsDataURL(file);
+                        });
+                        this.currentCarouselIndex = 0;
+                    }
+                },
+
+                removeCarouselSlide(index) {
+                    this.carouselPreviews.splice(index, 1);
+                    if (this.currentCarouselIndex >= this.carouselPreviews.length) {
+                        this.currentCarouselIndex = Math.max(0, this.carouselPreviews.length - 1);
+                    }
+                    if (this.carouselPreviews.length > 0) {
+                        this.imagePreview = this.carouselPreviews[this.currentCarouselIndex];
+                    } else {
+                        this.imagePreview = null;
+                    }
+                },
+
+                openLightbox(post) {
+                    this.lightboxPost = post;
+                    this.lightboxIndex = 0;
+                    this.lightboxOpen = true;
+                },
+
+                closeLightbox() {
+                    this.lightboxOpen = false;
+                    this.lightboxPost = null;
+                    this.lightboxIndex = 0;
+                },
+
+                prevLightboxSlide() {
+                    if (!this.lightboxPost || !this.lightboxPost.children || this.lightboxPost.children.length === 0) return;
+                    if (this.lightboxIndex > 0) {
+                        this.lightboxIndex--;
+                    } else {
+                        this.lightboxIndex = this.lightboxPost.children.length - 1;
+                    }
+                },
+
+                nextLightboxSlide() {
+                    if (!this.lightboxPost || !this.lightboxPost.children || this.lightboxPost.children.length === 0) return;
+                    if (this.lightboxIndex < this.lightboxPost.children.length - 1) {
+                        this.lightboxIndex++;
+                    } else {
+                        this.lightboxIndex = 0;
+                    }
+                },
+
+                generateAiHashtags() {
+                    this.isGeneratingHashtags = true;
+                    setTimeout(() => {
+                        const tags = this.hashtags[this.hashtagCategory] || [];
+                        const selectedTags = tags.slice(0, 6).join(' ');
+                        this.caption = (this.caption ? this.caption + '\n\n' : '') + selectedTags;
+                        this.isGeneratingHashtags = false;
+                    }, 600);
+                },
+
+                appendTagToCaption(tag) {
+                    if (!this.caption.includes(tag)) {
+                        this.caption = (this.caption ? this.caption + ' ' : '') + tag;
+                    }
+                },
+
+                saveNewTheme() {
+                    if (!this.newThemeName.trim() || !this.newThemeTagsText.trim()) return;
+                    const tags = this.newThemeTagsText
+                        .split(',')
+                        .map(t => t.trim())
+                        .filter(t => t.length > 0)
+                        .map(t => t.startsWith('#') ? t : '#' + t);
+
+                    fetch('{{ route("instagram.theme.save") }}', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'X-CSRF-TOKEN': '{{ csrf_token() }}'
+                        },
+                        body: JSON.stringify({
+                            name: this.newThemeName,
+                            category: this.newThemeCategory,
+                            tags: tags
+                        })
+                    })
+                    .then(res => res.json())
+                    .then(data => {
+                        if (data.success) {
+                            this.savedThemes = data.themes;
+                            this.newThemeName = '';
+                            this.newThemeTagsText = '';
+                        }
+                    });
+                },
+
+                deleteTheme(index) {
+                    fetch('{{ route("instagram.theme.delete") }}', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'X-CSRF-TOKEN': '{{ csrf_token() }}'
+                        },
+                        body: JSON.stringify({ index: index })
+                    })
+                    .then(res => res.json())
+                    .then(data => {
+                        if (data.success) {
+                            this.savedThemes = data.themes;
+                        }
+                    });
+                },
+
+                applyTheme(theme) {
+                    if (!theme || !theme.tags) return;
+                    const tagsStr = theme.tags.join(' ');
+                    this.caption = (this.caption ? this.caption + '\n\n' : '') + tagsStr;
+                },
+
+                formatMediaType(type) {
+                    switch (type) {
+                        case 'CAROUSEL_ALBUM':
+                        case 'CAROUSEL':
+                            return 'Carrossel';
+                        case 'VIDEO':
+                            return 'Vídeo / Reel';
+                        case 'STORY':
+                            return 'Story';
+                        default:
+                            return 'Feed Image';
+                    }
+                },
+
+                confirmDeletePost(id, caption) {
+                    this.postToDeleteId = id;
+                    this.postToDeleteCaption = caption || 'Publicação sem legenda';
+                    this.confirmDeleteModalOpen = true;
+                },
+
+                async deleteConfirmed() {
+                    if (!this.postToDeleteId) return;
+                    this.isDeleting = true;
+                    try {
+                        const response = await fetch('/freelas/utilidades/instagram/' + this.postToDeleteId, {
+                            method: 'DELETE',
+                            headers: {
+                                'X-CSRF-TOKEN': '{{ csrf_token() }}',
+                                'Accept': 'application/json'
+                            }
+                        });
+                        const data = await response.json();
+                        if (data.success) {
+                            const cardElement = document.getElementById('post-card-' + this.postToDeleteId);
+                            if (cardElement) {
+                                cardElement.style.transition = 'all 0.3s ease';
+                                cardElement.style.opacity = '0';
+                                cardElement.style.transform = 'scale(0.8)';
+                                setTimeout(() => {
+                                    cardElement.remove();
+                                }, 300);
+                            }
+                            if (data.meta_error) {
+                                alert('ℹ️ Aviso da API do Instagram:\n\n' + data.meta_error + '\n\nPor regras de segurança da Meta, posts já publicados não podem ser excluídos via sistemas externos. Para remover do perfil público, abra o app do Instagram e selecione "Excluir".');
+                            }
+                        } else {
+                            window.location.href = window.location.pathname + '?tab=' + this.tab;
+                        }
+                    } catch (e) {
+                        window.location.href = window.location.pathname + '?tab=' + this.tab;
+                    } finally {
+                        this.isDeleting = false;
+                        this.confirmDeleteModalOpen = false;
+                    }
+                }
+            }));
+        }
+    }
+
+    document.addEventListener('alpine:init', initInstagramModule);
+    if (window.Alpine) {
+        initInstagramModule();
+    }
+})();
+</script>
+
 <div class="space-y-8" x-data="instagramModule">
     
     <!-- Banner de Status de Conexão com a Meta / Instagram -->
@@ -876,266 +1135,4 @@
             </div>
         </div>
     </template>
-</div>
-
-<script>
-(function() {
-    function initInstagramModule() {
-        if (typeof Alpine !== 'undefined') {
-            Alpine.data('instagramModule', () => ({
-                tab: (new URLSearchParams(window.location.search)).get('tab') || 'novo',
-        mediaType: 'IMAGE',
-        actionType: 'now',
-        caption: '',
-        hasLogoOverlay: false,
-        hasArrowOverlay: false,
-        imagePreview: null,
-        carouselPreviews: [],
-        currentCarouselIndex: 0,
-        selectedAccountId: '{{ optional($account)->id }}',
-        hashtagCategory: 'design',
-        hashtags: {
-            design: ['#designgrafico', '#identidadevisual', '#logodesign', '#designbr', '#designer', '#branding', '#designgraficobr', '#creative', '#graphicdesign', '#visualidentity'],
-            freelance: ['#freelancerbr', '#freelance', '#gestordefreelas', '#vidadefreela', '#trabalhoremoto', '#carreiradesign', '#designindependente', '#freelancerlife'],
-            socialmedia: ['#socialmedia', '#marketingdigital', '#midiasociais', '#gestordesocialmedia', '#conteudodigital', '#engajamento', '#instagramdicas', '#estrategiadedados'],
-            ilustracao: ['#ilustracao', '#artedigital', '#desenhodigital', '#illustrator', '#procreate', '#vectorart', '#ilustra', '#digitalart'],
-            trending: ['#viral', '#reelsbrasil', '#dicas', '#emalta', '#empreendedorismo', '#criatividade', '#portfoliodesign']
-        },
-        savedThemes: @json(optional($settings)->saved_themes ?: []),
-        newThemeName: '',
-        showSaveThemeModal: false,
-        isGeneratingHashtags: false,
-        async generateAiHashtags() {
-            this.isGeneratingHashtags = true;
-            try {
-                const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content');
-                const res = await fetch('{{ route('instagram.hashtags.generate') }}', {
-                    method: 'POST',
-                    headers: {
-                        'X-CSRF-TOKEN': csrfToken,
-                        'Content-Type': 'application/json',
-                        'Accept': 'application/json'
-                    },
-                    body: JSON.stringify({ caption: this.caption })
-                });
-                const data = await res.json();
-                if (data.success && data.formatted) {
-                    if (!this.caption.includes('#')) {
-                        this.caption = (this.caption ? this.caption.trim() + '\n\n' : '') + data.formatted;
-                    } else {
-                        const newTags = data.hashtags.filter(t => !this.caption.includes(t));
-                        if (newTags.length > 0) {
-                            this.caption = this.caption.trim() + ' ' + newTags.join(' ');
-                        }
-                    }
-                }
-            } catch (e) {
-                console.error(e);
-            } finally {
-                this.isGeneratingHashtags = false;
-            }
-        },
-        async saveTheme() {
-            if (!this.newThemeName.trim()) return;
-            try {
-                const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content');
-                const res = await fetch('{{ route('instagram.themes.save') }}', {
-                    method: 'POST',
-                    headers: {
-                        'X-CSRF-TOKEN': csrfToken,
-                        'Content-Type': 'application/json',
-                        'Accept': 'application/json'
-                    },
-                    body: JSON.stringify({
-                        name: this.newThemeName,
-                        hashtags: this.caption
-                    })
-                });
-                const data = await res.json();
-                if (data.success) {
-                    this.savedThemes = data.themes;
-                    this.newThemeName = '';
-                    this.showSaveThemeModal = false;
-                }
-            } catch (e) {
-                console.error(e);
-            }
-        },
-        async deleteTheme(index) {
-            try {
-                const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content');
-                const res = await fetch('/utilidades/instagram/themes/' + index, {
-                    method: 'POST',
-                    headers: {
-                        'X-CSRF-TOKEN': csrfToken,
-                        'Content-Type': 'application/json',
-                        'Accept': 'application/json'
-                    },
-                    body: JSON.stringify({ _method: 'DELETE' })
-                });
-                const data = await res.json();
-                if (data.success) {
-                    this.savedThemes = data.themes;
-                }
-            } catch (e) {
-                console.error(e);
-            }
-        },
-        insertThemeTags(tagsArray) {
-            const tagsStr = Array.isArray(tagsArray) ? tagsArray.join(' ') : tagsArray;
-            if (tagsStr && !this.caption.includes(tagsStr)) {
-                this.caption = (this.caption ? this.caption.trim() + '\n\n' : '') + tagsStr;
-            }
-        },
-        insertHashtag(tag) {
-            if (!this.caption.includes(tag)) {
-                this.caption = (this.caption ? this.caption.trim() + ' ' : '') + tag;
-            }
-        },
-        insertCategoryHashtags(cat) {
-            const tags = this.hashtags[cat] || [];
-            tags.forEach(t => this.insertHashtag(t));
-        },
-        handleImageChange(e) {
-            const file = e.target.files[0];
-            if (file) {
-                this.imagePreview = URL.createObjectURL(file);
-            }
-        },
-        handleCarouselChange(e) {
-            const files = Array.from(e.target.files);
-            this.carouselPreviews = files.map(f => URL.createObjectURL(f));
-            if (this.carouselPreviews.length > 0) {
-                this.imagePreview = this.carouselPreviews[0];
-                this.currentCarouselIndex = 0;
-            }
-        },
-        useMediaBankImage(url) {
-            this.imagePreview = url;
-            this.mediaType = 'IMAGE';
-            this.tab = 'novo';
-        },
-        lightboxOpen: false,
-        lightboxPost: null,
-        lightboxSlides: [],
-        lightboxSlideIndex: 0,
-        openLightboxFromElement(el) {
-            const rawSlidesB64 = el.getAttribute('data-slides');
-            const captionB64 = el.getAttribute('data-caption');
-
-            let slides = [];
-            let caption = '';
-
-            try {
-                if (rawSlidesB64) {
-                    slides = JSON.parse(atob(rawSlidesB64));
-                }
-            } catch (e) {
-                console.error('Erro ao ler slides b64:', e);
-            }
-
-            try {
-                if (captionB64) {
-                    caption = decodeURIComponent(escape(atob(captionB64)));
-                }
-            } catch (e) {
-                caption = '';
-            }
-
-            this.lightboxPost = {
-                caption: caption,
-                likes: el.getAttribute('data-likes') || 0,
-                comments: el.getAttribute('data-comments') || 0,
-                date: el.getAttribute('data-date') || '',
-                permalink: el.getAttribute('data-permalink') || '',
-                media_type: el.getAttribute('data-media-type') || 'FEED'
-            };
-
-            this.lightboxSlides = (Array.isArray(slides) && slides.length > 0) ? slides : [];
-            this.lightboxSlideIndex = 0;
-            this.lightboxOpen = true;
-        },
-        openLightbox(postData, slidesArray) {
-            this.lightboxPost = postData;
-            this.lightboxSlides = (slidesArray && slidesArray.length > 0) ? slidesArray : [postData.media_url || postData.media_path];
-            this.lightboxSlideIndex = 0;
-            this.lightboxOpen = true;
-        },
-        nextLightboxSlide() {
-            if (this.lightboxSlideIndex < this.lightboxSlides.length - 1) {
-                this.lightboxSlideIndex++;
-            }
-        },
-        prevLightboxSlide() {
-            if (this.lightboxSlideIndex > 0) {
-                this.lightboxSlideIndex--;
-            }
-        },
-        formatMediaType(type) {
-            if (!type) return 'FEED';
-            if (type.includes('CAROUSEL')) return 'CARROSSEL';
-            if (type.includes('VIDEO') || type.includes('REELS')) return 'VÍDEO';
-            if (type.includes('STORY')) return 'STORY';
-            if (type === 'IMAGE') return 'FEED';
-            return type;
-        },
-        confirmDeleteModalOpen: false,
-        deleteFormActionUrl: '',
-        targetCardElement: null,
-        isDeleting: false,
-        confirmDeletePost(url, event) {
-            this.deleteFormActionUrl = url;
-            this.targetCardElement = event ? event.target.closest('.group') : null;
-            this.confirmDeleteModalOpen = true;
-        },
-        async executeDelete() {
-            if (!this.deleteFormActionUrl) return;
-            this.isDeleting = true;
-
-            try {
-                const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content');
-                const res = await fetch(this.deleteFormActionUrl, {
-                    method: 'POST',
-                    headers: {
-                        'X-CSRF-TOKEN': csrfToken,
-                        'X-Requested-With': 'XMLHttpRequest',
-                        'Content-Type': 'application/json',
-                        'Accept': 'application/json'
-                    },
-                    body: JSON.stringify({ _method: 'DELETE' })
-                });
-
-                const data = await res.json();
-
-                if (res.ok && data.success) {
-                    if (this.targetCardElement) {
-                        this.targetCardElement.style.transition = 'all 0.3s ease-out';
-                        this.targetCardElement.style.opacity = '0';
-                        this.targetCardElement.style.transform = 'scale(0.8)';
-                        setTimeout(() => {
-                            this.targetCardElement.remove();
-                        }, 300);
-                    }
-                    if (data.meta_error) {
-                        alert('ℹ️ Aviso da API do Instagram:\n\n' + data.meta_error + '\n\nPor regras de segurança da Meta, posts já publicados não podem ser excluídos via sistemas externos. Para remover do perfil público, abra o app do Instagram e selecione "Excluir".');
-                    }
-                } else {
-                    window.location.href = window.location.pathname + '?tab=' + this.tab;
-                }
-            } catch (e) {
-                window.location.href = window.location.pathname + '?tab=' + this.tab;
-            } finally {
-                this.isDeleting = false;
-                this.confirmDeleteModalOpen = false;
-            }
-        }
-    }));
-}
-
-    document.addEventListener('alpine:init', initInstagramModule);
-    if (window.Alpine) {
-        initInstagramModule();
-    }
-})();
-</script>
 @endsection
