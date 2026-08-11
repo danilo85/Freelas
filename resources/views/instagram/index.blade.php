@@ -1638,6 +1638,7 @@
                         <button type="submit" 
                                 name="publish_now" 
                                 value="1" 
+                                @click="startSubmitting($event); managePostModalOpen = false;"
                                 class="py-2.5 px-4 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white font-extrabold text-xs rounded-xl shadow-sm transition-all cursor-pointer flex items-center justify-center gap-1.5">
                             <span>🚀 Publicar Agora</span>
                         </button>
