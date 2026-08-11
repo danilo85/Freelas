@@ -1863,7 +1863,7 @@ span.flatpickr-weekday {
          @keydown.escape.window="managePostModalOpen = false"
          class="fixed inset-0 top-0 left-0 right-0 bottom-0 w-screen h-screen z-[9999999] flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-md transition-all">
         
-        <div class="bg-white rounded-3xl p-6 max-w-lg w-full shadow-2xl border border-slate-100 space-y-5" @click.outside="managePostModalOpen = false">
+        <div class="bg-white rounded-3xl p-6 max-w-lg w-full shadow-2xl border border-slate-100 space-y-5" @click.outside="if (!$event.target.closest('.flatpickr-calendar')) managePostModalOpen = false">
             
             <!-- Cabeçalho do Modal -->
             <div class="flex items-center justify-between border-b border-slate-100 pb-3">
