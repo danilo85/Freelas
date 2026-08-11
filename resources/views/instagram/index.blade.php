@@ -68,16 +68,16 @@
                 editScheduledAt: '',
 
                 openManagePost(post) {
+                    console.log("Opening manage post modal:", post);
                     this.editingPost = post;
                     this.editCaption = post.caption || '';
                     if (post.scheduled_at) {
-                        const d = new Date(post.scheduled_at);
-                        const yyyy = d.getFullYear();
-                        const mm = String(d.getMonth() + 1).padStart(2, '0');
-                        const dd = String(d.getDate()).padStart(2, '0');
-                        const hh = String(d.getHours()).padStart(2, '0');
-                        const mi = String(d.getMinutes()).padStart(2, '0');
-                        this.editScheduledAt = `${yyyy}-${mm}-${dd}T${hh}:${mi}`;
+                        try {
+                            const dateStr = String(post.scheduled_at).replace(' ', 'T').substring(0, 16);
+                            this.editScheduledAt = dateStr;
+                        } catch (e) {
+                            this.editScheduledAt = '';
+                        }
                     } else {
                         this.editScheduledAt = '';
                     }
@@ -1191,12 +1191,12 @@
                                 <!-- Cards das Postagens Agendadas/Publicadas no Dia -->
                                 <div class="space-y-1.5 my-1 overflow-y-auto max-h-[100px] scrollbar-thin">
                                     <template x-for="p in cell.posts" :key="p.id">
-                                        <div @click="openManagePost(p)"
+                                        <div @click.stop="openManagePost(p)"
                                              :class="[
-                                                p.status === 'publicado' ? 'bg-emerald-50 text-emerald-900 border-emerald-300 hover:bg-emerald-100' :
-                                                (p.status === 'erro' ? 'bg-rose-50 text-rose-900 border-rose-300 hover:bg-rose-100' : 'bg-purple-50 text-purple-900 border-purple-300 hover:bg-purple-100')
+                                                p.status === 'publicado' ? 'bg-emerald-50 text-emerald-900 border-emerald-300 hover:bg-emerald-100 ring-1 ring-emerald-200' :
+                                                (p.status === 'erro' ? 'bg-rose-50 text-rose-900 border-rose-300 hover:bg-rose-100 ring-1 ring-rose-200' : 'bg-purple-50 text-purple-900 border-purple-300 hover:bg-purple-100 ring-1 ring-purple-200')
                                              ]"
-                                             class="p-1.5 rounded-lg border text-[10px] font-bold transition-all cursor-pointer shadow-2xs space-y-1 group/card">
+                                             class="p-1.5 rounded-lg border text-[10px] font-bold transition-all cursor-pointer shadow-2xs space-y-1 group/card hover:scale-[1.02]">
                                             
                                             <div class="flex items-center justify-between gap-1">
                                                 <span class="px-1 py-0.2 bg-white/80 rounded font-black text-[9px] uppercase tracking-wider"
@@ -1210,13 +1210,6 @@
                                         </div>
                                     </template>
                                 </div>
-
-                                <!-- Botão Rápido de Agendar para este Dia -->
-                                <button type="button" 
-                                        @click="tab = 'novo'; actionType = 'schedule'" 
-                                        class="text-[10px] font-extrabold text-purple-600 hover:text-purple-900 text-center block pt-1 border-t border-slate-100 hover:underline cursor-pointer">
-                                    + Agendar
-                                </button>
                             </div>
                         </template>
                     </div>
@@ -1326,7 +1319,6 @@
                     </form>
                 </div>
             </div>
-        </div>
     @endif
 
     <!-- LIGHTBOX TELEPORTADO PARA BODY COM TOTAL OVERLAY SEM MARGEM -->
@@ -1640,4 +1632,5 @@
             </div>
         </div>
     </template>
+</div>
 @endsection
