@@ -828,6 +828,8 @@ class InstagramController extends Controller
         $width = imagesx($srcImg);
         $height = imagesy($srcImg);
 
+        imagealphablending($srcImg, true);
+
         $settings = InstagramSetting::where('user_id', auth()->id())->first();
 
         // 1. Logo Overlay (Topo Direita)
@@ -835,10 +837,12 @@ class InstagramController extends Controller
             $logoFullPath = storage_path('app/public/' . $settings->logo_path);
             $logoInfo = @getimagesize($logoFullPath);
             if ($logoInfo) {
-                $logoSrc = @imagecreatefrompng($logoFullPath) ?: @imagecreatefromjpeg($logoFullPath);
+                $logoMime = $logoInfo['mime'];
+                $logoSrc = ($logoMime === 'image/png') 
+                    ? @imagecreatefrompng($logoFullPath) 
+                    : (($logoMime === 'image/webp') ? @imagecreatefromwebp($logoFullPath) : @imagecreatefromjpeg($logoFullPath));
+
                 if ($logoSrc) {
-                    imagealphablending($logoSrc, true);
-                    imagesavealpha($logoSrc, true);
                     $logoW = imagesx($logoSrc);
                     $logoH = imagesy($logoSrc);
 
@@ -847,7 +851,16 @@ class InstagramController extends Controller
                     $posX = $width - $targetW - (int)($width * 0.04);
                     $posY = (int)($height * 0.04);
 
-                    imagecopyresampled($srcImg, $logoSrc, $posX, $posY, 0, 0, $targetW, $targetH, $logoW, $logoH);
+                    $logoResized = imagecreatetruecolor($targetW, $targetH);
+                    imagealphablending($logoResized, false);
+                    imagesavealpha($logoResized, true);
+                    $transparent = imagecolorallocatealpha($logoResized, 0, 0, 0, 127);
+                    imagefilledrectangle($logoResized, 0, 0, $targetW, $targetH, $transparent);
+                    imagecopyresampled($logoResized, $logoSrc, 0, 0, 0, 0, $targetW, $targetH, $logoW, $logoH);
+
+                    imagealphablending($srcImg, true);
+                    imagecopy($srcImg, $logoResized, $posX, $posY, 0, 0, $targetW, $targetH);
+                    imagedestroy($logoResized);
                     imagedestroy($logoSrc);
                 }
             }
@@ -858,10 +871,12 @@ class InstagramController extends Controller
             $arrowFullPath = storage_path('app/public/' . $settings->arrow_path);
             $arrowInfo = @getimagesize($arrowFullPath);
             if ($arrowInfo) {
-                $arrowSrc = @imagecreatefrompng($arrowFullPath) ?: @imagecreatefromjpeg($arrowFullPath);
+                $arrowMime = $arrowInfo['mime'];
+                $arrowSrc = ($arrowMime === 'image/png')
+                    ? @imagecreatefrompng($arrowFullPath)
+                    : (($arrowMime === 'image/webp') ? @imagecreatefromwebp($arrowFullPath) : @imagecreatefromjpeg($arrowFullPath));
+
                 if ($arrowSrc) {
-                    imagealphablending($arrowSrc, true);
-                    imagesavealpha($arrowSrc, true);
                     $arrowW = imagesx($arrowSrc);
                     $arrowH = imagesy($arrowSrc);
 
@@ -870,7 +885,16 @@ class InstagramController extends Controller
                     $posX = $width - $targetW - (int)($width * 0.05);
                     $posY = $height - $targetH - (int)($height * 0.05);
 
-                    imagecopyresampled($srcImg, $arrowSrc, $posX, $posY, 0, 0, $targetW, $targetH, $arrowW, $arrowH);
+                    $arrowResized = imagecreatetruecolor($targetW, $targetH);
+                    imagealphablending($arrowResized, false);
+                    imagesavealpha($arrowResized, true);
+                    $transparent = imagecolorallocatealpha($arrowResized, 0, 0, 0, 127);
+                    imagefilledrectangle($arrowResized, 0, 0, $targetW, $targetH, $transparent);
+                    imagecopyresampled($arrowResized, $arrowSrc, 0, 0, 0, 0, $targetW, $targetH, $arrowW, $arrowH);
+
+                    imagealphablending($srcImg, true);
+                    imagecopy($srcImg, $arrowResized, $posX, $posY, 0, 0, $targetW, $targetH);
+                    imagedestroy($arrowResized);
                     imagedestroy($arrowSrc);
                 }
             }
@@ -879,7 +903,7 @@ class InstagramController extends Controller
         // Salva imagem modificada
         $newFilename = 'instagram_posts/overlay_' . time() . '_' . uniqid() . '.jpg';
         $savePath = storage_path('app/public/' . $newFilename);
-        imagejpeg($srcImg, $savePath, 90);
+        imagejpeg($srcImg, $savePath, 92);
         imagedestroy($srcImg);
 
         return $newFilename;

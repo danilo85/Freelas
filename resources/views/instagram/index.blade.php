@@ -757,10 +757,8 @@
 
                             <form action="{{ route('instagram.posts.store') }}" method="POST" enctype="multipart/form-data" @submit="startSubmitting($event)" class="space-y-5">
                                 @csrf
-                                <input type="hidden" name="instagram_account_id" :value="selectedAccountId">
+                                 <input type="hidden" name="instagram_account_id" :value="selectedAccountId">
                                 <input type="hidden" name="media_type" :value="mediaType">
-                                <input type="hidden" name="has_logo_overlay" :value="hasLogoOverlay ? 1 : 0">
-                                <input type="hidden" name="has_arrow_overlay" :value="hasArrowOverlay ? 1 : 0">
 
                                 <!-- ÁREA MODERNA DRAG & DROP PARA SELEÇÃO DE IMAGENS -->
                                 <div class="space-y-3"
@@ -839,11 +837,11 @@
                                     </span>
                                     <div class="flex items-center gap-6">
                                         <label class="flex items-center gap-2 text-xs font-semibold text-slate-700 cursor-pointer">
-                                            <input type="checkbox" x-model="hasLogoOverlay" class="rounded text-purple-600 focus:ring-purple-500">
+                                            <input type="checkbox" name="has_logo_overlay" value="1" x-model="hasLogoOverlay" class="rounded text-purple-600 focus:ring-purple-500">
                                             <span>Aplicar Ícone da Logo (Topo)</span>
                                         </label>
                                         <label class="flex items-center gap-2 text-xs font-semibold text-slate-700 cursor-pointer">
-                                            <input type="checkbox" x-model="hasArrowOverlay" class="rounded text-purple-600 focus:ring-purple-500">
+                                            <input type="checkbox" name="has_arrow_overlay" value="1" x-model="hasArrowOverlay" class="rounded text-purple-600 focus:ring-purple-500">
                                             <span>Aplicar Seta (Rodapé)</span>
                                         </label>
                                     </div>
