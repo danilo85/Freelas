@@ -415,7 +415,14 @@ class InstagramController extends Controller
                 'has_logo_overlay' => 'nullable|boolean',
                 'has_arrow_overlay' => 'nullable|boolean',
                 'action' => 'required|in:now,schedule',
-                'scheduled_at' => 'nullable|required_if:action,schedule|date|after:now',
+                'scheduled_at' => 'nullable|required_if:action,schedule|date|after_or_equal:' . now()->subMinutes(5)->toDateTimeString(),
+            ], [
+                'scheduled_at.required_if' => 'Informe a data e o horário para agendar a postagem.',
+                'scheduled_at.after_or_equal' => 'A data e o horário do agendamento devem estar no presente ou futuro.',
+                'scheduled_at.after' => 'A data e o horário do agendamento devem estar no presente ou futuro.',
+                'image.required_if' => 'Selecione uma imagem para a publicação.',
+                'image.image' => 'O arquivo selecionado deve ser uma imagem válida (JPG, PNG, WebP).',
+                'carousel_images.*.image' => 'Todos os arquivos do carrossel devem ser imagens válidas (JPG, PNG, WebP).',
             ]);
 
             $accountId = $request->input('instagram_account_id');
