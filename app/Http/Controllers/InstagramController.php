@@ -434,11 +434,20 @@ class InstagramController extends Controller
         $mediaUrls = [];
 
         if ($mediaType === 'CAROUSEL') {
-            if (!$request->hasFile('carousel_images') || count($request->file('carousel_images')) < 2) {
+            $carouselFiles = [];
+            if ($request->hasFile('carousel_images')) {
+                $files = $request->file('carousel_images');
+                $carouselFiles = is_array($files) ? $files : [$files];
+            } elseif ($request->hasFile('image')) {
+                $files = $request->file('image');
+                $carouselFiles = is_array($files) ? $files : [$files];
+            }
+
+            if (count($carouselFiles) < 2) {
                 return redirect()->back()->with('error', 'Selecione pelo menos 2 imagens para criar um Carrossel.');
             }
 
-            foreach ($request->file('carousel_images') as $imgFile) {
+            foreach ($carouselFiles as $imgFile) {
                 $rawPath = $imgFile->store('instagram_posts', 'public');
                 $processedPath = $this->applyOverlays($rawPath, $hasLogo, $hasArrow);
                 $mediaUrls[] = $processedPath;
@@ -989,23 +998,22 @@ class InstagramController extends Controller
             return $localUrl;
         }
 
-        // Fallback automático para desenvolvimento local: Upload temporário para catbox
+        // Fallback automático para desenvolvimento local: Upload temporário para tmpfiles.org
         $fullPath = storage_path('app/public/' . $relativePath);
         if (file_exists($fullPath)) {
             try {
-                $response = Http::asMultipart()->post('https://litterbox.catbox.moe/resources/internals/api.php', [
-                    'reqtype' => 'fileupload',
-                    'time' => '1h',
-                    'fileToUpload' => fopen($fullPath, 'r'),
-                ]);
+                $response = Http::attach(
+                    'file', file_get_contents($fullPath), basename($fullPath)
+                )->post('https://tmpfiles.org/api/v1/upload');
 
-                if ($response->successful() && str_starts_with(trim($response->body()), 'http')) {
-                    $publicUrl = trim($response->body());
-                    Log::info("Localhost fallback: imagem enviada para URL pública temporária: {$publicUrl}");
-                    return $publicUrl;
+                if ($response->successful() && $response->json('status') === 'success') {
+                    $rawUrl = $response->json('data.url');
+                    $directUrl = str_replace('tmpfiles.org/', 'tmpfiles.org/dl/', $rawUrl);
+                    Log::info("Localhost fallback: imagem enviada para URL pública temporária: {$directUrl}");
+                    return $directUrl;
                 }
             } catch (\Exception $e) {
-                Log::error('Erro no fallback local de imagem para catbox: ' . $e->getMessage());
+                Log::error('Erro no fallback local de imagem para tmpfiles: ' . $e->getMessage());
             }
         }
 

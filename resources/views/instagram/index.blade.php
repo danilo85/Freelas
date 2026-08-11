@@ -239,12 +239,10 @@
 
                     this.currentCarouselIndex = 0;
 
-                    // Alterna automaticamente o formato com base no número de fotos
+                    // Alterna automaticamente o formato para Carrossel quando selecionadas 2 ou mais fotos
                     if (this.mediaType !== 'STORY') {
                         if (files.length > 1) {
                             this.mediaType = 'CAROUSEL';
-                        } else {
-                            this.mediaType = 'IMAGE';
                         }
                     }
                 },
