@@ -49,42 +49,98 @@
                 targetCardElement: null,
                 isDeleting: false,
 
-                handleImageChange(e) {
-                    this.handleSingleFile(e);
+                // Drag & Drop + Progress State
+                isDragging: false,
+                isSubmittingPost: false,
+                postProgress: 0,
+                postProgressStep: 'Iniciando publicação...',
+
+                startSubmitting(e) {
+                    this.isSubmittingPost = true;
+                    this.postProgress = 10;
+                    this.postProgressStep = 'Processando e otimizando imagem...';
+
+                    let interval = setInterval(() => {
+                        if (this.postProgress < 40) {
+                            this.postProgress += 10;
+                            this.postProgressStep = 'Aplicando sobreposição de marcas (Logo/Seta)...';
+                        } else if (this.postProgress < 75) {
+                            this.postProgress += 12;
+                            this.postProgressStep = 'Enviando container para a API Graph do Instagram...';
+                        } else if (this.postProgress < 95) {
+                            this.postProgress += 5;
+                            this.postProgressStep = 'Finalizando publicação oficial no perfil...';
+                        } else {
+                            clearInterval(interval);
+                        }
+                    }, 400);
                 },
 
-                handleSingleFile(e) {
-                    const file = e.target ? e.target.files[0] : (e[0] || e);
-                    if (file) {
-                        const reader = new FileReader();
-                        reader.onload = (evt) => {
-                            this.imagePreview = evt.target.result;
-                        };
-                        reader.readAsDataURL(file);
+                handleFileDrop(e) {
+                    this.isDragging = false;
+                    const files = Array.from(e.dataTransfer.files).filter(f => f.type.startsWith('image/'));
+                    if (files.length > 0) {
+                        this.processFilesList(files);
                     }
                 },
 
+                handleImageInputChange(e) {
+                    const files = Array.from(e.target.files);
+                    if (files.length > 0) {
+                        this.processFilesList(files);
+                    }
+                },
+
+                handleImageChange(e) {
+                    this.handleImageInputChange(e);
+                },
+
+                handleSingleFile(e) {
+                    this.handleImageInputChange(e);
+                },
+
                 handleCarouselChange(e) {
-                    this.handleCarouselFiles(e);
+                    this.handleImageInputChange(e);
                 },
 
                 handleCarouselFiles(e) {
-                    const files = Array.from(e.target ? e.target.files : e);
-                    if (files.length > 0) {
-                        this.carouselPreviews = [];
-                        let loadedCount = 0;
-                        files.forEach((file, index) => {
-                            const reader = new FileReader();
-                            reader.onload = (evt) => {
-                                this.carouselPreviews[index] = evt.target.result;
-                                loadedCount++;
-                                if (loadedCount === 1 || index === 0) {
-                                    this.imagePreview = evt.target.result;
-                                }
-                            };
-                            reader.readAsDataURL(file);
-                        });
-                        this.currentCarouselIndex = 0;
+                    this.handleImageInputChange(e);
+                },
+
+                processFilesList(files) {
+                    this.carouselPreviews = [];
+                    let loadedCount = 0;
+
+                    files.forEach((file, index) => {
+                        const reader = new FileReader();
+                        reader.onload = (evt) => {
+                            this.carouselPreviews[index] = evt.target.result;
+                            loadedCount++;
+                            if (loadedCount === 1 || index === 0) {
+                                this.imagePreview = evt.target.result;
+                            }
+                        };
+                        reader.readAsDataURL(file);
+                    });
+
+                    this.currentCarouselIndex = 0;
+
+                    // Alterna automaticamente o formato com base no número de fotos
+                    if (this.mediaType !== 'STORY') {
+                        if (files.length > 1) {
+                            this.mediaType = 'CAROUSEL';
+                        } else {
+                            this.mediaType = 'IMAGE';
+                        }
+                    }
+                },
+
+                clearAllImages() {
+                    this.carouselPreviews = [];
+                    this.imagePreview = null;
+                    this.currentCarouselIndex = 0;
+                    if (this.$refs.fileInput) {
+                        this.$refs.fileInput.value = '';
                     }
                 },
 
@@ -98,10 +154,14 @@
                     } else {
                         this.imagePreview = null;
                     }
+                    if (this.carouselPreviews.length <= 1 && this.mediaType === 'CAROUSEL') {
+                        this.mediaType = 'IMAGE';
+                    }
                 },
 
                 useMediaBankImage(url) {
                     this.imagePreview = url;
+                    this.carouselPreviews = [url];
                     this.mediaType = 'IMAGE';
                     this.tab = 'novo';
                 },
@@ -186,14 +246,35 @@
                     }
                 },
 
-                generateAiHashtags() {
+                async generateAiHashtags() {
                     this.isGeneratingHashtags = true;
-                    setTimeout(() => {
-                        const tags = this.hashtags[this.hashtagCategory] || [];
-                        const selectedTags = tags.slice(0, 6).join(' ');
-                        this.caption = (this.caption ? this.caption + '\n\n' : '') + selectedTags;
+                    try {
+                        const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content');
+                        const res = await fetch('{{ route('instagram.hashtags.generate') }}', {
+                            method: 'POST',
+                            headers: {
+                                'X-CSRF-TOKEN': csrfToken,
+                                'Content-Type': 'application/json',
+                                'Accept': 'application/json'
+                            },
+                            body: JSON.stringify({ caption: this.caption })
+                        });
+                        const data = await res.json();
+                        if (data.success && data.formatted) {
+                            if (!this.caption.includes('#')) {
+                                this.caption = (this.caption ? this.caption.trim() + '\n\n' : '') + data.formatted;
+                            } else {
+                                const newTags = (data.hashtags || []).filter(t => !this.caption.includes(t));
+                                if (newTags.length > 0) {
+                                    this.caption = this.caption.trim() + ' ' + newTags.join(' ');
+                                }
+                            }
+                        }
+                    } catch (e) {
+                        console.error('Erro ao gerar hashtags:', e);
+                    } finally {
                         this.isGeneratingHashtags = false;
-                    }, 600);
+                    }
                 },
 
                 insertHashtag(tag) {
@@ -474,27 +555,80 @@
                                 </div>
                             </div>
 
-                            <form action="{{ route('instagram.posts.store') }}" method="POST" enctype="multipart/form-data" class="space-y-5">
+                            <form action="{{ route('instagram.posts.store') }}" method="POST" enctype="multipart/form-data" @submit="startSubmitting($event)" class="space-y-5">
                                 @csrf
                                 <input type="hidden" name="instagram_account_id" :value="selectedAccountId">
                                 <input type="hidden" name="media_type" :value="mediaType">
                                 <input type="hidden" name="has_logo_overlay" :value="hasLogoOverlay ? 1 : 0">
                                 <input type="hidden" name="has_arrow_overlay" :value="hasArrowOverlay ? 1 : 0">
 
-                                <!-- Upload de Imagem Única ou Story -->
-                                <div x-show="mediaType !== 'CAROUSEL'" class="space-y-2">
-                                    <label class="text-xs font-extrabold text-slate-700 uppercase tracking-wider block">
-                                        Selecione a Imagem <span class="text-rose-500">*</span>
-                                    </label>
-                                    <input type="file" name="image" @change="handleImageChange" accept="image/*" class="w-full text-xs text-slate-600 file:mr-4 file:py-2 file:px-4 file:rounded-[5px] file:border-0 file:text-xs file:font-bold file:bg-purple-50 file:text-purple-700 hover:file:bg-purple-100 border border-slate-200 rounded-lg p-1.5 cursor-pointer">
-                                </div>
+                                <!-- ÁREA MODERNA DRAG & DROP PARA SELEÇÃO DE IMAGENS -->
+                                <div class="space-y-3"
+                                     @dragover.prevent="isDragging = true"
+                                     @dragleave.prevent="isDragging = false"
+                                     @drop.prevent="handleFileDrop($event)">
+                                     
+                                    <div class="flex items-center justify-between">
+                                        <label class="text-xs font-extrabold text-slate-700 uppercase tracking-wider block flex items-center gap-1.5">
+                                            <span>Mídias da Publicação</span>
+                                            <span class="text-rose-500">*</span>
+                                        </label>
+                                        <span class="text-[11px] font-bold text-purple-700 bg-purple-50 px-2 py-0.5 rounded-full border border-purple-100" x-text="mediaType === 'CAROUSEL' ? 'Modo Carrossel (Múltiplas Fotos)' : (mediaType === 'STORY' ? 'Modo Story (24h)' : 'Modo Feed Único')"></span>
+                                    </div>
 
-                                <!-- Upload de Múltiplas Imagens do Carrossel -->
-                                <div x-show="mediaType === 'CAROUSEL'" class="space-y-2">
-                                    <label class="text-xs font-extrabold text-slate-700 uppercase tracking-wider block">
-                                        Selecione as Fotos do Carrossel (mínimo 2) <span class="text-rose-500">*</span>
-                                    </label>
-                                    <input type="file" name="carousel_images[]" multiple @change="handleCarouselChange" accept="image/*" class="w-full text-xs text-slate-600 file:mr-4 file:py-2 file:px-4 file:rounded-[5px] file:border-0 file:text-xs file:font-bold file:bg-purple-50 file:text-purple-700 hover:file:bg-purple-100 border border-slate-200 rounded-lg p-1.5 cursor-pointer">
+                                    <div :class="isDragging ? 'border-purple-600 bg-purple-50 scale-[1.01] ring-4 ring-purple-100' : 'border-slate-300 bg-white hover:border-purple-400 hover:bg-purple-50/30'"
+                                         class="border-2 border-dashed rounded-xl p-6 text-center transition-all duration-200 cursor-pointer shadow-2xs relative group"
+                                         @click="$refs.fileInput.click()">
+                                        
+                                        <input type="file"
+                                               x-ref="fileInput"
+                                               :name="mediaType === 'CAROUSEL' ? 'carousel_images[]' : 'image'"
+                                               :multiple="mediaType === 'CAROUSEL' || mediaType === 'IMAGE'"
+                                               @change="handleImageInputChange($event)"
+                                               accept="image/*"
+                                               class="hidden">
+                                               
+                                        <div class="space-y-3 pointer-events-none">
+                                            <div class="w-12 h-12 mx-auto rounded-full bg-purple-100/80 text-purple-600 flex items-center justify-center group-hover:scale-110 transition-transform shadow-xs">
+                                                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
+                                            </div>
+                                            <div>
+                                                <p class="text-xs font-extrabold text-slate-800">
+                                                    Arraste & Solte suas imagens aqui ou <span class="text-purple-600 underline">clique para selecionar</span>
+                                                </p>
+                                                <p class="text-[11px] text-slate-500 mt-1">
+                                                    Selecione 1 foto para Feed/Story ou várias fotos para Carrossel automático (PNG, JPG, WEBP até 10MB)
+                                                </p>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <!-- Miniaturas das Imagens Selecionadas -->
+                                    <template x-if="carouselPreviews.length > 0">
+                                        <div class="space-y-2 pt-1">
+                                            <div class="flex items-center justify-between">
+                                                <span class="text-[11px] font-extrabold uppercase text-slate-600 tracking-wider">
+                                                    Fotos Selecionadas (<span x-text="carouselPreviews.length"></span>)
+                                                </span>
+                                                <button type="button" @click="clearAllImages()" class="text-[10px] font-extrabold text-rose-600 hover:underline">Limpar todas</button>
+                                            </div>
+                                            <div class="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 gap-2.5">
+                                                <template x-for="(slideUrl, sIdx) in carouselPreviews" :key="sIdx">
+                                                    <div class="relative group rounded-lg overflow-hidden border border-slate-200 bg-slate-900 h-24 shadow-sm transition-all hover:ring-2 hover:ring-purple-500">
+                                                        <img :src="slideUrl" class="w-full h-full object-cover">
+                                                        <span class="absolute top-1 left-1 px-1.5 py-0.5 bg-black/80 backdrop-blur-xs text-white font-black text-[9px] rounded"
+                                                              x-text="'Slide ' + (sIdx + 1)"></span>
+                                                        <button type="button" 
+                                                                @click.stop="removeCarouselSlide(sIdx)" 
+                                                                title="Remover esta foto" 
+                                                                class="absolute top-1 right-1 w-5 h-5 rounded-full bg-rose-600 hover:bg-rose-700 text-white font-bold text-[10px] flex items-center justify-center shadow transition-transform group-hover:scale-110 cursor-pointer">
+                                                            ✕
+                                                        </button>
+                                                    </div>
+                                                </template>
+                                            </div>
+                                        </div>
+                                    </template>
                                 </div>
 
                                 <!-- Sobreposição de Marcas (Logo & Seta) -->
@@ -1218,6 +1352,40 @@
                     <button type="button" @click="saveTheme()" class="py-2 px-4 bg-purple-600 hover:bg-purple-700 text-white font-extrabold text-xs rounded-lg shadow-md transition-all cursor-pointer">
                         Salvar Tema
                     </button>
+                </div>
+            </div>
+        </div>
+    <!-- MODAL DE PROGRESSO E COMUNICAÇÃO DE PUBLICAÇÃO NO INSTAGRAM -->
+    <template x-teleport="body">
+        <div x-show="isSubmittingPost" 
+             x-cloak 
+             class="fixed inset-0 top-0 left-0 right-0 bottom-0 w-screen h-screen z-[99999999] flex items-center justify-center p-4 bg-slate-950/85 backdrop-blur-md transition-all">
+            
+            <div class="bg-white rounded-3xl p-8 max-w-md w-full shadow-2xl border border-slate-100 text-center space-y-6 transform transition-all">
+                
+                <!-- Anel e Porcentagem de Progresso -->
+                <div class="relative w-24 h-24 mx-auto flex items-center justify-center">
+                    <svg class="w-full h-full transform -rotate-90" viewBox="0 0 36 36">
+                        <path class="text-slate-100" stroke-width="3" stroke="currentColor" fill="none" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" />
+                        <path class="text-purple-600 transition-all duration-300 ease-out" stroke-dasharray="100" :stroke-dashoffset="100 - postProgress" stroke-linecap="round" stroke-width="3.5" stroke="currentColor" fill="none" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" />
+                    </svg>
+                    <div class="absolute inset-0 flex flex-col items-center justify-center">
+                        <span class="text-xl font-black text-slate-800 tracking-tight" x-text="postProgress + '%'"></span>
+                    </div>
+                </div>
+
+                <div class="space-y-2">
+                    <h4 class="text-base font-extrabold text-slate-800 uppercase tracking-wider flex items-center justify-center gap-2">
+                        <svg class="w-5 h-5 text-purple-600 animate-spin" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>
+                        Publicando no Instagram
+                    </h4>
+                    <p class="text-xs text-purple-600 font-bold" x-text="postProgressStep"></p>
+                    <p class="text-[11px] text-slate-400">Por favor, mantenha esta janela aberta enquanto o Facebook/Meta valida sua mídia.</p>
+                </div>
+
+                <!-- Barra de Progresso Gradiente -->
+                <div class="w-full bg-slate-100 rounded-full h-2.5 overflow-hidden border border-slate-200">
+                    <div class="bg-gradient-to-r from-purple-600 to-rose-500 h-full rounded-full transition-all duration-300 shadow-sm" :style="'width: ' + postProgress + '%'"></div>
                 </div>
             </div>
         </div>
