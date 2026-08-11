@@ -1189,23 +1189,23 @@
                                 </div>
 
                                 <!-- Cards das Postagens Agendadas/Publicadas no Dia -->
-                                <div class="space-y-1.5 my-1 overflow-y-auto max-h-[100px] scrollbar-thin">
+                                <div class="space-y-1.5 my-1">
                                     <template x-for="p in cell.posts" :key="p.id">
                                         <div @click.stop="openManagePost(p)"
                                              :class="[
-                                                p.status === 'publicado' ? 'bg-emerald-50 text-emerald-900 border-emerald-300 hover:bg-emerald-100 ring-1 ring-emerald-200' :
-                                                (p.status === 'erro' ? 'bg-rose-50 text-rose-900 border-rose-300 hover:bg-rose-100 ring-1 ring-rose-200' : 'bg-purple-50 text-purple-900 border-purple-300 hover:bg-purple-100 ring-1 ring-purple-200')
+                                                p.status === 'publicado' ? 'bg-emerald-100/80 text-emerald-950 border-emerald-300 hover:bg-emerald-200/80' :
+                                                (p.status === 'erro' ? 'bg-rose-100/80 text-rose-950 border-rose-300 hover:bg-rose-200/80' : 'bg-purple-100/80 text-purple-950 border-purple-300 hover:bg-purple-200/80')
                                              ]"
-                                             class="p-1.5 rounded-lg border text-[10px] font-bold transition-all cursor-pointer shadow-2xs space-y-1 group/card hover:scale-[1.02]">
+                                             class="p-2 rounded-xl border text-[10px] font-bold transition-all cursor-pointer space-y-1 hover:shadow-md border-slate-300">
                                             
                                             <div class="flex items-center justify-between gap-1">
-                                                <span class="px-1 py-0.2 bg-white/80 rounded font-black text-[9px] uppercase tracking-wider"
+                                                <span class="px-1.5 py-0.5 bg-white/90 rounded-md font-black text-[9px] uppercase tracking-wider text-slate-800 shadow-2xs"
                                                       x-text="p.media_type === 'STORY' ? 'Story' : (p.media_type === 'CAROUSEL' ? 'Carrossel' : 'Feed')"></span>
-                                                <span class="text-[9px] font-mono font-extrabold"
+                                                <span class="text-[9px] font-mono font-extrabold text-slate-700"
                                                       x-text="p.scheduled_at ? p.scheduled_at.substring(11, 16) : (p.created_at ? p.created_at.substring(11, 16) : '')"></span>
                                             </div>
 
-                                            <p class="truncate text-[10px] text-slate-700 font-medium"
+                                            <p class="truncate text-[10px] text-slate-800 font-semibold"
                                                x-text="p.caption || 'Sem legenda'"></p>
                                         </div>
                                     </template>
@@ -1321,316 +1321,311 @@
             </div>
     @endif
 
-    <!-- LIGHTBOX TELEPORTADO PARA BODY COM TOTAL OVERLAY SEM MARGEM -->
-    <template x-teleport="body">
-        <div x-show="lightboxOpen" 
-             x-cloak 
-             @keydown.escape.window="lightboxOpen = false"
-             class="fixed inset-0 top-0 left-0 right-0 bottom-0 w-screen h-screen z-[999999] flex items-center justify-center p-4 bg-slate-950/90 backdrop-blur-xl transition-all">
-            
-            <!-- Botão Fechar Modal (ESC) -->
-            <button @click="lightboxOpen = false" class="absolute top-4 right-4 md:top-6 md:right-6 w-11 h-11 rounded-full bg-slate-800/90 hover:bg-slate-700 text-white font-black text-xl flex items-center justify-center border border-slate-700 shadow-2xl transition-all cursor-pointer z-50">
-                ✕
-            </button>
+    <!-- LIGHTBOX OVERLAY COM TOTAL Z-INDEX -->
+    <div x-show="lightboxOpen" 
+         x-cloak 
+         @keydown.escape.window="lightboxOpen = false"
+         class="fixed inset-0 top-0 left-0 right-0 bottom-0 w-screen h-screen z-[999999] flex items-center justify-center p-4 bg-slate-950/90 backdrop-blur-xl transition-all">
+        
+        <!-- Botão Fechar Modal (ESC) -->
+        <button @click="lightboxOpen = false" class="absolute top-4 right-4 md:top-6 md:right-6 w-11 h-11 rounded-full bg-slate-800/90 hover:bg-slate-700 text-white font-black text-xl flex items-center justify-center border border-slate-700 shadow-2xl transition-all cursor-pointer z-50">
+            ✕
+        </button>
 
-            <div class="relative flex items-center justify-center w-full max-w-[95vw] md:max-w-4xl" @click.outside="lightboxOpen = false">
+        <div class="relative flex items-center justify-center w-full max-w-[95vw] md:max-w-4xl" @click.outside="lightboxOpen = false">
 
-                <!-- ESTRUTURA DO CELULAR (MOCKUP MODERNO E PROPORCIONAL) -->
-                <div class="w-[320px] sm:w-[360px] bg-black text-white rounded-[48px] p-3.5 shadow-2xl border-4 border-slate-800 relative z-20 shadow-purple-950/50">
+            <!-- ESTRUTURA DO CELULAR (MOCKUP MODERNO E PROPORCIONAL) -->
+            <div class="w-[320px] sm:w-[360px] bg-black text-white rounded-[48px] p-3.5 shadow-2xl border-4 border-slate-800 relative z-20 shadow-purple-950/50">
+                
+                <!-- Smartphone Notch Header -->
+                <div class="w-32 h-4 bg-slate-900 rounded-b-xl mx-auto mb-2 flex items-center justify-center">
+                    <div class="w-3 h-3 rounded-full bg-slate-800"></div>
+                </div>
+
+                <!-- Instagram App Header -->
+                <div class="flex items-center justify-between px-3 py-2 border-b border-slate-800">
+                    <div class="flex items-center gap-2.5">
+                        <img src="{{ $accAvatar }}" class="w-8 h-8 rounded-full border border-purple-500 object-cover">
+                        <div>
+                            <span class="text-xs font-bold text-white block leading-tight" x-text="'{{ '@' . $accUsername }}'"></span>
+                            <span class="text-[9px] text-slate-400 font-mono block" x-text="lightboxPost?.date || ''"></span>
+                        </div>
+                    </div>
+                    <template x-if="lightboxPost?.permalink">
+                        <a :href="lightboxPost.permalink" target="_blank" title="Abrir no Instagram" class="text-xs text-purple-400 hover:text-purple-300 font-bold">
+                            <svg class="w-4 h-4 text-purple-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/></svg>
+                        </a>
+                    </template>
+                </div>
+
+                <!-- Instagram Viewport Screen (Altura Moderna Proporcional) -->
+                <div class="w-full h-[380px] sm:h-[420px] bg-slate-900 relative flex items-center justify-center overflow-visible group">
                     
-                    <!-- Smartphone Notch Header -->
-                    <div class="w-32 h-4 bg-slate-900 rounded-b-xl mx-auto mb-2 flex items-center justify-center">
-                        <div class="w-3 h-3 rounded-full bg-slate-800"></div>
-                    </div>
-
-                    <!-- Instagram App Header -->
-                    <div class="flex items-center justify-between px-3 py-2 border-b border-slate-800">
-                        <div class="flex items-center gap-2.5">
-                            <img src="{{ $accAvatar }}" class="w-8 h-8 rounded-full border border-purple-500 object-cover">
-                            <div>
-                                <span class="text-xs font-bold text-white block leading-tight" x-text="'{{ '@' . $accUsername }}'"></span>
-                                <span class="text-[9px] text-slate-400 font-mono block" x-text="lightboxPost?.date || ''"></span>
-                            </div>
-                        </div>
-                        <template x-if="lightboxPost?.permalink">
-                            <a :href="lightboxPost.permalink" target="_blank" title="Abrir no Instagram" class="text-xs text-purple-400 hover:text-purple-300 font-bold">
-                                <svg class="w-4 h-4 text-purple-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/></svg>
-                            </a>
+                    <!-- SLIDE ANTERIOR (COLADO NA BORDA ESQUERDA DA IMAGEM DO CENTRO E MESMO TAMANHO) -->
+                    <div x-show="lightboxSlideIndex > 0" 
+                         @click.stop="prevLightboxSlide()"
+                         x-transition:enter="transition ease-out duration-300 transform"
+                         x-transition:enter-start="opacity-0 scale-95"
+                         x-transition:enter-end="opacity-100 scale-100"
+                         class="hidden lg:block absolute top-0 right-full z-10 w-[240px] sm:w-[280px] h-full bg-slate-900 border-y border-l border-white/10 shadow-2xl overflow-hidden cursor-pointer group transition-all duration-300"
+                         style="mask-image: linear-gradient(to right, transparent 0%, rgba(0,0,0,0.7) 40%, black 100%); -webkit-mask-image: linear-gradient(to right, transparent 0%, rgba(0,0,0,0.7) 40%, black 100%);">
+                        <template x-if="lightboxSlides[lightboxSlideIndex - 1]">
+                            <img :src="lightboxSlides[lightboxSlideIndex - 1]" class="w-full h-full object-cover opacity-60 group-hover:opacity-100 transition-opacity duration-300">
                         </template>
                     </div>
 
-                    <!-- Instagram Viewport Screen (Altura Moderna Proporcional) -->
-                    <div class="w-full h-[380px] sm:h-[420px] bg-slate-900 relative flex items-center justify-center overflow-visible group">
-                        
-                        <!-- SLIDE ANTERIOR (COLADO NA BORDA ESQUERDA DA IMAGEM DO CENTRO E MESMO TAMANHO) -->
-                        <div x-show="lightboxSlideIndex > 0" 
-                             @click.stop="prevLightboxSlide()"
-                             x-transition:enter="transition ease-out duration-300 transform"
-                             x-transition:enter-start="opacity-0 scale-95"
+                    <!-- SLIDE PRINCIPAL ATIVO DO CENTRO -->
+                    <template x-for="(slide, idx) in lightboxSlides" :key="idx">
+                        <div x-show="lightboxSlideIndex === idx"
+                             x-transition:enter="transition ease-out duration-400 transform"
+                             x-transition:enter-start="opacity-0 scale-105"
                              x-transition:enter-end="opacity-100 scale-100"
-                             class="hidden lg:block absolute top-0 right-full z-10 w-[240px] sm:w-[280px] h-full bg-slate-900 border-y border-l border-white/10 shadow-2xl overflow-hidden cursor-pointer group transition-all duration-300"
-                             style="mask-image: linear-gradient(to right, transparent 0%, rgba(0,0,0,0.7) 40%, black 100%); -webkit-mask-image: linear-gradient(to right, transparent 0%, rgba(0,0,0,0.7) 40%, black 100%);">
-                            <template x-if="lightboxSlides[lightboxSlideIndex - 1]">
-                                <img :src="lightboxSlides[lightboxSlideIndex - 1]" class="w-full h-full object-cover opacity-60 group-hover:opacity-100 transition-opacity duration-300">
-                            </template>
-                        </div>
-
-                        <!-- SLIDE PRINCIPAL ATIVO DO CENTRO -->
-                        <template x-for="(slide, idx) in lightboxSlides" :key="idx">
-                            <div x-show="lightboxSlideIndex === idx"
-                                 x-transition:enter="transition ease-out duration-400 transform"
-                                 x-transition:enter-start="opacity-0 scale-105"
-                                 x-transition:enter-end="opacity-100 scale-100"
-                                 x-transition:leave="transition ease-in duration-200 transform"
-                                 x-transition:leave-start="opacity-100 scale-100"
-                                 x-transition:leave-end="opacity-0 scale-95"
-                                 class="absolute inset-0 w-full h-full z-20">
-                                <img :src="slide" class="w-full h-full object-cover">
-                            </div>
-                        </template>
-
-                        <!-- SLIDE PRÓXIMO (COLADO NA BORDA DIREITA DA IMAGEM DO CENTRO E MESMO TAMANHO) -->
-                        <div x-show="lightboxSlideIndex < lightboxSlides.length - 1" 
-                             @click.stop="nextLightboxSlide()"
-                             x-transition:enter="transition ease-out duration-300 transform"
-                             x-transition:enter-start="opacity-0 scale-95"
-                             x-transition:enter-end="opacity-100 scale-100"
-                             class="hidden lg:block absolute top-0 left-full z-10 w-[240px] sm:w-[280px] h-full bg-slate-900 border-y border-r border-white/10 shadow-2xl overflow-hidden cursor-pointer group transition-all duration-300"
-                             style="mask-image: linear-gradient(to left, transparent 0%, rgba(0,0,0,0.7) 40%, black 100%); -webkit-mask-image: linear-gradient(to left, transparent 0%, rgba(0,0,0,0.7) 40%, black 100%);">
-                            <template x-if="lightboxSlides[lightboxSlideIndex + 1]">
-                                <img :src="lightboxSlides[lightboxSlideIndex + 1]" class="w-full h-full object-cover opacity-60 group-hover:opacity-100 transition-opacity duration-300">
-                            </template>
-                        </div>
-
-                        <!-- Setas Internas de Navegação -->
-                        <button x-show="lightboxSlideIndex > 0" @click.stop="prevLightboxSlide()" class="absolute left-2.5 z-30 w-8 h-8 rounded-full bg-black/60 text-white font-black text-sm flex items-center justify-center shadow hover:bg-black/90 transition-all cursor-pointer">
-                            ❮
-                        </button>
-                        <button x-show="lightboxSlideIndex < lightboxSlides.length - 1" @click.stop="nextLightboxSlide()" class="absolute right-2.5 z-30 w-8 h-8 rounded-full bg-black/60 text-white font-black text-sm flex items-center justify-center shadow hover:bg-black/90 transition-all cursor-pointer">
-                            ❯
-                        </button>
-
-                        <!-- Indicador de Posição de Slides / Dots -->
-                        <template x-if="lightboxSlides.length > 1">
-                            <div class="absolute bottom-2.5 left-0 right-0 z-30 flex items-center justify-center gap-1.5">
-                                <template x-for="(slide, idx) in lightboxSlides" :key="idx">
-                                    <span :class="idx === lightboxSlideIndex ? 'bg-purple-500 w-2.5 h-2.5 scale-110' : 'bg-white/40 w-1.5 h-1.5'" class="rounded-full transition-all"></span>
-                                </template>
-                            </div>
-                        </template>
-                    </div>
-
-                    <!-- Instagram Likes & Comments Bar -->
-                    <div class="px-3 py-2 flex items-center justify-between text-slate-300 border-b border-slate-900 relative z-20 bg-black">
-                        <div class="flex items-center gap-4 text-xs font-bold">
-                            <span class="flex items-center gap-1 text-rose-500">❤️ <span x-text="lightboxPost?.likes || 0"></span></span>
-                            <span class="flex items-center gap-1 text-slate-300">💬 <span x-text="lightboxPost?.comments || 0"></span></span>
-                        </div>
-                        <span class="text-xs font-black uppercase text-purple-400 tracking-wider" x-text="formatMediaType(lightboxPost?.media_type)"></span>
-                    </div>
-
-                    <!-- Instagram Caption Box -->
-                    <div class="px-3 py-3 max-h-28 overflow-y-auto space-y-1 text-xs relative z-20 bg-black">
-                        <p class="text-slate-200 text-[11px] leading-relaxed break-words">
-                            <strong class="text-white font-bold" x-text="'{{ '@' . $accUsername }}'"></strong>
-                            <span x-text="lightboxPost?.caption || 'Sem legenda'"></span>
-                        </p>
-                    </div>
-                </div>
-
-            </div>
-        </div>
-    </template>
-
-    <!-- MODAL DE CONFIRMAÇÃO DE EXCLUSÃO (ESTILOSO E SEGURO) -->
-    <template x-teleport="body">
-        <div x-show="confirmDeleteModalOpen" 
-             x-cloak 
-             @keydown.escape.window="confirmDeleteModalOpen = false"
-             class="fixed inset-0 top-0 left-0 right-0 bottom-0 w-screen h-screen z-[9999999] flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-md transition-all">
-            
-            <div class="bg-white rounded-2xl p-6 max-w-md w-full shadow-2xl border border-slate-100 space-y-5 text-center transform transition-all" @click.outside="confirmDeleteModalOpen = false">
-                <div class="w-14 h-14 rounded-full bg-rose-100 text-rose-600 flex items-center justify-center mx-auto shadow-inner">
-                    <svg class="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
-                </div>
-                
-                <div class="space-y-1.5">
-                    <h4 class="text-base font-extrabold text-slate-800 tracking-tight">Confirmar Exclusão da Publicação?</h4>
-                    <p class="text-xs text-slate-500 leading-relaxed">
-                        Esta ação removerá a publicação do seu histórico e enviará a ordem de exclusão diretamente para a Meta Graph API do Instagram.
-                    </p>
-                </div>
-
-                <div class="flex items-center justify-center gap-3 pt-2">
-                    <button type="button" @click="confirmDeleteModalOpen = false" :disabled="isDeleting" class="flex-1 py-2.5 px-4 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs rounded-xl transition-all cursor-pointer">
-                        Cancelar
-                    </button>
-                    <button type="button" @click="executeDelete()" :disabled="isDeleting" class="flex-1 py-2.5 px-4 bg-rose-600 hover:bg-rose-700 text-white font-extrabold text-xs rounded-xl shadow-md transition-all cursor-pointer flex items-center justify-center gap-1.5 disabled:opacity-50">
-                        <template x-if="!isDeleting">
-                            <span class="flex items-center gap-1.5">
-                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
-                                <span>Sim, Excluir</span>
-                            </span>
-                        </template>
-                        <template x-if="isDeleting">
-                            <span class="flex items-center gap-1.5">
-                                <svg class="w-4 h-4 animate-spin" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>
-                                <span>Excluindo...</span>
-                            </span>
-                        </template>
-                    </button>
-                </div>
-            </div>
-        </div>
-    </template>
-    <!-- MODAL DE CONFIRMAÇÃO PARA SALVAR TEMA -->
-    <template x-teleport="body">
-        <div x-show="showSaveThemeModal" 
-             x-cloak 
-             @keydown.escape.window="showSaveThemeModal = false"
-             class="fixed inset-0 top-0 left-0 right-0 bottom-0 w-screen h-screen z-[9999999] flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-md transition-all">
-            
-            <div class="bg-white rounded-2xl p-6 max-w-md w-full shadow-2xl border border-slate-100 space-y-4" @click.outside="showSaveThemeModal = false">
-                <div class="flex items-center justify-between border-b border-slate-100 pb-3">
-                    <h4 class="text-sm font-extrabold text-slate-800 uppercase tracking-wider flex items-center gap-1.5">
-                        <svg class="w-4 h-4 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z"/></svg>
-                        Salvar Novo Tema de Hashtags
-                    </h4>
-                    <button type="button" @click="showSaveThemeModal = false" class="text-slate-400 hover:text-slate-600 font-bold">✕</button>
-                </div>
-                
-                <div class="space-y-3">
-                    <div>
-                        <label class="text-xs font-extrabold text-slate-700 uppercase tracking-wider block mb-1">Nome do Tema</label>
-                        <input type="text" x-model="newThemeName" placeholder="Ex: Posts de Identidade Visual, Motion, etc." class="w-full text-xs text-slate-800 border border-slate-200 rounded-lg p-2.5 outline-none focus:ring-2 focus:ring-purple-500">
-                    </div>
-                    <p class="text-[11px] text-slate-500 leading-relaxed">
-                        Este tema armazenará as hashtags atualmente escritas na sua legenda para reutilização em 1 clique nas próximas postagens.
-                    </p>
-                </div>
-
-                <div class="flex items-center justify-end gap-2 pt-2 border-t border-slate-100">
-                    <button type="button" @click="showSaveThemeModal = false" class="py-2 px-4 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs rounded-lg transition-all cursor-pointer">
-                        Cancelar
-                    </button>
-                    <button type="button" @click="saveTheme()" class="py-2 px-4 bg-purple-600 hover:bg-purple-700 text-white font-extrabold text-xs rounded-lg shadow-md transition-all cursor-pointer">
-                        Salvar Tema
-                    </button>
-                </div>
-            </div>
-        </div>
-    <!-- MODAL DE PROGRESSO E COMUNICAÇÃO DE PUBLICAÇÃO NO INSTAGRAM -->
-    <template x-teleport="body">
-        <div x-show="isSubmittingPost" 
-             x-cloak 
-             class="fixed inset-0 top-0 left-0 right-0 bottom-0 w-screen h-screen z-[99999999] flex items-center justify-center p-4 bg-slate-950/85 backdrop-blur-md transition-all">
-            
-            <div class="bg-white rounded-3xl p-8 max-w-md w-full shadow-2xl border border-slate-100 text-center space-y-6 transform transition-all">
-                
-                <!-- Anel e Porcentagem de Progresso -->
-                <div class="relative w-24 h-24 mx-auto flex items-center justify-center">
-                    <svg class="w-full h-full transform -rotate-90" viewBox="0 0 36 36">
-                        <path class="text-slate-100" stroke-width="3" stroke="currentColor" fill="none" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" />
-                        <path class="text-purple-600 transition-all duration-300 ease-out" stroke-dasharray="100" :stroke-dashoffset="100 - postProgress" stroke-linecap="round" stroke-width="3.5" stroke="currentColor" fill="none" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" />
-                    </svg>
-                    <div class="absolute inset-0 flex flex-col items-center justify-center">
-                        <span class="text-xl font-black text-slate-800 tracking-tight" x-text="postProgress + '%'"></span>
-                    </div>
-                </div>
-
-                <div class="space-y-2">
-                    <h4 class="text-base font-extrabold text-slate-800 uppercase tracking-wider flex items-center justify-center gap-2">
-                        <svg class="w-5 h-5 text-purple-600 animate-spin" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>
-                        Publicando no Instagram
-                    </h4>
-                    <p class="text-xs text-purple-600 font-bold" x-text="postProgressStep"></p>
-                    <p class="text-[11px] text-slate-400">Por favor, mantenha esta janela aberta enquanto o Facebook/Meta valida sua mídia.</p>
-                </div>
-
-                <!-- Barra de Progresso Gradiente -->
-                <div class="w-full bg-slate-100 rounded-full h-2.5 overflow-hidden border border-slate-200">
-                    <div class="bg-gradient-to-r from-purple-600 to-rose-500 h-full rounded-full transition-all duration-300 shadow-sm" :style="'width: ' + postProgress + '%'"></div>
-                </div>
-            </div>
-        </div>
-    <!-- MODAL DE GERENCIAMENTO & EDIÇÃO DE POSTAGEM AGENDADA -->
-    <template x-teleport="body">
-        <div x-show="managePostModalOpen" 
-             x-cloak 
-             @keydown.escape.window="managePostModalOpen = false"
-             class="fixed inset-0 top-0 left-0 right-0 bottom-0 w-screen h-screen z-[9999999] flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-md transition-all">
-            
-            <div class="bg-white rounded-3xl p-6 max-w-lg w-full shadow-2xl border border-slate-100 space-y-5" @click.outside="managePostModalOpen = false">
-                
-                <!-- Cabeçalho do Modal -->
-                <div class="flex items-center justify-between border-b border-slate-100 pb-3">
-                    <div class="flex items-center gap-2">
-                        <span :class="editingPost?.status === 'publicado' ? 'bg-emerald-500' : (editingPost?.status === 'erro' ? 'bg-rose-500' : 'bg-purple-600')"
-                              class="w-2.5 h-2.5 rounded-full"></span>
-                        <h4 class="text-sm font-extrabold text-slate-800 uppercase tracking-wider">
-                            Gerenciar Postagem <span x-text="'#' + (editingPost?.id || '')"></span>
-                        </h4>
-                    </div>
-                    <button type="button" @click="managePostModalOpen = false" class="text-slate-400 hover:text-slate-600 font-bold text-lg cursor-pointer">✕</button>
-                </div>
-
-                <!-- Formulário de Edição -->
-                <form :action="'/freelas/utilidades/instagram/posts/' + (editingPost?.id || '')" method="POST" class="space-y-4">
-                    @csrf
-                    <input type="hidden" name="_method" value="PUT">
-
-                    <!-- Mini Prévia da Imagem -->
-                    <template x-if="editingPost?.media_path">
-                        <div class="relative h-44 rounded-xl overflow-hidden bg-slate-900 border border-slate-200 shadow-inner">
-                            <img :src="'/storage/' + editingPost.media_path" class="w-full h-full object-cover">
-                            <span class="absolute top-2 left-2 px-2 py-0.5 bg-black/80 backdrop-blur-xs text-white text-[10px] font-black uppercase rounded"
-                                  x-text="editingPost.media_type"></span>
+                             x-transition:leave="transition ease-in duration-200 transform"
+                             x-transition:leave-start="opacity-100 scale-100"
+                             x-transition:leave-end="opacity-0 scale-95"
+                             class="absolute inset-0 w-full h-full z-20">
+                            <img :src="slide" class="w-full h-full object-cover">
                         </div>
                     </template>
 
-                    <!-- Alterar Data e Horário -->
-                    <div class="space-y-1.5">
-                        <label class="text-xs font-extrabold text-slate-700 uppercase tracking-wider block">Data e Horário Agendados</label>
-                        <input type="datetime-local" 
-                               name="scheduled_at" 
-                               x-model="editScheduledAt" 
-                               class="w-full text-xs text-slate-800 border border-slate-200 rounded-lg p-2.5 font-semibold outline-none focus:ring-2 focus:ring-purple-500">
+                    <!-- SLIDE PRÓXIMO (COLADO NA BORDA DIREITA DA IMAGEM DO CENTRO E MESMO TAMANHO) -->
+                    <div x-show="lightboxSlideIndex < lightboxSlides.length - 1" 
+                         @click.stop="nextLightboxSlide()"
+                         x-transition:enter="transition ease-out duration-300 transform"
+                         x-transition:enter-start="opacity-0 scale-95"
+                         x-transition:enter-end="opacity-100 scale-100"
+                         class="hidden lg:block absolute top-0 left-full z-10 w-[240px] sm:w-[280px] h-full bg-slate-900 border-y border-r border-white/10 shadow-2xl overflow-hidden cursor-pointer group transition-all duration-300"
+                         style="mask-image: linear-gradient(to left, transparent 0%, rgba(0,0,0,0.7) 40%, black 100%); -webkit-mask-image: linear-gradient(to left, transparent 0%, rgba(0,0,0,0.7) 40%, black 100%);">
+                        <template x-if="lightboxSlides[lightboxSlideIndex + 1]">
+                            <img :src="lightboxSlides[lightboxSlideIndex + 1]" class="w-full h-full object-cover opacity-60 group-hover:opacity-100 transition-opacity duration-300">
+                        </template>
                     </div>
 
-                    <!-- Alterar Legenda -->
-                    <div class="space-y-1.5">
-                        <label class="text-xs font-extrabold text-slate-700 uppercase tracking-wider block">Legenda da Publicação</label>
-                        <textarea name="caption" 
-                                  x-model="editCaption" 
-                                  rows="4" 
-                                  class="w-full text-xs text-slate-800 border border-slate-200 rounded-lg p-2.5 outline-none focus:ring-2 focus:ring-purple-500"></textarea>
-                    </div>
+                    <!-- Setas Internas de Navegação -->
+                    <button x-show="lightboxSlideIndex > 0" @click.stop="prevLightboxSlide()" class="absolute left-2.5 z-30 w-8 h-8 rounded-full bg-black/60 text-white font-black text-sm flex items-center justify-center shadow hover:bg-black/90 transition-all cursor-pointer">
+                        ❮
+                    </button>
+                    <button x-show="lightboxSlideIndex < lightboxSlides.length - 1" @click.stop="nextLightboxSlide()" class="absolute right-2.5 z-30 w-8 h-8 rounded-full bg-black/60 text-white font-black text-sm flex items-center justify-center shadow hover:bg-black/90 transition-all cursor-pointer">
+                        ❯
+                    </button>
 
-                    <!-- Botões de Ação (Salvar / Publicar Agora / Excluir) -->
-                    <div class="space-y-2 pt-2 border-t border-slate-100">
-                        <div class="grid grid-cols-2 gap-2">
-                            <button type="submit" 
-                                    class="py-2.5 px-4 bg-purple-600 hover:bg-purple-700 text-white font-extrabold text-xs rounded-xl shadow-sm transition-all cursor-pointer flex items-center justify-center gap-1.5">
-                                <span>💾 Salvar Alterações</span>
-                            </button>
-
-                            <button type="submit" 
-                                    name="publish_now" 
-                                    value="1" 
-                                    class="py-2.5 px-4 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white font-extrabold text-xs rounded-xl shadow-sm transition-all cursor-pointer flex items-center justify-center gap-1.5">
-                                <span>🚀 Publicar Agora</span>
-                            </button>
+                    <!-- Indicador de Posição de Slides / Dots -->
+                    <template x-if="lightboxSlides.length > 1">
+                        <div class="absolute bottom-2.5 left-0 right-0 z-30 flex items-center justify-center gap-1.5">
+                            <template x-for="(slide, idx) in lightboxSlides" :key="idx">
+                                <span :class="idx === lightboxSlideIndex ? 'bg-purple-500 w-2.5 h-2.5 scale-110' : 'bg-white/40 w-1.5 h-1.5'" class="rounded-full transition-all"></span>
+                            </template>
                         </div>
+                    </template>
+                </div>
 
-                        <button type="button" 
-                                @click="confirmDeletePost(editingPost.id, editingPost.caption); managePostModalOpen = false;" 
-                                class="w-full py-2 bg-rose-50 hover:bg-rose-100 text-rose-700 font-extrabold text-xs rounded-xl transition-all cursor-pointer flex items-center justify-center gap-1 border border-rose-200">
-                            <span>🗑️ Excluir Agendamento</span>
-                        </button>
+                <!-- Instagram Likes & Comments Bar -->
+                <div class="px-3 py-2 flex items-center justify-between text-slate-300 border-b border-slate-900 relative z-20 bg-black">
+                    <div class="flex items-center gap-4 text-xs font-bold">
+                        <span class="flex items-center gap-1 text-rose-500">❤️ <span x-text="lightboxPost?.likes || 0"></span></span>
+                        <span class="flex items-center gap-1 text-slate-300">💬 <span x-text="lightboxPost?.comments || 0"></span></span>
                     </div>
-                </form>
+                    <span class="text-xs font-black uppercase text-purple-400 tracking-wider" x-text="formatMediaType(lightboxPost?.media_type)"></span>
+                </div>
+
+                <!-- Instagram Caption Box -->
+                <div class="px-3 py-3 max-h-28 overflow-y-auto space-y-1 text-xs relative z-20 bg-black">
+                    <p class="text-slate-200 text-[11px] leading-relaxed break-words">
+                        <strong class="text-white font-bold" x-text="'{{ '@' . $accUsername }}'"></strong>
+                        <span x-text="lightboxPost?.caption || 'Sem legenda'"></span>
+                    </p>
+                </div>
+            </div>
+
+        </div>
+    </div>
+
+    <!-- MODAL DE CONFIRMAÇÃO DE EXCLUSÃO (ESTILOSO E SEGURO) -->
+    <div x-show="confirmDeleteModalOpen" 
+         x-cloak 
+         @keydown.escape.window="confirmDeleteModalOpen = false"
+         class="fixed inset-0 top-0 left-0 right-0 bottom-0 w-screen h-screen z-[9999999] flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-md transition-all">
+        
+        <div class="bg-white rounded-2xl p-6 max-w-md w-full shadow-2xl border border-slate-100 space-y-5 text-center transform transition-all" @click.outside="confirmDeleteModalOpen = false">
+            <div class="w-14 h-14 rounded-full bg-rose-100 text-rose-600 flex items-center justify-center mx-auto shadow-inner">
+                <svg class="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
+            </div>
+            
+            <div class="space-y-1.5">
+                <h4 class="text-base font-extrabold text-slate-800 tracking-tight">Confirmar Exclusão da Publicação?</h4>
+                <p class="text-xs text-slate-500 leading-relaxed">
+                    Esta ação removerá a publicação do seu histórico e enviará a ordem de exclusão diretamente para a Meta Graph API do Instagram.
+                </p>
+            </div>
+
+            <div class="flex items-center justify-center gap-3 pt-2">
+                <button type="button" @click="confirmDeleteModalOpen = false" :disabled="isDeleting" class="flex-1 py-2.5 px-4 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs rounded-xl transition-all cursor-pointer">
+                    Cancelar
+                </button>
+                <button type="button" @click="executeDelete()" :disabled="isDeleting" class="flex-1 py-2.5 px-4 bg-rose-600 hover:bg-rose-700 text-white font-extrabold text-xs rounded-xl shadow-md transition-all cursor-pointer flex items-center justify-center gap-1.5 disabled:opacity-50">
+                    <template x-if="!isDeleting">
+                        <span class="flex items-center gap-1.5">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
+                            <span>Sim, Excluir</span>
+                        </span>
+                    </template>
+                    <template x-if="isDeleting">
+                        <span class="flex items-center gap-1.5">
+                            <svg class="w-4 h-4 animate-spin" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>
+                            <span>Excluindo...</span>
+                        </span>
+                    </template>
+                </button>
             </div>
         </div>
-    </template>
+    </div>
+
+    <!-- MODAL DE CONFIRMAÇÃO PARA SALVAR TEMA -->
+    <div x-show="showSaveThemeModal" 
+         x-cloak 
+         @keydown.escape.window="showSaveThemeModal = false"
+         class="fixed inset-0 top-0 left-0 right-0 bottom-0 w-screen h-screen z-[9999999] flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-md transition-all">
+        
+        <div class="bg-white rounded-2xl p-6 max-w-md w-full shadow-2xl border border-slate-100 space-y-4" @click.outside="showSaveThemeModal = false">
+            <div class="flex items-center justify-between border-b border-slate-100 pb-3">
+                <h4 class="text-sm font-extrabold text-slate-800 uppercase tracking-wider flex items-center gap-1.5">
+                    <svg class="w-4 h-4 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z"/></svg>
+                    Salvar Novo Tema de Hashtags
+                </h4>
+                <button type="button" @click="showSaveThemeModal = false" class="text-slate-400 hover:text-slate-600 font-bold">✕</button>
+            </div>
+            
+            <div class="space-y-3">
+                <div>
+                    <label class="text-xs font-extrabold text-slate-700 uppercase tracking-wider block mb-1">Nome do Tema</label>
+                    <input type="text" x-model="newThemeName" placeholder="Ex: Posts de Identidade Visual, Motion, etc." class="w-full text-xs text-slate-800 border border-slate-200 rounded-lg p-2.5 outline-none focus:ring-2 focus:ring-purple-500">
+                </div>
+                <p class="text-[11px] text-slate-500 leading-relaxed">
+                    Este tema armazenará as hashtags atualmente escritas na sua legenda para reutilização em 1 clique nas próximas postagens.
+                </p>
+            </div>
+
+            <div class="flex items-center justify-end gap-2 pt-2 border-t border-slate-100">
+                <button type="button" @click="showSaveThemeModal = false" class="py-2 px-4 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs rounded-lg transition-all cursor-pointer">
+                    Cancelar
+                </button>
+                <button type="button" @click="saveTheme()" class="py-2 px-4 bg-purple-600 hover:bg-purple-700 text-white font-extrabold text-xs rounded-lg shadow-md transition-all cursor-pointer">
+                    Salvar Tema
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL DE PROGRESSO E COMUNICAÇÃO DE PUBLICAÇÃO NO INSTAGRAM -->
+    <div x-show="isSubmittingPost" 
+         x-cloak 
+         class="fixed inset-0 top-0 left-0 right-0 bottom-0 w-screen h-screen z-[99999999] flex items-center justify-center p-4 bg-slate-950/85 backdrop-blur-md transition-all">
+        
+        <div class="bg-white rounded-3xl p-8 max-w-md w-full shadow-2xl border border-slate-100 text-center space-y-6 transform transition-all">
+            
+            <!-- Anel e Porcentagem de Progresso -->
+            <div class="relative w-24 h-24 mx-auto flex items-center justify-center">
+                <svg class="w-full h-full transform -rotate-90" viewBox="0 0 36 36">
+                    <path class="text-slate-100" stroke-width="3" stroke="currentColor" fill="none" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" />
+                    <path class="text-purple-600 transition-all duration-300 ease-out" stroke-dasharray="100" :stroke-dashoffset="100 - postProgress" stroke-linecap="round" stroke-width="3.5" stroke="currentColor" fill="none" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" />
+                </svg>
+                <div class="absolute inset-0 flex flex-col items-center justify-center">
+                    <span class="text-xl font-black text-slate-800 tracking-tight" x-text="postProgress + '%'"></span>
+                </div>
+            </div>
+
+            <div class="space-y-2">
+                <h4 class="text-base font-extrabold text-slate-800 uppercase tracking-wider flex items-center justify-center gap-2">
+                    <svg class="w-5 h-5 text-purple-600 animate-spin" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>
+                    Publicando no Instagram
+                </h4>
+                <p class="text-xs text-purple-600 font-bold" x-text="postProgressStep"></p>
+                <p class="text-[11px] text-slate-400">Por favor, mantenha esta janela aberta enquanto o Facebook/Meta valida sua mídia.</p>
+            </div>
+
+            <!-- Barra de Progresso Gradiente -->
+            <div class="w-full bg-slate-100 rounded-full h-2.5 overflow-hidden border border-slate-200">
+                <div class="bg-gradient-to-r from-purple-600 to-rose-500 h-full rounded-full transition-all duration-300 shadow-sm" :style="'width: ' + postProgress + '%'"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL DE GERENCIAMENTO & EDIÇÃO DE POSTAGEM AGENDADA -->
+    <div x-show="managePostModalOpen" 
+         x-cloak 
+         @keydown.escape.window="managePostModalOpen = false"
+         class="fixed inset-0 top-0 left-0 right-0 bottom-0 w-screen h-screen z-[9999999] flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-md transition-all">
+        
+        <div class="bg-white rounded-3xl p-6 max-w-lg w-full shadow-2xl border border-slate-100 space-y-5" @click.outside="managePostModalOpen = false">
+            
+            <!-- Cabeçalho do Modal -->
+            <div class="flex items-center justify-between border-b border-slate-100 pb-3">
+                <div class="flex items-center gap-2">
+                    <span :class="editingPost?.status === 'publicado' ? 'bg-emerald-500' : (editingPost?.status === 'erro' ? 'bg-rose-500' : 'bg-purple-600')"
+                          class="w-2.5 h-2.5 rounded-full"></span>
+                    <h4 class="text-sm font-extrabold text-slate-800 uppercase tracking-wider">
+                        Gerenciar Postagem <span x-text="'#' + (editingPost?.id || '')"></span>
+                    </h4>
+                </div>
+                <button type="button" @click="managePostModalOpen = false" class="text-slate-400 hover:text-slate-600 font-bold text-lg cursor-pointer">✕</button>
+            </div>
+
+            <!-- Formulário de Edição -->
+            <form :action="'/freelas/utilidades/instagram/posts/' + (editingPost?.id || '')" method="POST" class="space-y-4">
+                @csrf
+                <input type="hidden" name="_method" value="PUT">
+
+                <!-- Mini Prévia da Imagem -->
+                <template x-if="editingPost?.media_path">
+                    <div class="relative h-44 rounded-xl overflow-hidden bg-slate-900 border border-slate-200 shadow-inner">
+                        <img :src="'/storage/' + editingPost.media_path" class="w-full h-full object-cover">
+                        <span class="absolute top-2 left-2 px-2 py-0.5 bg-black/80 backdrop-blur-xs text-white text-[10px] font-black uppercase rounded"
+                              x-text="editingPost.media_type"></span>
+                    </div>
+                </template>
+
+                <!-- Alterar Data e Horário -->
+                <div class="space-y-1.5">
+                    <label class="text-xs font-extrabold text-slate-700 uppercase tracking-wider block">Data e Horário Agendados</label>
+                    <input type="datetime-local" 
+                           name="scheduled_at" 
+                           x-model="editScheduledAt" 
+                           class="w-full text-xs text-slate-800 border border-slate-200 rounded-lg p-2.5 font-semibold outline-none focus:ring-2 focus:ring-purple-500">
+                </div>
+
+                <!-- Alterar Legenda -->
+                <div class="space-y-1.5">
+                    <label class="text-xs font-extrabold text-slate-700 uppercase tracking-wider block">Legenda da Publicação</label>
+                    <textarea name="caption" 
+                              x-model="editCaption" 
+                              rows="4" 
+                              class="w-full text-xs text-slate-800 border border-slate-200 rounded-lg p-2.5 outline-none focus:ring-2 focus:ring-purple-500"></textarea>
+                </div>
+
+                <!-- Botões de Ação (Salvar / Publicar Agora / Excluir) -->
+                <div class="space-y-2 pt-2 border-t border-slate-100">
+                    <div class="grid grid-cols-2 gap-2">
+                        <button type="submit" 
+                                class="py-2.5 px-4 bg-purple-600 hover:bg-purple-700 text-white font-extrabold text-xs rounded-xl shadow-sm transition-all cursor-pointer flex items-center justify-center gap-1.5">
+                            <span>💾 Salvar Alterações</span>
+                        </button>
+
+                        <button type="submit" 
+                                name="publish_now" 
+                                value="1" 
+                                class="py-2.5 px-4 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white font-extrabold text-xs rounded-xl shadow-sm transition-all cursor-pointer flex items-center justify-center gap-1.5">
+                            <span>🚀 Publicar Agora</span>
+                        </button>
+                    </div>
+
+                    <button type="button" 
+                            @click="confirmDeletePost(editingPost.id, editingPost.caption); managePostModalOpen = false;" 
+                            class="w-full py-2 bg-rose-50 hover:bg-rose-100 text-rose-700 font-extrabold text-xs rounded-xl transition-all cursor-pointer flex items-center justify-center gap-1 border border-rose-200">
+                        <span>🗑️ Excluir Agendamento</span>
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
 </div>
 @endsection
