@@ -33,37 +33,28 @@
                     geral: ['#geral', '#postnovo', '#dicanova', '#paravoce', '#foryou', '#inspiração', '#criatividade', '#novidade']
                 },
                 isGeneratingHashtags: false,
-                lightboxOpen: false,
-                lightboxPost: null,
-                lightboxSlides: [],
-                lightboxSlideIndex: 0,
                 savedThemes: @json(optional($settings)->saved_themes ?: []),
                 newThemeName: '',
                 newThemeCategory: 'design',
                 newThemeTagsText: '',
+                showSaveThemeModal: false,
+                lightboxOpen: false,
+                lightboxPost: null,
+                lightboxSlides: [],
+                lightboxSlideIndex: 0,
                 confirmDeleteModalOpen: false,
                 postToDeleteId: null,
                 postToDeleteCaption: '',
+                deleteFormActionUrl: '',
+                targetCardElement: null,
                 isDeleting: false,
 
-                prevCarouselSlide() {
-                    if (this.currentCarouselIndex > 0) {
-                        this.currentCarouselIndex--;
-                    } else {
-                        this.currentCarouselIndex = this.carouselPreviews.length - 1;
-                    }
-                },
-
-                nextCarouselSlide() {
-                    if (this.currentCarouselIndex < this.carouselPreviews.length - 1) {
-                        this.currentCarouselIndex++;
-                    } else {
-                        this.currentCarouselIndex = 0;
-                    }
+                handleImageChange(e) {
+                    this.handleSingleFile(e);
                 },
 
                 handleSingleFile(e) {
-                    const file = e.target.files[0];
+                    const file = e.target ? e.target.files[0] : (e[0] || e);
                     if (file) {
                         const reader = new FileReader();
                         reader.onload = (evt) => {
@@ -73,15 +64,21 @@
                     }
                 },
 
+                handleCarouselChange(e) {
+                    this.handleCarouselFiles(e);
+                },
+
                 handleCarouselFiles(e) {
-                    const files = Array.from(e.target.files);
+                    const files = Array.from(e.target ? e.target.files : e);
                     if (files.length > 0) {
                         this.carouselPreviews = [];
-                        files.forEach(file => {
+                        let loadedCount = 0;
+                        files.forEach((file, index) => {
                             const reader = new FileReader();
                             reader.onload = (evt) => {
-                                this.carouselPreviews.push(evt.target.result);
-                                if (this.carouselPreviews.length === 1) {
+                                this.carouselPreviews[index] = evt.target.result;
+                                loadedCount++;
+                                if (loadedCount === 1 || index === 0) {
                                     this.imagePreview = evt.target.result;
                                 }
                             };
@@ -100,6 +97,28 @@
                         this.imagePreview = this.carouselPreviews[this.currentCarouselIndex];
                     } else {
                         this.imagePreview = null;
+                    }
+                },
+
+                useMediaBankImage(url) {
+                    this.imagePreview = url;
+                    this.mediaType = 'IMAGE';
+                    this.tab = 'novo';
+                },
+
+                prevCarouselSlide() {
+                    if (this.currentCarouselIndex > 0) {
+                        this.currentCarouselIndex--;
+                    } else {
+                        this.currentCarouselIndex = this.carouselPreviews.length - 1;
+                    }
+                },
+
+                nextCarouselSlide() {
+                    if (this.currentCarouselIndex < this.carouselPreviews.length - 1) {
+                        this.currentCarouselIndex++;
+                    } else {
+                        this.currentCarouselIndex = 0;
                     }
                 },
 
@@ -177,14 +196,34 @@
                     }, 600);
                 },
 
-                appendTagToCaption(tag) {
+                insertHashtag(tag) {
                     if (!this.caption.includes(tag)) {
-                        this.caption = (this.caption ? this.caption + ' ' : '') + tag;
+                        this.caption = (this.caption ? this.caption.trim() + ' ' : '') + tag;
                     }
                 },
 
-                saveNewTheme() {
-                    if (!this.newThemeName.trim() || !this.newThemeTagsText.trim()) return;
+                appendTagToCaption(tag) {
+                    this.insertHashtag(tag);
+                },
+
+                insertThemeTags(tags) {
+                    const tagsStr = Array.isArray(tags) ? tags.join(' ') : tags;
+                    if (tagsStr && !this.caption.includes(tagsStr)) {
+                        this.caption = (this.caption ? this.caption.trim() + '\n\n' : '') + tagsStr;
+                    }
+                },
+
+                applyTheme(theme) {
+                    if (!theme || !theme.tags) return;
+                    this.insertThemeTags(theme.tags);
+                },
+
+                saveTheme() {
+                    if (this.newThemeName.trim() && !this.newThemeTagsText.trim()) {
+                        this.newThemeTagsText = this.caption;
+                    }
+                    if (!this.newThemeName.trim()) return;
+
                     const tags = this.newThemeTagsText
                         .split(',')
                         .map(t => t.trim())
@@ -199,8 +238,8 @@
                         },
                         body: JSON.stringify({
                             name: this.newThemeName,
-                            category: this.newThemeCategory,
-                            tags: tags
+                            category: this.newThemeCategory || 'design',
+                            tags: tags.length > 0 ? tags : [this.caption]
                         })
                     })
                     .then(res => res.json())
@@ -209,8 +248,13 @@
                             this.savedThemes = data.themes;
                             this.newThemeName = '';
                             this.newThemeTagsText = '';
+                            this.showSaveThemeModal = false;
                         }
                     });
+                },
+
+                saveNewTheme() {
+                    this.saveTheme();
                 },
 
                 deleteTheme(index) {
@@ -230,52 +274,54 @@
                     });
                 },
 
-                applyTheme(theme) {
-                    if (!theme || !theme.tags) return;
-                    const tagsStr = theme.tags.join(' ');
-                    this.caption = (this.caption ? this.caption + '\n\n' : '') + tagsStr;
-                },
-
                 formatMediaType(type) {
-                    switch (type) {
-                        case 'CAROUSEL_ALBUM':
-                        case 'CAROUSEL':
-                            return 'Carrossel';
-                        case 'VIDEO':
-                            return 'Vídeo / Reel';
-                        case 'STORY':
-                            return 'Story';
-                        default:
-                            return 'Feed Image';
-                    }
+                    if (!type) return 'FEED';
+                    if (type.includes('CAROUSEL')) return 'Carrossel';
+                    if (type.includes('VIDEO') || type.includes('REELS')) return 'Vídeo / Reel';
+                    if (type.includes('STORY')) return 'Story';
+                    return 'Feed Image';
                 },
 
-                confirmDeletePost(id, caption) {
-                    this.postToDeleteId = id;
-                    this.postToDeleteCaption = caption || 'Publicação sem legenda';
+                confirmDeletePost(urlOrId, eventOrCaption) {
+                    if (typeof urlOrId === 'string' && urlOrId.includes('/')) {
+                        this.deleteFormActionUrl = urlOrId;
+                        this.targetCardElement = eventOrCaption ? eventOrCaption.target.closest('.group') : null;
+                    } else {
+                        this.postToDeleteId = urlOrId;
+                        this.postToDeleteCaption = eventOrCaption || 'Publicação sem legenda';
+                        this.deleteFormActionUrl = '/freelas/utilidades/instagram/' + urlOrId;
+                    }
                     this.confirmDeleteModalOpen = true;
                 },
 
-                async deleteConfirmed() {
-                    if (!this.postToDeleteId) return;
+                async executeDelete() {
+                    if (!this.deleteFormActionUrl && this.postToDeleteId) {
+                        this.deleteFormActionUrl = '/freelas/utilidades/instagram/' + this.postToDeleteId;
+                    }
+                    if (!this.deleteFormActionUrl) return;
+
                     this.isDeleting = true;
                     try {
-                        const response = await fetch('/freelas/utilidades/instagram/' + this.postToDeleteId, {
-                            method: 'DELETE',
+                        const response = await fetch(this.deleteFormActionUrl, {
+                            method: 'POST',
                             headers: {
                                 'X-CSRF-TOKEN': '{{ csrf_token() }}',
+                                'X-Requested-With': 'XMLHttpRequest',
+                                'Content-Type': 'application/json',
                                 'Accept': 'application/json'
-                            }
+                            },
+                            body: JSON.stringify({ _method: 'DELETE' })
                         });
+
                         const data = await response.json();
-                        if (data.success) {
-                            const cardElement = document.getElementById('post-card-' + this.postToDeleteId);
-                            if (cardElement) {
-                                cardElement.style.transition = 'all 0.3s ease';
-                                cardElement.style.opacity = '0';
-                                cardElement.style.transform = 'scale(0.8)';
+                        if (response.ok && data.success) {
+                            const card = this.targetCardElement || document.getElementById('post-card-' + this.postToDeleteId);
+                            if (card) {
+                                card.style.transition = 'all 0.3s ease';
+                                card.style.opacity = '0';
+                                card.style.transform = 'scale(0.8)';
                                 setTimeout(() => {
-                                    cardElement.remove();
+                                    card.remove();
                                 }, 300);
                             }
                             if (data.meta_error) {
@@ -290,6 +336,10 @@
                         this.isDeleting = false;
                         this.confirmDeleteModalOpen = false;
                     }
+                },
+
+                async deleteConfirmed() {
+                    await this.executeDelete();
                 }
             }));
         }
