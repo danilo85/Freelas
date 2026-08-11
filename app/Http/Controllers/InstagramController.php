@@ -641,6 +641,7 @@ class InstagramController extends Controller
             }
 
             $containerId = $containerResp->json('id');
+            $this->waitForMetaContainerReady($containerId, $account->access_token);
 
             $publishResp = Http::post("https://graph.facebook.com/v19.0/{$account->instagram_account_id}/media_publish", [
                 'creation_id' => $containerId,
@@ -697,7 +698,9 @@ class InstagramController extends Controller
                     return redirect()->route('instagram.index')->with('error', 'Erro no carrossel: ' . $err);
                 }
 
-                $itemContainerIds[] = $itemResp->json('id');
+                $childId = $itemResp->json('id');
+                $this->waitForMetaContainerReady($childId, $account->access_token);
+                $itemContainerIds[] = $childId;
             }
 
             // Criar container pai do Carrossel
@@ -716,6 +719,7 @@ class InstagramController extends Controller
             }
 
             $parentId = $parentResp->json('id');
+            $this->waitForMetaContainerReady($parentId, $account->access_token);
 
             // Publicar
             $publishResp = Http::post("https://graph.facebook.com/v19.0/{$account->instagram_account_id}/media_publish", [
@@ -1053,6 +1057,40 @@ class InstagramController extends Controller
         }
 
         return $localUrl;
+    }
+
+    /**
+     * Aguarda o container de mídia ser processado e liberado (status_code === 'FINISHED') pela Meta API.
+     */
+    private function waitForMetaContainerReady($containerId, $accessToken, $maxSeconds = 20)
+    {
+        for ($i = 0; $i < $maxSeconds; $i++) {
+            try {
+                $resp = Http::get("https://graph.facebook.com/v19.0/{$containerId}", [
+                    'fields' => 'status_code,status',
+                    'access_token' => $accessToken,
+                ]);
+
+                if ($resp->successful()) {
+                    $code = strtoupper($resp->json('status_code', ''));
+                    if ($code === 'FINISHED') {
+                        return true;
+                    }
+                    if ($code === 'ERROR') {
+                        $msg = $resp->json('status', 'Erro no processamento da imagem pela Meta.');
+                        Log::error("Container Meta {$containerId} falhou com status ERROR: " . $resp->body());
+                        throw new \Exception("Erro no processamento da imagem pela Meta: {$msg}");
+                    }
+                }
+            } catch (\Exception $e) {
+                if (str_contains($e->getMessage(), 'Erro no processamento')) {
+                    throw $e;
+                }
+                Log::warning("Aguardando verificação do container {$containerId}: " . $e->getMessage());
+            }
+            sleep(1);
+        }
+        return true;
     }
 
     /**
