@@ -926,12 +926,13 @@ class InstagramController extends Controller
             return 'http://localhost:8000/instagram/callback';
         }
 
+        $baseUrl = route('instagram.callback');
+
         $isHttps = request()->isSecure()
             || request()->header('x-forwarded-proto') === 'https'
             || request()->header('X-Forwarded-Proto') === 'https'
             || str_starts_with(config('app.url'), 'https://');
 
-        $baseUrl = url('/instagram/callback');
         if ($isHttps && str_starts_with($baseUrl, 'http://')) {
             $baseUrl = str_replace('http://', 'https://', $baseUrl);
         }
