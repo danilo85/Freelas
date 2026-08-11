@@ -879,9 +879,11 @@
 </div>
 
 <script>
-document.addEventListener('alpine:init', () => {
-    Alpine.data('instagramModule', () => ({
-        tab: (new URLSearchParams(window.location.search)).get('tab') || 'novo',
+(function() {
+    function initInstagramModule() {
+        if (typeof Alpine !== 'undefined') {
+            Alpine.data('instagramModule', () => ({
+                tab: (new URLSearchParams(window.location.search)).get('tab') || 'novo',
         mediaType: 'IMAGE',
         actionType: 'now',
         caption: '',
@@ -1128,6 +1130,12 @@ document.addEventListener('alpine:init', () => {
             }
         }
     }));
-});
+}
+
+    document.addEventListener('alpine:init', initInstagramModule);
+    if (window.Alpine) {
+        initInstagramModule();
+    }
+})();
 </script>
 @endsection

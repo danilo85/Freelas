@@ -91,6 +91,140 @@
         }
     </script>
     
+    <script>
+        function layoutState() {
+            return {
+                sidebarOpen: false,
+                touchStartX: 0,
+                touchEndX: 0,
+                scrolled: false,
+                
+                // Dark mode state
+                darkMode: localStorage.getItem('theme') === 'dark',
+                toggleTheme() {
+                    this.darkMode = !this.darkMode;
+                    if (this.darkMode) {
+                        document.documentElement.classList.add('dark');
+                        localStorage.setItem('theme', 'dark');
+                    } else {
+                        document.documentElement.classList.remove('dark');
+                        localStorage.setItem('theme', 'light');
+                    }
+                },
+                
+                // Modal de exclusão global
+                globalDeleteOpen: false,
+                globalDeleteTitle: 'Confirmar Exclusão',
+                globalDeleteMessage: '',
+                globalDeleteAction: '',
+                globalDeleteHighSecurity: false,
+                globalDeleteConfirmInput: '',
+                globalDeleteBackupUrl: '',
+                globalDeleteConfirmBackup: false,
+
+                // Visualizador Premium Global (Assets Lightbox)
+                previewModalOpen: false,
+                previewAsset: {},
+                imageDimensions: 'Calculando...',
+                imageZoom: 1,
+
+                initGlobalPreviewListener(event) {
+                    this.previewAsset = event.detail.asset;
+                    this.imageDimensions = 'Calculando...';
+                    this.imageZoom = 1;
+                    this.previewModalOpen = true;
+
+                    if (this.previewAsset.type === 'codigo') {
+                        this.$nextTick(() => {
+                            if (window.hljs) {
+                                const codeBlock = this.$refs.previewCodeBlock;
+                                if (codeBlock) {
+                                    codeBlock.className = 'hljs bg-transparent p-0 select-text';
+                                    const ext = this.previewAsset.file_path 
+                                        ? this.previewAsset.file_path.split('.').pop().toLowerCase() 
+                                        : (this.previewAsset.title.includes('.') ? this.previewAsset.title.split('.').pop().toLowerCase() : '');
+                                    if (ext) {
+                                        codeBlock.classList.add('language-' + ext);
+                                    }
+                                    hljs.highlightElement(codeBlock);
+                                }
+                            }
+                        });
+                    }
+                },
+
+                getImageDetails(e) {
+                    this.imageDimensions = e.target.naturalWidth + ' × ' + e.target.naturalHeight + ' px';
+                },
+
+                isVideoAsset(asset) {
+                    if (!asset || !asset.file_path) return false;
+                    const ext = asset.file_path.split('.').pop().toLowerCase();
+                    const videoExtensions = ['mp4', 'webm', 'ogg', 'mov'];
+                    return videoExtensions.includes(ext) || (asset.mime_type && asset.mime_type.startsWith('video/'));
+                },
+
+                formatBytes(bytes) {
+                    if (!bytes) return '0 B';
+                    const k = 1024;
+                    const sizes = ['B', 'KB', 'MB', 'GB'];
+                    const i = Math.floor(Math.log(bytes) / Math.log(k));
+                    return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+                },
+
+                formatDate(dateStr) {
+                    if (!dateStr) return '';
+                    const date = new Date(dateStr);
+                    return date.toLocaleDateString('pt-BR') + ' às ' + date.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
+                },
+
+                handleTouchStart(e) {
+                    this.touchStartX = e.changedTouches[0].clientX;
+                },
+
+                handleTouchEnd(e) {
+                    this.touchEndX = e.changedTouches[0].clientX;
+                    this.handleSwipe();
+                },
+
+                handleSwipe() {
+                    const swipeThreshold = 55;
+                    const diff = this.touchEndX - this.touchStartX;
+                    
+                    if (diff > swipeThreshold && this.touchStartX < 50) {
+                        this.sidebarOpen = true;
+                    } 
+                    else if (diff < -swipeThreshold && this.sidebarOpen) {
+                        this.sidebarOpen = false;
+                    }
+                },
+                
+                initGlobalDeleteListener(event) {
+                    const data = event.detail;
+                    this.globalDeleteTitle = data.title || 'Confirmar Exclusão';
+                    this.globalDeleteMessage = data.message || '';
+                    this.globalDeleteAction = data.action || '';
+                    this.globalDeleteHighSecurity = !!data.highSecurity;
+                    this.globalDeleteConfirmInput = '';
+                    this.globalDeleteBackupUrl = data.backupUrl || '';
+                    this.globalDeleteConfirmBackup = false;
+                    this.globalDeleteOpen = true;
+                },
+                
+                closeGlobalDelete() {
+                    this.globalDeleteOpen = false;
+                    this.globalDeleteTitle = 'Confirmar Exclusão';
+                    this.globalDeleteMessage = '';
+                    this.globalDeleteAction = '';
+                    this.globalDeleteHighSecurity = false;
+                    this.globalDeleteConfirmInput = '';
+                    this.globalDeleteBackupUrl = '';
+                    this.globalDeleteConfirmBackup = false;
+                }
+            }
+        }
+    </script>
+
     <!-- Alpine.js Mask Plugin -->
     <script defer src="https://cdn.jsdelivr.net/npm/@alpinejs/mask@3.x.x/dist/cdn.min.js"></script>
 
@@ -942,141 +1076,6 @@
             </div>
         </div>
     </div>
-
-    <!-- Script de Estado do Layout Base (Drawer + Gestos) -->
-    <script>
-        function layoutState() {
-            return {
-                sidebarOpen: false,
-                touchStartX: 0,
-                touchEndX: 0,
-                scrolled: false,
-                
-                // Dark mode state
-                darkMode: localStorage.getItem('theme') === 'dark',
-                toggleTheme() {
-                    this.darkMode = !this.darkMode;
-                    if (this.darkMode) {
-                        document.documentElement.classList.add('dark');
-                        localStorage.setItem('theme', 'dark');
-                    } else {
-                        document.documentElement.classList.remove('dark');
-                        localStorage.setItem('theme', 'light');
-                    }
-                },
-                
-                // Modal de exclusão global
-                globalDeleteOpen: false,
-                globalDeleteTitle: 'Confirmar Exclusão',
-                globalDeleteMessage: '',
-                globalDeleteAction: '',
-                globalDeleteHighSecurity: false,
-                globalDeleteConfirmInput: '',
-                globalDeleteBackupUrl: '',
-                globalDeleteConfirmBackup: false,
-
-                // Visualizador Premium Global (Assets Lightbox)
-                previewModalOpen: false,
-                previewAsset: {},
-                imageDimensions: 'Calculando...',
-                imageZoom: 1,
-
-                initGlobalPreviewListener(event) {
-                    this.previewAsset = event.detail.asset;
-                    this.imageDimensions = 'Calculando...';
-                    this.imageZoom = 1;
-                    this.previewModalOpen = true;
-
-                    if (this.previewAsset.type === 'codigo') {
-                        this.$nextTick(() => {
-                            if (window.hljs) {
-                                const codeBlock = this.$refs.previewCodeBlock;
-                                if (codeBlock) {
-                                    codeBlock.className = 'hljs bg-transparent p-0 select-text';
-                                    const ext = this.previewAsset.file_path 
-                                        ? this.previewAsset.file_path.split('.').pop().toLowerCase() 
-                                        : (this.previewAsset.title.includes('.') ? this.previewAsset.title.split('.').pop().toLowerCase() : '');
-                                    if (ext) {
-                                        codeBlock.classList.add('language-' + ext);
-                                    }
-                                    hljs.highlightElement(codeBlock);
-                                }
-                            }
-                        });
-                    }
-                },
-
-                getImageDetails(e) {
-                    this.imageDimensions = e.target.naturalWidth + ' × ' + e.target.naturalHeight + ' px';
-                },
-
-                isVideoAsset(asset) {
-                    if (!asset || !asset.file_path) return false;
-                    const ext = asset.file_path.split('.').pop().toLowerCase();
-                    const videoExtensions = ['mp4', 'webm', 'ogg', 'mov'];
-                    return videoExtensions.includes(ext) || (asset.mime_type && asset.mime_type.startsWith('video/'));
-                },
-
-                formatBytes(bytes) {
-                    if (!bytes) return '0 B';
-                    const k = 1024;
-                    const sizes = ['B', 'KB', 'MB', 'GB'];
-                    const i = Math.floor(Math.log(bytes) / Math.log(k));
-                    return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
-                },
-
-                formatDate(dateStr) {
-                    if (!dateStr) return '';
-                    const date = new Date(dateStr);
-                    return date.toLocaleDateString('pt-BR') + ' às ' + date.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
-                },
-
-                handleTouchStart(e) {
-                    this.touchStartX = e.changedTouches[0].clientX;
-                },
-
-                handleTouchEnd(e) {
-                    this.touchEndX = e.changedTouches[0].clientX;
-                    this.handleSwipe();
-                },
-
-                handleSwipe() {
-                    const swipeThreshold = 55;
-                    const diff = this.touchEndX - this.touchStartX;
-                    
-                    if (diff > swipeThreshold && this.touchStartX < 50) {
-                        this.sidebarOpen = true;
-                    } 
-                    else if (diff < -swipeThreshold && this.sidebarOpen) {
-                        this.sidebarOpen = false;
-                    }
-                },
-                
-                initGlobalDeleteListener(event) {
-                    const data = event.detail;
-                    this.globalDeleteTitle = data.title || 'Confirmar Exclusão';
-                    this.globalDeleteMessage = data.message || '';
-                    this.globalDeleteAction = data.action || '';
-                    this.globalDeleteHighSecurity = !!data.highSecurity;
-                    this.globalDeleteConfirmInput = '';
-                    this.globalDeleteBackupUrl = data.backupUrl || '';
-                    this.globalDeleteConfirmBackup = false;
-                    this.globalDeleteOpen = true;
-                },
-                
-                closeGlobalDelete() {
-                    this.globalDeleteOpen = false;
-                    this.globalDeleteTitle = 'Confirmar Exclusão';
-                    this.globalDeleteMessage = '';
-                    this.globalDeleteAction = '';
-                    this.globalDeleteHighSecurity = false;
-                    this.globalDeleteConfirmInput = '';
-                    this.globalDeleteBackupUrl = '';
-                    this.globalDeleteConfirmBackup = false;
-                }
-            }
-        }
-    </script>
 
     <!-- PJAX and SlimSelect JavaScript CDN and Auto-Initialization -->
     <script src="https://cdn.jsdelivr.net/npm/slim-select@2.8.2/dist/slimselect.min.js"></script>
