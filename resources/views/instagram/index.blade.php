@@ -1119,32 +1119,59 @@
                             <p class="text-xs text-slate-300 mt-1">Gerencie, edite legendas, mude datas/horários e altere publicações agendadas.</p>
                         </div>
 
-                        <!-- Seletores de Mês, Ano e Botões de Navegação -->
-                        <div class="flex items-center gap-2">
-                            <button type="button" @click="prevMonth()" title="Mês Anterior" class="p-2 bg-white/10 hover:bg-white/20 text-white rounded-lg transition-all cursor-pointer font-bold">
-                                ❮
+                        <!-- Seletores de Mês, Ano e Botões de Navegação Ultra-Modernos -->
+                        <div class="flex items-center gap-2 bg-black/30 backdrop-blur-xl p-1.5 rounded-2xl border border-white/10 shadow-2xl">
+                            <!-- Botão Mês Anterior -->
+                            <button type="button" 
+                                    @click="prevMonth()" 
+                                    title="Mês Anterior" 
+                                    class="w-9 h-9 rounded-xl bg-white/10 hover:bg-white/20 text-white flex items-center justify-center border border-white/10 shadow-sm transition-all active:scale-95 cursor-pointer">
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M15 19l-7-7 7-7"/></svg>
                             </button>
 
-                            <div class="flex items-center gap-1.5 bg-slate-800/80 px-3 py-1.5 rounded-xl border border-slate-700">
-                                <select x-model.number="currentMonth" class="bg-transparent text-xs font-bold text-white outline-none cursor-pointer">
+                            <!-- Select de Mês -->
+                            <div class="relative">
+                                <select x-model.number="currentMonth" 
+                                        class="appearance-none bg-purple-600/40 hover:bg-purple-600/60 text-white text-xs font-black px-3.5 py-2 pr-7 rounded-xl border border-purple-400/40 outline-none cursor-pointer transition-all shadow-sm focus:ring-2 focus:ring-purple-400">
                                     <template x-for="(mName, idx) in monthNames" :key="idx">
-                                        <option :value="idx" x-text="mName" class="bg-slate-900 text-white"></option>
+                                        <option :value="idx" x-text="mName" class="bg-slate-900 text-white font-bold"></option>
                                     </template>
                                 </select>
-
-                                <select x-model.number="currentYear" class="bg-transparent text-xs font-bold text-purple-300 outline-none cursor-pointer">
-                                    <template x-for="y in [2024, 2025, 2026, 2027, 2028]" :key="y">
-                                        <option :value="y" x-text="y" class="bg-slate-900 text-white"></option>
-                                    </template>
-                                </select>
+                                <div class="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-purple-200">
+                                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M19 9l-7 7-7-7"/></svg>
+                                </div>
                             </div>
 
-                            <button type="button" @click="nextMonth()" title="Próximo Mês" class="p-2 bg-white/10 hover:bg-white/20 text-white rounded-lg transition-all cursor-pointer font-bold">
-                                ❯
+                            <!-- Select de Ano -->
+                            <div class="relative">
+                                <select x-model.number="currentYear" 
+                                        class="appearance-none bg-white/10 hover:bg-white/20 text-purple-200 text-xs font-black px-3 py-2 pr-6 rounded-xl border border-white/10 outline-none cursor-pointer transition-all shadow-sm focus:ring-2 focus:ring-purple-400">
+                                    <template x-for="y in [2024, 2025, 2026, 2027, 2028]" :key="y">
+                                        <option :value="y" x-text="y" class="bg-slate-900 text-white font-bold"></option>
+                                    </template>
+                                </select>
+                                <div class="pointer-events-none absolute inset-y-0 right-0 flex items-center px-1.5 text-purple-300">
+                                    <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M19 9l-7 7-7-7"/></svg>
+                                </div>
+                            </div>
+
+                            <!-- Botão Próximo Mês -->
+                            <button type="button" 
+                                    @click="nextMonth()" 
+                                    title="Próximo Mês" 
+                                    class="w-9 h-9 rounded-xl bg-white/10 hover:bg-white/20 text-white flex items-center justify-center border border-white/10 shadow-sm transition-all active:scale-95 cursor-pointer">
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M9 5l7 7-7 7"/></svg>
                             </button>
 
-                            <button type="button" @click="goToToday()" class="px-3 py-2 bg-purple-600 hover:bg-purple-500 text-white font-extrabold text-xs rounded-xl shadow-sm transition-all cursor-pointer">
-                                Hoje
+                            <!-- Divisor Vertical -->
+                            <div class="h-6 w-px bg-white/20 mx-0.5"></div>
+
+                            <!-- Botão Ir para Hoje -->
+                            <button type="button" 
+                                    @click="goToToday()" 
+                                    class="px-3.5 py-2 bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white font-extrabold text-xs rounded-xl shadow-md border border-purple-400/30 transition-all active:scale-95 cursor-pointer flex items-center gap-1.5">
+                                <svg class="w-3.5 h-3.5 text-purple-200" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
+                                <span>Hoje</span>
                             </button>
                         </div>
                     </div>
