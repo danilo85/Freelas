@@ -354,8 +354,6 @@
                                                 </template>
                                             </div>
                                         </div>
-                                    </template>
-
                                     <template x-if="!imagePreview && carouselPreviews.length === 0">
                                         <div class="text-center p-6 text-slate-600 space-y-2">
                                             <svg class="w-10 h-10 mx-auto text-slate-700" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
@@ -365,9 +363,9 @@
 
                                     <!-- Live Overlay Badge Logo (Top Right) -->
                                     <template x-if="hasLogoOverlay">
-                                        <div class="absolute top-3 right-3 bg-black/60 backdrop-blur-md px-2 py-1 rounded border border-white/20 flex items-center gap-1 shadow-lg">
+                                        <div class="absolute top-3 right-3 flex items-center justify-center pointer-events-none">
                                             @if(optional($settings)->logo_path)
-                                                <img src="{{ asset('storage/' . optional($settings)->logo_path) }}" class="h-4 object-contain">
+                                                <img src="{{ asset('storage/' . optional($settings)->logo_path) }}" class="h-6 max-w-[80px] object-contain drop-shadow-md">
                                             @else
                                                 <span class="text-[9px] font-black uppercase text-amber-300 tracking-wider">LOGO</span>
                                             @endif
@@ -376,11 +374,11 @@
 
                                     <!-- Live Overlay Badge Arrow (Bottom Right) -->
                                     <template x-if="hasArrowOverlay">
-                                        <div class="absolute bottom-3 right-3 bg-purple-600/80 backdrop-blur-md px-2.5 py-1 rounded-full text-white text-[10px] font-bold flex items-center gap-1 shadow-lg animate-bounce">
+                                        <div class="absolute bottom-3 right-3 flex items-center justify-center pointer-events-none">
                                             @if(optional($settings)->arrow_path)
-                                                <img src="{{ asset('storage/' . optional($settings)->arrow_path) }}" class="h-3 object-contain">
+                                                <img src="{{ asset('storage/' . optional($settings)->arrow_path) }}" class="h-6 max-w-[80px] object-contain drop-shadow-md">
                                             @else
-                                                <span>Arraste pro lado ➔</span>
+                                                <span class="text-[10px] font-bold text-white">Arraste pro lado ➔</span>
                                             @endif
                                         </div>
                                     </template>
