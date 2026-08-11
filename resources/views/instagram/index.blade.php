@@ -1466,59 +1466,60 @@ span.flatpickr-weekday {
                         <span class="flex items-center gap-1.5"><span class="w-2.5 h-2.5 rounded-full bg-indigo-500"></span> Story</span>
                     </div>
 
-                    <!-- Grid do Calendário Interativo -->
-                    <div class="grid grid-cols-7 gap-2 bg-slate-100 p-2.5 rounded-2xl border border-slate-200 shadow-xs">
-                        
-                        <!-- Nomes dos Dias da Semana -->
-                        <template x-for="dayName in ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb']" :key="dayName">
-                            <div class="text-center text-[11px] font-black text-slate-500 uppercase tracking-wider py-2 bg-slate-200/80 rounded-lg">
-                                <span x-text="dayName"></span>
-                            </div>
-                        </template>
+                    <!-- Grid do Calendário Interativo (com suporte a rolagem responsiva em telas pequenas) -->
+                    <div class="overflow-x-auto pb-2 max-w-full">
+                        <div class="grid grid-cols-7 gap-1.5 sm:gap-2 bg-slate-100 p-2 sm:p-2.5 rounded-2xl border border-slate-200 shadow-xs min-w-[680px]">
+                            
+                            <!-- Nomes dos Dias da Semana -->
+                            <template x-for="dayName in ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb']" :key="dayName">
+                                <div class="text-center text-[10px] sm:text-[11px] font-black text-slate-500 uppercase tracking-wider py-1.5 sm:py-2 bg-slate-200/80 rounded-lg">
+                                    <span x-text="dayName"></span>
+                                </div>
+                            </template>
 
-                        <!-- Dias do Mês (Grid Dinâmico Alpine JS) -->
-                        <template x-for="(cell, cIdx) in calendarGrid" :key="cIdx">
-                            <div :class="[
-                                    cell.isCurrentMonth ? 'bg-white' : 'bg-slate-50/50 opacity-40',
-                                    cell.isToday ? 'border-2 border-purple-600 ring-2 ring-purple-100 shadow-sm' : 'border border-slate-200 hover:border-purple-300'
-                                 ]"
-                                 class="min-h-[110px] p-2 rounded-xl flex flex-col justify-between transition-all relative group">
-                                
-                                <div class="flex items-center justify-between mb-1">
-                                    <span :class="cell.isToday ? 'bg-purple-600 text-white w-6 h-6 rounded-full flex items-center justify-center font-black shadow-xs' : 'text-slate-700 font-bold'"
-                                          class="text-xs"
-                                          x-text="cell.day"></span>
+                            <!-- Dias do Mês (Grid Dinâmico Alpine JS) -->
+                            <template x-for="(cell, cIdx) in calendarGrid" :key="cIdx">
+                                <div :class="[
+                                        cell.isCurrentMonth ? 'bg-white' : 'bg-slate-50/50 opacity-40',
+                                        cell.isToday ? 'border-2 border-purple-600 ring-2 ring-purple-100 shadow-sm' : 'border border-slate-200 hover:border-purple-300'
+                                     ]"
+                                     class="min-h-[110px] p-1.5 sm:p-2 rounded-xl flex flex-col justify-between transition-all relative group overflow-hidden min-w-0">
                                     
-                                    <template x-if="cell.posts && cell.posts.length > 0">
-                                        <span class="text-[9px] font-black bg-purple-100 text-purple-800 px-1.5 py-0.5 rounded-full border border-purple-200"
-                                              x-text="cell.posts.length + (cell.posts.length === 1 ? ' post' : ' posts')"></span>
-                                    </template>
-                                </div>
+                                    <div class="flex items-center justify-between mb-1 min-w-0">
+                                        <span :class="cell.isToday ? 'bg-purple-600 text-white w-5 h-5 sm:w-6 sm:h-6 rounded-full flex items-center justify-center font-black shadow-xs text-[10px] sm:text-xs' : 'text-slate-700 font-bold text-xs'"
+                                              x-text="cell.day"></span>
+                                        
+                                        <template x-if="cell.posts && cell.posts.length > 0">
+                                            <span class="text-[8px] sm:text-[9px] font-black bg-purple-100 text-purple-800 px-1.5 py-0.5 rounded-full border border-purple-200 shrink-0 truncate max-w-[60px]"
+                                                  x-text="cell.posts.length + (cell.posts.length === 1 ? ' post' : ' posts')"></span>
+                                        </template>
+                                    </div>
 
-                                <!-- Cards das Postagens Agendadas/Publicadas no Dia -->
-                                <div class="space-y-1.5 my-1">
-                                    <template x-for="p in cell.posts" :key="p.id">
-                                        <div @click.stop="openManagePost(p)"
-                                             :class="[
-                                                p.status === 'publicado' ? 'bg-emerald-100/80 text-emerald-950 border-emerald-300 hover:bg-emerald-200/80' :
-                                                (p.status === 'erro' ? 'bg-rose-100/80 text-rose-950 border-rose-300 hover:bg-rose-200/80' : 'bg-purple-100/80 text-purple-950 border-purple-300 hover:bg-purple-200/80')
-                                             ]"
-                                             class="p-2 rounded-xl border text-[10px] font-bold transition-all cursor-pointer space-y-1 hover:shadow-md border-slate-300">
-                                            
-                                            <div class="flex items-center justify-between gap-1">
-                                                <span class="px-1.5 py-0.5 bg-white/90 rounded-md font-black text-[9px] uppercase tracking-wider text-slate-800 shadow-2xs"
-                                                      x-text="p.media_type === 'STORY' ? 'Story' : (p.media_type === 'CAROUSEL' ? 'Carrossel' : 'Feed')"></span>
-                                                <span class="text-[9px] font-mono font-extrabold text-slate-700"
-                                                      x-text="p.published_at ? p.published_at.substring(11, 16) : (p.scheduled_at ? p.scheduled_at.substring(11, 16) : (p.created_at ? p.created_at.substring(11, 16) : ''))"></span>
+                                    <!-- Cards das Postagens Agendadas/Publicadas no Dia -->
+                                    <div class="space-y-1.5 my-1 overflow-hidden min-w-0">
+                                        <template x-for="p in cell.posts" :key="p.id">
+                                            <div @click.stop="openManagePost(p)"
+                                                 :class="[
+                                                    p.status === 'publicado' ? 'bg-emerald-100/80 text-emerald-950 border-emerald-300 hover:bg-emerald-200/80' :
+                                                    (p.status === 'erro' ? 'bg-rose-100/80 text-rose-950 border-rose-300 hover:bg-rose-200/80' : 'bg-purple-100/80 text-purple-950 border-purple-300 hover:bg-purple-200/80')
+                                                 ]"
+                                                 class="p-1.5 sm:p-2 rounded-lg sm:rounded-xl border transition-all cursor-pointer space-y-0.5 sm:space-y-1 hover:shadow-md border-slate-300 min-w-0 overflow-hidden max-w-full">
+                                                
+                                                <div class="flex items-center justify-between gap-1 min-w-0 w-full overflow-hidden">
+                                                    <span class="px-1 py-0.5 bg-white/90 rounded-md font-black text-[8px] sm:text-[9px] uppercase tracking-wider text-slate-800 shadow-2xs truncate min-w-0 max-w-[60%]"
+                                                          x-text="p.media_type === 'STORY' ? 'Story' : (p.media_type === 'CAROUSEL' ? 'Carrossel' : 'Feed')"></span>
+                                                    <span class="text-[8px] sm:text-[9px] font-mono font-extrabold text-slate-700 shrink-0 whitespace-nowrap"
+                                                          x-text="p.published_at ? p.published_at.substring(11, 16) : (p.scheduled_at ? p.scheduled_at.substring(11, 16) : (p.created_at ? p.created_at.substring(11, 16) : ''))"></span>
+                                                </div>
+
+                                                <p class="truncate text-[9px] sm:text-[10px] text-slate-800 font-semibold w-full block overflow-hidden"
+                                                   x-text="p.caption || 'Sem legenda'"></p>
                                             </div>
-
-                                            <p class="truncate text-[10px] text-slate-800 font-semibold"
-                                               x-text="p.caption || 'Sem legenda'"></p>
-                                        </div>
-                                    </template>
+                                        </template>
+                                    </div>
                                 </div>
-                            </div>
-                        </template>
+                            </template>
+                        </div>
                     </div>
                 </div>
 
