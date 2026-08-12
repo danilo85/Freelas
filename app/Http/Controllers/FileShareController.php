@@ -399,10 +399,12 @@ class FileShareController extends Controller
             abort(403, 'Limite de downloads atingido.');
         }
 
-        $zipFile = tempnam(sys_get_temp_dir(), 'share_') . '.zip';
+        $tempDir = sys_get_temp_dir();
+        $zipFilePath = $tempDir . DIRECTORY_SEPARATOR . 'share_' . Str::random(12) . '.zip';
         $zip = new \ZipArchive();
 
-        if ($zip->open($zipFile, \ZipArchive::CREATE | \ZipArchive::OVERWRITE) === true) {
+        if ($zip->open($zipFilePath, \ZipArchive::CREATE | \ZipArchive::OVERWRITE) === true) {
+            $addedCount = 0;
             foreach ($share->items as $item) {
                 $content = null;
                 try {
@@ -417,9 +419,14 @@ class FileShareController extends Controller
 
                 if ($content) {
                     $zip->addFromString($item->filename, $content);
+                    $addedCount++;
                 }
             }
             $zip->close();
+        }
+
+        if (!file_exists($zipFilePath) || filesize($zipFilePath) === 0) {
+            return back()->with('error', 'Não foi possível gerar o arquivo ZIP dos itens compartilhados.');
         }
 
         // Evita múltiplas notificações e incrementos no intervalo de 15 segundos
@@ -443,7 +450,7 @@ class FileShareController extends Controller
         }
 
         $downloadName = Str::slug($share->title) . '-arquivos.zip';
-        return response()->download($zipFile, $downloadName)->deleteFileAfterSend(true);
+        return response()->download($zipFilePath, $downloadName)->deleteFileAfterSend(true);
     }
 
     public function formatBytes($bytes, $precision = 2)
