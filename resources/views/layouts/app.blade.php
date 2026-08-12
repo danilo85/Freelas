@@ -1323,8 +1323,8 @@
         }
     </script>
 
-    <!-- 💬 WIDGET FLUTUANTE DE CHAT & INBOX LATERAL DO INSTAGRAM -->
-    @if(auth()->check())
+    <!-- 💬 WIDGET FLUTUANTE DE CHAT & INBOX LATERAL DO INSTAGRAM (APENAS MÓDULO INSTAGRAM) -->
+    @if(auth()->check() && (request()->routeIs('instagram.*') || request()->is('freelas/utilidades/instagram*')))
         <div x-data="{ chatOpen: false, selectedPost: null, replyMsg: '', isReplying: false, replyAlert: '', commentsList: [] }" class="relative z-50">
             <!-- Botão Flutuante no Canto Inferior Direito -->
             <button @click="chatOpen = !chatOpen" 

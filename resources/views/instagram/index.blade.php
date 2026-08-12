@@ -2404,7 +2404,7 @@ span.flatpickr-weekday {
                                     <img src="{{ asset('storage/' . optional($settings)->logo_path) }}" class="h-full object-contain">
                                 </div>
                             @endif
-                            <input type="file" name="logo_icon" accept="image/png,image/jpeg" class="w-full text-xs text-slate-600 file:mr-3 file:py-1.5 file:px-3 file:rounded file:border-0 file:text-xs file:font-bold file:bg-purple-50 file:text-purple-700 hover:file:bg-purple-100 border border-slate-200 rounded-lg p-1">
+                            <input type="file" name="logo" accept="image/png,image/jpeg,image/webp" class="w-full text-xs text-slate-600 file:mr-3 file:py-1.5 file:px-3 file:rounded file:border-0 file:text-xs file:font-bold file:bg-purple-50 file:text-purple-700 hover:file:bg-purple-100 border border-slate-200 rounded-lg p-1">
                         </div>
 
                         <!-- Card Upload Seta -->
@@ -2418,7 +2418,7 @@ span.flatpickr-weekday {
                                     <img src="{{ asset('storage/' . optional($settings)->arrow_path) }}" class="h-full object-contain">
                                 </div>
                             @endif
-                            <input type="file" name="arrow_icon" accept="image/png,image/jpeg" class="w-full text-xs text-slate-600 file:mr-3 file:py-1.5 file:px-3 file:rounded file:border-0 file:text-xs file:font-bold file:bg-purple-50 file:text-purple-700 hover:file:bg-purple-100 border border-slate-200 rounded-lg p-1">
+                            <input type="file" name="arrow" accept="image/png,image/jpeg,image/webp" class="w-full text-xs text-slate-600 file:mr-3 file:py-1.5 file:px-3 file:rounded file:border-0 file:text-xs file:font-bold file:bg-purple-50 file:text-purple-700 hover:file:bg-purple-100 border border-slate-200 rounded-lg p-1">
                         </div>
 
                         <div class="md:col-span-2">

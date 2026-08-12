@@ -10,6 +10,7 @@ use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Artisan;
+use Illuminate\Support\Facades\Cache;
 use Carbon\Carbon;
 
 class InstagramController extends Controller
@@ -42,53 +43,50 @@ class InstagramController extends Controller
                 ->orderBy('created_at', 'desc')
                 ->get();
 
-            // Busca o Feed real de posts já publicados no perfil do Instagram
+            // Busca o Feed real de posts já publicados no perfil do Instagram com Cache de 5 min (evita travamento e requisições repetidas à Meta)
             $liveInstagramPosts = [];
             if ($account && $account->access_token && $account->instagram_account_id) {
-                try {
-                    $nextUrl = "https://graph.facebook.com/v19.0/{$account->instagram_account_id}/media?fields=id,caption,media_type,media_url,permalink,thumbnail_url,timestamp,like_count,comments_count,children{id,media_url,thumbnail_url,media_type}&limit=50&access_token=" . $account->access_token;
-                    
-                    $maxPages = 30; // Permite buscar até 1500 publicações (traz todos os posts do perfil)
-                    $pageCount = 0;
+                $cacheKey = "instagram_live_feed_" . auth()->id() . "_" . $account->instagram_account_id;
+                
+                $liveInstagramPosts = Cache::remember($cacheKey, now()->addMinutes(5), function () use ($account) {
+                    $postsData = [];
+                    try {
+                        $nextUrl = "https://graph.facebook.com/v19.0/{$account->instagram_account_id}/media?fields=id,caption,media_type,media_url,permalink,thumbnail_url,timestamp,like_count,comments_count,children{id,media_url,thumbnail_url,media_type}&limit=25&access_token=" . $account->access_token;
+                        
+                        $maxPages = 3; // Limita a 3 páginas (75 publicações recentes) para garantir carregamento instantâneo
+                        $pageCount = 0;
 
-                    while ($nextUrl && $pageCount < $maxPages) {
-                        $feedResp = Http::withoutVerifying()->timeout(15)->get($nextUrl);
-                        if ($feedResp->failed()) {
-                            Log::error('Falha na resposta da Meta Graph API para feed do Instagram: ' . $feedResp->body());
-                            break;
-                        }
-
-                        $data = $feedResp->json('data', []);
-                        if (empty($data) || !is_array($data)) break;
-
-                        $liveInstagramPosts = array_merge($liveInstagramPosts, $data);
-
-                        $nextUrl = $feedResp->json('paging.next');
-                        $pageCount++;
-                    }
-
-                    $dbPostMap = $posts->pluck('id', 'instagram_media_id')->toArray();
-                    foreach ($liveInstagramPosts as &$item) {
-                        $item['db_id'] = $dbPostMap[$item['id']] ?? null;
-
-                        if (empty($item['media_url']) && !empty($item['children']['data'])) {
-                            $firstChild = $item['children']['data'][0] ?? null;
-                            if ($firstChild) {
-                                $item['media_url'] = $firstChild['media_url'] ?? ($firstChild['thumbnail_url'] ?? null);
+                        while ($nextUrl && $pageCount < $maxPages) {
+                            $feedResp = Http::withoutVerifying()->timeout(5)->get($nextUrl);
+                            if ($feedResp->failed()) {
+                                Log::error('Falha na resposta da Meta Graph API para feed do Instagram: ' . $feedResp->body());
+                                break;
                             }
-                        }
 
-                        // Garante que o username do autor do comentário seja extraído tanto do campo 'username' quanto do objeto 'from'
-                        if (!empty($item['comments']['data'])) {
-                            foreach ($item['comments']['data'] as &$commentObj) {
-                                if (empty($commentObj['username']) && !empty($commentObj['from']['username'])) {
-                                    $commentObj['username'] = $commentObj['from']['username'];
-                                }
-                            }
+                            $data = $feedResp->json('data', []);
+                            if (empty($data) || !is_array($data)) break;
+
+                            $postsData = array_merge($postsData, $data);
+
+                            $nextUrl = $feedResp->json('paging.next');
+                            $pageCount++;
+                        }
+                    } catch (\Throwable $e) {
+                        Log::error('Erro ao buscar feed vivo do Instagram: ' . $e->getMessage());
+                    }
+                    return $postsData;
+                });
+
+                $dbPostMap = $posts->pluck('id', 'instagram_media_id')->toArray();
+                foreach ($liveInstagramPosts as &$item) {
+                    $item['db_id'] = $dbPostMap[$item['id']] ?? null;
+
+                    if (empty($item['media_url']) && !empty($item['children']['data'])) {
+                        $firstChild = $item['children']['data'][0] ?? null;
+                        if ($firstChild) {
+                            $item['media_url'] = $firstChild['media_url'] ?? ($firstChild['thumbnail_url'] ?? null);
                         }
                     }
-                } catch (\Throwable $e) {
-                    Log::error('Erro ao buscar feed vivo do Instagram: ' . $e->getMessage());
                 }
             }
 
@@ -107,24 +105,28 @@ class InstagramController extends Controller
     public function storeOverlayIcons(Request $request)
     {
         $request->validate([
+            'logo' => 'nullable|image|max:5120',
             'logo_icon' => 'nullable|image|max:5120',
+            'arrow' => 'nullable|image|max:5120',
             'arrow_icon' => 'nullable|image|max:5120',
         ]);
 
         $settings = InstagramSetting::firstOrCreate(['user_id' => auth()->id()]);
 
-        if ($request->hasFile('logo_icon')) {
+        $logoFile = $request->file('logo') ?: $request->file('logo_icon');
+        if ($logoFile) {
             if ($settings->logo_path) {
                 Storage::disk('public')->delete($settings->logo_path);
             }
-            $settings->logo_path = $request->file('logo_icon')->store('instagram_overlays', 'public');
+            $settings->logo_path = $logoFile->store('instagram_overlays', 'public');
         }
 
-        if ($request->hasFile('arrow_icon')) {
+        $arrowFile = $request->file('arrow') ?: $request->file('arrow_icon');
+        if ($arrowFile) {
             if ($settings->arrow_path) {
                 Storage::disk('public')->delete($settings->arrow_path);
             }
-            $settings->arrow_path = $request->file('arrow_icon')->store('instagram_overlays', 'public');
+            $settings->arrow_path = $arrowFile->store('instagram_overlays', 'public');
         }
 
         $settings->save();
@@ -161,9 +163,12 @@ class InstagramController extends Controller
                 'public_profile',
                 'instagram_basic',
                 'instagram_content_publish',
+                'instagram_manage_comments',
+                'instagram_manage_messages',
                 'pages_show_list',
                 'pages_read_engagement',
                 'pages_manage_posts',
+                'pages_messaging',
                 'business_management',
             ];
         }
@@ -1024,7 +1029,7 @@ class InstagramController extends Controller
     }
 
     /**
-     * Exclui um tema de hashtags personalizado.
+     * Salva um novo tema de hashtags personalizado.
      */
     public function deleteHashtagTheme(Request $request, $index)
     {
@@ -1408,7 +1413,12 @@ class InstagramController extends Controller
                 return response()->json(['success' => true, 'message' => 'Resposta enviada com sucesso!']);
             }
 
-            return response()->json(['success' => false, 'message' => 'Falha da API Meta: ' . $resp->json('error.message', 'Erro ao responder')], 400);
+            $metaErr = $resp->json('error.message', 'Erro ao responder');
+            if (str_contains($metaErr, 'Missing Permission') || str_contains($metaErr, '#100')) {
+                $metaErr = 'Sua conexão com o Instagram precisa da permissão "Gerenciar Comentários". Clique em "Desconectar" e reconecte seu Instagram aceitando todas as permissões do Facebook.';
+            }
+
+            return response()->json(['success' => false, 'message' => $metaErr], 400);
         } catch (\Throwable $e) {
             return response()->json(['success' => false, 'message' => 'Erro de conexão: ' . $e->getMessage()], 500);
         }
