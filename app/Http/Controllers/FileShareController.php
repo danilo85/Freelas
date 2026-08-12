@@ -351,12 +351,25 @@ class FileShareController extends Controller
         $item = $share->items()->findOrFail($itemId);
 
         $disk = 'public';
-        try {
-            if (!empty(env('GOOGLE_DRIVE_REFRESH_TOKEN')) && Storage::disk('google')->exists($item->file_path)) {
-                $disk = 'google';
+        $hasGoogle = !empty(config('services.google.refresh_token')) || !empty(env('GOOGLE_DRIVE_REFRESH_TOKEN'));
+        
+        if ($hasGoogle) {
+            try {
+                if (Storage::disk('google')->exists($item->file_path)) {
+                    $disk = 'google';
+                }
+            } catch (\Throwable $e) {
+                $disk = 'public';
             }
-        } catch (\Throwable $e) {
-            $disk = 'public';
+        }
+
+        if ($disk === 'public' && !Storage::disk('public')->exists($item->file_path)) {
+            // Tenta buscar no google como último recurso mesmo se a flag estiver off
+            try {
+                if (Storage::disk('google')->exists($item->file_path)) {
+                    $disk = 'google';
+                }
+            } catch (\Throwable $e) {}
         }
 
         // Evita múltiplas notificações e incrementos em downloads multi-thread no intervalo de 15 segundos
