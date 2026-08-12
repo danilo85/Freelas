@@ -447,6 +447,8 @@
             background: rgba(75, 85, 99, 0.65);
         }
     </style>
+    <!-- html2canvas para renderização e download de banners/stories -->
+    <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
 </head>
 <body class="bg-slate-50 dark:bg-slate-950 dark:text-slate-100 font-sans text-slate-800 antialiased min-h-screen flex flex-col md:flex-row overflow-x-hidden relative"
       x-data="layoutState()"
