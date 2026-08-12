@@ -56,7 +56,7 @@ class EditorialRevisionController extends Controller
         $inProgressCount = $revisions->where('status', 'em_revisao')->count();
         $completedCount = $revisions->where('status', 'concluido')->count();
 
-        $isGoogleConnected = !empty(env('GOOGLE_DRIVE_REFRESH_TOKEN'));
+        $isGoogleConnected = !empty(config('services.google.refresh_token')) || !empty(env('GOOGLE_DRIVE_REFRESH_TOKEN'));
 
         return view('editorial_revisions.index', compact(
             'revisions',
@@ -95,7 +95,7 @@ class EditorialRevisionController extends Controller
 
         $isGoogleConnected = false;
         try {
-            $isGoogleConnected = !empty(env('GOOGLE_DRIVE_REFRESH_TOKEN'));
+            $isGoogleConnected = !empty(config('services.google.refresh_token')) || !empty(env('GOOGLE_DRIVE_REFRESH_TOKEN'));
         } catch (\Throwable $e) {}
 
         return view('editorial_revisions.create', compact('projects', 'clients', 'revisores', 'isGoogleConnected'));
@@ -134,7 +134,7 @@ class EditorialRevisionController extends Controller
 
         // Escolha de disco de armazenamento (padrão 'public' no servidor local para máxima velocidade e renderização 100% confiável)
         $userChoice = $request->get('storage_disk', 'public');
-        $hasGoogle = !empty(env('GOOGLE_DRIVE_REFRESH_TOKEN'));
+        $hasGoogle = !empty(config('services.google.refresh_token')) || !empty(env('GOOGLE_DRIVE_REFRESH_TOKEN'));
         $disk = ($userChoice === 'google' && $hasGoogle) ? 'google' : 'public';
 
         $deadline = $request->filled('deadline_at') 

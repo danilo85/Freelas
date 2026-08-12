@@ -147,7 +147,7 @@
 
                     <!-- Seleção do Local de Armazenamento -->
                     @php
-                        $isGoogleConnected = !empty(env('GOOGLE_DRIVE_REFRESH_TOKEN'));
+                        $isGoogleConnected = !empty(config('services.google.refresh_token')) || !empty(env('GOOGLE_DRIVE_REFRESH_TOKEN'));
                     @endphp
 
                     <div class="space-y-2 sm:col-span-2 border-t border-slate-100 pt-3">

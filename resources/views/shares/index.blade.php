@@ -24,7 +24,7 @@
 
     <!-- Banner de Integração Google Drive (5 TB) -->
     @php
-        $isGoogleConnected = !empty(env('GOOGLE_DRIVE_REFRESH_TOKEN'));
+        $isGoogleConnected = $isGoogleConnected ?? (!empty(config('services.google.refresh_token')) || !empty(env('GOOGLE_DRIVE_REFRESH_TOKEN')));
     @endphp
 
     <div class="bg-gradient-to-r {{ $isGoogleConnected ? 'from-emerald-950 via-slate-900 to-slate-900 border-emerald-500/40' : 'from-slate-900 via-primary-950 to-slate-900 border-primary-500/40' }} border text-white rounded-xl p-5 shadow-md flex flex-col md:flex-row items-start md:items-center justify-between gap-4">

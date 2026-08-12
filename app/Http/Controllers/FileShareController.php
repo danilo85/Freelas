@@ -64,12 +64,15 @@ class FileShareController extends Controller
             }
         }
 
+        $isGoogleConnected = !empty(config('services.google.refresh_token')) || !empty(env('GOOGLE_DRIVE_REFRESH_TOKEN'));
+
         return view('shares.index', compact(
             'shares',
             'totalStorage',
             'totalDownloads',
             'activeSharesCount',
-            'expiredSharesCount'
+            'expiredSharesCount',
+            'isGoogleConnected'
         ));
     }
 
@@ -121,7 +124,7 @@ class FileShareController extends Controller
         // Cria o compartilhamento
         // Salva os arquivos e anexa ao compartilhamento (respeita a escolha do usuário ou fallback)
         $userChoice = $request->get('storage_disk', 'google');
-        $hasGoogle = !empty(env('GOOGLE_DRIVE_REFRESH_TOKEN'));
+        $hasGoogle = !empty(config('services.google.refresh_token')) || !empty(env('GOOGLE_DRIVE_REFRESH_TOKEN'));
         $disk = ($userChoice === 'google' && $hasGoogle) ? 'google' : 'public';
 
         $share = FileShare::create([
