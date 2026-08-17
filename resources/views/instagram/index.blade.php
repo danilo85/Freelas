@@ -131,7 +131,8 @@ span.flatpickr-weekday {
     function initInstagramModule() {
         if (typeof Alpine !== 'undefined') {
             Alpine.data('instagramModule', () => ({
-                tab: (new URLSearchParams(window.location.search)).get('tab') || 'novo',
+                tab: ['stories', 'templates'].includes((new URLSearchParams(window.location.search)).get('tab')) ? 'estudio' : ((new URLSearchParams(window.location.search)).get('tab') || 'novo'),
+                estudioMode: (new URLSearchParams(window.location.search)).get('tab') === 'stories' ? 'stories' : 'templates',
                 mediaType: 'IMAGE',
                 actionType: 'now',
                 caption: '',
@@ -988,41 +989,80 @@ span.flatpickr-weekday {
     </div>
 
     @if($account)
-        <!-- Abas do Módulo (Novo Post / Posts do Perfil / Calendário / Banco de Imagens / Marcas) -->
+        <!-- Abas do Módulo (Sem Scroll, Layout Responsivo com Quebra Limpa) -->
         <div class="bg-white border border-slate-200 rounded-xl shadow-sm overflow-hidden">
-            <div class="border-b border-slate-100 bg-slate-50/50 p-4 flex flex-wrap items-center justify-between gap-3">
-                <div class="flex items-center gap-2">
-                    <button @click="tab = 'novo'" :class="tab === 'novo' ? 'bg-purple-600 text-white shadow-sm' : 'bg-white text-slate-600 hover:bg-slate-100 border border-slate-200'" class="px-4 py-2 text-xs font-bold rounded-[5px] transition-all flex items-center gap-2 cursor-pointer">
+            <div class="border-b border-slate-100 bg-slate-50/60 p-3 sm:p-4">
+                <div class="flex flex-wrap items-center gap-2">
+                    <!-- 1. Nova Publicação & Prévia -->
+                    <button type="button" @click="tab = 'novo'" 
+                            :class="tab === 'novo' 
+                                ? 'bg-purple-600 text-white shadow-sm ring-1 ring-purple-600/20 font-extrabold' 
+                                : 'bg-white text-slate-600 hover:text-purple-600 hover:bg-slate-50 border border-slate-200'" 
+                            class="h-10 px-3.5 text-xs font-bold rounded-lg transition-all flex items-center gap-2 cursor-pointer">
                         <svg class="w-4 h-4 text-purple-300" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
-                        Nova Publicação & Prévia
+                        <span>Nova Publicação & Prévia</span>
                     </button>
-                    <button @click="tab = 'feed_real'" :class="tab === 'feed_real' ? 'bg-purple-600 text-white shadow-sm' : 'bg-white text-slate-600 hover:bg-slate-100 border border-slate-200'" class="px-4 py-2 text-xs font-bold rounded-[5px] transition-all flex items-center gap-2 cursor-pointer">
+
+                    <!-- 2. Posts do Perfil -->
+                    <button type="button" @click="tab = 'feed_real'" 
+                            :class="tab === 'feed_real' 
+                                ? 'bg-purple-600 text-white shadow-sm ring-1 ring-purple-600/20 font-extrabold' 
+                                : 'bg-white text-slate-600 hover:text-purple-600 hover:bg-slate-50 border border-slate-200'" 
+                            class="h-10 px-3.5 text-xs font-bold rounded-lg transition-all flex items-center gap-2 cursor-pointer">
                         <svg class="w-4 h-4 text-purple-300" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069z"/></svg>
-                        Posts do Perfil ({{ count($liveInstagramPosts) }})
+                        <span>Posts do Perfil</span>
+                        <span :class="tab === 'feed_real' ? 'bg-white/20 text-white' : 'bg-purple-100 text-purple-700'" class="px-1.5 py-0.5 text-[10px] font-extrabold rounded-full">{{ count($liveInstagramPosts) }}</span>
                     </button>
-                    <button @click="tab = 'stories'" :class="tab === 'stories' ? 'bg-purple-600 text-white shadow-sm' : 'bg-white text-slate-600 hover:bg-slate-100 border border-slate-200'" class="px-4 py-2 text-xs font-bold rounded-[5px] transition-all flex items-center gap-2 cursor-pointer">
-                        <svg class="w-4 h-4 text-purple-300" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
-                        ✨ Stories & Enquetes
+
+                    <!-- 3. Estúdio Criativo (Stories & Templates) -->
+                    <button type="button" @click="tab = 'estudio'" 
+                            :class="(tab === 'estudio' || tab === 'stories' || tab === 'templates') 
+                                ? 'bg-purple-600 text-white shadow-sm ring-1 ring-purple-600/20 font-extrabold' 
+                                : 'bg-white text-slate-600 hover:text-purple-600 hover:bg-slate-50 border border-slate-200'" 
+                            class="h-10 px-3.5 text-xs font-bold rounded-lg transition-all flex items-center gap-2 cursor-pointer">
+                        <svg class="w-4 h-4 text-purple-300" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 21a4 4 0 01-4-4V5a2 2 0 012-2h4a2 2 0 012 2v12a4 4 0 01-4 4zm0 0h12a2 2 0 002-2v-4a2 2 0 00-2-2h-2.343M11 7.343l1.657-1.657a2 2 0 012.828 0l2.829 2.829a2 2 0 010 2.828l-8.486 8.485M7 17h.01"/></svg>
+                        <span>Estúdio Criativo (Stories & Templates)</span>
                     </button>
-                    <button @click="tab = 'templates'" :class="tab === 'templates' ? 'bg-purple-600 text-white shadow-sm' : 'bg-white text-slate-600 hover:bg-slate-100 border border-slate-200'" class="px-4 py-2 text-xs font-bold rounded-[5px] transition-all flex items-center gap-2 cursor-pointer">
-                        <svg class="w-4 h-4 text-purple-300" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
-                        🎨 Gerador de Templates
-                    </button>
-                    <button @click="tab = 'analytics'" :class="tab === 'analytics' ? 'bg-purple-600 text-white shadow-sm' : 'bg-white text-slate-600 hover:bg-slate-100 border border-slate-200'" class="px-4 py-2 text-xs font-bold rounded-[5px] transition-all flex items-center gap-2 cursor-pointer">
+
+                    <!-- 4. Analytics & Relatórios -->
+                    <button type="button" @click="tab = 'analytics'" 
+                            :class="tab === 'analytics' 
+                                ? 'bg-purple-600 text-white shadow-sm ring-1 ring-purple-600/20 font-extrabold' 
+                                : 'bg-white text-slate-600 hover:text-purple-600 hover:bg-slate-50 border border-slate-200'" 
+                            class="h-10 px-3.5 text-xs font-bold rounded-lg transition-all flex items-center gap-2 cursor-pointer">
                         <svg class="w-4 h-4 text-purple-300" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/></svg>
-                        📊 Analytics & Relatórios
+                        <span>Analytics & Relatórios</span>
                     </button>
-                    <button @click="tab = 'calendario'" :class="tab === 'calendario' ? 'bg-purple-600 text-white shadow-sm' : 'bg-white text-slate-600 hover:bg-slate-100 border border-slate-200'" class="px-4 py-2 text-xs font-bold rounded-[5px] transition-all flex items-center gap-2 cursor-pointer">
+
+                    <!-- 5. Calendário de Agendamentos -->
+                    <button type="button" @click="tab = 'calendario'" 
+                            :class="tab === 'calendario' 
+                                ? 'bg-purple-600 text-white shadow-sm ring-1 ring-purple-600/20 font-extrabold' 
+                                : 'bg-white text-slate-600 hover:text-purple-600 hover:bg-slate-50 border border-slate-200'" 
+                            class="h-10 px-3.5 text-xs font-bold rounded-lg transition-all flex items-center gap-2 cursor-pointer">
                         <svg class="w-4 h-4 text-purple-300" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
-                        Calendário de Agendamentos
+                        <span>Calendário de Agendamentos</span>
                     </button>
-                    <button @click="tab = 'banco'" :class="tab === 'banco' ? 'bg-purple-600 text-white shadow-sm' : 'bg-white text-slate-600 hover:bg-slate-100 border border-slate-200'" class="px-4 py-2 text-xs font-bold rounded-[5px] transition-all flex items-center gap-2 cursor-pointer">
+
+                    <!-- 6. Banco de Imagens -->
+                    <button type="button" @click="tab = 'banco'" 
+                            :class="tab === 'banco' 
+                                ? 'bg-purple-600 text-white shadow-sm ring-1 ring-purple-600/20 font-extrabold' 
+                                : 'bg-white text-slate-600 hover:text-purple-600 hover:bg-slate-50 border border-slate-200'" 
+                            class="h-10 px-3.5 text-xs font-bold rounded-lg transition-all flex items-center gap-2 cursor-pointer">
                         <svg class="w-4 h-4 text-purple-300" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
-                        Banco de Imagens ({{ $posts->count() }})
+                        <span>Banco de Imagens</span>
+                        <span :class="tab === 'banco' ? 'bg-white/20 text-white' : 'bg-purple-100 text-purple-700'" class="px-1.5 py-0.5 text-[10px] font-extrabold rounded-full">{{ $posts->count() }}</span>
                     </button>
-                    <button @click="tab = 'marcas'" :class="tab === 'marcas' ? 'bg-purple-600 text-white shadow-sm' : 'bg-white text-slate-600 hover:bg-slate-100 border border-slate-200'" class="px-4 py-2 text-xs font-bold rounded-[5px] transition-all flex items-center gap-2 cursor-pointer">
+
+                    <!-- 7. Logo & Seta (Marcas) -->
+                    <button type="button" @click="tab = 'marcas'" 
+                            :class="tab === 'marcas' 
+                                ? 'bg-purple-600 text-white shadow-sm ring-1 ring-purple-600/20 font-extrabold' 
+                                : 'bg-white text-slate-600 hover:text-purple-600 hover:bg-slate-50 border border-slate-200'" 
+                            class="h-10 px-3.5 text-xs font-bold rounded-lg transition-all flex items-center gap-2 cursor-pointer">
                         <svg class="w-4 h-4 text-purple-300" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z"/></svg>
-                        Logo & Seta (Marcas)
+                        <span>Logo & Seta (Marcas)</span>
                     </button>
                 </div>
             </div>
@@ -1864,356 +1904,366 @@ span.flatpickr-weekday {
                     </div>
                 </div>
 
-                <!-- 1️⃣ ABA: CRIADOR DE STORIES & STICKERS INTERATIVOS (FASE 4 EXPANDIDA) -->
-                <div x-show="tab === 'stories'" class="space-y-6" x-data="storiesState()">
+                <!-- 3. ABA: ESTÚDIO CRIATIVO (TEMPLATES, STORIES & ENQUETES) -->
+                <div x-show="tab === 'estudio' || tab === 'stories' || tab === 'templates'" class="space-y-6">
+                    
+                    <!-- Cabeçalho do Estúdio com Alternador de Modo -->
                     <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-200 pb-4">
                         <div>
                             <h4 class="text-sm font-extrabold text-slate-800 uppercase tracking-wider flex items-center gap-2">
-                                <span>✨ Criador Avançado de Stories & Stickers (9:16)</span>
-                                <span class="px-2 py-0.5 text-[10px] bg-purple-100 text-purple-700 font-extrabold rounded-full">Sticker Studio Pro</span>
+                                <span>Estúdio Criativo</span>
+                                <span class="px-2 py-0.5 text-[10px] bg-purple-100 text-purple-700 font-extrabold rounded-full">Templates & Stories Studio</span>
                             </h4>
-                            <p class="text-xs text-slate-500">Crie layouts visuais interativos para Stories com Enquetes (até 4 opções), Caixinha de Perguntas, Quizzes ou Stickers Personalizados da sua marca.</p>
+                            <p class="text-xs text-slate-500">Crie artes prontas para o Feed ou layouts interativos para Stories e Enquetes em alta resolução com 1 clique.</p>
+                        </div>
+
+                        <!-- Sub-seletor Rápido: Templates vs Stories -->
+                        <div class="flex items-center gap-1.5 bg-slate-100 p-1 rounded-xl shrink-0 border border-slate-200">
+                            <button type="button" @click="estudioMode = 'templates'" 
+                                    :class="estudioMode === 'templates' ? 'bg-white text-purple-700 font-extrabold shadow-xs' : 'text-slate-600 font-bold hover:text-slate-900'" 
+                                    class="px-3.5 py-2 text-xs rounded-lg transition-all flex items-center gap-2 cursor-pointer">
+                                <svg class="w-4 h-4 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
+                                <span>Gerador de Templates</span>
+                            </button>
+                            <button type="button" @click="estudioMode = 'stories'" 
+                                    :class="estudioMode === 'stories' ? 'bg-white text-purple-700 font-extrabold shadow-xs' : 'text-slate-600 font-bold hover:text-slate-900'" 
+                                    class="px-3.5 py-2 text-xs rounded-lg transition-all flex items-center gap-2 cursor-pointer">
+                                <svg class="w-4 h-4 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                                <span>Stories & Enquetes</span>
+                            </button>
                         </div>
                     </div>
 
-                    <div class="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
-                        <!-- Painel de Controles do Story & Stickers -->
-                        <div class="lg:col-span-6 space-y-4 bg-slate-50 p-5 rounded-2xl border border-slate-200">
-                            <!-- Seletor do Tipo de Elemento Interativo -->
-                            <div>
-                                <label class="block text-xs font-bold text-slate-700 mb-1">Tipo de Elemento Interativo:</label>
-                                <div class="grid grid-cols-2 sm:grid-cols-4 gap-2">
-                                    <button type="button" @click="stickerType = 'poll'" :class="stickerType === 'poll' ? 'bg-purple-600 text-white font-extrabold shadow-xs' : 'bg-white text-slate-700 border border-slate-200 font-bold'" class="p-2 text-[11px] rounded-lg transition-all text-center">📊 Enquete</button>
-                                    <button type="button" @click="stickerType = 'question'" :class="stickerType === 'question' ? 'bg-purple-600 text-white font-extrabold shadow-xs' : 'bg-white text-slate-700 border border-slate-200 font-bold'" class="p-2 text-[11px] rounded-lg transition-all text-center">💬 Perguntas</button>
-                                    <button type="button" @click="stickerType = 'quiz'" :class="stickerType === 'quiz' ? 'bg-purple-600 text-white font-extrabold shadow-xs' : 'bg-white text-slate-700 border border-slate-200 font-bold'" class="p-2 text-[11px] rounded-lg transition-all text-center">🎯 Teste/Quiz</button>
-                                    <button type="button" @click="stickerType = 'custom'" :class="stickerType === 'custom' ? 'bg-purple-600 text-white font-extrabold shadow-xs' : 'bg-white text-slate-700 border border-slate-200 font-bold'" class="p-2 text-[11px] rounded-lg transition-all text-center">🏷️ Sticker Marca</button>
-                                </div>
-                            </div>
-
-                            <!-- Campos dinâmicos dependendo do tipo -->
-                            <div class="space-y-3">
+                    <!-- MODO 1: GERADOR DE TEMPLATES -->
+                    <div x-show="estudioMode === 'templates'" x-data="templatesState()" class="space-y-6">
+                        <div class="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
+                            <!-- Formulário de Controles de Design -->
+                            <div class="lg:col-span-6 space-y-4 bg-slate-50 p-5 rounded-2xl border border-slate-200">
+                                <!-- 1. Formato / Tamanho do Banner -->
                                 <div>
-                                    <label class="block text-xs font-bold text-slate-700 mb-1" x-text="stickerType === 'custom' ? 'Texto do Sticker Personalizado:' : 'Pergunta do Story:'"></label>
-                                    <input type="text" x-model="storyQuestion" class="w-full bg-white border border-slate-300 rounded-lg p-2.5 text-xs outline-none focus:border-purple-500">
+                                    <label class="block text-xs font-bold text-slate-700 mb-1">Proporção & Formato do Layout:</label>
+                                    <div class="grid grid-cols-3 gap-2">
+                                        <button type="button" @click="tplFormat = '1:1'" :class="tplFormat === '1:1' ? 'bg-purple-600 text-white font-extrabold shadow-xs' : 'bg-white text-slate-700 border border-slate-200 font-bold'" class="p-2 text-xs rounded-lg transition-all text-center">1:1 (Feed Quadrado)</button>
+                                        <button type="button" @click="tplFormat = '4:5'" :class="tplFormat === '4:5' ? 'bg-purple-600 text-white font-extrabold shadow-xs' : 'bg-white text-slate-700 border border-slate-200 font-bold'" class="p-2 text-xs rounded-lg transition-all text-center">4:5 (Feed Retrato)</button>
+                                        <button type="button" @click="tplFormat = '9:16'" :class="tplFormat === '9:16' ? 'bg-purple-600 text-white font-extrabold shadow-xs' : 'bg-white text-slate-700 border border-slate-200 font-bold'" class="p-2 text-xs rounded-lg transition-all text-center">9:16 (Story/Reels)</button>
+                                    </div>
                                 </div>
 
-                                <template x-if="stickerType === 'poll' || stickerType === 'quiz'">
-                                    <div class="grid grid-cols-2 gap-2">
-                                        <div>
-                                            <label class="block text-[11px] font-bold text-slate-600 mb-1">Opção 1:</label>
-                                            <input type="text" x-model="optionA" class="w-full bg-white border border-slate-300 rounded-lg p-2 text-xs">
-                                        </div>
-                                        <div>
-                                            <label class="block text-[11px] font-bold text-slate-600 mb-1">Opção 2:</label>
-                                            <input type="text" x-model="optionB" class="w-full bg-white border border-slate-300 rounded-lg p-2 text-xs">
-                                        </div>
-                                        <div>
-                                            <label class="block text-[11px] font-bold text-slate-600 mb-1">Opção 3 (Opcional):</label>
-                                            <input type="text" x-model="optionC" class="w-full bg-white border border-slate-300 rounded-lg p-2 text-xs">
-                                        </div>
-                                        <div>
-                                            <label class="block text-[11px] font-bold text-slate-600 mb-1">Opção 4 (Opcional):</label>
-                                            <input type="text" x-model="optionD" class="w-full bg-white border border-slate-300 rounded-lg p-2 text-xs">
-                                        </div>
-                                    </div>
-                                </template>
-                            </div>
-
-                            <!-- Seleção de Fundo / Upload de Imagem Personalizada -->
-                            <div class="space-y-2 pt-2 border-t border-slate-200">
-                                <label class="block text-xs font-bold text-slate-700">Fundo do Story:</label>
-                                <div class="flex items-center gap-3">
-                                    <div class="flex gap-2">
-                                        <button type="button" @click="storyBg = 'purple'; customBgUrl = null;" class="w-8 h-8 rounded-full bg-gradient-to-tr from-purple-600 to-indigo-600 border-2 border-white shadow-xs" title="Gradiente Roxo"></button>
-                                        <button type="button" @click="storyBg = 'sunset'; customBgUrl = null;" class="w-8 h-8 rounded-full bg-gradient-to-tr from-amber-500 via-rose-500 to-purple-600 border-2 border-white shadow-xs" title="Pôr do Sol"></button>
-                                        <button type="button" @click="storyBg = 'dark'; customBgUrl = null;" class="w-8 h-8 rounded-full bg-gradient-to-tr from-slate-950 to-slate-800 border-2 border-white shadow-xs" title="Escuro"></button>
-                                    </div>
-                                    <label class="px-3 py-1.5 bg-white hover:bg-slate-100 text-slate-700 font-bold text-xs rounded-lg border border-slate-300 cursor-pointer flex items-center gap-1.5 shadow-2xs">
-                                        <span>📷 Upload Fundo</span>
-                                        <input type="file" accept="image/*" @change="handleBgUpload($event)" class="hidden">
-                                    </label>
-                                </div>
-                            </div>
-
-                            <!-- BANCO DE STICKERS TRANSPARENTES (PNG) & BUSCA DE GIFS -->
-                            <div class="space-y-2 pt-3 border-t border-slate-200">
-                                <label class="block text-xs font-bold text-slate-700">Adicionar Sticker PNG (Transparência) ou GIF Animado:</label>
-                                <div class="flex flex-wrap items-center gap-2">
-                                    <label class="px-3 py-1.5 bg-purple-100 hover:bg-purple-200 text-purple-800 font-bold text-xs rounded-lg border border-purple-300 cursor-pointer flex items-center gap-1.5 shadow-2xs">
-                                        <span>🎨 Upload Sticker PNG/GIF</span>
-                                        <input type="file" accept="image/png,image/gif,image/webp" @change="handleStickerUpload($event)" class="hidden">
-                                    </label>
-                                    <button type="button" @click="stickerOverlayUrl = null" x-show="stickerOverlayUrl" class="text-rose-600 hover:underline text-xs font-bold">Remover Sticker</button>
+                                <!-- 2. Modelo de Banner -->
+                                <div>
+                                    <label class="block text-xs font-bold text-slate-700 mb-1">Modelo de Banner:</label>
+                                    <select x-model="tplType" class="w-full bg-white border border-slate-300 rounded-lg p-2.5 text-xs outline-none">
+                                        <option value="dica">Dica do Dia / Insights</option>
+                                        <option value="post">Novo Conteúdo / Anúncio</option>
+                                        <option value="depoimento">Depoimento de Cliente / Review</option>
+                                        <option value="frase">Frase Motivacional / Citação</option>
+                                    </select>
                                 </div>
 
-                                <!-- Pesquisa de GIFs ao vivo (Giphy) -->
-                                <div class="pt-2 space-y-2">
-                                    <div class="flex gap-2">
-                                        <input type="text" x-model="gifSearchQuery" @keydown.enter.prevent="searchGifs()" placeholder="Pesquisar GIF no Giphy (ex: seta, novo, arrasta)..." class="flex-1 bg-white border border-slate-300 rounded-lg p-2 text-xs outline-none">
-                                        <button type="button" @click="searchGifs()" class="px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-white font-bold text-xs rounded-lg cursor-pointer">Buscar</button>
+                                <div>
+                                    <label class="block text-xs font-bold text-slate-700 mb-1">Título do Banner:</label>
+                                    <input type="text" x-model="tplTitle" class="w-full bg-white border border-slate-300 rounded-lg p-2.5 text-xs outline-none">
+                                </div>
+
+                                <div>
+                                    <label class="block text-xs font-bold text-slate-700 mb-1">Texto Principal / Conteúdo:</label>
+                                    <textarea x-model="tplBody" rows="3" class="w-full bg-white border border-slate-300 rounded-lg p-2.5 text-xs outline-none"></textarea>
+                                </div>
+
+                                <!-- 3. Fundo e Imagem Personalizada -->
+                                <div class="space-y-3 pt-3 border-t border-slate-200">
+                                    <label class="block text-xs font-bold text-slate-700">Estilo de Fundo do Banner:</label>
+                                    <div class="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                                        <button type="button" @click="tplBgType = 'gradient_purple'" :class="tplBgType === 'gradient_purple' ? 'ring-2 ring-purple-600 font-black' : ''" class="p-2 text-[11px] rounded-lg bg-gradient-to-br from-slate-950 via-purple-950 to-slate-900 text-white font-bold text-center">Roxo Dark</button>
+                                        <button type="button" @click="tplBgType = 'gradient_sunset'" :class="tplBgType === 'gradient_sunset' ? 'ring-2 ring-purple-600 font-black' : ''" class="p-2 text-[11px] rounded-lg bg-gradient-to-br from-amber-600 via-rose-600 to-purple-950 text-white font-bold text-center">Sunset</button>
+                                        <button type="button" @click="tplBgType = 'dark'" :class="tplBgType === 'dark' ? 'ring-2 ring-purple-600 font-black' : ''" class="p-2 text-[11px] rounded-lg bg-slate-950 text-white font-bold text-center border border-slate-700">Escuro 100%</button>
+                                        <button type="button" @click="tplBgType = 'solid_white'" :class="tplBgType === 'solid_white' ? 'ring-2 ring-purple-600 font-black' : ''" class="p-2 text-[11px] rounded-lg bg-white text-slate-900 font-bold text-center border border-slate-300">Clean Claro</button>
                                     </div>
-                                    <div class="grid grid-cols-3 gap-2" x-show="gifResults.length > 0">
-                                        <template x-for="(gUrl, idx) in gifResults" :key="idx">
-                                            <img :src="gUrl" @click="stickerOverlayUrl = gUrl" class="w-full h-16 object-cover rounded-lg border border-slate-300 cursor-pointer hover:scale-105 transition-transform bg-slate-900">
+
+                                    <div class="flex flex-wrap items-center gap-3 pt-1">
+                                        <label class="px-3 py-1.5 bg-white hover:bg-slate-100 text-slate-700 font-bold text-xs rounded-lg border border-slate-300 cursor-pointer flex items-center gap-1.5 shadow-2xs">
+                                            <span>Upload Foto de Fundo</span>
+                                            <input type="file" accept="image/*" @change="handleTemplateBgImage($event)" class="hidden">
+                                        </label>
+                                        <template x-if="tplBgImageUrl">
+                                            <div class="flex items-center gap-2">
+                                                <select x-model="tplImagePosition" class="text-xs bg-white border border-slate-300 rounded-lg p-1.5">
+                                                    <option value="center">Posição: Centro</option>
+                                                    <option value="top">Posição: Topo</option>
+                                                    <option value="bottom">Posição: Rodapé</option>
+                                                </select>
+                                                <button type="button" @click="tplBgImageUrl = null; tplBgType = 'gradient_purple';" class="text-rose-600 text-xs font-bold hover:underline">Remover Imagem</button>
+                                            </div>
                                         </template>
                                     </div>
                                 </div>
                             </div>
-                        </div>
 
-                        <!-- Prévia 9:16 do Story em Tempo Real -->
-                        <div class="lg:col-span-6 flex flex-col items-center gap-3">
-                            <div x-ref="storyCanvas"
-                                 :style="customBgUrl ? `background-image: url('${customBgUrl}'); background-size: cover; background-position: center;` : ''"
-                                 :class="[
-                                    !customBgUrl ? (storyBg === 'purple' ? 'bg-gradient-to-b from-purple-950 via-indigo-900 to-slate-950' :
-                                    (storyBg === 'sunset' ? 'bg-gradient-to-b from-amber-600 via-rose-600 to-purple-900' : 'bg-gradient-to-b from-slate-950 via-slate-900 to-slate-950')) : ''
-                                 ]"
-                                 class="w-[280px] h-[500px] rounded-none p-5 shadow-2xl relative flex flex-col justify-center text-white overflow-hidden transition-all duration-300">
-                                
-                                <!-- Elementos Interativos com Design Ultra-Moderno (Fidelidade Nativa Instagram) -->
-                                <div class="my-auto z-10 w-full px-2">
-                                    <!-- 📊 ENQUETE / POLL -->
-                                    <template x-if="stickerType === 'poll'">
-                                        <div class="bg-white/90 backdrop-blur-2xl text-slate-900 p-5 rounded-3xl space-y-4 text-center shadow-2xl border border-white/60">
-                                            <h6 class="text-sm font-black text-slate-900 leading-snug tracking-tight px-1 text-center" x-text="storyQuestion || 'Qual o seu maior desafio no freela?'"></h6>
-                                            <div class="grid grid-cols-2 gap-2.5 text-xs font-bold">
-                                                <div class="story-option-btn bg-gradient-to-r from-purple-600 to-indigo-600 text-white min-h-[54px] p-3 rounded-2xl shadow-md flex items-center justify-center text-center break-words leading-tight" x-text="optionA || 'Opção 1'"></div>
-                                                <div class="story-option-btn bg-slate-100/90 text-slate-800 border border-slate-200 min-h-[54px] p-3 rounded-2xl flex items-center justify-center text-center break-words leading-tight" x-text="optionB || 'Opção 2'"></div>
-                                                <template x-if="optionC && optionC.trim()">
-                                                    <div class="story-option-btn bg-slate-100/90 text-slate-800 border border-slate-200 min-h-[54px] p-3 rounded-2xl flex items-center justify-center text-center break-words leading-tight" x-text="optionC"></div>
-                                                </template>
-                                                <template x-if="optionD && optionD.trim()">
-                                                    <div class="story-option-btn bg-slate-100/90 text-slate-800 border border-slate-200 min-h-[54px] p-3 rounded-2xl flex items-center justify-center text-center break-words leading-tight" x-text="optionD"></div>
-                                                </template>
-                                            </div>
-                                        </div>
-                                    </template>
-
-                                    <!-- 💬 CAIXINHA DE PERGUNTAS -->
-                                    <template x-if="stickerType === 'question'">
-                                        <div class="bg-white text-slate-900 rounded-3xl shadow-2xl overflow-hidden border border-white/60">
-                                            <div class="bg-gradient-to-r from-purple-600 via-rose-500 to-amber-500 p-4 text-center text-white space-y-1">
-                                                <span class="text-[10px] font-black uppercase tracking-widest bg-black/20 px-3 py-0.5 rounded-full inline-block">Faça uma Pergunta</span>
-                                                <h6 class="text-sm font-black leading-snug tracking-tight text-center" x-text="storyQuestion || 'Pergunte-me algo...'"></h6>
-                                            </div>
-                                            <div class="p-4 bg-slate-50 text-center">
-                                                <div class="bg-white border border-slate-200 text-slate-400 py-3 px-4 rounded-2xl text-xs font-semibold shadow-inner flex items-center justify-between">
-                                                    <span>Escreva sua resposta...</span>
-                                                    <span class="text-purple-600 font-extrabold text-[10px] uppercase">Enviar</span>
-                                                </div>
-                                            </div>
-                                        </div>
-                                    </template>
-
-                                    <!-- 🎯 TESTE / QUIZ -->
-                                    <template x-if="stickerType === 'quiz'">
-                                        <div class="bg-white/95 backdrop-blur-2xl text-slate-900 p-5 rounded-3xl space-y-3 shadow-2xl border border-white/60">
-                                            <div class="flex items-center justify-center gap-1.5 mb-1">
-                                                <span class="w-2 h-2 rounded-full bg-purple-600"></span>
-                                                <span class="text-[10px] font-black uppercase tracking-widest text-purple-600">Quiz do Story</span>
-                                            </div>
-                                            <h6 class="text-xs font-black text-slate-900 leading-snug text-center" x-text="storyQuestion || 'Quiz: Qual é a resposta correta?'"></h6>
-                                            <div class="space-y-2 text-xs font-bold">
-                                                <div class="bg-purple-50 text-purple-900 border border-purple-200 p-3 rounded-2xl flex items-center gap-2 shadow-2xs">
-                                                    <span class="w-5 h-5 bg-purple-600 text-white rounded-full flex items-center justify-center font-black text-[10px] shadow-xs shrink-0">A</span>
-                                                    <span class="flex-1 text-left" x-text="optionA || 'Primeira opção'"></span>
-                                                </div>
-                                                <div class="bg-slate-50 text-slate-700 border border-slate-200 p-3 rounded-2xl flex items-center gap-2">
-                                                    <span class="w-5 h-5 bg-slate-200 text-slate-700 rounded-full flex items-center justify-center font-black text-[10px] shrink-0">B</span>
-                                                    <span class="flex-1 text-left" x-text="optionB || 'Segunda opção'"></span>
-                                                </div>
-                                                <template x-if="optionC && optionC.trim()">
-                                                    <div class="bg-slate-50 text-slate-700 border border-slate-200 p-3 rounded-2xl flex items-center gap-2">
-                                                        <span class="w-5 h-5 bg-slate-200 text-slate-700 rounded-full flex items-center justify-center font-black text-[10px] shrink-0">C</span>
-                                                        <span class="flex-1 text-left" x-text="optionC"></span>
-                                                    </div>
-                                                </template>
-                                                <template x-if="optionD && optionD.trim()">
-                                                    <div class="bg-slate-50 text-slate-700 border border-slate-200 p-3 rounded-2xl flex items-center justify-center gap-2">
-                                                        <span class="w-5 h-5 bg-slate-200 text-slate-700 rounded-full flex items-center justify-center font-black text-[10px] shrink-0">D</span>
-                                                        <span class="flex-1 text-left" x-text="optionD"></span>
-                                                    </div>
-                                                </template>
-                                            </div>
-                                        </div>
-                                    </template>
-
-                                    <!-- 🏷️ STICKER PERSONALIZADO DE MARCA -->
-                                    <template x-if="stickerType === 'custom'">
-                                        <div class="p-5 bg-gradient-to-r from-purple-600 via-indigo-600 to-purple-800 text-white rounded-3xl text-center shadow-2xl border border-white/30 space-y-1 transform hover:scale-105 transition-transform flex flex-col items-center justify-center">
-                                            <span class="px-3 py-1 bg-white text-purple-950 text-xs font-black rounded-full shadow-md uppercase tracking-wider inline-block" x-text="storyQuestion || 'STICKER DE MARCA'"></span>
-                                            <p class="text-[11px] text-purple-100 font-bold block pt-1 text-center">✨ Toque para saber mais no Direct</p>
-                                        </div>
-                                    </template>
-                                </div>
-
-                                <!-- CAMADA DO STICKER PNG TRANSPARENTE / GIF ANIMADO SOBREPOSTO -->
-                                <template x-if="stickerOverlayUrl">
-                                    <div class="absolute inset-0 z-20 pointer-events-none flex items-center justify-center">
-                                        <img :src="stickerOverlayUrl" class="max-w-[160px] max-h-[160px] object-contain drop-shadow-2xl animate-pulse">
+                            <!-- Banner Preview Canvas (Proporção Dinâmica e Visual Limpo Sem Bordas Arredondadas Externas) -->
+                            <div class="lg:col-span-6 flex flex-col items-center gap-4">
+                                <div x-ref="bannerCanvas"
+                                     :style="tplBgType === 'custom_image' && tplBgImageUrl ? `background-image: url('${tplBgImageUrl}'); background-size: cover; background-position: ${tplImagePosition};` : (tplBgType === 'solid_white' ? 'background: #ffffff; color: #0f172a;' : '')"
+                                     :class="[
+                                         tplFormat === '4:5' ? 'w-[300px] h-[375px]' : (tplFormat === '9:16' ? 'w-[280px] h-[498px]' : 'w-[320px] h-[320px]'),
+                                         tplBgType === 'gradient_purple' ? 'bg-gradient-to-br from-slate-950 via-purple-950 to-slate-900 text-white' : '',
+                                         tplBgType === 'gradient_sunset' ? 'bg-gradient-to-br from-amber-600 via-rose-600 to-purple-950 text-white' : '',
+                                         tplBgType === 'dark' ? 'bg-slate-950 text-white' : '',
+                                     ]"
+                                     class="rounded-none p-6 shadow-2xl flex flex-col justify-center relative overflow-hidden transition-all duration-300">
+                                    
+                                    <!-- Conteúdo Principal do Banner Limpo -->
+                                    <div class="space-y-3 my-auto z-10 p-4 rounded-xl"
+                                         :class="tplBgType === 'custom_image' ? 'bg-black/50 backdrop-blur-md text-white border border-white/10' : ''">
+                                        <h5 class="text-base font-black leading-snug"
+                                            :class="tplBgType === 'solid_white' ? 'text-slate-900' : 'text-white'"
+                                            x-text="tplTitle"></h5>
+                                        <p class="text-xs leading-relaxed font-medium"
+                                           :class="tplBgType === 'solid_white' ? 'text-slate-700' : 'text-slate-200'"
+                                           x-text="tplBody"></p>
                                     </div>
-                                </template>
-                            </div>
+                                </div>
 
-                            <div class="flex items-center gap-3 w-full justify-center">
-                                <button type="button" 
-                                        @click="exportStoryToNewPost()" 
-                                        :disabled="isGeneratingStory"
-                                        class="px-5 py-2.5 bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 text-white text-xs font-extrabold rounded-xl shadow-md transition-all flex items-center gap-2 cursor-pointer disabled:opacity-50">
-                                    <template x-if="!isGeneratingStory">
-                                        <span class="flex items-center gap-1.5">
-                                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"/></svg>
-                                            <span>📸 Enviar para Nova Publicação</span>
-                                        </span>
-                                    </template>
-                                    <template x-if="isGeneratingStory">
-                                        <span class="flex items-center gap-1.5">
-                                            <svg class="w-4 h-4 animate-spin" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>
-                                            <span>Gerando Imagem 9:16...</span>
-                                        </span>
-                                    </template>
-                                </button>
+                                <!-- Botões de Ação para o Banner -->
+                                <div class="flex items-center gap-3 w-full justify-center">
+                                    <button type="button" 
+                                            @click="exportBannerToNewPost()" 
+                                            :disabled="isGeneratingTemplate"
+                                            class="px-5 py-2.5 bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 text-white text-xs font-extrabold rounded-xl shadow-md transition-all flex items-center gap-2 cursor-pointer disabled:opacity-50">
+                                        <template x-if="!isGeneratingTemplate">
+                                            <span class="flex items-center gap-1.5">
+                                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"/></svg>
+                                                <span>Enviar para Nova Publicação</span>
+                                            </span>
+                                        </template>
+                                        <template x-if="isGeneratingTemplate">
+                                            <span class="flex items-center gap-1.5">
+                                                <svg class="w-4 h-4 animate-spin" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>
+                                                <span>Gerando Imagem Banner...</span>
+                                            </span>
+                                        </template>
+                                    </button>
 
-                                <button type="button" 
-                                        @click="downloadStoryImage()" 
-                                        :disabled="isGeneratingStory"
-                                        class="px-4 py-2.5 bg-slate-800 hover:bg-slate-700 text-white text-xs font-bold rounded-xl border border-slate-700 shadow-md transition-all flex items-center gap-1.5 cursor-pointer disabled:opacity-50">
-                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/></svg>
-                                    <span>Baixar PNG</span>
-                                </button>
+                                    <button type="button" 
+                                            @click="downloadBannerImage()" 
+                                            :disabled="isGeneratingTemplate"
+                                            class="px-4 py-2.5 bg-slate-800 hover:bg-slate-700 text-white text-xs font-bold rounded-xl border border-slate-700 shadow-md transition-all flex items-center gap-1.5 cursor-pointer disabled:opacity-50">
+                                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/></svg>
+                                        <span>Baixar PNG</span>
+                                    </button>
+                                </div>
                             </div>
                         </div>
                     </div>
-                </div>
 
-                <!-- 3️⃣ ABA: GERADOR AUTOMÁTICO DE TEMPLATES & BANNERS (FASE 4 EXPANDIDA) -->
-                <div x-show="tab === 'templates'" class="space-y-6" x-data="templatesState()">
-                    
-                    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-200 pb-4">
-                        <div>
-                            <h4 class="text-sm font-extrabold text-slate-800 uppercase tracking-wider flex items-center gap-2">
-                                <span>🎨 Gerador Automático de Templates & Banners</span>
-                                <span class="px-2 py-0.5 text-[10px] bg-indigo-100 text-indigo-800 font-extrabold rounded-full">Estúdio Canvas HD</span>
-                            </h4>
-                            <p class="text-xs text-slate-500">Crie artes prontas com formatos ajustáveis (1:1, 4:5, 9:16), imagem de fundo e envie direto para publicação!</p>
-                        </div>
-                    </div>
-
-                    <div class="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
-                        <!-- Formulário de Controles de Design -->
-                        <div class="lg:col-span-6 space-y-4 bg-slate-50 p-5 rounded-2xl border border-slate-200">
-                            <!-- 1. Formato / Tamanho do Banner -->
-                            <div>
-                                <label class="block text-xs font-bold text-slate-700 mb-1">Proporção & Formato do Layout:</label>
-                                <div class="grid grid-cols-3 gap-2">
-                                    <button type="button" @click="tplFormat = '1:1'" :class="tplFormat === '1:1' ? 'bg-purple-600 text-white font-extrabold shadow-xs' : 'bg-white text-slate-700 border border-slate-200 font-bold'" class="p-2 text-xs rounded-lg transition-all text-center">1:1 (Feed Quadrado)</button>
-                                    <button type="button" @click="tplFormat = '4:5'" :class="tplFormat === '4:5' ? 'bg-purple-600 text-white font-extrabold shadow-xs' : 'bg-white text-slate-700 border border-slate-200 font-bold'" class="p-2 text-xs rounded-lg transition-all text-center">4:5 (Feed Retrato)</button>
-                                    <button type="button" @click="tplFormat = '9:16'" :class="tplFormat === '9:16' ? 'bg-purple-600 text-white font-extrabold shadow-xs' : 'bg-white text-slate-700 border border-slate-200 font-bold'" class="p-2 text-xs rounded-lg transition-all text-center">9:16 (Story/Reels)</button>
-                                </div>
-                            </div>
-
-                            <!-- 2. Modelo de Banner -->
-                            <div>
-                                <label class="block text-xs font-bold text-slate-700 mb-1">Modelo de Banner:</label>
-                                <select x-model="tplType" class="w-full bg-white border border-slate-300 rounded-lg p-2.5 text-xs outline-none">
-                                    <option value="dica">📌 Dica do Dia / Insights</option>
-                                    <option value="post">🚀 Novo Conteúdo / Anúncio</option>
-                                    <option value="depoimento">💬 Depoimento de Cliente / Review</option>
-                                    <option value="frase">✍️ Frase Motivacional / Citação</option>
-                                </select>
-                            </div>
-
-                            <div>
-                                <label class="block text-xs font-bold text-slate-700 mb-1">Título do Banner:</label>
-                                <input type="text" x-model="tplTitle" class="w-full bg-white border border-slate-300 rounded-lg p-2.5 text-xs outline-none">
-                            </div>
-
-                            <div>
-                                <label class="block text-xs font-bold text-slate-700 mb-1">Texto Principal / Conteúdo:</label>
-                                <textarea x-model="tplBody" rows="3" class="w-full bg-white border border-slate-300 rounded-lg p-2.5 text-xs outline-none"></textarea>
-                            </div>
-
-                            <!-- 3. Fundo e Imagem Personalizada -->
-                            <div class="space-y-3 pt-3 border-t border-slate-200">
-                                <label class="block text-xs font-bold text-slate-700">Estilo de Fundo do Banner:</label>
-                                <div class="grid grid-cols-2 sm:grid-cols-4 gap-2">
-                                    <button type="button" @click="tplBgType = 'gradient_purple'" :class="tplBgType === 'gradient_purple' ? 'ring-2 ring-purple-600 font-black' : ''" class="p-2 text-[11px] rounded-lg bg-gradient-to-br from-slate-950 via-purple-950 to-slate-900 text-white font-bold text-center">Roxo Dark</button>
-                                    <button type="button" @click="tplBgType = 'gradient_sunset'" :class="tplBgType === 'gradient_sunset' ? 'ring-2 ring-purple-600 font-black' : ''" class="p-2 text-[11px] rounded-lg bg-gradient-to-br from-amber-600 via-rose-600 to-purple-950 text-white font-bold text-center">Sunset</button>
-                                    <button type="button" @click="tplBgType = 'dark'" :class="tplBgType === 'dark' ? 'ring-2 ring-purple-600 font-black' : ''" class="p-2 text-[11px] rounded-lg bg-slate-950 text-white font-bold text-center border border-slate-700">Escuro 100%</button>
-                                    <button type="button" @click="tplBgType = 'solid_white'" :class="tplBgType === 'solid_white' ? 'ring-2 ring-purple-600 font-black' : ''" class="p-2 text-[11px] rounded-lg bg-white text-slate-900 font-bold text-center border border-slate-300">Clean Claro</button>
+                    <!-- MODO 2: STORIES & ENQUETES INTERATIVAS -->
+                    <div x-show="estudioMode === 'stories'" x-data="storiesState()" class="space-y-6">
+                        <div class="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
+                            <!-- Painel de Controles do Story & Stickers -->
+                            <div class="lg:col-span-6 space-y-4 bg-slate-50 p-5 rounded-2xl border border-slate-200">
+                                <!-- Seletor do Tipo de Elemento Interativo -->
+                                <div>
+                                    <label class="block text-xs font-bold text-slate-700 mb-1">Tipo de Elemento Interativo:</label>
+                                    <div class="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                                        <button type="button" @click="stickerType = 'poll'" :class="stickerType === 'poll' ? 'bg-purple-600 text-white font-extrabold shadow-xs' : 'bg-white text-slate-700 border border-slate-200 font-bold'" class="p-2 text-[11px] rounded-lg transition-all text-center">Enquete</button>
+                                        <button type="button" @click="stickerType = 'question'" :class="stickerType === 'question' ? 'bg-purple-600 text-white font-extrabold shadow-xs' : 'bg-white text-slate-700 border border-slate-200 font-bold'" class="p-2 text-[11px] rounded-lg transition-all text-center">Perguntas</button>
+                                        <button type="button" @click="stickerType = 'quiz'" :class="stickerType === 'quiz' ? 'bg-purple-600 text-white font-extrabold shadow-xs' : 'bg-white text-slate-700 border border-slate-200 font-bold'" class="p-2 text-[11px] rounded-lg transition-all text-center">Teste/Quiz</button>
+                                        <button type="button" @click="stickerType = 'custom'" :class="stickerType === 'custom' ? 'bg-purple-600 text-white font-extrabold shadow-xs' : 'bg-white text-slate-700 border border-slate-200 font-bold'" class="p-2 text-[11px] rounded-lg transition-all text-center">Sticker Marca</button>
+                                    </div>
                                 </div>
 
-                                <div class="flex flex-wrap items-center gap-3 pt-1">
-                                    <label class="px-3 py-1.5 bg-white hover:bg-slate-100 text-slate-700 font-bold text-xs rounded-lg border border-slate-300 cursor-pointer flex items-center gap-1.5 shadow-2xs">
-                                        <span>🖼️ Upload Foto de Fundo</span>
-                                        <input type="file" accept="image/*" @change="handleTemplateBgImage($event)" class="hidden">
-                                    </label>
-                                    <template x-if="tplBgImageUrl">
-                                        <div class="flex items-center gap-2">
-                                            <select x-model="tplImagePosition" class="text-xs bg-white border border-slate-300 rounded-lg p-1.5">
-                                                <option value="center">Posição: Centro</option>
-                                                <option value="top">Posição: Topo</option>
-                                                <option value="bottom">Posição: Rodapé</option>
-                                            </select>
-                                            <button type="button" @click="tplBgImageUrl = null; tplBgType = 'gradient_purple';" class="text-rose-600 text-xs font-bold hover:underline">Remover Imagem</button>
+                                <!-- Campos dinâmicos dependendo do tipo -->
+                                <div class="space-y-3">
+                                    <div>
+                                        <label class="block text-xs font-bold text-slate-700 mb-1" x-text="stickerType === 'custom' ? 'Texto do Sticker Personalizado:' : 'Pergunta do Story:'"></label>
+                                        <input type="text" x-model="storyQuestion" class="w-full bg-white border border-slate-300 rounded-lg p-2.5 text-xs outline-none focus:border-purple-500">
+                                    </div>
+
+                                    <template x-if="stickerType === 'poll' || stickerType === 'quiz'">
+                                        <div class="grid grid-cols-2 gap-2">
+                                            <div>
+                                                <label class="block text-[11px] font-bold text-slate-600 mb-1">Opção 1:</label>
+                                                <input type="text" x-model="optionA" class="w-full bg-white border border-slate-300 rounded-lg p-2 text-xs">
+                                            </div>
+                                            <div>
+                                                <label class="block text-[11px] font-bold text-slate-600 mb-1">Opção 2:</label>
+                                                <input type="text" x-model="optionB" class="w-full bg-white border border-slate-300 rounded-lg p-2 text-xs">
+                                            </div>
+                                            <div>
+                                                <label class="block text-[11px] font-bold text-slate-600 mb-1">Opção 3 (Opcional):</label>
+                                                <input type="text" x-model="optionC" class="w-full bg-white border border-slate-300 rounded-lg p-2 text-xs">
+                                            </div>
+                                            <div>
+                                                <label class="block text-[11px] font-bold text-slate-600 mb-1">Opção 4 (Opcional):</label>
+                                                <input type="text" x-model="optionD" class="w-full bg-white border border-slate-300 rounded-lg p-2 text-xs">
+                                            </div>
                                         </div>
                                     </template>
                                 </div>
-                            </div>
-                        </div>
 
-                        <!-- Banner Preview Canvas (Proporção Dinâmica e Visual Limpo Sem Bordas Arredondadas Externas) -->
-                        <div class="lg:col-span-6 flex flex-col items-center gap-4">
-                            <div x-ref="bannerCanvas"
-                                 :style="tplBgType === 'custom_image' && tplBgImageUrl ? `background-image: url('${tplBgImageUrl}'); background-size: cover; background-position: ${tplImagePosition};` : (tplBgType === 'solid_white' ? 'background: #ffffff; color: #0f172a;' : '')"
-                                 :class="[
-                                    tplFormat === '4:5' ? 'w-[300px] h-[375px]' : (tplFormat === '9:16' ? 'w-[280px] h-[498px]' : 'w-[320px] h-[320px]'),
-                                    tplBgType === 'gradient_purple' ? 'bg-gradient-to-br from-slate-950 via-purple-950 to-slate-900 text-white' : '',
-                                    tplBgType === 'gradient_sunset' ? 'bg-gradient-to-br from-amber-600 via-rose-600 to-purple-950 text-white' : '',
-                                    tplBgType === 'dark' ? 'bg-slate-950 text-white' : '',
-                                 ]"
-                                 class="rounded-none p-6 shadow-2xl flex flex-col justify-center relative overflow-hidden transition-all duration-300">
-                                
-                                <!-- Conteúdo Principal do Banner Limpo -->
-                                <div class="space-y-3 my-auto z-10 p-4 rounded-xl"
-                                     :class="tplBgType === 'custom_image' ? 'bg-black/50 backdrop-blur-md text-white border border-white/10' : ''">
-                                    <h5 class="text-base font-black leading-snug"
-                                        :class="tplBgType === 'solid_white' ? 'text-slate-900' : 'text-white'"
-                                        x-text="tplTitle"></h5>
-                                    <p class="text-xs leading-relaxed font-medium"
-                                       :class="tplBgType === 'solid_white' ? 'text-slate-700' : 'text-slate-200'"
-                                       x-text="tplBody"></p>
+                                <!-- Seleção de Fundo / Upload de Imagem Personalizada -->
+                                <div class="space-y-2 pt-2 border-t border-slate-200">
+                                    <label class="block text-xs font-bold text-slate-700">Fundo do Story:</label>
+                                    <div class="flex items-center gap-3">
+                                        <div class="flex gap-2">
+                                            <button type="button" @click="storyBg = 'purple'; customBgUrl = null;" class="w-8 h-8 rounded-full bg-gradient-to-tr from-purple-600 to-indigo-600 border-2 border-white shadow-xs" title="Gradiente Roxo"></button>
+                                            <button type="button" @click="storyBg = 'sunset'; customBgUrl = null;" class="w-8 h-8 rounded-full bg-gradient-to-tr from-amber-500 via-rose-500 to-purple-600 border-2 border-white shadow-xs" title="Pôr do Sol"></button>
+                                            <button type="button" @click="storyBg = 'dark'; customBgUrl = null;" class="w-8 h-8 rounded-full bg-gradient-to-tr from-slate-950 to-slate-800 border-2 border-white shadow-xs" title="Escuro"></button>
+                                        </div>
+                                        <label class="px-3 py-1.5 bg-white hover:bg-slate-100 text-slate-700 font-bold text-xs rounded-lg border border-slate-300 cursor-pointer flex items-center gap-1.5 shadow-2xs">
+                                            <span>Upload Fundo</span>
+                                            <input type="file" accept="image/*" @change="handleBgUpload($event)" class="hidden">
+                                        </label>
+                                    </div>
+                                </div>
+
+                                <!-- BANCO DE STICKERS TRANSPARENTES (PNG) & BUSCA DE GIFS -->
+                                <div class="space-y-2 pt-3 border-t border-slate-200">
+                                    <label class="block text-xs font-bold text-slate-700">Adicionar Sticker PNG (Transparência) ou GIF Animado:</label>
+                                    <div class="flex flex-wrap items-center gap-2">
+                                        <label class="px-3 py-1.5 bg-purple-100 hover:bg-purple-200 text-purple-800 font-bold text-xs rounded-lg border border-purple-300 cursor-pointer flex items-center gap-1.5 shadow-2xs">
+                                            <span>Upload Sticker PNG/GIF</span>
+                                            <input type="file" accept="image/png,image/gif,image/webp" @change="handleStickerUpload($event)" class="hidden">
+                                        </label>
+                                        <button type="button" @click="stickerOverlayUrl = null" x-show="stickerOverlayUrl" class="text-rose-600 hover:underline text-xs font-bold">Remover Sticker</button>
+                                    </div>
+
+                                    <!-- Pesquisa de GIFs ao vivo (Giphy) -->
+                                    <div class="pt-2 space-y-2">
+                                        <div class="flex gap-2">
+                                            <input type="text" x-model="gifSearchQuery" @keydown.enter.prevent="searchGifs()" placeholder="Pesquisar GIF no Giphy (ex: seta, novo, arrasta)..." class="flex-1 bg-white border border-slate-300 rounded-lg p-2 text-xs outline-none">
+                                            <button type="button" @click="searchGifs()" class="px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-white font-bold text-xs rounded-lg cursor-pointer">Buscar</button>
+                                        </div>
+                                        <div class="grid grid-cols-3 gap-2" x-show="gifResults.length > 0">
+                                            <template x-for="(gUrl, idx) in gifResults" :key="idx">
+                                                <img :src="gUrl" @click="stickerOverlayUrl = gUrl" class="w-full h-16 object-cover rounded-lg border border-slate-300 cursor-pointer hover:scale-105 transition-transform bg-slate-900">
+                                            </template>
+                                        </div>
+                                    </div>
                                 </div>
                             </div>
 
-                            <!-- Botões de Ação para o Banner -->
-                            <div class="flex items-center gap-3 w-full justify-center">
-                                <button type="button" 
-                                        @click="exportBannerToNewPost()" 
-                                        :disabled="isGeneratingTemplate"
-                                        class="px-5 py-2.5 bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 text-white text-xs font-extrabold rounded-xl shadow-md transition-all flex items-center gap-2 cursor-pointer disabled:opacity-50">
-                                    <template x-if="!isGeneratingTemplate">
-                                        <span class="flex items-center gap-1.5">
-                                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"/></svg>
-                                            <span>📸 Enviar para Nova Publicação</span>
-                                        </span>
-                                    </template>
-                                    <template x-if="isGeneratingTemplate">
-                                        <span class="flex items-center gap-1.5">
-                                            <svg class="w-4 h-4 animate-spin" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>
-                                            <span>Gerando Imagem Banner...</span>
-                                        </span>
-                                    </template>
-                                </button>
+                            <!-- Prévia 9:16 do Story em Tempo Real -->
+                            <div class="lg:col-span-6 flex flex-col items-center gap-3">
+                                <div x-ref="storyCanvas"
+                                     :style="customBgUrl ? `background-image: url('${customBgUrl}'); background-size: cover; background-position: center;` : ''"
+                                     :class="[
+                                         !customBgUrl ? (storyBg === 'purple' ? 'bg-gradient-to-b from-purple-950 via-indigo-900 to-slate-950' :
+                                         (storyBg === 'sunset' ? 'bg-gradient-to-b from-amber-600 via-rose-600 to-purple-900' : 'bg-gradient-to-b from-slate-950 via-slate-900 to-slate-950')) : ''
+                                     ]"
+                                     class="w-[280px] h-[500px] rounded-none p-5 shadow-2xl relative flex flex-col justify-center text-white overflow-hidden transition-all duration-300">
+                                    
+                                    <!-- Elementos Interativos com Design Ultra-Moderno (Fidelidade Nativa Instagram) -->
+                                    <div class="my-auto z-10 w-full px-2">
+                                        <!-- ENQUETE / POLL -->
+                                        <template x-if="stickerType === 'poll'">
+                                            <div class="bg-white/90 backdrop-blur-2xl text-slate-900 p-5 rounded-3xl space-y-4 text-center shadow-2xl border border-white/60">
+                                                <h6 class="text-sm font-black text-slate-900 leading-snug tracking-tight px-1 text-center" x-text="storyQuestion || 'Qual o seu maior desafio no freela?'"></h6>
+                                                <div class="grid grid-cols-2 gap-2.5 text-xs font-bold">
+                                                    <div class="story-option-btn bg-gradient-to-r from-purple-600 to-indigo-600 text-white min-h-[54px] p-3 rounded-2xl shadow-md flex items-center justify-center text-center break-words leading-tight" x-text="optionA || 'Opção 1'"></div>
+                                                    <div class="story-option-btn bg-slate-100/90 text-slate-800 border border-slate-200 min-h-[54px] p-3 rounded-2xl flex items-center justify-center text-center break-words leading-tight" x-text="optionB || 'Opção 2'"></div>
+                                                    <template x-if="optionC && optionC.trim()">
+                                                        <div class="story-option-btn bg-slate-100/90 text-slate-800 border border-slate-200 min-h-[54px] p-3 rounded-2xl flex items-center justify-center text-center break-words leading-tight" x-text="optionC"></div>
+                                                    </template>
+                                                    <template x-if="optionD && optionD.trim()">
+                                                        <div class="story-option-btn bg-slate-100/90 text-slate-800 border border-slate-200 min-h-[54px] p-3 rounded-2xl flex items-center justify-center text-center break-words leading-tight" x-text="optionD"></div>
+                                                    </template>
+                                                </div>
+                                            </div>
+                                        </template>
 
-                                <button type="button" 
-                                        @click="downloadBannerImage()" 
-                                        :disabled="isGeneratingTemplate"
-                                        class="px-4 py-2.5 bg-slate-800 hover:bg-slate-700 text-white text-xs font-bold rounded-xl border border-slate-700 shadow-md transition-all flex items-center gap-1.5 cursor-pointer disabled:opacity-50">
-                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/></svg>
-                                    <span>Baixar PNG</span>
-                                </button>
+                                        <!-- CAIXINHA DE PERGUNTAS -->
+                                        <template x-if="stickerType === 'question'">
+                                            <div class="bg-white text-slate-900 rounded-3xl shadow-2xl overflow-hidden border border-white/60">
+                                                <div class="bg-gradient-to-r from-purple-600 via-rose-500 to-amber-500 p-4 text-center text-white space-y-1">
+                                                    <span class="text-[10px] font-black uppercase tracking-widest bg-black/20 px-3 py-0.5 rounded-full inline-block">Faça uma Pergunta</span>
+                                                    <h6 class="text-sm font-black leading-snug tracking-tight text-center" x-text="storyQuestion || 'Pergunte-me algo...'"></h6>
+                                                </div>
+                                                <div class="p-4 bg-slate-50 text-center">
+                                                    <div class="bg-white border border-slate-200 text-slate-400 py-3 px-4 rounded-2xl text-xs font-semibold shadow-inner flex items-center justify-between">
+                                                        <span>Escreva sua resposta...</span>
+                                                        <span class="text-purple-600 font-extrabold text-[10px] uppercase">Enviar</span>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </template>
+
+                                        <!-- TESTE / QUIZ -->
+                                        <template x-if="stickerType === 'quiz'">
+                                            <div class="bg-white/95 backdrop-blur-2xl text-slate-900 p-5 rounded-3xl space-y-3 shadow-2xl border border-white/60">
+                                                <div class="flex items-center justify-center gap-1.5 mb-1">
+                                                    <span class="w-2 h-2 rounded-full bg-purple-600"></span>
+                                                    <span class="text-[10px] font-black uppercase tracking-widest text-purple-600">Quiz do Story</span>
+                                                </div>
+                                                <h6 class="text-xs font-black text-slate-900 leading-snug text-center" x-text="storyQuestion || 'Quiz: Qual é a resposta correta?'"></h6>
+                                                <div class="space-y-2 text-xs font-bold">
+                                                    <div class="bg-purple-50 text-purple-900 border border-purple-200 p-3 rounded-2xl flex items-center gap-2 shadow-2xs">
+                                                        <span class="w-5 h-5 bg-purple-600 text-white rounded-full flex items-center justify-center font-black text-[10px] shadow-xs shrink-0">A</span>
+                                                        <span class="flex-1 text-left" x-text="optionA || 'Primeira opção'"></span>
+                                                    </div>
+                                                    <div class="bg-slate-50 text-slate-700 border border-slate-200 p-3 rounded-2xl flex items-center gap-2">
+                                                        <span class="w-5 h-5 bg-slate-200 text-slate-700 rounded-full flex items-center justify-center font-black text-[10px] shrink-0">B</span>
+                                                        <span class="flex-1 text-left" x-text="optionB || 'Segunda opção'"></span>
+                                                    </div>
+                                                    <template x-if="optionC && optionC.trim()">
+                                                        <div class="bg-slate-50 text-slate-700 border border-slate-200 p-3 rounded-2xl flex items-center gap-2">
+                                                            <span class="w-5 h-5 bg-slate-200 text-slate-700 rounded-full flex items-center justify-center font-black text-[10px] shrink-0">C</span>
+                                                            <span class="flex-1 text-left" x-text="optionC"></span>
+                                                        </div>
+                                                    </template>
+                                                    <template x-if="optionD && optionD.trim()">
+                                                        <div class="bg-slate-50 text-slate-700 border border-slate-200 p-3 rounded-2xl flex items-center gap-2">
+                                                            <span class="w-5 h-5 bg-slate-200 text-slate-700 rounded-full flex items-center justify-center font-black text-[10px] shrink-0">D</span>
+                                                            <span class="flex-1 text-left" x-text="optionD"></span>
+                                                        </div>
+                                                    </template>
+                                                </div>
+                                            </div>
+                                        </template>
+
+                                        <!-- STICKER PERSONALIZADO DE MARCA -->
+                                        <template x-if="stickerType === 'custom'">
+                                            <div class="p-5 bg-gradient-to-r from-purple-600 via-indigo-600 to-purple-800 text-white rounded-3xl text-center shadow-2xl border border-white/30 space-y-1 transform hover:scale-105 transition-transform flex flex-col items-center justify-center">
+                                                <span class="px-3 py-1 bg-white text-purple-950 text-xs font-black rounded-full shadow-md uppercase tracking-wider inline-block" x-text="storyQuestion || 'STICKER DE MARCA'"></span>
+                                                <p class="text-[11px] text-purple-100 font-bold block pt-1 text-center">Toque para saber mais no Direct</p>
+                                            </div>
+                                        </template>
+                                    </div>
+
+                                    <!-- CAMADA DO STICKER PNG TRANSPARENTE / GIF ANIMADO SOBREPOSTO -->
+                                    <template x-if="stickerOverlayUrl">
+                                        <div class="absolute inset-0 z-20 pointer-events-none flex items-center justify-center">
+                                            <img :src="stickerOverlayUrl" class="max-w-[160px] max-h-[160px] object-contain drop-shadow-2xl animate-pulse">
+                                        </div>
+                                    </template>
+                                </div>
+
+                                <div class="flex items-center gap-3 w-full justify-center">
+                                    <button type="button" 
+                                            @click="exportStoryToNewPost()" 
+                                            :disabled="isGeneratingStory"
+                                            class="px-5 py-2.5 bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 text-white text-xs font-extrabold rounded-xl shadow-md transition-all flex items-center gap-2 cursor-pointer disabled:opacity-50">
+                                        <template x-if="!isGeneratingStory">
+                                            <span class="flex items-center gap-1.5">
+                                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"/></svg>
+                                                <span>Enviar para Nova Publicação</span>
+                                            </span>
+                                        </template>
+                                        <template x-if="isGeneratingStory">
+                                            <span class="flex items-center gap-1.5">
+                                                <svg class="w-4 h-4 animate-spin" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>
+                                                <span>Gerando Imagem 9:16...</span>
+                                            </span>
+                                        </template>
+                                    </button>
+
+                                    <button type="button" 
+                                            @click="downloadStoryImage()" 
+                                            :disabled="isGeneratingStory"
+                                            class="px-4 py-2.5 bg-slate-800 hover:bg-slate-700 text-white text-xs font-bold rounded-xl border border-slate-700 shadow-md transition-all flex items-center gap-1.5 cursor-pointer disabled:opacity-50">
+                                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/></svg>
+                                        <span>Baixar PNG</span>
+                                    </button>
+                                </div>
                             </div>
                         </div>
                     </div>

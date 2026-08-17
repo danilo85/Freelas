@@ -221,24 +221,22 @@
             <!-- Coluna Esquerda: Showcase do Trabalho (8 colunas) -->
             <div class="lg:col-span-8 space-y-8">
                 
-                <!-- Imagens Coladas (Estilo Pinterest / Behance) -->
+                <!-- Imagens do Trabalho (Estilo Pinterest / Behance) -->
                 <div class="flex flex-col space-y-0 rounded-none overflow-hidden shadow-2xl border border-white/[0.08]">
-                    <!-- Imagem Principal de Capa -->
-                    @if($item->thumb_path)
-                        <img src="{{ asset('storage/' . $item->thumb_path) }}" 
-                             alt="{{ $item->title }}"
-                             class="w-full h-auto object-cover rounded-none block m-0 p-0">
-                    @endif
-
-                    <!-- Showcase de Imagens Adicionais -->
+                    <!-- Showcase de Imagens do Trabalho -->
                     @if($item->images->count() > 0)
                         <div class="flex flex-col" style="gap: {{ intval($item->gallery_spacing ?? 0) }}px;">
                             @foreach($item->images->sortBy('order') as $image)
                                 <img src="{{ asset('storage/' . $image->image_path) }}" 
-                                     alt="Galeria - {{ $item->title }}"
+                                     alt="Trabalho - {{ $item->title }}"
                                      class="w-full h-auto object-cover rounded-none block m-0 p-0 border-0 outline-none">
                             @endforeach
                         </div>
+                    @elseif($item->thumb_path)
+                        <!-- Fallback apenas se não houver imagens de galeria cadastradas -->
+                        <img src="{{ asset('storage/' . $item->thumb_path) }}" 
+                             alt="{{ $item->title }}"
+                             class="w-full h-auto object-cover rounded-none block m-0 p-0">
                     @endif
                 </div>
 

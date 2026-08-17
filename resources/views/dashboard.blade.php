@@ -6,14 +6,14 @@
 @section('content')
 <div class="space-y-8">
     
-    <!-- Seção de Métricas (Cards) -->
+    <!-- Seção de Métricas (Cards Coloridos Individuais) -->
     <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
         
         <!-- Faturamento do Mês -->
-        <div class="bg-gradient-to-br from-emerald-500 to-teal-600 dark:from-emerald-600 dark:to-teal-800 text-white rounded-[5px] p-6 shadow-sm flex items-center justify-between">
+        <div class="bg-gradient-to-br from-emerald-500 to-teal-600 dark:from-emerald-600 dark:to-teal-800 text-white rounded-xl p-6 shadow-sm flex items-center justify-between">
             <div>
                 <p class="text-[10px] font-black text-emerald-100/90 uppercase tracking-widest">Faturamento do Mês</p>
-                <h3 class="text-3xl font-black mt-2 font-outfit tracking-tight drop-shadow-sm">
+                <h3 class="text-3xl font-black mt-2 font-outfit tracking-tight drop-shadow-sm truncate">
                     R$ {{ number_format($currentMonthRevenue, 2, ',', '.') }}
                 </h3>
                 <span class="text-xs font-bold flex items-center gap-1 mt-2 text-emerald-100/90">
@@ -23,7 +23,7 @@
                     Recebidos (entradas)
                 </span>
             </div>
-            <div class="w-12 h-12 rounded-[5px] bg-white/15 text-white flex items-center justify-center shadow-inner">
+            <div class="w-12 h-12 rounded-xl bg-white/15 text-white flex items-center justify-center shadow-inner shrink-0">
                 <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
                 </svg>
@@ -31,10 +31,10 @@
         </div>
 
         <!-- Orçamentos Pendentes -->
-        <div class="bg-gradient-to-br from-amber-500 to-orange-600 dark:from-amber-600 dark:to-orange-800 text-white rounded-[5px] p-6 shadow-sm flex items-center justify-between">
+        <div class="bg-gradient-to-br from-amber-500 to-orange-600 dark:from-amber-600 dark:to-orange-800 text-white rounded-xl p-6 shadow-sm flex items-center justify-between">
             <div>
                 <p class="text-[10px] font-black text-amber-100/90 uppercase tracking-widest">Orçamentos Pendentes</p>
-                <h3 class="text-3xl font-black mt-2 font-outfit tracking-tight drop-shadow-sm">
+                <h3 class="text-3xl font-black mt-2 font-outfit tracking-tight drop-shadow-sm truncate">
                     R$ {{ number_format($pendingProposalsValue, 2, ',', '.') }}
                 </h3>
                 <span class="text-xs font-bold flex items-center gap-1.5 mt-2 text-amber-100/95">
@@ -44,7 +44,7 @@
                     Aguardando retorno do cliente
                 </span>
             </div>
-            <div class="w-12 h-12 rounded-[5px] bg-white/15 text-white flex items-center justify-center shadow-inner">
+            <div class="w-12 h-12 rounded-xl bg-white/15 text-white flex items-center justify-center shadow-inner shrink-0">
                 <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
                 </svg>
@@ -52,10 +52,10 @@
         </div>
 
         <!-- Projetos Ativos -->
-        <div class="bg-gradient-to-br from-blue-600 to-indigo-700 dark:from-blue-700 dark:to-indigo-800 text-white rounded-[5px] p-6 shadow-sm flex items-center justify-between sm:col-span-2 lg:col-span-1">
+        <div class="bg-gradient-to-br from-blue-600 to-indigo-700 dark:from-blue-700 dark:to-indigo-800 text-white rounded-xl p-6 shadow-sm flex items-center justify-between sm:col-span-2 lg:col-span-1">
             <div>
                 <p class="text-[10px] font-black text-blue-100/90 uppercase tracking-widest">Projetos Ativos</p>
-                <h3 class="text-3xl font-black mt-2 font-outfit tracking-tight drop-shadow-sm">
+                <h3 class="text-3xl font-black mt-2 font-outfit tracking-tight drop-shadow-sm truncate">
                     {{ $activeProjectsCount }}
                 </h3>
                 <span class="text-xs font-bold flex items-center gap-1.5 mt-2 text-blue-100/90">
@@ -63,7 +63,7 @@
                     Em andamento no sistema
                 </span>
             </div>
-            <div class="w-12 h-12 rounded-[5px] bg-white/15 text-white flex items-center justify-center shadow-inner">
+            <div class="w-12 h-12 rounded-xl bg-white/15 text-white flex items-center justify-center shadow-inner shrink-0">
                 <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4"></path>
                 </svg>

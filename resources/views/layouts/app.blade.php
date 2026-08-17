@@ -27,8 +27,9 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Geist:wght@100..900&display=swap" rel="stylesheet">
     
-    <!-- Tailwind CSS CDN -->
+    <!-- Tailwind CSS & daisyUI CDN -->
     <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdn.jsdelivr.net/npm/daisyui@4.12.23/dist/full.min.css" rel="stylesheet" type="text/css" />
     <script>
         // Check theme before rendering to avoid flashing
         if (localStorage.getItem('theme') === 'dark' || (!('theme' in localStorage) && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
@@ -718,13 +719,13 @@
                     </button>
                     <div x-show="open" class="pl-9 space-y-1" style="display: none;" :style="open ? 'display: block;' : 'display: none;'">
                         <a href="{{ route('instagram.index') }}" class="block py-2 px-3 text-xs font-semibold rounded-[5px] transition-colors {{ request()->routeIs('instagram.*') ? 'text-white bg-slate-850' : 'text-slate-400 hover:text-white' }}">
-                            📸 Instagram & Mídia Social
+                            Instagram & Mídia Social
                         </a>
                         <a href="{{ route('revisoes.index') }}" class="block py-2 px-3 text-xs font-semibold rounded-[5px] transition-colors {{ request()->routeIs('revisoes.index') || request()->routeIs('revisoes.show') ? 'text-white bg-slate-850' : 'text-slate-400 hover:text-white' }}">
                             Revisão de Trabalhos
                         </a>
                         <a href="{{ route('revisoes-editoriais.index') }}" class="block py-2 px-3 text-xs font-semibold rounded-[5px] transition-colors {{ request()->routeIs('revisoes-editoriais.*') ? 'text-white bg-slate-850' : 'text-slate-400 hover:text-white' }}">
-                            ✍️ Revisão Editorial
+                            Revisão Editorial
                         </a>
                         <a href="{{ route('revisoes.shares.index') }}" class="block py-2 px-3 text-xs font-semibold rounded-[5px] transition-colors {{ request()->routeIs('revisoes.shares.*') ? 'text-white bg-slate-850' : 'text-slate-400 hover:text-white' }}">
                             Compartilhar Arquivos

@@ -879,16 +879,6 @@
 
                 <!-- Sequência das Imagens com o Espaçamento Selecionado -->
                 <div class="max-w-2xl mx-auto flex flex-col" :style="'gap: ' + gallerySpacing + 'px;'">
-                    <!-- Capa -->
-                    <template x-if="thumbPreview">
-                        <img :src="thumbPreview" class="w-full h-auto object-cover rounded-none block m-0 p-0 border-0 outline-none">
-                    </template>
-                    @if($portfolio->thumb_path)
-                        <template x-if="!thumbPreview">
-                            <img src="{{ asset('storage/' . $portfolio->thumb_path) }}" class="w-full h-auto object-cover rounded-none block m-0 p-0 border-0 outline-none">
-                        </template>
-                    @endif
-
                     <!-- Imagens Existentes da Galeria -->
                     @if($portfolio->images->count() > 0)
                         @foreach($portfolio->images as $img)
@@ -899,6 +889,20 @@
                     <!-- Fotos da Galeria Novas Adicionadas na Edição -->
                     <template x-for="(item, idx) in galleryFiles" :key="idx">
                         <img :src="item.url" class="w-full h-auto object-cover rounded-none block m-0 p-0 border-0 outline-none">
+                    </template>
+
+                    <!-- Fallback para Capa apenas se a galeria estiver vazia -->
+                    <template x-if="{{ $portfolio->images->count() }} === 0 && galleryFiles.length === 0">
+                        <div>
+                            <template x-if="thumbPreview">
+                                <img :src="thumbPreview" class="w-full h-auto object-cover rounded-none block m-0 p-0 border-0 outline-none">
+                            </template>
+                            @if($portfolio->thumb_path)
+                                <template x-if="!thumbPreview">
+                                    <img src="{{ asset('storage/' . $portfolio->thumb_path) }}" class="w-full h-auto object-cover rounded-none block m-0 p-0 border-0 outline-none">
+                                </template>
+                            @endif
+                        </div>
                     </template>
                 </div>
             </div>
